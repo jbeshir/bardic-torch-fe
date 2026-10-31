@@ -80,6 +80,15 @@
     font-variation-settings: "opsz" 32;
   }
 
+  /* A <summary> drawn as a control: no disclosure triangle. */
+  .summary-plain {
+    list-style: none;
+  }
+
+  .summary-plain::-webkit-details-marker {
+    display: none;
+  }
+
   /* Transform an SVG part around its own box (the logo's flame), not the viewBox. */
   .transform-box-fill {
     transform-box: fill-box;

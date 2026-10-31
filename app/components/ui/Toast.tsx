@@ -142,7 +142,7 @@ function ToastRegion({
       onPointerLeave={() => setHovered(false)}
       onFocus={() => setFocused(true)}
       onBlur={onBlur}
-      className={`pointer-events-none fixed inset-x-4 top-toast z-toast sm:inset-x-auto sm:bottom-6 sm:right-6 sm:top-auto sm:w-96 ${stack}`}
+      className={`pointer-events-none fixed inset-x-4 top-toast z-toast sm:inset-x-auto sm:bottom-above-app-bar sm:right-6 sm:top-auto md:bottom-6 sm:w-96 ${stack}`}
     >
       <div
         role="status"

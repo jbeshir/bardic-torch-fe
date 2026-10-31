@@ -58,7 +58,7 @@ describe("Toast region", () => {
     document.body.innerHTML = "";
   });
 
-  it("sits at the top below sm and bottom right from sm, above the page", () => {
+  it("sits at the top below sm, above the bottom app bar from sm, and bottom right from md", () => {
     render(<Page />);
     expect(region()).toHaveClass(
       "fixed",
@@ -66,7 +66,8 @@ describe("Toast region", () => {
       "top-toast",
       "inset-x-4",
       "sm:top-auto",
-      "sm:bottom-6",
+      "sm:bottom-above-app-bar",
+      "md:bottom-6",
       "sm:right-6",
       "sm:w-96"
     );

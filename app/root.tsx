@@ -11,9 +11,10 @@ import {
 } from "@remix-run/react";
 import frauncesLatin from "@fontsource-variable/fraunces/files/fraunces-latin-opsz-normal.woff2?url";
 import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/cloudflare";
+import type { ShouldRevalidateFunction } from "@remix-run/react";
 import { json } from "@remix-run/cloudflare";
 import type { ReactNode } from "react";
-import { getServerAuthContext } from "~/server/auth.server";
+import { loadAccount } from "~/server/account.server";
 import { SentryProvider } from "~/contexts/SentryContext";
 import { useNonce } from "~/contexts/NonceContext";
 import { captureRemixErrorBoundaryError } from "@sentry/remix";
@@ -24,6 +25,7 @@ import type { Theme } from "~/styles/tokens";
 import { useThemeChoice } from "~/hooks/useThemeChoice";
 import { ToastProvider } from "~/components/ui/Toast";
 import { AppShell } from "~/components/AppShell";
+import { LOGOUT_ACTION, ME_ACTION, type Account } from "~/constants/account";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
@@ -95,29 +97,58 @@ type LoaderData = {
   sentryDsn: string | undefined;
   /** The explicit theme from the cookie; null follows the device. */
   theme: Theme | null;
+  /** Who is reading, for the account control on every page. */
+  account: Account;
 };
 
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {
-  // Resolving the auth context refreshes expiring tokens; the refreshed
-  // session cookie must be forwarded on the response.
-  const { headers } = await getServerAuthContext(request, context);
+  // Resolving the session refreshes expiring tokens (and /v1/me can end
+  // it); the updated session cookie must be forwarded on the response.
+  const { account, headers } = await loadAccount(request, context);
 
   return json<LoaderData>(
     {
       sentryDsn: context.cloudflare.env.SENTRY_DSN,
       theme: readTheme(request),
+      account,
     },
-    headers ? { headers } : undefined
+    { headers }
   );
 };
 
+/**
+ * The root loader calls /v1/me, so it runs again only when the answer can
+ * have changed (plan §0.7): after a display-name change, on the way into or
+ * out of /auth (login, logout), and when asked to (Try again revalidates
+ * the page it is on). Plain navigations and other submissions, including a
+ * theme change (its fetcher result is used directly), keep the data.
+ */
+export const shouldRevalidate: ShouldRevalidateFunction = ({
+  currentUrl,
+  nextUrl,
+  formMethod,
+  formAction,
+  defaultShouldRevalidate,
+}) => {
+  if (formMethod) {
+    const action = formAction ? new URL(formAction, currentUrl).pathname : "";
+    return (
+      (action === ME_ACTION && formMethod.toUpperCase() === "PATCH") ||
+      action === LOGOUT_ACTION
+    );
+  }
+  const isAuth = (url: URL) => url.pathname.startsWith("/auth/");
+  if (isAuth(currentUrl) || isAuth(nextUrl)) return true;
+  return currentUrl.href === nextUrl.href && defaultShouldRevalidate;
+};
+
 export default function App() {
-  const { sentryDsn } = useLoaderData<LoaderData>();
+  const { sentryDsn, account } = useLoaderData<LoaderData>();
 
   return (
     <SentryProvider dsn={sentryDsn}>
       <ToastProvider>
-        <AppShell>
+        <AppShell account={account}>
           <Outlet />
         </AppShell>
       </ToastProvider>

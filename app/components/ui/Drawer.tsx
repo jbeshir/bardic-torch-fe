@@ -18,6 +18,7 @@ const LG_QUERY = "(min-width: 1024px)";
  * `closeFrom="lg"`, when the viewport grows to where the sidebar shows.
  */
 export function Drawer({
+  id,
   open,
   onClose,
   title,
@@ -26,6 +27,8 @@ export function Drawer({
   footer,
   closeFrom,
 }: {
+  /** For the trigger's `aria-controls`. */
+  id?: string;
   open: boolean;
   /** Called for every way of closing; set `open` false in response. */
   onClose: () => void;
@@ -69,6 +72,7 @@ export function Drawer({
   return (
     <dialog
       ref={dialog}
+      id={id}
       aria-labelledby={titleId}
       className={
         // Below md: a bottom sheet. From md: the left edge, full height.

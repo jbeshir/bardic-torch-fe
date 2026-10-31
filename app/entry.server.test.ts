@@ -1,100 +1,27 @@
-import {
-  createRequestHandler,
-  json,
-  type ServerBuild,
-} from "@remix-run/cloudflare";
+import { json } from "@remix-run/cloudflare";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import * as entryServer from "./entry.server";
-import * as rootModule from "./root";
 import * as indexModule from "./routes/_index";
-import { loadContext } from "./test/context";
+import { serveApp } from "./test/server-build";
 
 /**
- * A server build made of the real entry module, root and home route, plus a
- * route that opts out of caching, served the way the Pages function does.
+ * The real entry module, root and home route, plus a route that opts out of
+ * caching, served the way the Pages function does.
  */
-
 const privateRoute = {
   loader: () => json({}, { headers: { "Cache-Control": "no-store" } }),
   headers: () => ({ "Cache-Control": "no-store" }),
   default: () => null,
 };
 
-function entryRoute(
-  route: { id: string; parentId?: string } & (
-    | { path: string }
-    | { index: true }
-  )
-) {
-  return {
-    ...route,
-    module: `/assets/${route.id}.js`,
-    imports: [],
-    hasAction: false,
+const get = serveApp([
+  { id: "routes/_index", index: true, module: indexModule, hasLoader: false },
+  {
+    id: "routes/private",
+    path: "private",
+    module: privateRoute,
     hasLoader: true,
-    hasClientAction: false,
-    hasClientLoader: false,
-    hasErrorBoundary: route.id === "root",
-  };
-}
-
-const build: ServerBuild = {
-  mode: "production",
-  entry: { module: entryServer },
-  routes: {
-    root: { id: "root", path: "", module: rootModule },
-    "routes/_index": {
-      id: "routes/_index",
-      parentId: "root",
-      index: true,
-      module: indexModule,
-    },
-    "routes/private": {
-      id: "routes/private",
-      parentId: "root",
-      path: "private",
-      module: privateRoute,
-    },
   },
-  assets: {
-    entry: { module: "/assets/entry.client.js", imports: [] },
-    routes: {
-      root: entryRoute({ id: "root", path: "" }),
-      "routes/_index": {
-        ...entryRoute({ id: "routes/_index", parentId: "root", index: true }),
-        hasLoader: false,
-      },
-      "routes/private": entryRoute({
-        id: "routes/private",
-        parentId: "root",
-        path: "private",
-      }),
-    },
-    url: "/assets/manifest.js",
-    version: "test",
-  },
-  publicPath: "/",
-  assetsBuildDirectory: "build/client",
-  future: {
-    v3_fetcherPersist: true,
-    v3_relativeSplatPath: true,
-    v3_throwAbortReason: true,
-    v3_singleFetch: false,
-    v3_lazyRouteDiscovery: false,
-  },
-  isSpaMode: false,
-};
-
-const handler = createRequestHandler(build, "production");
-
-function get(path: string, cookie?: string) {
-  return handler(
-    new Request(`https://app.test${path}`, {
-      headers: { "User-Agent": "test", ...(cookie ? { Cookie: cookie } : {}) },
-    }),
-    loadContext()
-  );
-}
+]);
 
 /** The opening `<html>` tag and every `<meta>` and stylesheet in `<head>`. */
 async function head(response: Response) {
@@ -195,7 +122,10 @@ describe("data responses", () => {
     );
     expect(response.headers.get("Cache-Control")).toBe("private, no-cache");
     expect(response.headers.get("Vary")).toBe("Cookie");
-    expect(await response.json()).toEqual({ theme: null });
+    expect(await response.json()).toEqual({
+      theme: null,
+      account: { state: "signed-out" },
+    });
   });
 
   it("keep a route's no-store", async () => {
@@ -237,5 +167,44 @@ describe("document theme", () => {
     const { stylesheets } = await head(await get("/"));
     expect(stylesheets).toHaveLength(1);
     expect(stylesheets[0]).not.toMatch(/\b(media|disabled|onload)=/);
+  });
+});
+
+describe("the shell without JS", () => {
+  async function page() {
+    return (await get("/")).text();
+  }
+
+  it("renders the landmarks, the skip link first and the one Site nav after main", async () => {
+    const html = await page();
+    const body = html.slice(html.indexOf("<body"));
+    expect(body.indexOf('href="#content"')).toBeLessThan(
+      body.indexOf("<header")
+    );
+    const main = body.indexOf('<main id="content"');
+    const nav = body.indexOf('<nav id="site-nav" aria-label="Site"');
+    const footer = body.indexOf("<footer");
+    expect(main).toBeGreaterThan(-1);
+    expect(nav).toBeGreaterThan(body.indexOf("</main>"));
+    expect(footer).toBeGreaterThan(nav);
+    expect(body.match(/aria-label="Site"/g)).toHaveLength(1);
+  });
+
+  it("makes Menu and Search links to the site menu, which isn't hidden", async () => {
+    const html = await page();
+    expect(html.match(/<a href="#site-nav"/g)?.length).toBe(3);
+    expect(html).not.toContain('aria-haspopup="dialog"');
+    const nav = /<nav id="site-nav"[^>]*class="([^"]*)"/.exec(html)?.[1] ?? "";
+    expect(nav.split(" ")).not.toContain("hidden");
+  });
+
+  it("signed out, offers Log in back to this page", async () => {
+    const html = await page();
+    expect(html).toContain('href="/auth/login?returnTo=%2F"');
+    expect(html).not.toContain("<details");
+  });
+
+  it("has no inline styles, which the CSP would block", async () => {
+    expect(await page()).not.toMatch(/\sstyle="/);
   });
 });

@@ -465,6 +465,7 @@ The app shell has `max-width: 90rem` (1440 px) and is centred. The canvas extend
 - **Menu** opens the drawer as a bottom sheet, nearest its trigger (§6.21).
 - **Search** opens a search sheet just above the bar with JS: a SearchBox (§6.26) with the input focused and a "Cancel" button. Escape or Cancel closes it and returns focus to the Search cell. Without JS, Search is a link to `#site-nav`, the no-JS navigation, which starts with the SearchBox.
 - **Account** opens the account panel upwards, above the bar (§6.25). Signed out, it is a link to `/auth/login?returnTo={current path}`.
+- **Built as (FE1):** `app/components/BottomBar.tsx`. The search sheet is non-modal (`aria-expanded` on the Search cell, `useDismiss` closing rules, so focus moving past it closes it too). Body padding is `max-md:pb-app-bar` on the shell wrapper, so the standalone error page, which has no bar, gets none; `scroll-padding-bottom` is in `base.css` below md.
 
 ### 5.3 Left sidebar / navigation
 
@@ -1094,7 +1095,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
   - `<div role="alert" aria-live="assertive">` for errors that need immediate attention
 - **Placement:**
   - **Below sm: at the top**, under the header (`top: calc(var(--header-h) + 8px)`, width `calc(100vw - 32px)`). At the bottom they would cover the bottom app bar and the controls near the thumb, often the very button that triggered them (WCAG 2.4.11).
-  - **At ≥sm: bottom right** (`right: 24px; bottom: 24px; width: 24rem`), clear of the main column's controls.
+  - **At ≥sm: bottom right** (`right: 24px; width: 24rem`), clear of the main column's controls: `bottom: 24px` from md, and from sm to md (where the bottom app bar still shows) 16 px above the bar (`bottom-above-app-bar`).
   - At most 3 toasts, with the newest nearest the edge.
 - **Toast:** `bg-surface-raised border border-border rounded-lg shadow-2 p-4 flex gap-3`, with a status icon (`{s}-icon`), message (body-sm `text-fg`) and a close button (36 px, "Dismiss notification").
   - A 3 px left bar in `{s}-icon` means the state is not shown by icon colour alone. The icon shape differs too.
@@ -1166,6 +1167,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
 - **Profile failed to load** (the root loader's `/v1/me` call failed): the trigger reads "Account" with generic initials, and the panel shows a `warning` inline message, "We couldn't load your profile. [Try again]", above the Settings and Log out rows. Pages still render.
 - **Keyboard:** Enter or Space toggles. Escape closes and returns focus to the trigger. Tab moves through the links. Focus leaving the panel, or clicking outside, closes it.
 - **No-JS:** `<details><summary>` with the same panel.
+- **Built as (FE1):** `app/components/AccountMenu.tsx` uses `<details>` with JS too, rather than swapping to a `<button aria-expanded>` after hydration: the summary is a native disclosure (its expanded state is exposed by the browser), so there is one markup and no hydration swap. JS adds the closing rules through `useDismiss` (Escape returns focus to the summary; a press or focus outside, or a navigation, closes it). The trigger's accessible name comes from `sr-only` text ("Account: {name}"; the bar cell's visible "Account" starts it), not `aria-label`. The root loader's account states are `signed-out`, `signed-in`, `profile-unavailable` and `blocked` (`app/constants/account.ts`); a blocked account's panel shows the danger message and "Log out" only.
 
 ### 6.26 SearchBox
 

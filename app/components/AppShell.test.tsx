@@ -1,18 +1,22 @@
-import { screen, within } from "@testing-library/react";
+import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderWithRouter } from "~/test/router";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { AppShell } from "./AppShell";
 
 function renderShell(url = "/") {
   return renderWithRouter(
-    <AppShell>
+    <AppShell account={{ state: "signed-out" }}>
       <h1>Page title</h1>
     </AppShell>,
     url
   );
 }
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe("AppShell", () => {
   it("has one banner, main, Site nav and contentinfo, in that DOM order", async () => {
@@ -67,6 +71,58 @@ describe("AppShell", () => {
     expect(
       within(nav).getByRole("group", { name: "Theme" }).closest(".md\\:hidden")
     ).not.toBeNull();
+  });
+
+  it("once hydrated, hides the site menu below lg and opens the same navigation in the drawer", async () => {
+    vi.stubGlobal("matchMedia", () => ({
+      matches: false,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+    const user = userEvent.setup();
+    await renderShell("/help/licence");
+    const nav = screen.getByRole("navigation", { name: "Site" });
+    expect(nav).toHaveClass("hidden", "lg:block");
+
+    const [headerMenu, barMenu] = screen.getAllByRole("button", {
+      name: "Menu",
+    });
+    expect(headerMenu).toHaveAttribute("aria-haspopup", "dialog");
+    const drawer = document.querySelector("dialog");
+    expect(headerMenu).toHaveAttribute("aria-controls", drawer?.id);
+    expect(barMenu).toHaveAttribute("aria-controls", drawer?.id);
+
+    await user.click(barMenu as HTMLElement);
+    const dialog = screen.getByRole("dialog", { name: "Site menu" });
+    expect(within(dialog).getByRole("search")).toBeInTheDocument();
+    expect(
+      within(dialog)
+        .getByRole("navigation", { name: "Site" })
+        .querySelector('[aria-current="page"]')
+    ).toHaveTextContent("Licence & attribution");
+    expect(
+      within(dialog).getByRole("group", { name: "Theme" })
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getAllByRole("button", { name: "Close menu" })[0]
+    ).toHaveFocus();
+
+    await act(() =>
+      user.click(
+        within(dialog).getAllByRole("button", {
+          name: "Close menu",
+        })[1] as HTMLElement
+      )
+    );
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(barMenu).toHaveFocus();
+  });
+
+  it("leaves room under the page for the bottom app bar below md", async () => {
+    await renderShell();
+    expect(screen.getByRole("banner").parentElement).toHaveClass(
+      "max-md:pb-app-bar"
+    );
   });
 
   it("is not busy when nothing is loading", async () => {
