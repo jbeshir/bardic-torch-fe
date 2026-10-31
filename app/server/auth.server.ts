@@ -67,6 +67,14 @@ export function getOrCreateAuthenticator(env: AuthEnv): Authenticator<User> {
       redirectURI: `${env.AUTH0_DEFAULT_REDIRECT_URI}/auth/callback`,
       scopes: ["openid", "profile", "email", "offline_access"],
       audience: env.AUTH0_AUDIENCE,
+      // State and PKCE verifier for the Auth0 round trip (5 minutes).
+      cookie: {
+        name: "__Host-bt_auth0",
+        httpOnly: true,
+        secure: true,
+        sameSite: "Lax",
+        path: "/",
+      },
     },
     async ({ tokens }) => {
       // Extract user info from the ID token or fetch from userinfo endpoint

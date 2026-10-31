@@ -15,9 +15,11 @@ import { json } from "@remix-run/cloudflare";
 import type { ReactNode } from "react";
 import { getServerAuthContext } from "~/server/auth.server";
 import { SentryProvider } from "~/contexts/SentryContext";
+import { useNonce } from "~/contexts/NonceContext";
 import { captureRemixErrorBoundaryError } from "@sentry/remix";
 
 export function Layout({ children }: { children: ReactNode }) {
+  const nonce = useNonce();
   return (
     <html lang="en">
       <head>
@@ -28,8 +30,8 @@ export function Layout({ children }: { children: ReactNode }) {
       </head>
       <body>
         {children}
-        <ScrollRestoration />
-        <Scripts />
+        <ScrollRestoration nonce={nonce} />
+        <Scripts nonce={nonce} />
       </body>
     </html>
   );

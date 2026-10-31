@@ -1,0 +1,4 @@
+# Static asset caching only; security and document cache headers are set per
+# request in app/entry.server.tsx.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

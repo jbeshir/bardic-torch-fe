@@ -5,22 +5,39 @@ import {
 } from "@remix-run/dev";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
-import { parseEnv } from "./app/server/env.server";
+import { ENV_NAMES, parseEnv } from "./app/server/env.server";
 import type { Env } from "./worker-configuration";
 
 const isTest = process.env.VITEST === "true";
 
+// In `remix vite:dev`, variables set in the process environment override
+// .dev.vars, so `npm run dev:fixtures` can point the app at the fixture API.
+function devEnvOverrides(): Record<string, string> {
+  return Object.fromEntries(
+    ENV_NAMES.flatMap(name => {
+      const value = process.env[name];
+      return value === undefined ? [] : [[name, value]];
+    })
+  );
+}
+
 // Build modes: production | preview | e2e | development.
 export default defineConfig(({ mode }) => ({
-  define: {
-    __STUB_AUTH__: JSON.stringify(mode === "e2e" || mode === "development"),
-  },
+  // Tests stub `__STUB_AUTH__` per case, so it is only defined for builds.
+  define: isTest
+    ? {}
+    : {
+        __STUB_AUTH__: JSON.stringify(mode === "e2e" || mode === "development"),
+      },
   plugins: [
     ...(!isTest
       ? [
           remixCloudflareDevProxy<Env, IncomingRequestCfProperties>({
             getLoadContext: ({ context }) => {
-              const parsed = parseEnv(context.cloudflare.env);
+              const parsed = parseEnv({
+                ...context.cloudflare.env,
+                ...devEnvOverrides(),
+              });
               if (!parsed.ok) {
                 throw new Error(
                   `Invalid environment:\n${parsed.problems.join("\n")}`
@@ -30,6 +47,8 @@ export default defineConfig(({ mode }) => ({
             },
           }),
           remix({
+            // check:prod-build builds into temporary directories.
+            buildDirectory: process.env.REMIX_BUILD_DIRECTORY ?? "build",
             // Co-located tests are never routes; the styleguide is left out
             // of production builds only.
             ignoredRouteFiles: [
@@ -47,6 +66,9 @@ export default defineConfig(({ mode }) => ({
     tsconfigPaths(),
   ],
   test: {
+    // Workers resolve react-dom's `worker` build, which (unlike the Node
+    // build) has the renderToReadableStream that entry.server uses.
+    alias: { "react-dom/server": "react-dom/server.browser" },
     globals: true,
     // Component tests (*.test.tsx) need a DOM; everything else runs in node,
     // like the Workers runtime it targets.

@@ -1,14 +1,17 @@
-/**
- * By default, Remix will handle generating the HTTP Response for you.
- * You are free to delete this file if you'd like to, but if you ever want it revealed again, you can run `npx remix reveal` ✨
- * For more information, see https://remix.run/file-conventions/entry.server
- */
-
 import * as Sentry from "@sentry/remix";
-import type { AppLoadContext, EntryContext } from "@remix-run/cloudflare";
+import type {
+  AppLoadContext,
+  EntryContext,
+  HandleDataRequestFunction,
+} from "@remix-run/cloudflare";
 import { RemixServer } from "@remix-run/react";
 import { isbot } from "isbot";
 import { renderToReadableStream } from "react-dom/server";
+import { NonceContext } from "~/contexts/NonceContext";
+import {
+  createNonce,
+  withSecurityHeaders,
+} from "~/server/security-headers.server";
 
 // Initialize Sentry for server-side error tracking
 // Note: In Cloudflare Workers, initialization happens per-request
@@ -30,10 +33,14 @@ export default async function handleRequest(
   loadContext: AppLoadContext
 ) {
   initSentry(loadContext);
+  const nonce = createNonce();
 
   const body = await renderToReadableStream(
-    <RemixServer context={remixContext} url={request.url} />,
+    <NonceContext.Provider value={nonce}>
+      <RemixServer context={remixContext} url={request.url} nonce={nonce} />
+    </NonceContext.Provider>,
     {
+      nonce,
       signal: request.signal,
       onError(error: unknown) {
         console.error(error);
@@ -47,9 +54,25 @@ export default async function handleRequest(
     await body.allReady;
   }
 
-  responseHeaders.set("Content-Type", "text/html");
-  return new Response(body, {
-    headers: responseHeaders,
-    status: responseStatusCode,
+  const headers = withSecurityHeaders(responseHeaders, {
+    env: loadContext.cloudflare.env,
+    nonce,
+    development: import.meta.env.DEV,
   });
+  headers.set("Content-Type", "text/html; charset=utf-8");
+  return new Response(body, { headers, status: responseStatusCode });
 }
+
+export const handleDataRequest: HandleDataRequestFunction = (
+  response,
+  { context }
+) =>
+  new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: withSecurityHeaders(response.headers, {
+      env: context.cloudflare.env,
+      nonce: createNonce(),
+      development: import.meta.env.DEV,
+    }),
+  });
