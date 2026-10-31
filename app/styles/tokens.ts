@@ -207,6 +207,7 @@ export const THEME_EFFECTS: Readonly<
     "shadow-3":
       "0 16px 32px -8px rgb(60 40 20 / 0.2), 0 4px 8px -4px rgb(60 40 20 / 0.1)",
     "shimmer-alpha": "0.6",
+    "scrim-alpha": "0.5",
   },
   dark: {
     "shadow-1": "inset 0 1px 0 rgb(255 236 210 / 0.04)",
@@ -215,6 +216,7 @@ export const THEME_EFFECTS: Readonly<
     "shadow-3":
       "0 16px 40px rgb(0 0 0 / 0.6), inset 0 1px 0 rgb(255 236 210 / 0.06)",
     "shimmer-alpha": "0.35",
+    "scrim-alpha": "0.65",
   },
 };
 

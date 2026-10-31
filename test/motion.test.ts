@@ -16,7 +16,10 @@ const root = process.cwd();
 const MOVING_UTILITY =
   /^(?:transition|transition-all|transition-transform|animate-[a-z-]+)$/;
 /** Opacity-only animations, allowed (and meant) for reduced motion. */
-const REDUCED_MOTION_ANIMATIONS = new Set(["animate-pulse-soft"]);
+const REDUCED_MOTION_ANIMATIONS = new Set([
+  "animate-pulse-soft",
+  "animate-fade-in",
+]);
 
 /** Moving classes in `source` that aren't guarded by `motion-safe:`. */
 function unguardedClasses(source: string): string[] {

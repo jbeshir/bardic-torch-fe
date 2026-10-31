@@ -412,7 +412,7 @@ Shadows are tokens, defined per theme in `tokens.ts` as `--shadow-1…3` (full `
 | 2     | Menus, popovers, toasts            | `0 4px 8px -2px rgb(60 40 20 / 0.10), 0 2px 4px -2px rgb(60 40 20 / 0.06)`   | `0 4px 12px rgb(0 0 0 / 0.45), inset 0 1px 0 rgb(255 236 210 / 0.05)` on `surface-raised` |
 | 3     | Dialog, drawer                     | `0 16px 32px -8px rgb(60 40 20 / 0.20), 0 4px 8px -4px rgb(60 40 20 / 0.10)` | `0 16px 40px rgb(0 0 0 / 0.6), inset 0 1px 0 rgb(255 236 210 / 0.06)` on `surface-raised` |
 
-- **Scrim** (behind dialogs and the drawer) is `rgb(var(--scrim) / 0.5)` in light and `/ 0.65` in dark.
+- **Scrim** (behind dialogs and the drawer) is `rgb(var(--scrim) / 0.5)` in light and `/ 0.65` in dark. The alpha is the per-theme effect token `--scrim-alpha`, used as `backdrop:bg-scrim/scrim`, so no `dark:` class is needed.
   - `--scrim` is `#2B2118` in light and `#000000` in dark. The dark value is the only use of black, and it is never a surface.
 - In dark mode, every elevated element MUST also have `border border-border`, because shadows are nearly invisible on charcoal.
 
@@ -737,7 +737,7 @@ Generic components live in `app/components/ui/`. App-specific ones (ThemeToggle,
 **Tag: FE1.**
 
 - **Anatomy:** `[icon?] label [trailing icon?]`, with an optional spinner that replaces the leading icon.
-- It is a `<button>`, or `<Link>` styled the same when it navigates. Never use a `<div>`.
+- It is a `<button>` (`Button`), or a link styled the same when it navigates (`ButtonLink`: Remix `<Link>` for paths, a plain external anchor with the §6.3 marks for absolute URLs). Never use a `<div>`.
 
 | Size           | Height                                                              | Padding x | Text        | Icon | Radius | Use                                               |
 | -------------- | ------------------------------------------------------------------- | --------- | ----------- | ---- | ------ | ------------------------------------------------- |
@@ -756,8 +756,10 @@ Generic components live in `app/components/ui/`. App-specific ones (ThemeToggle,
 - **States:**
   - **focus-visible:** the shared ring.
   - **disabled:** `bg-surface-sunken text-fg-subtle border border-border`, with no shadow, for every variant.
-  - **loading:** set `aria-busy="true"`, keep the label, swap the leading icon for a 16 px `Spinner`, and set `aria-disabled="true"` (the button stays focusable, and repeat submits are ignored). Width is locked with `min-width` equal to the rendered width so the button doesn't jitter. Screen readers hear the label plus a live "Saving…" from the form's status region, not from the button.
+  - **loading:** set `aria-busy="true"`, keep the label, swap the leading icon for a 16 px `Spinner`, and set `aria-disabled="true"` (the button stays focusable, and repeat submits are ignored). The spinner shares one grid cell with the (now invisible) leading icon, so the width can't change and the button doesn't jitter. That is why only a button **with** a leading icon can be `loading` (the `Button` props enforce it); a `min-width` lock would need an inline style, which the CSP forbids. Screen readers hear the label plus a live "Saving…" from the form's status region, not from the button.
   - **selected:** for toggle buttons, set `aria-pressed="true"`, use `bg-accent-subtle text-accent-text border-border-strong`, and add a check icon only if the label alone is ambiguous.
+- **Heights are minimums** (`min-h-9`/`min-h-11`/`min-h-13`), so a label under the WCAG 1.4.12 text-spacing override grows the button instead of overflowing it.
+- **Forced colours:** every variant has a 1 px border (`border-transparent` on fills), which Windows High Contrast paints in the system colour, so filled buttons and button-styled links keep an edge.
 - **Icon-only buttons:** square, at the height of their size (36/44/52). They must have `aria-label`. Use `ghost` by default. A `title` is not a substitute for the label.
 - **Dark mode notes:** primary is a light amber fill with dark text, and danger is a light crimson-pink fill with dark text. Shadows come from the `shadow-*` tokens, which are nearly invisible in dark.
 - **Primary vs danger:** the fills differ by ≥30° of hue (§2.4), and danger buttons always have an icon, so the two are distinguishable by more than colour.
@@ -1232,7 +1234,7 @@ The pattern is: **what state it is in** (bold, ≤7 words), then **what it means
 | `--ease-out`      | `ease-out`         | `cubic-bezier(0, 0, 0.2, 1)` | Entering                                           |
 | `--ease-in`       | `ease-in`          | `cubic-bezier(0.4, 0, 1, 1)` | Leaving                                            |
 
-These replace Tailwind's default durations and easings. The keyframe animations are `animate-spin` (spinner), `animate-pulse-soft` (opacity 1 → 0.4, the reduced-motion spinner), `animate-shimmer` (skeleton), `animate-progress` (progress bar) and `animate-flicker` (logo).
+These replace Tailwind's default durations and easings. The keyframe animations are `animate-spin` (spinner), `animate-pulse-soft` (opacity 1 → 0.4, the reduced-motion spinner), `animate-shimmer` (skeleton), `animate-progress` (progress bar), `animate-flicker` (logo), `animate-dialog-in` (fade + scale 0.98 → 1), `animate-toast-in` (fade + 8 px rise), `animate-sheet-in` / `animate-drawer-in` (slide from the bottom / left) and `animate-fade-in` (opacity only, 120 ms: the reduced-motion entrance for all of them, and the scrim).
 
 ### 8.2 What animates
 
@@ -1248,7 +1250,7 @@ These replace Tailwind's default durations and easings. The keyframe animations 
 - The skeleton shimmer is off (static blocks). The spinner switches to the opacity pulse. The progress bar becomes a static full-width bar that appears and disappears.
 - `scroll-behavior: auto`.
 
-**The mechanism (one, chosen in FE1): the `motion-safe:` variant.** Every class that moves something carries the `motion-safe:` prefix: `motion-safe:transition`, `motion-safe:transition-all`, `motion-safe:transition-transform` and `motion-safe:animate-*`. The only exception is `motion-reduce:animate-pulse-soft`, which is opacity-only. Colour-only transitions (`transition-colors`, `transition-opacity`) need no prefix. Hand-written CSS puts any `animation`, transform `transition` or `scroll-behavior: smooth` inside `@media (prefers-reduced-motion: no-preference)`. There is no global "kill all animation" rule, because it would also kill the allowed fades.
+**The mechanism (one, chosen in FE1): the `motion-safe:` variant.** Every class that moves something carries the `motion-safe:` prefix: `motion-safe:transition`, `motion-safe:transition-all`, `motion-safe:transition-transform` and `motion-safe:animate-*`. The only exceptions are `motion-reduce:animate-pulse-soft` and `motion-reduce:animate-fade-in`, which are opacity-only. Colour-only transitions (`transition-colors`, `transition-opacity`) need no prefix. Hand-written CSS puts any `animation`, transform `transition` or `scroll-behavior: smooth` inside `@media (prefers-reduced-motion: no-preference)`. There is no global "kill all animation" rule, because it would also kill the allowed fades.
 
 ESLint has no rule for this, so `test/motion.test.ts` enforces it. It scans the source (`app/` classes and CSS) and fails on any of those classes without the variant, and on any CSS animation or transform transition outside the no-preference block.
 
@@ -1497,7 +1499,12 @@ The pattern is: what happened, then what to do. Don't blame the reader, and don'
 | `boxShadow`                | replaced             | `shadow-none`, `shadow-1`, `shadow-2`, `shadow-3` (`var(--shadow-n)`)                                                                                                                                                                                                                                  |
 | `transitionDuration`       | replaced             | `duration-instant`, `duration-fast`, `duration-base`, `duration-slow`, `duration-flicker` (default: instant)                                                                                                                                                                                           |
 | `transitionTimingFunction` | replaced             | `ease-standard`, `ease-out`, `ease-in` (default: standard)                                                                                                                                                                                                                                             |
-| `keyframes`, `animation`   | replaced             | `animate-spin`, `animate-pulse-soft`, `animate-shimmer`, `animate-progress`, `animate-flicker`                                                                                                                                                                                                         |
+| `keyframes`, `animation`   | replaced             | `animate-spin`, `animate-pulse-soft`, `animate-shimmer`, `animate-progress`, `animate-flicker`, `animate-fade-in` (120 ms, the reduced-motion entrance), `animate-dialog-in`, `animate-toast-in` (180 ms), `animate-sheet-in`, `animate-drawer-in` (240 ms)                                            |
+| `spacing`                  | extended             | `13` (3.25rem, 52 px): `min-h-13`, `w-13` for `lg` buttons                                                                                                                                                                                                                                             |
+| `maxHeight`                | extended             | `max-h-sheet` (85dvh, the bottom-sheet drawer)                                                                                                                                                                                                                                                         |
+| `inset`                    | extended             | `top-toast` (`calc(var(--header-h) + 0.5rem)`, toasts below sm)                                                                                                                                                                                                                                        |
+| `gridTemplateColumns`      | extended             | `grid-cols-infobox` (`7rem 1fr`, infobox rows)                                                                                                                                                                                                                                                         |
+| `opacity`                  | extended             | `/shimmer` (`var(--shimmer-alpha)`) and `/scrim` (`var(--scrim-alpha)`) as colour modifiers: `via-surface-raised/shimmer`, `backdrop:bg-scrim/scrim`. Both alphas are per-theme effect tokens.                                                                                                         |
 | `maxWidth`                 | extended             | `max-w-prose` (68ch), `max-w-form` (42rem), `max-w-shell` (90rem)                                                                                                                                                                                                                                      |
 | `height`                   | extended             | `h-header` (`var(--header-h)`), `h-app-bar` (3.5rem), `h-text-line` (0.75em)                                                                                                                                                                                                                           |
 | `minHeight`                | extended             | `min-h-textarea` (7.5rem)                                                                                                                                                                                                                                                                              |
