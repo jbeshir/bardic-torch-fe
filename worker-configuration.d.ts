@@ -7,4 +7,5 @@ export interface Env {
   AUTH0_DEFAULT_REDIRECT_URI: string;
   AUTH0_AUDIENCE: string;
   SENTRY_DSN?: string;
+  AUTH_MODE?: string;
 }

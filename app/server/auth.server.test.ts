@@ -177,7 +177,7 @@ describe("getServerAuthContext", () => {
       user: null,
     });
     expect(result.headers?.get("Set-Cookie")).toMatch(
-      /^__session=;.*Expires=Thu, 01 Jan 1970/
+      /^__Host-bt_session=;.*Expires=Thu, 01 Jan 1970/
     );
     expect(consoleError).toHaveBeenCalled();
   });
@@ -190,7 +190,7 @@ describe("getServerAuthContext", () => {
     );
     expect(refreshToken).not.toHaveBeenCalled();
     expect(result.authContext.isAuthenticated).toBe(false);
-    expect(result.headers?.get("Set-Cookie")).toMatch(/^__session=;/);
+    expect(result.headers?.get("Set-Cookie")).toMatch(/^__Host-bt_session=;/);
   });
 
   it("shares one refresh across parallel calls in a request", async () => {

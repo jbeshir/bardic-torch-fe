@@ -1,7 +1,8 @@
-import type { Env } from "./worker-configuration";
+import type { AppEnv } from "./app/server/env.server";
 import type { AuthContextResult } from "./app/server/auth.server";
 
-type Cloudflare = { env: Env };
+/** The validated environment (see `app/server/env.server.ts`). */
+type Cloudflare = { env: AppEnv };
 
 /**
  * Per-request auth cache to ensure all loaders share the same auth result.

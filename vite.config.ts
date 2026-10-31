@@ -3,9 +3,10 @@ import {
   vitePlugin as remix,
   cloudflareDevProxyVitePlugin as remixCloudflareDevProxy,
 } from "@remix-run/dev";
-import type { AppLoadContext } from "@remix-run/cloudflare";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
+import { parseEnv } from "./app/server/env.server";
+import type { Env } from "./worker-configuration";
 
 const isTest = process.env.VITEST === "true";
 
@@ -17,12 +18,16 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     ...(!isTest
       ? [
-          remixCloudflareDevProxy({
-            getLoadContext: ({ context }) =>
-              ({
-                ...context,
-                authCache: {},
-              }) as unknown as AppLoadContext,
+          remixCloudflareDevProxy<Env, IncomingRequestCfProperties>({
+            getLoadContext: ({ context }) => {
+              const parsed = parseEnv(context.cloudflare.env);
+              if (!parsed.ok) {
+                throw new Error(
+                  `Invalid environment:\n${parsed.problems.join("\n")}`
+                );
+              }
+              return { cloudflare: { env: parsed.env }, authCache: {} };
+            },
           }),
           remix({
             // Co-located tests are never routes; the styleguide is left out

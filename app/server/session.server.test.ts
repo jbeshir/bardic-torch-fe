@@ -20,12 +20,31 @@ async function commit(secret = SECRET) {
 }
 
 describe("createSessionStorage", () => {
-  it("sets an httpOnly, SameSite=Lax cookie scoped to the whole site", async () => {
+  it("sets a __Host- cookie that is HttpOnly, Secure, SameSite=Lax and site-wide", async () => {
     const { setCookie } = await commit();
-    expect(setCookie).toMatch(/^__session=/);
-    expect(setCookie).toMatch(/; HttpOnly/);
-    expect(setCookie).toMatch(/; SameSite=Lax/);
-    expect(setCookie).toMatch(/; Path=\//);
+    const attributes = setCookie.split("; ").slice(1);
+    expect(setCookie).toMatch(/^__Host-bt_session=[^;]+;/);
+    expect(attributes).toContain("HttpOnly");
+    expect(attributes).toContain("Secure");
+    expect(attributes).toContain("SameSite=Lax");
+    expect(attributes).toContain("Path=/");
+    expect(attributes.some(attribute => /^Domain=/i.test(attribute))).toBe(
+      false
+    );
+  });
+
+  it("stays under 4 KB with realistic Auth0 tokens", async () => {
+    const storage = createSessionStorage(SECRET);
+    const session = await storage.getSession();
+    session.set("user", {
+      id: "google-oauth2|123456789012345678901",
+      email: "a.rather.long.email.address@example-domain.test",
+      accessToken: "a".repeat(1400),
+      refreshToken: "r".repeat(200),
+      expiresAt: Date.now(),
+    });
+    const setCookie = await storage.commitSession(session);
+    expect(new TextEncoder().encode(setCookie).byteLength).toBeLessThan(4096);
   });
 
   it("expires the cookie after the session lifetime", async () => {
@@ -55,7 +74,7 @@ describe("createSessionStorage", () => {
     const { storage, setCookie } = await commit();
     const session = await storage.getSession(setCookie.split(";")[0]);
     const destroyed = await storage.destroySession(session);
-    expect(destroyed).toMatch(/^__session=;/);
+    expect(destroyed).toMatch(/^__Host-bt_session=;/);
     expect(destroyed).toMatch(/Expires=Thu, 01 Jan 1970/);
   });
 });

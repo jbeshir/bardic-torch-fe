@@ -1,14 +1,16 @@
 import type { ActionFunctionArgs } from "@remix-run/cloudflare";
 import { redirect } from "@remix-run/cloudflare";
 import { getOrCreateSessionStorage } from "~/server/auth.server";
+import { assertSameOrigin } from "~/server/csrf.server";
 
 /**
  * Logout route - clears the session and redirects to Auth0 logout.
  *
- * Uses POST to prevent CSRF attacks - logout should be triggered
- * by a form submission, not a link click.
+ * POST only, from this site only: a link or a cross-site form cannot sign
+ * the user out.
  */
 export async function action({ request, context }: ActionFunctionArgs) {
+  assertSameOrigin(request);
   const env = context.cloudflare.env;
   const sessionStorage = getOrCreateSessionStorage(env);
   const session = await sessionStorage.getSession(

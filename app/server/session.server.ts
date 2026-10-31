@@ -32,13 +32,15 @@ type SessionFlashData = {
 export function createSessionStorage(secret: string) {
   return createCookieSessionStorage<SessionData, SessionFlashData>({
     cookie: {
-      name: "__session",
+      // `__Host-` makes browsers insist on Secure, Path=/ and no Domain, so
+      // no other subdomain can set or shadow it. Browsers treat localhost and
+      // 127.0.0.1 as secure, so this also works over plain HTTP in dev/e2e.
+      name: "__Host-bt_session",
       httpOnly: true,
       path: "/",
       sameSite: "lax",
       secrets: [secret],
-      // Allow HTTP in dev, Cloudflare enforces HTTPS in production
-      secure: false,
+      secure: true,
       // Session cookie duration - token expiry is checked separately
       maxAge: SESSION_MAX_AGE_SECONDS,
     },
