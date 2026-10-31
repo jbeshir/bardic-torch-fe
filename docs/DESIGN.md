@@ -157,7 +157,7 @@ The ratios were computed with the WCAG 2.x relative-luminance formula:
 - L = 0.2126 R + 0.7152 G + 0.0722 B.
 - ratio = (L1+0.05)/(L2+0.05).
 
-`scripts/contrast.mjs` (`npm run check:contrast`, part of `validate`) reads **this table**. For each row it computes both ratios from `app/styles/tokens.ts`. It fails if a ratio is below the row's minimum, or if the printed ratio no longer matches the tokens, so the table can't go stale. It also checks the accent/danger hue gap (§2.4). **All 103 pairs pass in both themes.** Before you use a new pair, add a row (with any ratio) and run `npm run check:contrast`; it prints the real values to copy in.
+`scripts/contrast.mjs` (`npm run check:contrast`, part of `validate`) reads **this table**. For each row it computes both ratios from `app/styles/tokens.ts`. It fails if a ratio is below the row's minimum, or if the printed ratio no longer matches the tokens, so the table can't go stale. It also checks the accent/danger hue gap (§2.4). **All 104 pairs pass in both themes.** Before you use a new pair, add a row (with any ratio) and run `npm run check:contrast`; it prints the real values to copy in.
 
 - The minimum is 4.5:1 for text.
 - The minimum is 3:1 for non-text UI: control boundaries, focus rings, icons that carry meaning, and badge edges.
@@ -209,6 +209,7 @@ The ratios were computed with the WCAG 2.x relative-luminance formula:
 | `link-hover` on `accent-subtle`      | 4.5:1 | 9.66:1  | 9.83:1  | chip hover                                           |
 | `link` on `accent-subtle`            | 4.5:1 | 6.98:1  | 7.38:1  | chip current                                         |
 | `fg` on `accent-subtle`              | 4.5:1 | 13.47:1 | 10.74:1 |                                                      |
+| `fg-muted` on `accent-subtle`        | 4.5:1 | 7.56:1  | 7.86:1  | chip facet prefix on hover and current               |
 | `danger-fg` on `canvas`              | 4.5:1 | 9.62:1  | 12.35:1 | field error text                                     |
 | `danger-fg` on `surface-raised`      | 4.5:1 | 10.73:1 | 10.55:1 |                                                      |
 | `success-fg` on `canvas`             | 4.5:1 | 9.16:1  | 13.20:1 |                                                      |
@@ -872,14 +873,16 @@ Read   Edit   History                         Last edited 3 Oct 2026
 
 **(a′) Single-view label: "Read"** (**FE1**, every FE1 page head). A `nav` landmark holding one self-link would add a landmark and a tab stop that do nothing. So pages with one view (every FE1 page) render the same visual shape without interaction: `<span aria-current="page">Read</span>` (with its icon) sitting on the title rule with the 3 px `accent` bar, and no `nav`, no list and no link. Screen readers read it as plain text.
 
-- The row is horizontally scrollable at 360 px if needed (`overflow-x-auto`, no visible scrollbar, edge fade masks). It never wraps.
+- The row never wraps. It is **not** a scroll container: a scroller would clip the tabs' `-mb-px` overlap onto the title rule, and the three views (Read, Edit, History, with icons) fit in 320 px. The page meta at the right of the rule wraps under the tabs instead.
+- Component: `ViewTabs` (`app/components/ui/Tabs.tsx`) renders the whole row, the rule included, with an optional `meta` slot; one view gives the a′ label, two or more the `nav`.
 
 **(b) In-page tablist** (**SG**: the styleguide's theme preview uses it; no FE1 page does):
 
 - `role="tablist"` with `aria-label`. Each `role="tab"` has `aria-selected`, `aria-controls` (ids from `useId()`), and roving `tabindex` (0 on the selected tab, −1 on the others). Each panel is `role="tabpanel"` with `tabindex="0"` and `aria-labelledby`.
 - **Keyboard:** Left and Right move _and activate_ (automatic activation, because panels are cheap). Home and End jump. Tab moves into the panel.
 - **Visual:** a segmented style to distinguish it from page tabs. The track is `bg-surface-sunken rounded-lg p-1`, each tab is `h-9 rounded-md body-sm`, and the selected tab is `bg-surface-raised text-fg shadow-1 border border-border`.
-- **No-JS:** render all panels stacked, each with its heading, and hide the tablist. The server renders it with `hidden` on the tablist until hydration flips `data-enhanced`.
+- **No-JS:** render all panels stacked, each in a `section` under its heading, and hide the tablist. The server renders it with `hidden` (attribute and class, since a display utility would beat the attribute) on the tablist until hydration flips `data-enhanced`; then the panels become `role="tabpanel"` and the headings go (the tab names the panel).
+- **Forced colours:** the selected tab (`aria-selected="true"`) gets the same `Highlight` outline as `aria-current` and `aria-pressed` (base.css).
 
 ### 6.10 Infobox
 
@@ -902,13 +905,13 @@ Read   Edit   History                         Last edited 3 Oct 2026
 
 **Tag: FE1** (both variants).
 
-- The card is an `<article>`, `bg-surface border border-border rounded-lg p-4 md:p-5 shadow-1`. The `shadow-1` token is a faint inner highlight in dark, so no `dark:` class is needed.
-- **Anatomy:** an optional eyebrow (`label-caps text-fg-subtle`), a title (h3), body (body-sm fg-muted, clamped to 3 lines with `line-clamp-3`), and a meta row (caption fg-subtle, badges).
+- The card is a `div` with a heading, `bg-surface border border-border rounded-lg p-4 md:p-5 shadow-1`. It is not an `<article>`: cards always sit in a list item (below), which with the heading already gives the structure, and an article role would only add an announcement per card. The `shadow-1` token is a faint inner highlight in dark, so no `dark:` class is needed.
+- **Anatomy:** an optional eyebrow (`label-caps text-fg-subtle`), a title (h3), body (body-sm fg-muted), and a meta row (caption fg-subtle, badges). The body is **not** clamped: `line-clamp` hides text under the WCAG 1.4.12 text-spacing override, and card copy is short by design (≤ 3 lines at rest).
 - **Variants:**
   - `static` (the home "Why" cards): no link, no hover and no focus ring. The title is a plain h3.
   - `link` (the help index): the title is the link, and the whole card is clickable (below).
-- **Lists of cards** are a `<ul role="list">` with each card inside an `<li>`. Cards are never loose `<article>`s inside a list without list semantics.
-- **Whole-card link** (`link` variant): the title `<a>` gets `after:absolute after:inset-0`, and the card is `relative`. Secondary links inside get `relative z-10`. Hover gives `border-border-strong` and a title underline. Focus-visible puts the ring on the card via `:has(a:focus-visible)` (outline on the article).
+- **Lists of cards** are a `<ul role="list">` with each card inside an `<li>` (`CardList`). Cards are never loose boxes without list semantics. ESLint's `jsx-a11y/no-redundant-roles` is configured to allow `role="list"` on `ul`/`ol` for this reason.
+- **Whole-card link** (`link` variant): the title `<a>` gets `after:absolute after:inset-0`, and the card is `relative`. Secondary links inside get `relative z-10`. Hover gives `border-border-strong` and a title underline. Focus-visible puts the ring around the card by drawing it on the title link's `::after` (which already covers the card, `after:rounded-lg`), and the link's own outline is removed; `:has()` on the card would need an arbitrary variant. A link card has no other links inside.
 - Cards don't nest.
 
 ### 6.12 Chip / TagList (category chips)

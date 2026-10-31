@@ -35,6 +35,15 @@ module.exports = {
         "plugin:react-hooks/recommended",
         "plugin:jsx-a11y/recommended",
       ],
+      rules: {
+        // Safari drops list semantics from unstyled lists, so DESIGN §6.11
+        // requires an explicit role="list" on them; the rule's default
+        // exceptions are kept.
+        "jsx-a11y/no-redundant-roles": [
+          "error",
+          { nav: ["navigation"], ul: ["list"], ol: ["list"] },
+        ],
+      },
       settings: {
         react: {
           version: "detect",
