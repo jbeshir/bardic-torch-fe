@@ -17,7 +17,7 @@
     "typecheck": "tsc",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:e2e": "playwright test",
+    "test:e2e": "node scripts/e2e.mjs",
     "validate": "npm run format:check && npm run lint && npm run typecheck && npm run check:api && npm run test:run && npm run check:prod-build",
     "gen:api": "node scripts/gen-api.mjs",
     "check:api": "node scripts/gen-api.mjs --check",
@@ -37,6 +37,7 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
     "@cloudflare/workers-types": "4.20250321.0",
     "@playwright/test": "1.61.1",
     "@remix-run/dev": "2.17.4",
