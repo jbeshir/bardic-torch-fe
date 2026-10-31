@@ -70,13 +70,13 @@ describe("PATCH /api/me", () => {
 
   it("normalises the name to NFC before sending it", async () => {
     upstream(echo);
-    await patch({ display_name: "Cerdić" });
-    expect(sent).toEqual([{ display_name: "Cerdić".normalize("NFC") }]);
+    await patch({ display_name: "Cerdic\u0301" });
+    expect(sent).toEqual([{ display_name: "Cerdi\u0107" }]);
   });
 
   it.each([
     ["exactly 64 characters", "x".repeat(64)],
-    ["64 characters outside the BMP", "𝄞".repeat(64)],
+    ["64 characters outside the BMP", "\u{1d11e}".repeat(64)],
     ["64 characters with surrounding spaces", ` ${"x".repeat(64)} `],
   ])("accepts %s", async (_label, name) => {
     upstream(echo);
@@ -99,12 +99,12 @@ describe("PATCH /api/me", () => {
     ],
     [
       "a right-to-left override (Cf)",
-      "Morwen‮",
+      "Morwen\u202e",
       "Remove control or invisible formatting characters from the display name.",
     ],
     [
       "a zero-width space (Cf)",
-      "Mor​wen",
+      "Mor\u200bwen",
       "Remove control or invisible formatting characters from the display name.",
     ],
     [

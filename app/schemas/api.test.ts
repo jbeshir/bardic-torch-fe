@@ -61,13 +61,15 @@ describe("limits read from the spec", () => {
 
 describe("updateMeFormSchema", () => {
   it("normalises to NFC and trims, as the API does", () => {
-    expect(updateMeFormSchema.parse({ display_name: "  Cerdić́  " })).toEqual({
-      display_name: "Cerdić́".normalize("NFC"),
+    expect(
+      updateMeFormSchema.parse({ display_name: "  Cerdic\u0301  " })
+    ).toEqual({
+      display_name: "Cerdi\u0107",
     });
   });
 
   it("counts characters, not UTF-16 code units", () => {
-    const astral = "𝄞".repeat(DISPLAY_NAME_MAX);
+    const astral = "\u{1d11e}".repeat(DISPLAY_NAME_MAX);
     expect(updateMeFormSchema.safeParse({ display_name: astral }).success).toBe(
       true
     );
@@ -76,7 +78,7 @@ describe("updateMeFormSchema", () => {
   it("counts the length after normalising", () => {
     // 64 letters each followed by a combining acute accent: 128 code points
     // before NFC, 64 after.
-    const decomposed = "é".repeat(DISPLAY_NAME_MAX);
+    const decomposed = "e\u0301".repeat(DISPLAY_NAME_MAX);
     expect(
       updateMeFormSchema.safeParse({ display_name: decomposed }).success
     ).toBe(true);
@@ -95,7 +97,7 @@ describe("updateMeFormSchema", () => {
       "Enter a display name of 64 characters or fewer.",
     ],
     [
-      { display_name: "Morwen‮" },
+      { display_name: "Morwen\u202e" },
       "Remove control or invisible formatting characters from the display name.",
     ],
     [
@@ -103,7 +105,7 @@ describe("updateMeFormSchema", () => {
       "Remove control or invisible formatting characters from the display name.",
     ],
     [
-      { display_name: "Mor­wen" },
+      { display_name: "Mor\u00adwen" },
       "Remove control or invisible formatting characters from the display name.",
     ],
   ])("rejects %j", (input, message) => {
