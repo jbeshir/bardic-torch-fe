@@ -210,6 +210,11 @@ type ButtonLinkProps = Look &
     to: string;
     /** For an absolute URL: where it goes, for the hidden suffix. */
     external?: ExternalKind;
+    /**
+     * Load the page from the server instead of navigating in the app: the
+     * no-JS "Try again", which must work when the app itself failed.
+     */
+    reloadDocument?: boolean;
   };
 
 /**
@@ -227,6 +232,7 @@ export function ButtonLink({
   children,
   to,
   external,
+  reloadDocument = false,
 }: ButtonLinkProps) {
   const className = classes({ variant, size, fullWidth }, label !== undefined);
   const kind = externalKind(to, external);
@@ -243,7 +249,8 @@ export function ButtonLink({
   return (
     <RemixLink
       to={to}
-      prefetch="intent"
+      prefetch={reloadDocument ? "none" : "intent"}
+      reloadDocument={reloadDocument}
       aria-label={label}
       className={className}
     >

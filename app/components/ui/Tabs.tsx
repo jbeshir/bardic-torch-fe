@@ -1,13 +1,13 @@
 import { Link as RemixLink } from "@remix-run/react";
 import type { Icon } from "@tabler/icons-react";
 import {
-  useEffect,
   useId,
   useRef,
   useState,
   type KeyboardEvent,
   type ReactNode,
 } from "react";
+import { useHydrated } from "~/hooks/useHydrated";
 
 type View = {
   readonly label: string;
@@ -104,12 +104,10 @@ export function Tabs({
   headingLevel?: 2 | 3;
 }) {
   const id = useId();
-  const [enhanced, setEnhanced] = useState(false);
+  const enhanced = useHydrated();
   const [selected, setSelected] = useState(defaultIndex);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const Heading = headingLevel === 2 ? "h2" : "h3";
-
-  useEffect(() => setEnhanced(true), []);
 
   function select(index: number) {
     setSelected(index);

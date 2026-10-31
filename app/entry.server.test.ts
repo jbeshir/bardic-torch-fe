@@ -153,6 +153,24 @@ describe("document responses", () => {
     );
   });
 
+  it("render the toast region once, after the page and empty", async () => {
+    const html = await (await get("/")).text();
+    const regions = [
+      ...html.matchAll(
+        /<section aria-label="Notifications"[\s\S]*?<\/section>/g
+      ),
+    ].map(([region]) => region);
+    expect(regions).toHaveLength(1);
+    const region = regions[0] ?? "";
+    expect(html.indexOf(region)).toBeGreaterThan(html.indexOf("</main>"));
+    expect(region).toMatch(
+      /<div role="status" aria-live="polite"[^>]*><\/div>/
+    );
+    expect(region).toMatch(
+      /<div role="alert" aria-live="assertive"[^>]*><\/div>/
+    );
+  });
+
   it("keep a route's no-store", async () => {
     const response = await get("/private");
     expect(response.headers.get("Cache-Control")).toBe("no-store");

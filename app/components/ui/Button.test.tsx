@@ -248,6 +248,31 @@ describe("ButtonLink", () => {
     expect(link.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
   });
 
+  it("can load the page from the server instead, without prefetching", async () => {
+    const router = await renderWithRouter(
+      <ButtonLink to="/help/licence?section=2" reloadDocument>
+        Try again
+      </ButtonLink>
+    );
+    const link = screen.getByRole("link", { name: "Try again" });
+    expect(link).toHaveAttribute("href", "/help/licence?section=2");
+    await act(() => userEvent.hover(link));
+    expect(document.querySelector('link[rel="prefetch"]')).toBeNull();
+    // The router handles clicks on app links (preventDefault); this one is
+    // left to the browser. Listening on the document runs after React's
+    // handler, and stops jsdom's unimplemented navigation.
+    let handledByApp: boolean | undefined;
+    const observe = (event: Event) => {
+      handledByApp = event.defaultPrevented;
+      event.preventDefault();
+    };
+    document.addEventListener("click", observe);
+    await act(() => userEvent.click(link));
+    document.removeEventListener("click", observe);
+    expect(handledByApp).toBe(false);
+    expect(router.state.location.pathname).toBe("/");
+  });
+
   it("renders the same token classes in both themes", async () => {
     await expectSameMarkupInBothThemes(() =>
       renderWithRouter(<ButtonLink to="/help">Help</ButtonLink>)

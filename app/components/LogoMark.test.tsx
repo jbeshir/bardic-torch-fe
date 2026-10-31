@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { LogoMark } from "./LogoMark";
+import { LogoMark, UnlitMark } from "./LogoMark";
 import { LOGO_MARK_PATHS } from "./logo-mark-paths";
 
 afterEach(() => {
@@ -77,5 +77,32 @@ describe("LogoMark", () => {
     ]) {
       expect(favicon).toContain(`d="${d}"`);
     }
+  });
+});
+
+describe("UnlitMark", () => {
+  it("is the same torch with its flame out: a border-strong outline, no fill", () => {
+    const { container } = render(<UnlitMark />);
+    const svg = container.querySelector("svg");
+    expect(svg).toHaveAttribute("aria-hidden", "true");
+    expect(svg).toHaveAttribute("focusable", "false");
+    expect(svg).toHaveClass("h-12", "w-12", "text-fg-subtle");
+    const [handle, flame] = [...container.querySelectorAll("path")];
+    expect(handle).toHaveAttribute("d", LOGO_MARK_PATHS.handle);
+    expect(handle).toHaveAttribute("fill", "currentColor");
+    expect(flame).toHaveAttribute("d", LOGO_MARK_PATHS.flame);
+    expect(flame).toHaveAttribute("fill", "none");
+    expect(flame).toHaveClass("stroke-border-strong");
+    expect(flame).toHaveAttribute("stroke-width", "1.5");
+    expect(flame).toHaveAttribute("vector-effect", "non-scaling-stroke");
+    expect(flame).not.toHaveAttribute("stroke-dasharray");
+    expect(container.querySelectorAll("path")).toHaveLength(2);
+  });
+
+  it("dashes the outline for error pages, at 64 px", () => {
+    const { container } = render(<UnlitMark size={64} dashed />);
+    expect(container.querySelector("svg")).toHaveClass("h-16", "w-16");
+    const flame = container.querySelectorAll("path")[1];
+    expect(flame).toHaveAttribute("stroke-dasharray");
   });
 });

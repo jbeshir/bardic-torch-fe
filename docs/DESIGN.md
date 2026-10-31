@@ -157,7 +157,7 @@ The ratios were computed with the WCAG 2.x relative-luminance formula:
 - L = 0.2126 R + 0.7152 G + 0.0722 B.
 - ratio = (L1+0.05)/(L2+0.05).
 
-`scripts/contrast.mjs` (`npm run check:contrast`, part of `validate`) reads **this table**. For each row it computes both ratios from `app/styles/tokens.ts`. It fails if a ratio is below the row's minimum, or if the printed ratio no longer matches the tokens, so the table can't go stale. It also checks the accent/danger hue gap (§2.4). **All 104 pairs pass in both themes.** Before you use a new pair, add a row (with any ratio) and run `npm run check:contrast`; it prints the real values to copy in.
+`scripts/contrast.mjs` (`npm run check:contrast`, part of `validate`) reads **this table**. For each row it computes both ratios from `app/styles/tokens.ts`. It fails if a ratio is below the row's minimum, or if the printed ratio no longer matches the tokens, so the table can't go stale. It also checks the accent/danger hue gap (§2.4). **All 106 pairs pass in both themes.** Before you use a new pair, add a row (with any ratio) and run `npm run check:contrast`; it prints the real values to copy in.
 
 - The minimum is 4.5:1 for text.
 - The minimum is 3:1 for non-text UI: control boundaries, focus rings, icons that carry meaning, and badge edges.
@@ -268,6 +268,8 @@ The ratios were computed with the WCAG 2.x relative-luminance formula:
 | `link` on `hero-glow`                | 4.5:1 | 7.02:1  | 7.57:1  |                                                      |
 | `border-strong` on `hero-glow`       | 3:1   | 3.58:1  | 3.12:1  | hero SearchBox edge                                  |
 | `accent` on `hero-glow`              | 3:1   | 5.06:1  | 7.21:1  | hero logo mark                                       |
+| `info-icon` on `surface-raised`      | 3:1   | 6.91:1  | 7.46:1  | toast icon and edge bar                              |
+| `success-icon` on `surface-raised`   | 3:1   | 6.19:1  | 7.71:1  | toast icon and edge bar                              |
 
 **Other non-text checks:**
 
@@ -800,6 +802,7 @@ Help text that explains format.       ← caption text-fg-muted, id="{id}-help"
 - **Error summary** (SG; FE1's forms have one field each): a danger Alert at the top of the form with the heading "Check {n} thing(s) below" and in-page links to each field.
   - **Without JS** (server re-render), nothing can move focus. The summary is rendered first in the form with `role="alert"`, so the page load announces it, and the first invalid field gets `autoFocus`.
   - **With JS,** focus moves to the summary (`tabindex="-1"`) after a failed submit.
+  - Component: `ErrorSummary` (`app/components/ui/ErrorSummary.tsx`), given `problems: [{fieldId, message}]`, where `fieldId` is the `id` the parent passed to each `Field` (from its own `useId()`). It takes focus when it mounts and whenever the problems change, not on every re-render. Each link is `href="#{fieldId}"`; with JS a click also focuses the control (an in-page link alone only scrolls).
 - FE1's Settings fields show their server error inline under the field (`aria-invalid`, `aria-describedby`), and focus moves to the field.
 - **With JS,** validate on blur after the first submit attempt, and never on every keystroke before the first submit.
 - There is a 4 px gap between label and help, 8 px between help and control, 6 px between control and error, and 20 px between fields.
@@ -957,6 +960,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
   - Alerts injected after an action use `role="status"` (info, success, pending) or `role="alert"` (danger, and warning when blocking). Mount the container empty first, so the announcement fires.
 - **No dismissible variant in FE1.** No FE1 alert needs dismissing, and dismissal without JS would need a route and a cookie the plan doesn't have. If a later milestone adds one, it must add the route, the cookie (with its flags tested) and the no-JS form to the plan first. **Danger and pending alerts are never dismissible.**
 - Links inside alerts use `text-{s}-fg underline`, and their focus ring sits on `{s}-bg` (pairs in §2.7).
+- **Components** (`app/components/ui/Alert.tsx`): `Alert` (`tone`, optional `title`, body, `actions`, `banner`, `icon`, `headingLevel`) and `AlertRegion` (an always-mounted `role="status"`, or `role="alert"` with `urgent`). Every tone has a distinct icon and a hidden tone name ("Warning: ") before the words.
 
 | Variant        | Icon                | Typical title                   |
 | -------------- | ------------------- | ------------------------------- |
@@ -976,6 +980,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
   - a body (body-sm fg-muted, ≤2 sentences)
   - one primary or secondary action
 - **Semantics:** a plain `<section aria-labelledby>` (id from `useId()`). It is not live. (FE2+: when it replaces search results, the results-count status region announces "No results".)
+- **Components:** `EmptyState` (`title`, body, `action`, `headingLevel` 3 by default) and its art `UnlitMark` (`app/components/LogoMark.tsx`): the handle and cresset `fill-current text-fg-subtle`, the flame `stroke-border-strong` with `vector-effect: non-scaling-stroke`, so the outline is exactly 1.5 px at every size.
 
 ### 6.16 ErrorState
 
@@ -984,6 +989,10 @@ Read   Edit   History                         Last edited 3 Oct 2026
 - **Inline / section** (a region failed to load): Alert danger, with a short title, the cause if known, and "Try again" (secondary `sm`, which revalidates via `useRevalidator`, or a reload link without JS).
 - **Page:** see §10.5. The illustration is the unlit torch (as above) with the outer flame dashed. The title is h1. When Sentry is configured, it includes a reference in `caption font-mono text-fg-subtle`, "Reference: 7f3a…": the Sentry `eventId` returned by `captureRemixErrorBoundaryError`. Without Sentry, the reference line is omitted. (The boundary can't read response headers, so there is no request id to show.) Actions: "Go to the home page" and "Try again".
 - Never show a stack trace, raw status text or JSON.
+- **Components** (`app/components/ui/ErrorState.tsx`):
+  - `TryAgain` (`variant`, `size`): with JS a Button that calls `useRevalidator().revalidate()` and is `loading` while the loaders run (a successful revalidation also clears an error boundary). In the server render and before hydration it is a `ButtonLink reloadDocument` to the current path and query, so it works without JS.
+  - `SectionError` (`title`, cause): the inline form, a danger Alert with a `sm` TryAgain.
+  - `ErrorState` (`title`, body, `reference`, `actions`, `art`): the page form. `art="broken"` (default) is the UnlitMark at 64 px with a dashed outline; `art="missing"` (404, §10.4) is the plain unlit torch at 64 px. When it mounts after hydration (an error during a client navigation), focus moves to the h1 (`tabindex="-1"`); a server-rendered error page leaves focus alone.
 
 ### 6.17 Spinner
 
@@ -1085,6 +1094,10 @@ Read   Edit   History                         Last edited 3 Oct 2026
   - Focus never moves to a toast. There is no keyboard shortcut. The region is a landmark, reachable by landmark navigation.
 - **Rules:** a toast never carries the _only_ copy of important information. A save also updates the page (the value shown, or an inline Alert). FE1 has no server-side flash messages: toasts are raised client-side from fetcher results.
 - **Motion:** enters with `translateY(8px)` → 0 plus a fade over 180 ms (`motion-safe:`), and exits as a fade over 120 ms. Under reduced motion it fades only.
+- **Components** (`app/components/ui/Toast.tsx`): `ToastProvider`, rendered once in `root.tsx` around the `Outlet`, holds the toasts and renders the region after the page; pages call `useToast()({ tone, message })`, with tone `success`, `info` or `danger`.
+  - The polite and assertive lists are separate live regions, so "newest nearest the edge" holds within each list, and the error list is the one nearest the edge (`flex-col-reverse` below sm, `flex-col` from sm, on the region and on both lists).
+  - When a fourth toast arrives, the oldest success or info toast goes first; an error is dropped only when all three are errors.
+  - The region is `pointer-events-none` and each toast `pointer-events-auto`, so the empty region never blocks clicks. Its icons and the edge bar use `{s}-icon` on `surface-raised` (rows in §2.7).
 
 ### 6.24 ThemeToggle
 
