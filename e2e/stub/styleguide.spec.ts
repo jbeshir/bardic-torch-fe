@@ -4,6 +4,7 @@ import { STYLEGUIDE_BLOCKS } from "../support/checkpoints";
 import { findCutOffControls } from "../support/cut-off";
 import { checkpoint } from "../support/journey";
 import {
+  expectFocusNotObscured,
   expectNoHorizontalOverflow,
   expectTargetSizesAtLeast24,
   settled,
@@ -87,6 +88,14 @@ test("renders every block in the order the checkpoints declare, and isn't indexe
   expect(ids).toEqual([...STYLEGUIDE_BLOCKS]);
   await expectNoHorizontalOverflow(page);
   await expectTargetSizesAtLeast24(page);
+});
+
+test("no focused control is hidden behind the header or the app bar", async ({
+  page,
+}) => {
+  test.slow();
+  await openStyleguide(page);
+  await expectFocusNotObscured(page);
 });
 
 for (const id of STYLEGUIDE_BLOCKS) {
