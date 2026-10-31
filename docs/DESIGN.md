@@ -1457,6 +1457,14 @@ The head is the h1 "Settings" with no tab row. Sections are separated by h2 plus
   - This works because the token blocks also match `[data-theme]` on any element (§2.1). An e2e assertion checks that a forced-light panel under an OS-dark page has a computed `--canvas` equal to the light value from `tokens.ts`.
   - Side-by-side renders both themes in two columns at ≥xl.
 - Each component block has an anchor (`/styleguide#button`), which the screenshot checkpoints target one by one.
+- **How it is built** (`app/routes/styleguide.tsx`, blocks in `app/styleguide/`):
+  - `Gallery` renders the blocks in `SPECIMENS` order. Each block is a `Specimen` (a section named by its h2, with a one-line summary and its DESIGN section) holding `Example`s, one per state or variant, each captioned.
+  - The preview tablist is the in-page `Tabs` (§6.9 b). Its four panels each hold a copy of the gallery: Current (no wrapper, so it follows the page theme), Light and Dark (a `data-theme` wrapper on `bg-canvas`), and Side by side (both wrappers in `xl:grid-cols-2`). Each copy prefixes its anchors (`light-button`, …), so ids stay unique; the unprefixed anchors are in Current, and they are the ones the checkpoints use. Without JS, all four panels are shown in turn.
+  - Colour swatches come from `COLOURS` in `tokens.ts`: the name, the resolved value in each theme and its contrast with `canvas` in each theme. The fill classes are written out in a `Record<ColourName, string>`, so a new token is a type error until it has a swatch.
+  - ErrorState's page headings are h1s on a real page, so the styleguide shows them inside a framed example; the page's own h1 is "Styleguide".
+  - The route sets `robots: noindex, nofollow`. `vite.config.ts` adds `**/styleguide*` to `ignoredRouteFiles` in production mode only, and `check:prod-build` fails unless `routes/styleguide` is absent from the production server build and client manifest and present in preview.
+  - `test/component-usage.test.ts` fails if anything exported from `app/components/` is imported only by tests. Components that no FE1 page uses yet (the SG ones) are used here.
+- **e2e** (`e2e/stub/styleguide.spec.ts`, the e2e build): one checkpoint per block (`checkpoint(page, id, { target: "section#id" })` scopes axe and the screenshot to the block), plus `dialog-open` and `drawer-open`. It also covers the real focus trap, Escape, the backdrop rules and focus return for Dialog and Drawer, the Drawer's placement below and above md, toast placement and timing, the forced-light/forced-dark preview, Windows forced colours (`emulateMedia({ forcedColors: "active" })`: button edges, checkbox `appearance: auto` with the drawn marks hidden, outlines on current, pressed and selected, the focus ring) and the WCAG 1.4.12 text-spacing override (nothing clipped, no horizontal overflow at 360 and 320 px).
 
 ---
 

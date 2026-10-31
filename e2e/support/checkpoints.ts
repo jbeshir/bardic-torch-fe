@@ -10,6 +10,39 @@ export type Phase = "prod" | "stub";
 export type Theme = "light" | "dark";
 type Viewport = { readonly width: number; readonly height: number };
 
+/**
+ * The styleguide's blocks, by anchor, in page order (app/styleguide/
+ * Gallery.tsx); styleguide.spec.ts checks the page against this list and
+ * takes one checkpoint per block.
+ */
+export const STYLEGUIDE_BLOCKS = [
+  "colour",
+  "type",
+  "spacing",
+  "logo",
+  "button",
+  "link",
+  "input",
+  "textarea",
+  "select",
+  "checkbox",
+  "error-summary",
+  "tabs",
+  "infobox",
+  "card",
+  "tag-list",
+  "alert",
+  "empty-state",
+  "error-state",
+  "loading",
+  "breadcrumbs",
+  "pagination",
+  "drawer",
+  "dialog",
+  "toast",
+  "theme-toggle",
+] as const;
+
 export const CHECKPOINTS: Readonly<
   Record<Phase, Readonly<Record<string, readonly string[]>>>
 > = {
@@ -17,7 +50,9 @@ export const CHECKPOINTS: Readonly<
     landing: ["home"],
     theme: ["dark-choice"],
   },
-  stub: {},
+  stub: {
+    styleguide: [...STYLEGUIDE_BLOCKS, "dialog-open", "drawer-open"],
+  },
 };
 
 export const THEMES: readonly Theme[] = ["light", "dark"];

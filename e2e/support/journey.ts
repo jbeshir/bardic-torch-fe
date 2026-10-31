@@ -62,10 +62,15 @@ function setThemeAttribute(theme: string | null) {
     ?.setAttribute("content", theme ?? "light dark");
 }
 
-async function expectNoAxeViolations(page: Page, label: string) {
-  const { violations } = await new AxeBuilder({ page })
-    .withTags(AXE_TAGS)
-    .analyze();
+async function expectNoAxeViolations(
+  page: Page,
+  label: string,
+  target: string | undefined
+) {
+  const builder = new AxeBuilder({ page }).withTags(AXE_TAGS);
+  const { violations } = await (
+    target ? builder.include(target) : builder
+  ).analyze();
   const summary = violations.map(
     ({ id, impact, help, nodes }) =>
       `${id} (${impact ?? "unknown"}): ${help}\n` +
@@ -77,10 +82,16 @@ async function expectNoAxeViolations(page: Page, label: string) {
 /**
  * A visual and accessibility checkpoint of the current page: zero axe
  * violations in light and dark at 360 and 1280 px wide, and a full-page
- * screenshot per theme and viewport in e2e/screenshots. The name must be
- * declared for this journey in support/checkpoints.ts.
+ * screenshot per theme and viewport in e2e/screenshots. With `target` (a
+ * CSS selector, e.g. one styleguide block or an open dialog), axe and the
+ * screenshot cover that element only. The name must be declared for this
+ * journey in support/checkpoints.ts.
  */
-export async function checkpoint(page: Page, name: string): Promise<void> {
+export async function checkpoint(
+  page: Page,
+  name: string,
+  { target }: { readonly target?: string } = {}
+): Promise<void> {
   const info = test.info();
   const phase = info.project.name as Phase;
   const journey = path.basename(info.file, ".spec.ts");
@@ -99,16 +110,25 @@ export async function checkpoint(page: Page, name: string): Promise<void> {
       for (const viewport of VIEWPORTS) {
         await page.setViewportSize(viewport);
         if (AXE_WIDTHS.includes(viewport.width)) {
-          await expectNoAxeViolations(page, `${theme} at ${viewport.width}px`);
+          await expectNoAxeViolations(
+            page,
+            `${theme} at ${viewport.width}px`,
+            target
+          );
         }
-        await page.screenshot({
-          path: path.join(
-            SCREENSHOT_DIR,
-            screenshotName(journey, name, theme, viewport)
-          ),
-          fullPage: true,
-          animations: "disabled",
-        });
+        const file = path.join(
+          SCREENSHOT_DIR,
+          screenshotName(journey, name, theme, viewport)
+        );
+        await (target
+          ? page
+              .locator(target)
+              .screenshot({ path: file, animations: "disabled" })
+          : page.screenshot({
+              path: file,
+              fullPage: true,
+              animations: "disabled",
+            }));
       }
     }
     if (original) await restoreTheme(page, original);
