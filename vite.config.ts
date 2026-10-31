@@ -43,7 +43,10 @@ export default defineConfig(({ mode }) => ({
   ],
   test: {
     globals: true,
-    environment: "jsdom",
+    // Component tests (*.test.tsx) need a DOM; everything else runs in node,
+    // like the Workers runtime it targets.
+    environment: "node",
+    environmentMatchGlobs: [["**/*.test.tsx", "jsdom"]],
     setupFiles: ["./app/test/setup.ts"],
     include: [
       "app/**/*.{test,spec}.{ts,tsx}",
