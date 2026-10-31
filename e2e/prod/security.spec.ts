@@ -44,3 +44,31 @@ test("every load gets a fresh nonce", async ({ request }) => {
     )?.[1];
   expect(await nonceOf()).not.toBe(await nonceOf());
 });
+
+test("the 404 page in the shell carries the nonce CSP and hydrates without violations", async ({
+  page,
+}) => {
+  const violations: string[] = [];
+  page.on("console", message => {
+    if (message.text().includes("Content Security Policy")) {
+      violations.push(message.text());
+    }
+  });
+  const response = await page.goto("/no-such-page");
+  expect(response?.status()).toBe(404);
+  expect(await response?.headerValue("content-security-policy")).toMatch(
+    /'nonce-([^']+)'/
+  );
+  await expect
+    .poll(() => page.evaluate(() => "__remixRouter" in window))
+    .toBe(true);
+  // Opening the drawer and the search sheet adds no inline styles either.
+  await page.setViewportSize({ width: 360, height: 800 });
+  const bar = page.getByRole("banner").locator(".fixed.bottom-0");
+  await bar.getByRole("button", { name: "Menu" }).click();
+  await expect(page.getByRole("dialog", { name: "Site menu" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await bar.getByRole("button", { name: "Search" }).click();
+  await expect(bar.getByRole("searchbox")).toBeFocused();
+  expect(violations).toEqual([]);
+});

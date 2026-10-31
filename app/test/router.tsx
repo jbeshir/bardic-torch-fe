@@ -47,9 +47,15 @@ const REMIX_CONTEXT: RemixContextValue = {
  * after a click.
  */
 export async function renderWithRouter(ui: ReactElement, url = "/") {
-  const router = createMemoryRouter([{ id: "root", path: "*", element: ui }], {
-    initialEntries: [url],
-  });
+  return renderRoutes([{ id: "root", path: "*", element: ui }], url);
+}
+
+/** Like renderWithRouter, for a route tree of your own (loaders, errors). */
+export async function renderRoutes(
+  routes: Parameters<typeof createMemoryRouter>[0],
+  url = "/"
+) {
+  const router = createMemoryRouter(routes, { initialEntries: [url] });
   await act(async () => {
     render(
       <UNSAFE_RemixContext.Provider value={REMIX_CONTEXT}>

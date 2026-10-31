@@ -230,4 +230,26 @@ test.describe("theme toggle without JS", () => {
     expect(await themeCookie(page)).toBeUndefined();
     await expectRenderedTheme(page, "light");
   });
+
+  test("below md the choice is in the site menu after the content, and comes back there", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 360, height: 800 });
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.goto("/help");
+    const banner = page.getByRole("banner");
+    await expect(banner.getByRole("group", { name: "Theme" })).toBeHidden();
+    const nav = page.getByRole("navigation", { name: "Site" });
+    await Promise.all([
+      page.waitForURL("/help"),
+      nav.getByRole("button", { name: "Dark" }).click(),
+    ]);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await expect(nav.getByRole("button", { name: "Dark" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    await nav.getByRole("button", { name: "System" }).click();
+    await expect(page.locator("html")).not.toHaveAttribute("data-theme");
+  });
 });

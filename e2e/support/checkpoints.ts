@@ -41,6 +41,11 @@ export const STYLEGUIDE_BLOCKS = [
   "dialog",
   "toast",
   "theme-toggle",
+  "account-menu",
+  "search-box",
+  "table-of-contents",
+  "help-links",
+  "page-template",
 ] as const;
 
 export const CHECKPOINTS: Readonly<
@@ -49,9 +54,12 @@ export const CHECKPOINTS: Readonly<
   prod: {
     landing: ["home"],
     theme: ["dark-choice"],
+    errors: ["not-found"],
   },
   stub: {
     styleguide: [...STYLEGUIDE_BLOCKS, "dialog-open", "drawer-open"],
+    navigation: ["account-open"],
+    errors: ["profile-unavailable"],
   },
 };
 

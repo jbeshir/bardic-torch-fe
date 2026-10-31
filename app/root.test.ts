@@ -3,12 +3,37 @@ import { sessionCookie, sessionUser } from "~/test/context";
 import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
 import { shouldRevalidate } from "./root";
+import { json } from "@remix-run/cloudflare";
 import * as indexModule from "./routes/_index";
+import * as notFoundModule from "./routes/$";
 
 const fixtures = serveFixtureApi();
+const failing = {
+  loader: () => {
+    throw new Error("The page broke");
+  },
+  default: () => null,
+};
+const gone = {
+  loader: () => {
+    throw json(null, { status: 404 });
+  },
+  default: () => null,
+};
+
 const get = serveApp([
   { id: "routes/_index", index: true, module: indexModule, hasLoader: false },
+  { id: "routes/broken", path: "broken", module: failing, hasLoader: true },
+  { id: "routes/gone", path: "gone/:slug", module: gone, hasLoader: true },
+  { id: "routes/$", path: "*", module: notFoundModule, hasLoader: true },
 ]);
+
+/** The HelpLinks list in a page. */
+function helpLinks(html: string): string {
+  return (
+    /<ul role="list" aria-label="Help"[\s\S]*?<\/ul>/.exec(html)?.[0] ?? ""
+  );
+}
 
 const contributor = () =>
   sessionCookie(sessionUser({ accessToken: "fixture:contributor" }));
@@ -37,8 +62,8 @@ describe("root loader", () => {
   it("still renders the page when /v1/me fails, with the account control saying so", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     fixtures.state().failures.set("contributor:getMe", {
-      status: 503,
-      code: "unavailable",
+      status: 500,
+      code: "internal",
       remaining: 2,
     });
     const { response, data } = await rootData(await contributor());
@@ -134,5 +159,38 @@ describe("root shouldRevalidate", () => {
         args({ nextUrl: url("/help"), defaultShouldRevalidate: false })
       )
     ).toBe(false);
+  });
+});
+
+describe("root error boundary", () => {
+  it("shows a standalone error page for anything unexpected, with a 500", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const response = await get("/broken");
+    expect(response.status).toBe(500);
+    const html = await response.text();
+    expect(html).toContain("Something went wrong");
+    expect(html).toContain("Try again");
+    expect(html).not.toContain("The page broke");
+    expect(html).not.toContain('id="site-nav"');
+    expect(html).toContain('<main id="content"');
+    expect(html).toMatch(/<a href="\/"[^>]*>.*Bardic/);
+  });
+
+  it("shows the 404 body for a 404 thrown by a loader", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const response = await get("/gone/old-page");
+    expect(response.status).toBe(404);
+    const html = await response.text();
+    expect(html).toContain("We couldn&#x27;t find that page");
+    expect(html).toContain("index.php?search=old+page");
+  });
+
+  it("has the same help links, in the same order, as every other page (WCAG 3.2.6)", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const home = helpLinks(await (await get("/")).text());
+    expect(home).toContain("Licence &amp; attribution");
+    for (const path of ["/no-such-page", "/broken", "/gone/x"]) {
+      expect(helpLinks(await (await get(path)).text()), path).toBe(home);
+    }
   });
 });

@@ -153,8 +153,27 @@ describe("/styleguide", () => {
       panel.getAllByRole("navigation", { name: "Pagination" })
     ).toHaveLength(3);
     expect(
-      panel.getAllByRole("complementary", { name: "At a glance" })
+      within(panel.getByRole("region", { name: "Infobox" })).getAllByRole(
+        "complementary",
+        { name: "At a glance" }
+      )
     ).toHaveLength(3);
+    const accounts = within(panel.getByRole("region", { name: "AccountMenu" }));
+    expect(accounts.getByRole("link", { name: "Log in" })).toBeVisible();
+    expect(
+      accounts.getByText("Account: Morwen of the Marches")
+    ).toBeInTheDocument();
+    expect(
+      accounts.getByText("We couldn't load your profile.")
+    ).toBeInTheDocument();
+    expect(accounts.getByText(/Your account is blocked/)).toBeInTheDocument();
+    const page = within(panel.getByRole("region", { name: "Wiki page" }));
+    expect(
+      page.getByRole("navigation", { name: "Contents" })
+    ).toBeInTheDocument();
+    expect(
+      page.getByRole("navigation", { name: "Categories" })
+    ).toBeInTheDocument();
     expect(panel.getByText("Reference: 7f3a2c9e41d04b8a")).toBeVisible();
   });
 });

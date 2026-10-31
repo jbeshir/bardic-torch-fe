@@ -1187,6 +1187,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
 - Shown when a page has **≥4 h2s**. It is `<nav aria-labelledby={titleId}>`, with the title "Contents" in `label-caps`. Items are an `<ol>` of h2s and h3s, each with its number (e.g. "2.1") in `text-fg-subtle tabular-nums`. Each item link is `inline-flex min-h-6 items-center` (WCAG 2.5.8).
 - **<xl, and in FE1 at every width:** inline after the intro paragraph, as `<details open>` on md+ and `<details>` (closed) on mobile, with `bg-surface-sunken rounded-lg p-4`.
 - **≥xl with no infobox (FE2+):** sticky in the right rail (`top: calc(var(--header-h) + 24px)`, width 14rem). The current section is highlighted with an IntersectionObserver: `aria-current="true"`, `text-accent-text font-semibold` and an inset left bar. With no JS, there is no highlight.
+- **Built as (FE1):** `TableOfContents({ entries: [{ id, label, children? }] })`. It server-renders `<details open>` (so it is open without JS) and folds itself after hydration below md. `WikiPage` shows it after `intro` when `contents` has four or more entries.
 - Headings get `id`s (and `scroll-margin-top`, §3.3). FE2+ adds a hover "§" anchor link, 24 × 24 px, `aria-label="Link to this section"`.
 
 ---
@@ -1388,6 +1389,7 @@ Every page uses the app shell (header, bottom bar or sidebar, drawer, sheet, foo
 - **Optional infobox "At a glance":** a 3–6 row `dl` summarising the page. For example, Conservation status lists the five statuses, each a link to its section. The Bard preference checklist shows "What it is / Who it's for / Time needed".
 - **TOC** when there are ≥4 h2s (§6.27).
 - Prose in `.prose-bt`.
+- **Template (FE1):** `WikiPage` (`app/components/WikiPage.tsx`): `title`, `breadcrumbs?` (Breadcrumbs props), `meta?` (the tab row's right end), `infobox?`, `intro?`, `contents?` (TOC entries), `categories?` (TagList tags; the chip row is `<nav>` labelled by its "Categories" h2), `licence?` (the footer meta line) and the prose as children. The Read label's `to` is the current path.
 - Category chips at the bottom (e.g. "Help", "Conservation"). In FE1 these are internal links to `/help`, or external to the old wiki category ↗.
 - **Footer meta line** (caption fg-subtle): "This page is available under CC BY-SA 4.0. Adapted from 'Conservation Status' on the original Bardic Torch wiki by its contributors."
 - **Content pages in FE1:** `contributing`, `faq-for-bards`, `bard-preference-checklist`, `conservation-status`, `licence`, plus an index at `/help`. The index is a `ul role="list"` of `link` Cards.
@@ -1442,6 +1444,7 @@ The head is the h1 "Settings" with no tab row. Sections are separated by h2 plus
 - **Actions:** [Go to the home page] (primary) and the link "Look on the original wiki ↗". The link goes to `https://bardictorch.miraheze.org/w/index.php?search={last path segment}` (URL-encoded, built from `navigation.ts`). There is no internal Search button: FE1 has no search page.
 - **Illustration:** the unlit torch (EmptyState art), at 64 px.
 - It returns HTTP 404 and has no tab row. The footer HelpLinks are present, as on every page.
+- **Built as (FE1):** `app/routes/$.tsx` (loader status 404) renders `NotFound` (`app/components/ErrorPages.tsx`) inside the shell. A 404 thrown by any loader reaches the root error boundary, which shows the same body on the standalone page (§10.5). The wiki search term is the last path segment, decoded, with `_` and `-` read as spaces.
 
 ### 10.5 Error page (500 / unexpected)
 
@@ -1451,6 +1454,7 @@ The head is the h1 "Settings" with no tab row. Sections are separated by h2 plus
 - **Body:** "That's on us, not you. Try again in a moment. If it keeps happening, let us know and include the reference below." (Without Sentry there is no reference, so the last clause is dropped.)
 - The reference is the Sentry `eventId` in mono (§6.16). Actions: [Try again] (reload, primary) and [Go to the home page]. "Let us know" is the HelpLinks Contact link, not a separate one.
 - **503 (API down, FE2+):** h1 "Bardic Torch is resting", body "We're doing some upkeep or the catalogue is briefly unreachable. Please try again in a few minutes."
+- **Built as (FE1):** `ServerError` in `app/components/ErrorPages.tsx`. The root `ErrorBoundary` reports the error with `captureRemixErrorBoundaryError` after mounting and shows the returned event id only when `Sentry.isInitialized()`; 404s are not reported.
 - It is rendered within the shell. If the shell itself can't render (the root boundary), it uses a minimal standalone page with the same tokens and stylesheet, the Wordmark, and the **same HelpLinks block** (Contact · Help · Licence & attribution) as every other page (WCAG 3.2.6).
 
 ### 10.6 Styleguide (`/styleguide`, not linked from nav, `noindex`)

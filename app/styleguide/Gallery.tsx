@@ -11,6 +11,13 @@ import {
 import { Colours, Logo, SpacingAndShape, TypeScale } from "./Foundations";
 import { Crumbs, Pages, PageTabs } from "./Navigation";
 import { Dialogs, Drawers, Theme } from "./Overlays";
+import {
+  AccountMenus,
+  Contents,
+  Help,
+  PageTemplate,
+  SearchBoxes,
+} from "./Shell";
 import { AnchorPrefix } from "./Specimen";
 
 /**
@@ -47,6 +54,11 @@ export const SPECIMENS = [
   { id: "dialog", title: "Dialog", Block: Dialogs },
   { id: "toast", title: "Toast", Block: Toasts },
   { id: "theme-toggle", title: "ThemeToggle", Block: Theme },
+  { id: "account-menu", title: "AccountMenu", Block: AccountMenus },
+  { id: "search-box", title: "SearchBox", Block: SearchBoxes },
+  { id: "table-of-contents", title: "Table of contents", Block: Contents },
+  { id: "help-links", title: "HelpLinks", Block: Help },
+  { id: "page-template", title: "Wiki page", Block: PageTemplate },
 ] as const;
 
 /**

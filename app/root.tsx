@@ -5,19 +5,22 @@ import {
   Scripts,
   ScrollRestoration,
   useLoaderData,
+  useLocation,
   useRouteError,
   isRouteErrorResponse,
-  Link,
 } from "@remix-run/react";
 import frauncesLatin from "@fontsource-variable/fraunces/files/fraunces-latin-opsz-normal.woff2?url";
 import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/cloudflare";
 import type { ShouldRevalidateFunction } from "@remix-run/react";
 import { json } from "@remix-run/cloudflare";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { loadAccount } from "~/server/account.server";
 import { SentryProvider } from "~/contexts/SentryContext";
 import { useNonce } from "~/contexts/NonceContext";
-import { captureRemixErrorBoundaryError } from "@sentry/remix";
+import * as Sentry from "@sentry/remix";
+import { NotFound, ServerError } from "~/components/ErrorPages";
+import { HelpLinks } from "~/components/HelpLinks";
+import { Wordmark } from "~/components/Wordmark";
 import stylesheet from "~/styles/app.css?url";
 import { THEME_COLOURS } from "~/styles/theme-colour.gen";
 import { readTheme } from "~/server/theme.server";
@@ -157,32 +160,52 @@ export default function App() {
 }
 
 /**
- * Global error boundary for unhandled errors.
- * Rendered inside `Layout`, so only the inner content is returned.
+ * What the root's error boundary shows when nothing else can (DESIGN
+ * §10.5): the page the shell itself would have failed on. A minimal
+ * standalone page with the same stylesheet, the Wordmark home link, the
+ * error body and the same HelpLinks as every page. A 404 thrown by a
+ * loader gets the 404 body; anything else is reported to Sentry (when it
+ * is set up) and shows its event id as the reference.
  */
 export function ErrorBoundary() {
   const error = useRouteError();
+  const { pathname } = useLocation();
+  const [reference, setReference] = useState<string>();
+  const notFound = isRouteErrorResponse(error) && error.status === 404;
 
-  captureRemixErrorBoundaryError(error);
-
-  let title = "Something went wrong";
-  let message = "An unexpected error occurred. Please try again later.";
-
-  if (isRouteErrorResponse(error)) {
-    if (error.status === 404) {
-      title = "Page not found";
-      message = "The page you’re looking for doesn’t exist.";
-    } else {
-      title = `Error ${error.status}`;
-      message = error.statusText || message;
-    }
-  }
+  useEffect(() => {
+    if (notFound) return;
+    const eventId = Sentry.captureRemixErrorBoundaryError(error);
+    setReference(Sentry.isInitialized() ? eventId : undefined);
+  }, [error, notFound]);
 
   return (
-    <main>
-      <h1>{title}</h1>
-      <p>{message}</p>
-      <Link to="/">Back to home</Link>
-    </main>
+    <div className="flex min-h-dvh flex-col">
+      <header className="border-b border-border bg-canvas">
+        <div className="mx-auto flex h-header max-w-shell items-center px-4 md:px-6">
+          <a
+            href="/"
+            className="inline-flex min-h-11 items-center rounded-md px-1"
+          >
+            <Wordmark />
+          </a>
+        </div>
+      </header>
+      <main
+        id="content"
+        className="mx-auto w-full max-w-shell flex-1 bg-surface px-4 md:px-6"
+      >
+        {notFound ? (
+          <NotFound pathname={pathname} />
+        ) : (
+          <ServerError reference={reference} />
+        )}
+      </main>
+      <footer className="border-t border-border bg-canvas py-8">
+        <div className="mx-auto max-w-shell px-4 md:px-6">
+          <HelpLinks />
+        </div>
+      </footer>
+    </div>
   );
 }

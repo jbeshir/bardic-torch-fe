@@ -6,6 +6,18 @@ import { afterEach, beforeEach, vi } from "vitest";
 // auth and opt in with `vi.stubGlobal("__STUB_AUTH__", true)`.
 beforeEach(() => {
   vi.stubGlobal("__STUB_AUTH__", false);
+  // jsdom has no matchMedia; components see a narrow screen that never
+  // changes, unless a test stubs its own.
+  if (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia !== "function"
+  ) {
+    vi.stubGlobal("matchMedia", () => ({
+      matches: false,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+  }
 });
 
 afterEach(() => {

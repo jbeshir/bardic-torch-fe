@@ -1,18 +1,6 @@
-import { expect, type APIRequestContext } from "@playwright/test";
-import { FIXTURE_API_URL } from "../support/fixture-api";
+import { expect } from "@playwright/test";
+import { createFixtureUser } from "../support/fixture-api";
 import { test } from "../support/test";
-
-/** Create an isolated fixture user, so specs never share state. */
-async function createFixtureUser(
-  request: APIRequestContext,
-  options: Record<string, unknown> = {}
-): Promise<string> {
-  const response = await request.post(`${FIXTURE_API_URL}/__fixtures/users`, {
-    data: options,
-  });
-  expect(response.status()).toBe(201);
-  return ((await response.json()) as { id: string }).id;
-}
 
 const FORM = "application/x-www-form-urlencoded";
 

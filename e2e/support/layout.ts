@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 /** Layout and WCAG 2.2 checks for journeys to run on their pages. */
 
@@ -158,4 +158,26 @@ export async function expectFocusNotObscured(page: Page): Promise<void> {
       problems.push(`${result.label} is obscured when focused`);
   }
   expect(problems, "focus obscured").toEqual([]);
+}
+
+/**
+ * Primary controls are at least 44 × 44 px (DESIGN principle 7, WCAG 2.5.5
+ * as the design's own bar): each of `controls` must be visible and that big
+ * at the current viewport.
+ */
+export async function expectPrimaryTargetsAtLeast44(
+  controls: readonly Locator[]
+): Promise<void> {
+  const MIN = 44;
+  const failures: string[] = [];
+  for (const control of controls) {
+    await expect(control).toBeVisible();
+    const box = await control.boundingBox();
+    const width = Math.round(box?.width ?? 0);
+    const height = Math.round(box?.height ?? 0);
+    if (width < MIN || height < MIN) {
+      failures.push(`${control.toString()} is ${width}×${height}`);
+    }
+  }
+  expect(failures, "primary controls smaller than 44×44").toEqual([]);
 }

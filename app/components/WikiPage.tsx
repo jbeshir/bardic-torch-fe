@@ -1,0 +1,89 @@
+import { useLocation } from "@remix-run/react";
+import { IconBook2 } from "@tabler/icons-react";
+import { useId, type ComponentProps, type ReactNode } from "react";
+import { Breadcrumbs } from "~/components/ui/Breadcrumbs";
+import { ViewTabs } from "~/components/ui/Tabs";
+import { TagList } from "~/components/ui/TagList";
+import { TableOfContents, type TocEntry } from "./TableOfContents";
+
+/**
+ * The wiki page template (DESIGN §5.4–5.6, §10.2), inside the shell's main
+ * sheet: breadcrumbs, the h1, the title rule with the non-interactive
+ * "Read" label (every FE1 page has one view) and its meta, then the
+ * infobox (first, so it floats right from md and stacks above the prose
+ * below), the intro, the contents, the prose, the category chips and the
+ * licence line.
+ */
+export function WikiPage({
+  title,
+  breadcrumbs,
+  meta,
+  infobox,
+  intro,
+  contents,
+  categories,
+  licence,
+  children,
+}: {
+  title: string;
+  breadcrumbs?: ComponentProps<typeof Breadcrumbs>;
+  /** At the right end of the title rule: e.g. the source link. */
+  meta?: ReactNode;
+  /** An Infobox. */
+  infobox?: ReactNode;
+  /** The prose before the contents. */
+  intro?: ReactNode;
+  /** The page's h2s (and h3s); shown as the contents from four h2s. */
+  contents?: readonly TocEntry[];
+  categories?: ComponentProps<typeof TagList>["tags"];
+  /** The page's licence and credit line, at the very end. */
+  licence?: ReactNode;
+  children: ReactNode;
+}) {
+  const { pathname } = useLocation();
+  const categoriesId = useId();
+  return (
+    <>
+      {breadcrumbs ? (
+        <div className="mb-2">
+          <Breadcrumbs {...breadcrumbs} />
+        </div>
+      ) : null}
+      <h1 className="text-h1 text-fg">{title}</h1>
+      <div className="mt-4">
+        <ViewTabs
+          views={[{ label: "Read", to: pathname, icon: IconBook2 }]}
+          current={pathname}
+          meta={meta}
+        />
+      </div>
+      <div className="mt-6 flow-root">
+        {infobox}
+        <div className="prose-bt">
+          {intro}
+          {contents && contents.length >= 4 ? (
+            <TableOfContents entries={contents} />
+          ) : null}
+          {children}
+        </div>
+      </div>
+      {categories ? (
+        <nav
+          aria-labelledby={categoriesId}
+          className="mt-10 border-t border-border pt-6"
+        >
+          <h2
+            id={categoriesId}
+            className="mb-3 font-sans text-label-caps uppercase text-fg-subtle"
+          >
+            Categories
+          </h2>
+          <TagList tags={categories} />
+        </nav>
+      ) : null}
+      {licence ? (
+        <p className="mt-6 text-caption text-fg-subtle">{licence}</p>
+      ) : null}
+    </>
+  );
+}
