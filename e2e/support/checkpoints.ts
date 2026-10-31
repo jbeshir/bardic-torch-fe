@@ -15,6 +15,7 @@ export const CHECKPOINTS: Readonly<
 > = {
   prod: {
     landing: ["home"],
+    theme: ["dark-choice"],
   },
   stub: {},
 };

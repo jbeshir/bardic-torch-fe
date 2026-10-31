@@ -1,5 +1,5 @@
 import { AxeBuilder } from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Cookie, type Page } from "@playwright/test";
 import path from "node:path";
 import {
   AXE_WIDTHS,
@@ -13,13 +13,53 @@ import {
 } from "./checkpoints";
 
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
+const THEME_COOKIE = "theme";
+
+type ThemeState = {
+  readonly cookie: Cookie | undefined;
+  readonly attribute: string | null;
+};
 
 /**
- * Show the page in `theme`. The one place journeys change theme, so it can
- * move from the OS preference to the site's own setting in one edit.
+ * Show the page in `theme` the way the site does for a reader who chose it:
+ * the `theme` cookie (so later navigations render it server-side), the
+ * `data-theme` attribute on <html> (what the toggle sets straight away,
+ * without a reload that would lose the page's state) and a matching OS
+ * preference, so nothing disagrees. Returns what to restore afterwards.
  */
-async function applyTheme(page: Page, theme: Theme): Promise<void> {
+async function applyTheme(page: Page, theme: Theme): Promise<ThemeState> {
+  const context = page.context();
+  const url = new URL(page.url()).origin;
+  const before: ThemeState = {
+    cookie: (await context.cookies(url)).find(
+      ({ name }) => name === THEME_COOKIE
+    ),
+    attribute: await page.evaluate(() =>
+      document.documentElement.getAttribute("data-theme")
+    ),
+  };
+  await context.addCookies([{ name: THEME_COOKIE, value: theme, url }]);
   await page.emulateMedia({ colorScheme: theme });
+  await page.evaluate(setThemeAttribute, theme);
+  return before;
+}
+
+async function restoreTheme(page: Page, state: ThemeState): Promise<void> {
+  const context = page.context();
+  await context.clearCookies({ name: THEME_COOKIE });
+  if (state.cookie) await context.addCookies([state.cookie]);
+  await page.evaluate(setThemeAttribute, state.attribute);
+  await page.emulateMedia({ colorScheme: null });
+}
+
+/** Runs in the page: show `theme`, or follow the device for null. */
+function setThemeAttribute(theme: string | null) {
+  const root = document.documentElement;
+  if (theme === null) root.removeAttribute("data-theme");
+  else root.setAttribute("data-theme", theme);
+  document
+    .querySelector('meta[name="color-scheme"]')
+    ?.setAttribute("content", theme ?? "light dark");
 }
 
 async function expectNoAxeViolations(page: Page, label: string) {
@@ -52,8 +92,10 @@ export async function checkpoint(page: Page, name: string): Promise<void> {
 
   const originalViewport = page.viewportSize();
   await test.step(`checkpoint ${journey}/${name}`, async () => {
+    let original: ThemeState | undefined;
     for (const theme of THEMES) {
-      await applyTheme(page, theme);
+      const before = await applyTheme(page, theme);
+      original ??= before;
       for (const viewport of VIEWPORTS) {
         await page.setViewportSize(viewport);
         if (AXE_WIDTHS.includes(viewport.width)) {
@@ -69,7 +111,7 @@ export async function checkpoint(page: Page, name: string): Promise<void> {
         });
       }
     }
+    if (original) await restoreTheme(page, original);
   });
-  await page.emulateMedia({ colorScheme: null });
   if (originalViewport) await page.setViewportSize(originalViewport);
 }

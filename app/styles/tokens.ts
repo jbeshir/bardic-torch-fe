@@ -7,7 +7,7 @@
  * free of imports so every one of those consumers can load it directly.
  */
 
-type Theme = "light" | "dark";
+export type Theme = "light" | "dark";
 type Hex = `#${string}`;
 
 function channels(hex: Hex): readonly [number, number, number] {

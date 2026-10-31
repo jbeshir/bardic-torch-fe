@@ -19,6 +19,9 @@ import { useNonce } from "~/contexts/NonceContext";
 import { captureRemixErrorBoundaryError } from "@sentry/remix";
 import stylesheet from "~/styles/app.css?url";
 import { THEME_COLOURS } from "~/styles/theme-colour.gen";
+import { readTheme } from "~/server/theme.server";
+import type { Theme } from "~/styles/tokens";
+import { useThemeChoice } from "~/hooks/useThemeChoice";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
@@ -33,24 +36,47 @@ export const links: LinksFunction = () => [
   { rel: "manifest", href: "/site.webmanifest" },
 ];
 
+/**
+ * The theme is server-rendered from the cookie (and switched optimistically
+ * while a new choice is saved), so the first paint is already right: no
+ * theme script, nothing to flash.
+ */
+function ThemeMeta({ theme }: { theme: Theme | null }) {
+  if (theme) {
+    return (
+      <>
+        <meta name="color-scheme" content={theme} />
+        <meta name="theme-color" content={THEME_COLOURS[theme]} />
+      </>
+    );
+  }
+  return (
+    <>
+      <meta name="color-scheme" content="light dark" />
+      <meta
+        name="theme-color"
+        media="(prefers-color-scheme: light)"
+        content={THEME_COLOURS.light}
+      />
+      <meta
+        name="theme-color"
+        media="(prefers-color-scheme: dark)"
+        content={THEME_COLOURS.dark}
+      />
+    </>
+  );
+}
+
 export function Layout({ children }: { children: ReactNode }) {
   const nonce = useNonce();
+  const choice = useThemeChoice();
+  const theme = choice === "system" ? null : choice;
   return (
-    <html lang="en">
+    <html lang="en" data-theme={theme ?? undefined}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="color-scheme" content="light dark" />
-        <meta
-          name="theme-color"
-          media="(prefers-color-scheme: light)"
-          content={THEME_COLOURS.light}
-        />
-        <meta
-          name="theme-color"
-          media="(prefers-color-scheme: dark)"
-          content={THEME_COLOURS.dark}
-        />
+        <ThemeMeta theme={theme} />
         <Meta />
         <Links />
       </head>
@@ -65,6 +91,8 @@ export function Layout({ children }: { children: ReactNode }) {
 
 type LoaderData = {
   sentryDsn: string | undefined;
+  /** The explicit theme from the cookie; null follows the device. */
+  theme: Theme | null;
 };
 
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {
@@ -73,7 +101,10 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
   const { headers } = await getServerAuthContext(request, context);
 
   return json<LoaderData>(
-    { sentryDsn: context.cloudflare.env.SENTRY_DSN },
+    {
+      sentryDsn: context.cloudflare.env.SENTRY_DSN,
+      theme: readTheme(request),
+    },
     headers ? { headers } : undefined
   );
 };

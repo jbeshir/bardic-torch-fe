@@ -87,13 +87,26 @@ const build: ServerBuild = {
 
 const handler = createRequestHandler(build, "production");
 
-function get(path: string) {
+function get(path: string, cookie?: string) {
   return handler(
     new Request(`https://app.test${path}`, {
-      headers: { "User-Agent": "test" },
+      headers: { "User-Agent": "test", ...(cookie ? { Cookie: cookie } : {}) },
     }),
     loadContext()
   );
+}
+
+/** The opening `<html>` tag and every `<meta>` and stylesheet in `<head>`. */
+async function head(response: Response) {
+  const html = await response.text();
+  const headHtml = html.slice(0, html.indexOf("</head>"));
+  return {
+    html: /<html\b[^>]*>/.exec(html)?.[0] ?? "",
+    metas: [...headHtml.matchAll(/<meta\b[^>]*>/g)].map(([tag]) => tag),
+    stylesheets: [
+      ...headHtml.matchAll(/<link\b[^>]*rel="stylesheet"[^>]*>/g),
+    ].map(([tag]) => tag),
+  };
 }
 
 function scriptNonce(response: Response): string {
@@ -164,12 +177,47 @@ describe("data responses", () => {
     );
     expect(response.headers.get("Cache-Control")).toBe("private, no-cache");
     expect(response.headers.get("Vary")).toBe("Cookie");
-    expect(await response.json()).toEqual({});
+    expect(await response.json()).toEqual({ theme: null });
   });
 
   it("keep a route's no-store", async () => {
     const response = await get("/private?_data=routes%2Fprivate");
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+  });
+});
+
+describe("document theme", () => {
+  it.each(["light", "dark"] as const)(
+    "renders an explicit %s theme from the cookie, with matching meta tags",
+    async theme => {
+      const { html, metas } = await head(await get("/", `theme=${theme}`));
+      expect(html).toContain(`data-theme="${theme}"`);
+      expect(metas).toContain(`<meta name="color-scheme" content="${theme}"/>`);
+      const themeColours = metas.filter(tag => tag.includes("theme-color"));
+      expect(themeColours).toHaveLength(1);
+      expect(themeColours[0]).not.toContain("media=");
+    }
+  );
+
+  it("leaves System (no cookie) to the device, with a theme colour per scheme", async () => {
+    const { html, metas } = await head(await get("/"));
+    expect(html).not.toContain("data-theme");
+    expect(metas).toContain('<meta name="color-scheme" content="light dark"/>');
+    const themeColours = metas.filter(tag => tag.includes("theme-color"));
+    expect(themeColours).toHaveLength(2);
+    expect(themeColours[0]).toContain('media="(prefers-color-scheme: light)"');
+    expect(themeColours[1]).toContain('media="(prefers-color-scheme: dark)"');
+  });
+
+  it("ignores an unknown theme cookie", async () => {
+    const { html } = await head(await get("/", "theme=sepia"));
+    expect(html).not.toContain("data-theme");
+  });
+
+  it("links the stylesheet in <head>, where it blocks rendering", async () => {
+    const { stylesheets } = await head(await get("/"));
+    expect(stylesheets).toHaveLength(1);
+    expect(stylesheets[0]).not.toMatch(/\b(media|disabled|onload)=/);
   });
 });

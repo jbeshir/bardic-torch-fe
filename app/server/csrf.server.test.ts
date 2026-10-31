@@ -4,6 +4,7 @@ import { action as updateMe } from "~/routes/api.me";
 import { action as createToken } from "~/routes/api.tokens";
 import { action as revokeToken } from "~/routes/api.tokens.$tokenId";
 import { action as logout } from "~/routes/auth.logout";
+import { action as saveTheme } from "~/routes/resources.theme";
 import { APP_ORIGIN } from "~/test/context";
 import { runAction } from "~/test/proxy";
 import { assertSameOrigin } from "./csrf.server";
@@ -21,6 +22,12 @@ const ROUTES: ReadonlyArray<{
     method: "POST",
     path: "/auth/logout",
     action: logout,
+  },
+  {
+    name: "/resources/theme",
+    method: "POST",
+    path: "/resources/theme",
+    action: saveTheme,
   },
   { name: "/api/me", method: "PATCH", path: "/api/me", action: updateMe },
   {

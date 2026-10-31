@@ -1,4 +1,5 @@
 import type { MetaFunction } from "@remix-run/cloudflare";
+import { ThemeToggle } from "~/components/ThemeToggle";
 
 export const meta: MetaFunction = () => [{ title: "Bardic Torch" }];
 
@@ -11,6 +12,9 @@ export default function Index() {
           A community-kept index of bardic pieces and the bards who made them.
           The new site is being built.
         </p>
+        <div className="mt-8 border-t border-border pt-6">
+          <ThemeToggle />
+        </div>
       </div>
     </main>
   );
