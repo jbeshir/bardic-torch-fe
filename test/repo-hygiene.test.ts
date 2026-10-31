@@ -30,7 +30,7 @@ const FEED_ONLY_DEPENDENCIES = [
 const FEED_VOCABULARY =
   /alignment|article|minimax|chat_db|recommend(?!ed)|semantic.search|\bfeed\b/i;
 
-const SCANNED_DIRECTORIES = ["app", "functions", "test", "scripts"];
+const SCANNED_DIRECTORIES = ["app", "functions", "test", "scripts", "e2e"];
 
 const SCANNED_FILES = [
   "package.json",
@@ -43,6 +43,7 @@ const SCANNED_FILES = [
   "postcss.config.js",
   "tailwind.config.ts",
   "vite.config.ts",
+  "playwright.config.ts",
   "load-context.ts",
   "worker-configuration.d.ts",
   "wrangler.toml",
@@ -58,7 +59,7 @@ function filesUnder(directory: string): string[] {
 function scannedFiles(): string[] {
   return [...SCANNED_DIRECTORIES.flatMap(filesUnder), ...SCANNED_FILES]
     .map(path => relative(".", path))
-    .filter(path => path !== THIS_FILE);
+    .filter(path => path !== THIS_FILE && !path.startsWith("e2e/screenshots"));
 }
 
 describe("no feed-only dependencies", () => {

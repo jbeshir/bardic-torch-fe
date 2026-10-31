@@ -16,6 +16,7 @@
     "typecheck": "tsc",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:e2e": "playwright test",
     "validate": "npm run format:check && npm run lint && npm run typecheck && npm run test:run"
   },
   "dependencies": {
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "4.20250321.0",
+    "@playwright/test": "1.61.1",
     "@remix-run/dev": "2.17.4",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "14.3.1",
