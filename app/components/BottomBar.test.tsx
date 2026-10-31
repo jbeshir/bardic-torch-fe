@@ -20,7 +20,7 @@ function renderBar(onOpenMenu = vi.fn()) {
 describe("BottomBar", () => {
   it("is fixed to the bottom below md: Menu, Search and Account in three cells", async () => {
     await renderBar();
-    const bar = document.querySelector(".fixed") as HTMLElement;
+    const bar = screen.getByRole("group", { name: "App bar" });
     expect(bar).toHaveClass("bottom-0", "md:hidden", "pb-safe-b");
     expect(bar.firstElementChild).toHaveClass("grid-cols-3", "h-app-bar");
     expect(

@@ -444,7 +444,7 @@ The app shell has `max-width: 90rem` (1440 px) and is centred. The canvas extend
 - The header is a `<header>` landmark, `bg-canvas`, with a bottom border `border-border`.
 - It is sticky (`top: 0`), and gets `shadow-1` once the page has scrolled more than 8 px (an IntersectionObserver sentinel). Without JS it simply has no shadow.
 - Height is `--header-h`: 56 px below `md` and 64 px from `md` up. `html` has `scroll-padding-top: calc(var(--header-h) + 0.5rem)`, so an element that receives focus by Tab or by an anchor jump is never hidden under the sticky header (WCAG 2.4.11).
-- The first focusable element is a **skip link**, "Skip to content", which is visually hidden until focused and then appears as a primary `sm` button at top-left.
+- The first focusable element is a **skip link**, "Skip to content", which is visually hidden until focused and then appears as a primary `sm` button at top-left. Its padding is applied only on focus (`focus:px-3 focus:py-2`), so the hidden link stays a 1 px box rather than a padded 24 × 16 one.
 
 **Below `md`, the header's controls move to a bottom app bar** (one-handed use). The top header then holds only the logo and wordmark, so nothing in it can overflow at 360 px. An e2e check asserts no horizontal overflow at 360 (and 320) px, signed out and signed in.
 
@@ -465,7 +465,7 @@ The app shell has `max-width: 90rem` (1440 px) and is centred. The canvas extend
 - **Menu** opens the drawer as a bottom sheet, nearest its trigger (§6.21).
 - **Search** opens a search sheet just above the bar with JS: a SearchBox (§6.26) with the input focused and a "Cancel" button. Escape or Cancel closes it and returns focus to the Search cell. Without JS, Search is a link to `#site-nav`, the no-JS navigation, which starts with the SearchBox.
 - **Account** opens the account panel upwards, above the bar (§6.25). Signed out, it is a link to `/auth/login?returnTo={current path}`.
-- **Built as (FE1):** `app/components/BottomBar.tsx`. The search sheet is non-modal (`aria-expanded` on the Search cell, `useDismiss` closing rules, so focus moving past it closes it too). Body padding is `max-md:pb-app-bar` on the shell wrapper, so the standalone error page, which has no bar, gets none; `scroll-padding-bottom` is in `base.css` below md.
+- **Built as (FE1):** `app/components/BottomBar.tsx`, a `role="group"` named "App bar" (a group, not a landmark), so its Menu, Search and Account have a context of their own apart from the header's copies. Only one copy of each is rendered at any width: the header's are `display: none` below md and the bar is `display: none` from md. The search sheet is non-modal (`aria-expanded` on the Search cell, `useDismiss` closing rules, so focus moving past it closes it too). Body padding is `max-md:pb-app-bar` on the shell wrapper, so the standalone error page, which has no bar, gets none; `scroll-padding-bottom` is in `base.css` below md.
 
 ### 5.3 Left sidebar / navigation
 

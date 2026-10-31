@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import { appBar } from "../support/shell";
 import { test } from "../support/test";
 
 test("/ has a nonce CSP that every script carries, and hydrates without violations", async ({
@@ -64,11 +65,11 @@ test("the 404 page in the shell carries the nonce CSP and hydrates without viola
     .toBe(true);
   // Opening the drawer and the search sheet adds no inline styles either.
   await page.setViewportSize({ width: 360, height: 800 });
-  const bar = page.getByRole("banner").locator(".fixed.bottom-0");
+  const bar = appBar(page);
   await bar.getByRole("button", { name: "Menu" }).click();
   await expect(page.getByRole("dialog", { name: "Site menu" })).toBeVisible();
   await page.keyboard.press("Escape");
-  await bar.getByRole("button", { name: "Search" }).click();
+  await bar.getByRole("button", { name: "Search", exact: true }).click();
   await expect(bar.getByRole("searchbox")).toBeFocused();
   expect(violations).toEqual([]);
 });

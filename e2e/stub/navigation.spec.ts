@@ -1,10 +1,12 @@
-import { expect, type Locator, type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { checkpoint } from "../support/journey";
 import {
   expectFocusNotObscured,
   expectNoHorizontalOverflow,
   expectPrimaryTargetsAtLeast44,
+  settled,
 } from "../support/layout";
+import { accountPanel, accountTrigger, appBar } from "../support/shell";
 import { test } from "../support/test";
 
 /**
@@ -15,11 +17,6 @@ import { test } from "../support/test";
  */
 
 const MOBILE = { width: 360, height: 800 };
-
-/** The bottom app bar: the fixed bar inside the banner. */
-function bottomBar(page: Page): Locator {
-  return page.getByRole("banner").locator(".fixed.bottom-0");
-}
 
 /** Waits for hydration: the Menu link has become a button. */
 async function openHydrated(page: Page, path = "/"): Promise<void> {
@@ -58,10 +55,10 @@ test.describe("below md", () => {
     await expect(banner.getByRole("search")).toBeHidden();
     await expect(banner.getByRole("group", { name: "Theme" })).toBeHidden();
 
-    const bar = bottomBar(page);
+    const bar = appBar(page);
     const cells = [
       bar.getByRole("button", { name: "Menu" }),
-      bar.getByRole("button", { name: "Search" }),
+      bar.getByRole("button", { name: "Search", exact: true }),
       bar.getByRole("link", { name: "Log in" }),
     ];
     await expectPrimaryTargetsAtLeast44(cells);
@@ -75,7 +72,7 @@ test.describe("below md", () => {
     await openHydrated(page);
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     const footer = await page.getByRole("contentinfo").boundingBox();
-    const bar = await bottomBar(page).boundingBox();
+    const bar = await appBar(page).boundingBox();
     expect(footer && bar).toBeTruthy();
     expect((footer?.y ?? 0) + (footer?.height ?? 0)).toBeLessThanOrEqual(
       (bar?.y ?? 0) + 1
@@ -87,7 +84,7 @@ test.describe("below md", () => {
     page,
   }) => {
     await openHydrated(page, "/help/licence");
-    const menu = bottomBar(page).getByRole("button", { name: "Menu" });
+    const menu = appBar(page).getByRole("button", { name: "Menu" });
     await menu.click();
     const drawer = page.getByRole("dialog", { name: "Site menu" });
     await expect(drawer).toBeVisible();
@@ -127,7 +124,7 @@ test.describe("below md", () => {
     page,
   }) => {
     await openHydrated(page);
-    await bottomBar(page).getByRole("button", { name: "Menu" }).click();
+    await appBar(page).getByRole("button", { name: "Menu" }).click();
     const drawer = page.getByRole("dialog", { name: "Site menu" });
     await drawer.getByRole("link", { name: "FAQ for bards" }).click();
     await expect(page).toHaveURL(/\/help\/faq-for-bards$/);
@@ -138,7 +135,7 @@ test.describe("below md", () => {
     page,
   }) => {
     await openHydrated(page);
-    await bottomBar(page).getByRole("button", { name: "Menu" }).click();
+    await appBar(page).getByRole("button", { name: "Menu" }).click();
     await expect(page.getByRole("dialog", { name: "Site menu" })).toBeVisible();
     await page.setViewportSize({ width: 1280, height: 800 });
     await expect(page.getByRole("dialog", { name: "Site menu" })).toBeHidden();
@@ -149,21 +146,25 @@ test.describe("below md", () => {
     page,
   }) => {
     await openHydrated(page);
-    const search = bottomBar(page).getByRole("button", { name: "Search" });
+    // Exact: the sheet's submit is "Search the original wiki (…)".
+    const search = appBar(page).getByRole("button", {
+      name: "Search",
+      exact: true,
+    });
     await search.click();
     await expect(search).toHaveAttribute("aria-expanded", "true");
-    const field = bottomBar(page).getByRole("searchbox", {
+    const field = appBar(page).getByRole("searchbox", {
       name: "Search the original wiki",
     });
     await expect(field).toBeFocused();
     const sheet = await field.boundingBox();
-    const bar = await bottomBar(page)
+    const bar = await appBar(page)
       .getByRole("button", { name: "Menu" })
       .boundingBox();
     expect((sheet?.y ?? 0) + (sheet?.height ?? 0)).toBeLessThanOrEqual(
       bar?.y ?? 0
     );
-    await expect(bottomBar(page).getByRole("search")).toHaveAttribute(
+    await expect(appBar(page).getByRole("search")).toHaveAttribute(
       "action",
       /\/w\/index\.php$/
     );
@@ -178,17 +179,18 @@ test.describe("below md", () => {
   }) => {
     await page.goto("/auth/login?as=contributor&returnTo=/");
     await openHydrated(page);
-    const account = bottomBar(page).locator("summary");
-    await expect(account).toHaveText(/Account/);
+    const account = accountTrigger(appBar(page));
+    await expect(account).toHaveText(/Account: Morwen of the Marches$/);
     await account.click();
-    const panel = bottomBar(page).getByText("Morwen of the Marches");
+    const panel = await accountPanel(account);
     await expect(panel).toBeVisible();
+    await expect(
+      panel.getByText("Morwen of the Marches", { exact: true })
+    ).toBeVisible();
     const panelBox = await panel.boundingBox();
     const accountBox = await account.boundingBox();
     expect(panelBox?.y ?? 999).toBeLessThan(accountBox?.y ?? 0);
-    await expect(
-      bottomBar(page).getByRole("link", { name: "Settings" })
-    ).toBeVisible();
+    await expect(panel.getByRole("link", { name: "Settings" })).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(panel).toBeHidden();
     await expect(account).toBeFocused();
@@ -202,7 +204,7 @@ test.describe("from md", () => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await openHydrated(page);
     const banner = page.getByRole("banner");
-    await expect(bottomBar(page)).toBeHidden();
+    await expect(appBar(page)).toBeHidden();
     const menu = banner.getByRole("button", { name: "Menu" });
     await expectPrimaryTargetsAtLeast44([menu]);
     await expect(banner.getByRole("search")).toBeVisible();
@@ -213,6 +215,8 @@ test.describe("from md", () => {
     await menu.click();
     const drawer = page.getByRole("dialog", { name: "Site menu" });
     await expect(drawer).toBeVisible();
+    // It slides in from the left (translateX); measure where it comes to rest.
+    await settled(drawer);
     const box = await drawer.boundingBox();
     expect(Math.round(box?.x ?? -1)).toBe(0);
     await drawer.getByRole("button", { name: "Close menu" }).first().click();
@@ -257,12 +261,11 @@ test.describe("from md", () => {
     await login.click();
     await expect(page).toHaveURL(/\/help\/faq-for-bards$/);
 
-    const trigger = page
-      .getByRole("banner")
-      .locator("summary", { hasText: "Account: Morwen of the Marches" });
-    await expect(trigger).toBeVisible();
+    const trigger = accountTrigger(page.getByRole("banner"));
+    await expect(trigger).toHaveText(/Account: Morwen of the Marches$/);
     await trigger.press("Enter");
-    const panel = page.getByRole("banner").getByText("Contributor");
+    const panel = await accountPanel(trigger);
+    await expect(panel.getByText("Contributor", { exact: true })).toBeVisible();
     await expect(panel).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(panel).toBeHidden();
@@ -278,13 +281,11 @@ test.describe("from md", () => {
     await page.goto("/auth/login?as=contributor&returnTo=/");
     await page.setViewportSize({ width: 1280, height: 800 });
     await openHydrated(page);
-    await page
-      .getByRole("banner")
-      .locator("summary", { hasText: "Account:" })
-      .click();
-    await expect(
-      page.getByRole("banner").getByText("Contributor")
-    ).toBeVisible();
+    const trigger = accountTrigger(page.getByRole("banner"));
+    await expect(trigger).toHaveText(/Account: Morwen of the Marches$/);
+    await trigger.click();
+    const panel = await accountPanel(trigger);
+    await expect(panel.getByText("Contributor", { exact: true })).toBeVisible();
     await checkpoint(page, "account-open");
   });
 });
@@ -296,13 +297,12 @@ test.describe("without JavaScript", () => {
     page,
   }) => {
     await page.goto("/");
-    const bar = bottomBar(page);
+    const bar = appBar(page);
     const menu = bar.getByRole("link", { name: "Menu" });
     await expect(menu).toHaveAttribute("href", "#site-nav");
-    await expect(bar.getByRole("link", { name: "Search" })).toHaveAttribute(
-      "href",
-      "#site-nav"
-    );
+    await expect(
+      bar.getByRole("link", { name: "Search", exact: true })
+    ).toHaveAttribute("href", "#site-nav");
     await expectPrimaryTargetsAtLeast44([menu]);
 
     await menu.click();
@@ -338,14 +338,14 @@ test.describe("without JavaScript", () => {
     page,
   }) => {
     await page.goto("/auth/login?as=contributor&returnTo=/");
-    const account = bottomBar(page).locator("summary");
+    const account = accountTrigger(appBar(page));
     await account.click();
     await expect(
-      bottomBar(page).getByRole("button", { name: "Log out" })
+      appBar(page).getByRole("button", { name: "Log out" })
     ).toBeVisible();
     await account.click();
     await expect(
-      bottomBar(page).getByRole("button", { name: "Log out" })
+      appBar(page).getByRole("button", { name: "Log out" })
     ).toBeHidden();
   });
 

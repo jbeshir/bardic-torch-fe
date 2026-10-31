@@ -42,7 +42,7 @@ export function AppShell({
     <div className="relative max-md:pb-app-bar">
       <a
         href="#content"
-        className="sr-only z-progress rounded-md bg-accent px-3 py-2 text-body-sm font-medium text-accent-fg shadow-2 focus:not-sr-only focus:fixed focus:left-2 focus:top-2"
+        className="sr-only z-progress rounded-md bg-accent text-body-sm font-medium text-accent-fg shadow-2 focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:px-3 focus:py-2"
       >
         Skip to content
       </a>

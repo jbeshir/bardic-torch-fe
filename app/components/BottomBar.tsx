@@ -136,7 +136,10 @@ function SearchCell({
  * The bottom app bar (DESIGN §5.2), below md only: Menu · Search · Account
  * in three equal cells, 56 px plus the safe-area inset, fixed to the bottom
  * of the viewport. It is part of the header in the DOM, so the Tab order is
- * logo → Menu → Search → Account → content.
+ * logo → Menu → Search → Account → content. It is a group named "App bar"
+ * (not a landmark), which sets its Menu, Search and Account apart from the
+ * header's own copies. Only one set is ever rendered: the header's are
+ * `display: none` below md, and the bar is `display: none` from md.
  */
 export function BottomBar({
   account,
@@ -152,7 +155,11 @@ export function BottomBar({
   onOpenMenu: () => void;
 }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-header border-t border-border bg-surface-raised pb-safe-b shadow-2 md:hidden">
+    <div
+      role="group"
+      aria-label="App bar"
+      className="fixed inset-x-0 bottom-0 z-header border-t border-border bg-surface-raised pb-safe-b shadow-2 md:hidden"
+    >
       <div className="grid h-app-bar grid-cols-3">
         <MenuControl
           look="cell"

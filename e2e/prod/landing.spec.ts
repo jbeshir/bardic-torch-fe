@@ -6,6 +6,7 @@ import {
   expectPrimaryTargetsAtLeast44,
   expectTargetSizesAtLeast24,
 } from "../support/layout";
+import { appBar } from "../support/shell";
 import { test } from "../support/test";
 
 test("the home page renders from the production build", async ({ page }) => {
@@ -93,15 +94,15 @@ test("at 360 the primary controls are 44 px and nothing overflows", async ({
 }) => {
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto("/");
-  const bar = page.getByRole("banner").locator(".fixed.bottom-0");
+  const bar = appBar(page);
   await expectPrimaryTargetsAtLeast44([
     page.getByRole("banner").getByRole("link", { name: "Bardic Torch" }),
     bar
       .getByRole("button", { name: "Menu" })
       .or(bar.getByRole("link", { name: "Menu" })),
     bar
-      .getByRole("button", { name: "Search" })
-      .or(bar.getByRole("link", { name: "Search" })),
+      .getByRole("button", { name: "Search", exact: true })
+      .or(bar.getByRole("link", { name: "Search", exact: true })),
     bar.getByRole("link", { name: "Log in" }),
   ]);
   await expectNoHorizontalOverflow(page);

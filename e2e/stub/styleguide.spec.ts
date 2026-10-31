@@ -6,6 +6,7 @@ import { checkpoint } from "../support/journey";
 import {
   expectNoHorizontalOverflow,
   expectTargetSizesAtLeast24,
+  settled,
 } from "../support/layout";
 import { test } from "../support/test";
 
@@ -59,15 +60,6 @@ async function tabThrough(
     labels.push(label);
   }
   return labels;
-}
-
-/** Waits for an element's entrance animation to finish, so boxes are final. */
-async function settled(locator: Locator): Promise<void> {
-  await locator.evaluate(element =>
-    Promise.all(
-      element.getAnimations({ subtree: true }).map(({ finished }) => finished)
-    )
-  );
 }
 
 /** Whether a click at the element's centre would reach it (not inert). */

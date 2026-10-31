@@ -23,6 +23,18 @@ async function withWidth<T>(
   }
 }
 
+/**
+ * Waits for the element's animations (e.g. a drawer sliding in) to finish,
+ * so its box is final.
+ */
+export async function settled(locator: Locator): Promise<void> {
+  await locator.evaluate(element =>
+    Promise.all(
+      element.getAnimations({ subtree: true }).map(({ finished }) => finished)
+    )
+  );
+}
+
 /** No horizontal scrolling at 360 px or at 320 px (WCAG 1.4.10 reflow). */
 export async function expectNoHorizontalOverflow(page: Page): Promise<void> {
   for (const width of REFLOW_WIDTHS) {

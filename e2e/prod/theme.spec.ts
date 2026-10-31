@@ -208,21 +208,27 @@ test.describe("theme toggle without JS", () => {
   }) => {
     await page.emulateMedia({ colorScheme: "light" });
     await page.goto("/");
+    // From md the toggle is the header's. The site menu's copy below lg is
+    // display: none here, but while the posted page is still loading its
+    // stylesheet both are briefly exposed, so stay inside the banner.
+    const theme = page
+      .getByRole("banner")
+      .getByRole("group", { name: "Theme" });
 
     await Promise.all([
       page.waitForURL("/"),
-      page.getByRole("button", { name: "Dark" }).click(),
+      theme.getByRole("button", { name: "Dark" }).click(),
     ]);
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-    await expect(page.getByRole("button", { name: "Dark" })).toHaveAttribute(
+    await expect(theme.getByRole("button", { name: "Dark" })).toHaveAttribute(
       "aria-pressed",
       "true"
     );
     await expectRenderedTheme(page, "dark");
     expect((await themeCookie(page))?.value).toBe("dark");
 
-    await page.getByRole("button", { name: "System" }).click();
-    await expect(page.getByRole("button", { name: "System" })).toHaveAttribute(
+    await theme.getByRole("button", { name: "System" }).click();
+    await expect(theme.getByRole("button", { name: "System" })).toHaveAttribute(
       "aria-pressed",
       "true"
     );

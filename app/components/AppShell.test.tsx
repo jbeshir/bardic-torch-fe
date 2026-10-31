@@ -45,6 +45,11 @@ describe("AppShell", () => {
     expect(skip).toHaveFocus();
     expect(skip).toHaveAttribute("href", "#content");
     expect(skip).toHaveClass("sr-only", "focus:not-sr-only");
+    // Padding only while focused: unfocused padding would stretch the
+    // clipped 1 px box into a 24 × 16 target (border-box), and
+    // not-sr-only's padding: 0 would otherwise strip it when focused.
+    expect(skip).toHaveClass("focus:px-3", "focus:py-2");
+    expect(skip.className).not.toMatch(/(^|\s)p[xy]?-/);
     const main = screen.getByRole("main");
     expect(main).toHaveAttribute("id", "content");
     expect(main).toHaveAttribute("tabindex", "-1");
