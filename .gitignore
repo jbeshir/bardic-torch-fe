@@ -1,0 +1,11 @@
+node_modules
+
+/.cache
+/build*
+.env
+.dev.vars
+
+.wrangler
+/e2e/screenshots/
+/test-results/
+/playwright-report/

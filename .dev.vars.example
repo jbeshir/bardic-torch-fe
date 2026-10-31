@@ -1,0 +1,7 @@
+BARDIC_TORCH_API_BASE_URL=https://api.bardictorch.org
+AUTH_SESSION_SECRET=replace-with-a-random-string-of-at-least-32-characters
+AUTH0_DOMAIN=your-tenant.us.auth0.com
+AUTH0_CLIENT_ID=replace-with-client-id
+AUTH0_CLIENT_SECRET=replace-with-client-secret
+AUTH0_DEFAULT_REDIRECT_URI=http://localhost:5173
+AUTH0_AUDIENCE=replace-with-api-audience
