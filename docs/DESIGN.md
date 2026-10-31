@@ -1016,7 +1016,8 @@ Read   Edit   History                         Last edited 3 Oct 2026
 
 **Tag: FE1.** The collapse is **FE2+** (FE1 crumbs are two deep).
 
-- `<nav aria-label="Breadcrumb"><ol>` containing links, with the last item `<span aria-current="page">` in `text-fg-muted`, not a link. The separator is `IconChevronRight` 14 `text-fg-subtle aria-hidden`, drawn via the `li::before` icon. Text is caption, links are `text-link` with no underline (underline on hover), and each link is `inline-flex min-h-6 items-center` (§6.1, WCAG 2.5.8).
+- `<nav aria-label="Breadcrumb"><ol>` containing links, with the last item `<span aria-current="page">` in `text-fg-muted`, not a link. The separator is `IconChevronRight` 14 `text-fg-subtle aria-hidden`, an inline SVG after each ancestor link (CSS `::before` can't draw a token-coloured Tabler icon without a data URI). Text is caption, links are `text-link` with no underline (underline on hover), and each link is `inline-flex min-h-6 items-center` (§6.1, WCAG 2.5.8).
+- Component: `Breadcrumbs` (`trail: [{label, to}, …]`, `current`), `ol role="list"` with `flex-wrap gap-y-2`.
 - **At 360 px (FE2+):** collapse the middle items to "…" (a disclosure button, `aria-label="Show full path"`) when there are more than 3. Without JS, it wraps instead.
 - Shown on help pages ("Help › …") and later on term pages. Not shown on Home.
 
@@ -1030,6 +1031,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
 - **<sm:** only "Previous", "Page 3 of 12" (body-sm, fg-muted) and "Next". Prev and Next become 44 px icon buttons with visible text kept at ≥360 px.
 - **Disabled prev/next** (first or last page): render a `<span aria-disabled="true">` in the disabled style, not a link.
 - **Keyboard:** standard Tab order.
+- Component: `Pagination` (`page`, `pageCount`, `href(n)`). It shows the first page, the last, and the current page with its neighbours; a gap never stands for a single page (that page is shown instead). Number links read "Page 4" (a hidden "Page " prefix). Items are `min-h-11 min-w-11`, minimums so the text-spacing override can grow them. Previous and Next carry `rel="prev"`/`rel="next"`.
 
 ### 6.21 Drawer (mobile and tablet nav)
 
@@ -1050,8 +1052,13 @@ Read   Edit   History                         Last edited 3 Oct 2026
   - On close (Escape, either close button, backdrop click, or navigation), focus returns to the menu button.
   - Body scroll is locked (`overflow: hidden` on `html`) while it is open.
   - It closes automatically on route change, and when the viewport reaches `lg`.
-- **Motion:** the bottom sheet slides up from `translateY(100%)` and the side drawer from `translateX(-100%)`, over 240 ms with `--ease-out`. The scrim fades over 180 ms. Closing takes 180 ms with `--ease-in`. Movement is `motion-safe:` only; under reduced motion it fades, 120 ms.
+- **Motion:** the bottom sheet slides up from `translateY(100%)` and the side drawer from `translateX(-100%)`, over 240 ms with `--ease-out`. The scrim fades over 180 ms. Movement is `motion-safe:` only; under reduced motion it fades, 120 ms. **Closing is instant in FE1** (no exit animation): a native `<dialog>` leaves the top layer as soon as `close()` runs, and delaying that to animate would delay the focus return as well.
 - **No-JS:** the menu button is `<a href="#site-nav">`. The fallback navigation renders **after `</main>` and before `<footer>`**, not inside main, so it doesn't pollute the skip-link target. It is the same single `<nav aria-label="Site" id="site-nav">` that the persistent sidebar uses at ≥lg (one element, placed by CSS), headed by the SearchBox and an h2 "Site menu", so there is never a second Site landmark. With JS, that fallback copy below lg is `hidden`, and the button becomes a `<button>`.
+- **Component:** `Drawer` (`app/components/ui/Drawer.tsx`; `open`, `onClose`, `title`, `closeLabel` "Close menu", body, `footer`, `closeFrom="lg"`), built on `useModalDialog` (shared with Dialog).
+  - The dialog is a flex column: grab bar (<md, decorative `bg-border-strong`), title row, a scrolling body (`min-h-0 flex-1 overflow-y-auto`) and the footer. The footer sits **outside** the scroller rather than over it, so nothing in the body can scroll under it and no `scroll-padding-bottom` is needed.
+  - The bottom sheet's padding is `pb-safe-b` (`env(safe-area-inset-bottom)`, a named padding value).
+  - Focus goes to the close button through a ref after `showModal()`. React's `autoFocus` calls `focus()` during commit, before the dialog is shown, and doesn't render the attribute that native dialog focusing reads.
+  - It closes on any navigation (`useLocation().key` changes) and, with `closeFrom="lg"`, when `(min-width: 1024px)` starts to match; C5's nav drawer passes it.
 
 ### 6.22 Dialog
 
@@ -1063,7 +1070,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
   - **At <sm they stack full width, with Cancel at the bottom** (nearest the thumb) and the confirm button above it, 8 px apart. The safe action is the easiest to reach, and the destructive one takes a deliberate reach.
 - **Focus:**
   - On open, focus goes to the **least destructive** control (`autoFocus`): Cancel for confirms, or the first field for forms.
-  - The rest of the page is inert (native). If `inert` support is missing, a sentinel loop keeps Tab within the dialog.
+  - The rest of the page is inert (native). Tab and Shift+Tab also wrap round inside the dialog (a keydown handler), because native modals let Tab leave the last control for the browser's own UI, and that also covers a browser without `inert`.
   - On close, focus **returns to the invoking element**, which is stored before `showModal`. If the invoker no longer exists (e.g. a row deleted), focus goes to the list's heading (`tabindex="-1"`).
 - **Dismissal:** Escape and the close icon button (top right, 36 px, "Close") both work. A backdrop click closes _non-destructive_ dialogs only. While a submission is pending, Escape is ignored and the buttons show loading.
 - **Destructive confirm copy:**
@@ -1071,7 +1078,9 @@ Read   Edit   History                         Last edited 3 Oct 2026
   - Body: "Anything using 'Laptop MCP' will stop working straight away. This can't be undone." (A token with no name is called "token {prefix}…" here, as in the list.)
   - Buttons: "Cancel" / "Revoke token" (danger, with `IconTrash`).
 - **No-JS:** there is no confirm route. In FE1 the only Dialog is on Settings, whose mutations need JS (§10.3), so the no-JS path is the `<noscript>` notice.
-- **Motion:** fades in and scales from 0.98 to 1 over 180 ms `--ease-out` (`motion-safe:` only). Under reduced motion it fades only.
+- **Motion:** fades in and scales from 0.98 to 1 over 180 ms `--ease-out` (`motion-safe:` only). Under reduced motion it fades only. Closing is instant, as for the Drawer.
+- **Component:** `Dialog` (`app/components/ui/Dialog.tsx`; `open`, `onClose`, `title`, `description`, body, `confirm: {label, icon, variant: primary|danger, onConfirm | form}`, `cancelLabel`, `pending`, `initialFocus`, `fallbackFocus`). A `danger` confirm makes it destructive, so the backdrop doesn't close it. With `form`, the confirm is a submit button for that form id.
+- **Shared behaviour** (`useModalDialog`): `open` drives `showModal()`/`close()`; Escape (`cancel`, prevented and handled), the backdrop and a browser-initiated close all call `onClose`. A backdrop click must start and end on the `<dialog>` itself, so a text selection dragged out of the content doesn't close it. `html` gets `overflow-hidden` while open. The backdrop is `backdrop:bg-scrim/scrim`, which needs `::backdrop` to inherit custom properties (Chromium 122+, Firefox 120+, Safari 17.4+).
 
 ### 6.23 Toast
 
@@ -1527,6 +1536,7 @@ The pattern is: what happened, then what to do. Don't blame the reader, and don'
 | `minHeight`                | extended             | `min-h-textarea` (7.5rem)                                                                                                                                                                                                                                                                              |
 | `width`                    | extended             | `w-dialog` (`min(32rem, calc(100vw - 2rem))`), `w-drawer` (`min(20rem, 85vw)`), `w-infobox` (16.5rem), `w-infobox-xl` (18rem)                                                                                                                                                                          |
 | `textUnderlineOffset`      | extended             | `underline-offset-prose` (0.2em)                                                                                                                                                                                                                                                                       |
+| `padding`                  | extended             | `pb-safe-b` (`env(safe-area-inset-bottom, 0px)`, bottom sheets)                                                                                                                                                                                                                                        |
 | `zIndex`                   | extended             | `z-header` (30), `z-progress` (40), `z-toast` (50)                                                                                                                                                                                                                                                     |
 
 Other config: `future.hoverOnlyWhenSupported: true` (hover styles only for devices that can hover). `darkMode` is left at Tailwind's default and the `dark:` variant is never used (§2.1; `test/no-raw-colours.test.ts` rejects it).

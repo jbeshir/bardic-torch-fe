@@ -110,6 +110,8 @@ export default {
     },
     extend: {
       spacing: { 13: "3.25rem" },
+      // The home-indicator inset on notched phones, under bottom sheets.
+      padding: { "safe-b": "env(safe-area-inset-bottom, 0px)" },
       maxWidth: { prose: "68ch", form: "42rem", shell: "90rem" },
       maxHeight: { sheet: "85dvh" },
       inset: { toast: "calc(var(--header-h) + 0.5rem)" },
