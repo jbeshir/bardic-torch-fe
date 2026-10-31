@@ -1,11 +1,12 @@
 import { act, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
+import { wikiPageUrl } from "~/constants/navigation";
 import { renderWithRouter } from "~/test/router";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { Link } from "./Link";
 
-const WIKI = "https://bardictorch.miraheze.org/wiki/Category:Moods";
+const WIKI = wikiPageUrl("Category:Moods");
 
 describe("Link", () => {
   it("goes through the router for internal paths", async () => {

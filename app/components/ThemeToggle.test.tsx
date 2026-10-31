@@ -24,9 +24,11 @@ function RootProbe() {
 async function renderToggle({
   saved = null,
   respond = async () => ({ ok: true, theme: "dark" }),
+  placement = "drawer",
 }: {
   saved?: Saved;
   respond?: (choice: string | null) => Promise<ActionResult>;
+  placement?: "header" | "drawer";
 } = {}) {
   let theme: Saved = saved;
   const submissions: Array<Record<string, string>> = [];
@@ -38,7 +40,7 @@ async function renderToggle({
         loader: () => json({ theme }),
         element: (
           <>
-            <ThemeToggle />
+            <ThemeToggle placement={placement} />
             <RootProbe />
           </>
         ),
@@ -119,6 +121,84 @@ describe.each(["light", "dark"])("ThemeToggle (page in %s)", pageTheme => {
 });
 
 describe("ThemeToggle", () => {
+  it("in the header: icon-only at md with hidden names, text from lg, the error floating below", async () => {
+    await renderToggle({
+      placement: "header",
+      respond: async () => ({ ok: false }),
+    });
+    const buttons = within(await group()).getAllByRole("button");
+    expect(buttons.map(button => button.textContent)).toEqual([
+      "System",
+      "Light",
+      "Dark",
+    ]);
+    for (const button of buttons) {
+      expect(button).toHaveClass("min-h-8", "min-w-9");
+      expect(button.querySelector("span")).toHaveClass(
+        "sr-only",
+        "lg:not-sr-only"
+      );
+    }
+    await act(() =>
+      userEvent.click(screen.getByRole("button", { name: "Dark" }))
+    );
+    expect(await screen.findByRole("alert")).toHaveClass(
+      "absolute",
+      "top-full"
+    );
+  });
+
+  it("in the drawer: 44 px buttons sharing the width, with visible text", async () => {
+    await renderToggle();
+    for (const button of within(await group()).getAllByRole("button")) {
+      expect(button).toHaveClass("min-h-11", "flex-1");
+      expect(button.querySelector("span")).not.toHaveAttribute("class");
+    }
+  });
+
+  it("keeps the saved choice once the server agrees, without the root loader running again", async () => {
+    let loads = 0;
+    const router = createMemoryRouter(
+      [
+        {
+          id: "root",
+          path: "/",
+          loader: () => {
+            loads += 1;
+            return json({ theme: null });
+          },
+          shouldRevalidate: () => false,
+          element: (
+            <>
+              <ThemeToggle placement="drawer" />
+              <RootProbe />
+            </>
+          ),
+        },
+        {
+          path: "/resources/theme",
+          action: () => json({ ok: true, theme: "dark" }),
+        },
+      ],
+      { initialEntries: ["/"] }
+    );
+    await act(async () => {
+      render(<RouterProvider router={router} />);
+    });
+    await group();
+    await act(() =>
+      userEvent.click(screen.getByRole("button", { name: "Dark" }))
+    );
+    await waitFor(() =>
+      expect(router.state.fetchers.get("theme")?.state ?? "idle").toBe("idle")
+    );
+    expect(loads).toBe(1);
+    expect(pressed()).toEqual(["Dark"]);
+    expect(
+      screen.getByRole("status", { name: "Root theme" })
+    ).toHaveTextContent("dark");
+  });
+
   it.each([
     [null, "System"],
     ["light", "Light"],

@@ -3,9 +3,8 @@ import { TryAgain } from "~/components/ui/ErrorState";
 import { Infobox } from "~/components/ui/Infobox";
 import { Link } from "~/components/ui/Link";
 import { TagList } from "~/components/ui/TagList";
+import { wikiPageUrl } from "~/constants/navigation";
 import { Example, Specimen } from "./Specimen";
-
-const WIKI = "https://bardictorch.miraheze.org/wiki";
 
 const FACTS = [
   {
@@ -29,8 +28,8 @@ const FACTS = [
           <TagList
             size="sm"
             tags={[
-              { label: "Singalong", to: `${WIKI}/Category:Singalong` },
-              { label: "Lament", to: `${WIKI}/Category:Lament` },
+              { label: "Singalong", to: wikiPageUrl("Category:Singalong") },
+              { label: "Tragic", to: wikiPageUrl("Category:Tragic") },
             ]}
           />
         ),
@@ -117,9 +116,9 @@ export function Tags() {
       <Example label="Categories (to the original wiki)" wide>
         <TagList
           tags={[
-            { label: "Singalong", to: `${WIKI}/Category:Singalong` },
-            { label: "Drinking songs", to: `${WIKI}/Category:Drinking_songs` },
-            { label: "Laments", to: `${WIKI}/Category:Laments` },
+            { label: "Singalong", to: wikiPageUrl("Category:Singalong") },
+            { label: "Drinking", to: wikiPageUrl("Category:Drinking") },
+            { label: "Tragic", to: wikiPageUrl("Category:Tragic") },
           ]}
         />
       </Example>

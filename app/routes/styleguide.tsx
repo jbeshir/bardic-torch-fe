@@ -1,6 +1,5 @@
 import type { MetaFunction } from "@remix-run/cloudflare";
 import { Tabs } from "~/components/ui/Tabs";
-import { Wordmark } from "~/components/Wordmark";
 import { Gallery, SPECIMENS } from "~/styleguide/Gallery";
 
 /**
@@ -36,12 +35,9 @@ function Forced({
 
 export default function Styleguide() {
   return (
-    <main className="mx-auto max-w-shell px-4 py-8 md:px-6 md:py-12">
-      <header className="border-b border-border pb-6">
-        <p>
-          <Wordmark />
-        </p>
-        <h1 className="mt-4 text-h1 text-fg">Styleguide</h1>
+    <>
+      <div className="border-b border-border pb-6">
+        <h1 className="text-h1 text-fg">Styleguide</h1>
         <p className="mt-2 max-w-prose text-body-lg text-fg-muted">
           Every component in every state, following docs/DESIGN.md. Not part of
           production builds.
@@ -60,7 +56,7 @@ export default function Styleguide() {
             ))}
           </ul>
         </nav>
-      </header>
+      </div>
       <div className="mt-8">
         <Tabs
           label="Preview"
@@ -89,6 +85,6 @@ export default function Styleguide() {
           ]}
         />
       </div>
-    </main>
+    </>
   );
 }

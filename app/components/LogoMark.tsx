@@ -5,8 +5,16 @@ import { LOGO_MARK_PATHS } from "./logo-mark-paths";
  * the site, the Wordmark's text next to it is the accessible name. The
  * handle takes the text colour; the flame uses the accent tokens, so both
  * themes come from CSS. `className` sets the size, e.g. `h-6 w-6` (24 px).
+ * `flicker` makes the flame flicker once when a `group` ancestor is
+ * hovered (the header's home link), unless motion is reduced.
  */
-export function LogoMark({ className }: { className: string }) {
+export function LogoMark({
+  className,
+  flicker = false,
+}: {
+  className: string;
+  flicker?: boolean;
+}) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -18,7 +26,14 @@ export function LogoMark({ className }: { className: string }) {
       {LOGO_MARK_PATHS.cresset.map(rect => (
         <rect key={`${rect.x},${rect.y}`} fill="currentColor" {...rect} />
       ))}
-      <path className="fill-accent" d={LOGO_MARK_PATHS.flame} />
+      <path
+        className={
+          flicker
+            ? "origin-flame fill-accent transform-box-fill motion-safe:group-hover:animate-flicker"
+            : "fill-accent"
+        }
+        d={LOGO_MARK_PATHS.flame}
+      />
       <path className="fill-logo-core" d={LOGO_MARK_PATHS.core} />
     </svg>
   );

@@ -1,11 +1,12 @@
 import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
+import { wikiPageUrl } from "~/constants/navigation";
 import { renderWithRouter } from "~/test/router";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { TagList } from "./TagList";
 
-const WIKI = "https://bardictorch.miraheze.org/wiki/Category:Moods";
+const WIKI = wikiPageUrl("Category:Moods");
 
 describe("TagList", () => {
   it("is a list of link chips", async () => {

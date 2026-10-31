@@ -64,6 +64,8 @@ export default {
       1: "var(--shadow-1)",
       2: "var(--shadow-2)",
       3: "var(--shadow-3)",
+      // The current nav item's 3 px accent bar on its left edge (DESIGN §5.3).
+      "current-bar": "inset 3px 0 0 rgb(var(--accent))",
     },
     transitionDuration: {
       DEFAULT: "var(--dur-instant)",
@@ -111,16 +113,36 @@ export default {
     extend: {
       spacing: { 13: "3.25rem" },
       // The home-indicator inset on notched phones, under bottom sheets.
-      padding: { "safe-b": "env(safe-area-inset-bottom, 0px)" },
+      padding: {
+        "safe-b": "env(safe-area-inset-bottom, 0px)",
+        // Room under the page for the fixed bottom app bar (below md).
+        "app-bar": "calc(var(--app-bar-h) + env(safe-area-inset-bottom, 0px))",
+      },
       maxWidth: { prose: "68ch", form: "42rem", shell: "90rem" },
-      maxHeight: { sheet: "85dvh" },
-      inset: { toast: "calc(var(--header-h) + 0.5rem)" },
-      gridTemplateColumns: { infobox: "7rem 1fr" },
+      maxHeight: {
+        sheet: "85dvh",
+        "below-header": "calc(100dvh - var(--header-h))",
+      },
+      inset: {
+        toast: "calc(var(--header-h) + 0.5rem)",
+        header: "var(--header-h)",
+        "above-app-bar":
+          "calc(var(--app-bar-h) + env(safe-area-inset-bottom, 0px) + 1rem)",
+      },
+      gridTemplateColumns: {
+        infobox: "7rem 1fr",
+        // The persistent sidebar and the main column, lg and xl.
+        shell: "15rem minmax(0, 1fr)",
+        "shell-xl": "16rem minmax(0, 1fr)",
+      },
+      // The logo flicker scales the flame from near its base.
+      transformOrigin: { flame: "50% 90%" },
       opacity: { shimmer: "var(--shimmer-alpha)", scrim: "var(--scrim-alpha)" },
       height: {
         header: "var(--header-h)",
         "app-bar": "var(--app-bar-h)",
         "text-line": "0.75em",
+        progress: "3px",
       },
       minHeight: { textarea: "7.5rem" },
       width: {

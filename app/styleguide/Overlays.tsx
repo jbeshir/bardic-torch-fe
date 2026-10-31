@@ -145,7 +145,7 @@ function DrawerDemo() {
         open={open}
         onClose={() => setOpen(false)}
         title="Site menu"
-        footer={<ThemeToggle />}
+        footer={<ThemeToggle placement="drawer" />}
       >
         <nav aria-label="Styleguide sections">
           <ul role="list">
@@ -183,8 +183,11 @@ export function Theme() {
       title="ThemeToggle"
       summary="System, Light or Dark, saved in a cookie and switched at once (DESIGN §6.24). It changes the whole site, not only this preview."
     >
-      <Example label="As on the placeholder home page">
-        <ThemeToggle />
+      <Example label="In the header (icon-only at md, with text from lg)">
+        <ThemeToggle placement="header" />
+      </Example>
+      <Example label="In the drawer (44 px, sharing the width)">
+        <ThemeToggle placement="drawer" />
       </Example>
     </Specimen>
   );

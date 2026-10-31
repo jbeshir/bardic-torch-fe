@@ -270,6 +270,8 @@ The ratios were computed with the WCAG 2.x relative-luminance formula:
 | `accent` on `hero-glow`              | 3:1   | 5.06:1  | 7.21:1  | hero logo mark                                       |
 | `info-icon` on `surface-raised`      | 3:1   | 6.91:1  | 7.46:1  | toast icon and edge bar                              |
 | `success-icon` on `surface-raised`   | 3:1   | 6.19:1  | 7.71:1  | toast icon and edge bar                              |
+| `info-icon` on `surface-sunken`      | 3:1   | 5.62:1  | 9.02:1  | SidebarNote icon                                     |
+| `accent-text` on `surface-sunken`    | 3:1   | 5.45:1  | 10.18:1 | external nav arrow on hover                          |
 
 **Other non-text checks:**
 
@@ -685,37 +687,37 @@ Drawer (open, bottom sheet from the bar, max-height 85dvh):
 
 Generic components live in `app/components/ui/`. App-specific ones (ThemeToggle, LogoMark, Wordmark, AccountMenu, SearchBox, TOC, HelpLinks and so on) live in `app/components/`. Each has a styleguide entry (§10.6) and a `*.test.tsx`. Unless a component says otherwise, the shared rules below apply.
 
-| Component                              | Tag  | FE1 use                                                                           |
-| -------------------------------------- | ---- | --------------------------------------------------------------------------------- |
-| Button (6.2)                           | FE1  | Everywhere                                                                        |
-| Link (6.3)                             | FE1  | Everywhere                                                                        |
-| Field, Input (6.4, 6.5)                | FE1  | Settings                                                                          |
-| Textarea, Select, Checkbox (6.6–6.8)   | SG   | None in FE1                                                                       |
-| Tabs (6.9): Read label                 | FE1  | Every page head                                                                   |
-| Tabs (6.9): page-link tabs and tablist | SG   | Styleguide (the tablist drives the theme preview)                                 |
-| Infobox (6.10)                         | FE1  | Help pages ("At a glance")                                                        |
-| Card (6.11)                            | FE1  | Home, help index                                                                  |
-| Chip / TagList (6.12)                  | FE1  | Category chips, home facet chips                                                  |
-| ConservationBadge (6.13)               | FE2+ | None. FE1 writes status names as text                                             |
-| Alert (6.14)                           | FE1  | Settings, home, noscript notice                                                   |
-| Banner (6.14)                          | SG   | None in FE1 (page states are FE2+)                                                |
-| EmptyState (6.15)                      | FE1  | No API tokens                                                                     |
-| ErrorState (6.16)                      | FE1  | 404, error boundaries                                                             |
-| Spinner (6.17)                         | FE1  | Button loading                                                                    |
-| Skeleton (6.18)                        | SG   | None in FE1 (SSR pages render real content)                                       |
-| Breadcrumbs (6.19)                     | FE1  | Help pages                                                                        |
-| Pagination (6.20)                      | SG   | None in FE1                                                                       |
-| Drawer (6.21)                          | FE1  | Navigation <lg                                                                    |
-| Dialog (6.22)                          | FE1  | Revoke-token confirm                                                              |
-| Toast (6.23)                           | FE1  | Settings feedback                                                                 |
-| ThemeToggle (6.24)                     | FE1  | Header and drawer (C3 puts it on the placeholder home page until the shell lands) |
-| AccountMenu (6.25)                     | FE1  | Header / bottom bar                                                               |
-| SearchBox (6.26)                       | FE1  | Header, drawer, home hero (searches the original wiki)                            |
-| TOC (6.27)                             | FE1  | Help pages with ≥4 h2s                                                            |
-| LogoMark, Wordmark (5.9)               | FE1  | Header, footer, EmptyState art                                                    |
-| SidebarNote, ContributeCard (5.3)      | FE1  | Sidebar and drawer                                                                |
-| HelpLinks (5.7)                        | FE1  | Every footer and the root error page                                              |
-| Progress indicator (7.1)               | FE1  | Client navigations                                                                |
+| Component                              | Tag  | FE1 use                                                   |
+| -------------------------------------- | ---- | --------------------------------------------------------- |
+| Button (6.2)                           | FE1  | Everywhere                                                |
+| Link (6.3)                             | FE1  | Everywhere                                                |
+| Field, Input (6.4, 6.5)                | FE1  | Settings                                                  |
+| Textarea, Select, Checkbox (6.6–6.8)   | SG   | None in FE1                                               |
+| Tabs (6.9): Read label                 | FE1  | Every page head                                           |
+| Tabs (6.9): page-link tabs and tablist | SG   | Styleguide (the tablist drives the theme preview)         |
+| Infobox (6.10)                         | FE1  | Help pages ("At a glance")                                |
+| Card (6.11)                            | FE1  | Home, help index                                          |
+| Chip / TagList (6.12)                  | FE1  | Category chips, home facet chips                          |
+| ConservationBadge (6.13)               | FE2+ | None. FE1 writes status names as text                     |
+| Alert (6.14)                           | FE1  | Settings, home, noscript notice                           |
+| Banner (6.14)                          | SG   | None in FE1 (page states are FE2+)                        |
+| EmptyState (6.15)                      | FE1  | No API tokens                                             |
+| ErrorState (6.16)                      | FE1  | 404, error boundaries                                     |
+| Spinner (6.17)                         | FE1  | Button loading                                            |
+| Skeleton (6.18)                        | SG   | None in FE1 (SSR pages render real content)               |
+| Breadcrumbs (6.19)                     | FE1  | Help pages                                                |
+| Pagination (6.20)                      | SG   | None in FE1                                               |
+| Drawer (6.21)                          | FE1  | Navigation <lg                                            |
+| Dialog (6.22)                          | FE1  | Revoke-token confirm                                      |
+| Toast (6.23)                           | FE1  | Settings feedback                                         |
+| ThemeToggle (6.24)                     | FE1  | Header from md; drawer (and the no-JS site menu) below md |
+| AccountMenu (6.25)                     | FE1  | Header / bottom bar                                       |
+| SearchBox (6.26)                       | FE1  | Header, drawer, home hero (searches the original wiki)    |
+| TOC (6.27)                             | FE1  | Help pages with ≥4 h2s                                    |
+| LogoMark, Wordmark (5.9)               | FE1  | Header, footer, EmptyState art                            |
+| SidebarNote, ContributeCard (5.3)      | FE1  | Sidebar and drawer                                        |
+| HelpLinks (5.7)                        | FE1  | Every footer and the root error page                      |
+| Progress indicator (7.1)               | FE1  | Client navigations                                        |
 
 ### 6.1 Shared rules
 
@@ -1531,21 +1533,22 @@ The pattern is: what happened, then what to do. Don't blame the reader, and don'
 | `fontSize`                 | replaced             | `text-display`, `text-h1`, `text-h2`, `text-h3`, `text-h4`, `text-body-lg`, `text-body`, `text-body-sm`, `text-caption`, `text-label-caps` (always used with `uppercase`), `text-code`, `text-wordmark`. Each sets size (a CSS variable that changes at `md`), line height, letter-spacing and weight. |
 | `borderRadius`             | replaced             | `rounded-none`, `rounded-sm` (4 px), `rounded-md` (6 px), `rounded-lg` (10 px), `rounded-xl` (16 px), `rounded-full`                                                                                                                                                                                   |
 | `borderWidth`              | replaced             | `border` (1 px), `border-0`, `border-2`, `border-3`                                                                                                                                                                                                                                                    |
-| `boxShadow`                | replaced             | `shadow-none`, `shadow-1`, `shadow-2`, `shadow-3` (`var(--shadow-n)`)                                                                                                                                                                                                                                  |
+| `boxShadow`                | replaced             | `shadow-none`, `shadow-1`, `shadow-2`, `shadow-3` (`var(--shadow-n)`), `shadow-current-bar` (the current nav item's inset 3 px `accent` bar, §5.3)                                                                                                                                                     |
 | `transitionDuration`       | replaced             | `duration-instant`, `duration-fast`, `duration-base`, `duration-slow`, `duration-flicker` (default: instant)                                                                                                                                                                                           |
 | `transitionTimingFunction` | replaced             | `ease-standard`, `ease-out`, `ease-in` (default: standard)                                                                                                                                                                                                                                             |
 | `keyframes`, `animation`   | replaced             | `animate-spin`, `animate-pulse-soft`, `animate-shimmer`, `animate-progress`, `animate-flicker`, `animate-fade-in` (120 ms, the reduced-motion entrance), `animate-dialog-in`, `animate-toast-in` (180 ms), `animate-sheet-in`, `animate-drawer-in` (240 ms)                                            |
 | `spacing`                  | extended             | `13` (3.25rem, 52 px): `min-h-13`, `w-13` for `lg` buttons                                                                                                                                                                                                                                             |
-| `maxHeight`                | extended             | `max-h-sheet` (85dvh, the bottom-sheet drawer)                                                                                                                                                                                                                                                         |
-| `inset`                    | extended             | `top-toast` (`calc(var(--header-h) + 0.5rem)`, toasts below sm)                                                                                                                                                                                                                                        |
-| `gridTemplateColumns`      | extended             | `grid-cols-infobox` (`7rem 1fr`, infobox rows)                                                                                                                                                                                                                                                         |
+| `maxHeight`                | extended             | `max-h-sheet` (85dvh, the bottom-sheet drawer), `max-h-below-header` (`calc(100dvh - var(--header-h))`, the sticky sidebar)                                                                                                                                                                            |
+| `inset`                    | extended             | `top-toast` (`calc(var(--header-h) + 0.5rem)`, toasts below sm), `top-header` (`var(--header-h)`, the sticky sidebar), `bottom-above-app-bar` (`calc(var(--app-bar-h) + env(safe-area-inset-bottom) + 1rem)`, toasts from sm to md)                                                                    |
+| `gridTemplateColumns`      | extended             | `grid-cols-infobox` (`7rem 1fr`, infobox rows), `grid-cols-shell` (`15rem minmax(0, 1fr)`, sidebar and main at lg), `grid-cols-shell-xl` (`16rem minmax(0, 1fr)`)                                                                                                                                      |
 | `opacity`                  | extended             | `/shimmer` (`var(--shimmer-alpha)`) and `/scrim` (`var(--scrim-alpha)`) as colour modifiers: `via-surface-raised/shimmer`, `backdrop:bg-scrim/scrim`. Both alphas are per-theme effect tokens.                                                                                                         |
 | `maxWidth`                 | extended             | `max-w-prose` (68ch), `max-w-form` (42rem), `max-w-shell` (90rem)                                                                                                                                                                                                                                      |
-| `height`                   | extended             | `h-header` (`var(--header-h)`), `h-app-bar` (3.5rem), `h-text-line` (0.75em)                                                                                                                                                                                                                           |
+| `height`                   | extended             | `h-header` (`var(--header-h)`), `h-app-bar` (3.5rem), `h-text-line` (0.75em), `h-progress` (3 px, the navigation progress bar)                                                                                                                                                                         |
 | `minHeight`                | extended             | `min-h-textarea` (7.5rem)                                                                                                                                                                                                                                                                              |
 | `width`                    | extended             | `w-dialog` (`min(32rem, calc(100vw - 2rem))`), `w-drawer` (`min(20rem, 85vw)`), `w-infobox` (16.5rem), `w-infobox-xl` (18rem)                                                                                                                                                                          |
 | `textUnderlineOffset`      | extended             | `underline-offset-prose` (0.2em)                                                                                                                                                                                                                                                                       |
-| `padding`                  | extended             | `pb-safe-b` (`env(safe-area-inset-bottom, 0px)`, bottom sheets)                                                                                                                                                                                                                                        |
+| `padding`                  | extended             | `pb-safe-b` (`env(safe-area-inset-bottom, 0px)`, bottom sheets), `pb-app-bar` (`calc(var(--app-bar-h) + env(safe-area-inset-bottom, 0px))`, room for the bottom app bar under the page below md)                                                                                                       |
+| `transformOrigin`          | extended             | `origin-flame` (`50% 90%`, the logo flicker; with the `.transform-box-fill` utility in `base.css` so it is measured on the flame, not the viewBox)                                                                                                                                                     |
 | `zIndex`                   | extended             | `z-header` (30), `z-progress` (40), `z-toast` (50)                                                                                                                                                                                                                                                     |
 
 Other config: `future.hoverOnlyWhenSupported: true` (hover styles only for devices that can hover). `darkMode` is left at Tailwind's default and the `dark:` variant is never used (§2.1; `test/no-raw-colours.test.ts` rejects it).
@@ -1557,7 +1560,7 @@ In this config, the colour named `border` gives `border-border`. That is intende
 - `app/styles/tokens.ts`: the token source (hand-written).
 - `app/styles/tokens.css`: generated custom properties (colours per theme, shadows, type sizes, motion, layout).
 - `app/styles/fonts.css`: the Fraunces `@font-face` rules and the metric-matched fallback faces.
-- `app/styles/base.css`: element defaults (`html`, `body`, `::selection`, headings), `scroll-padding`, the global `:focus-visible` ring, the `.opsz-32` utility (wordmark), forced-colours rules and the smooth-scroll rule (inside `prefers-reduced-motion: no-preference`).
+- `app/styles/base.css`: element defaults (`html`, `body`, `::selection`, headings), `scroll-padding`, the global `:focus-visible` ring, the `.opsz-32` utility (wordmark), the `.transform-box-fill` utility (logo flicker), `scroll-padding-bottom` below md (bottom app bar), forced-colours rules and the smooth-scroll rule (inside `prefers-reduced-motion: no-preference`).
 - `app/styles/prose.css`: the `.prose-bt` component class (§3.3).
 - `app/styles/app.css`: the entry. It `@import`s the files above, then the Tailwind layers. `root.tsx` links it with `links()` as a render-blocking stylesheet.
 

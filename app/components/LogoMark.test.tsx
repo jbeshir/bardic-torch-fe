@@ -48,6 +48,26 @@ describe.each(["light", "dark"])("LogoMark (%s theme)", theme => {
 });
 
 describe("LogoMark", () => {
+  it("only flickers when asked, on its group's hover, from the flame's base, motion allowing", () => {
+    const { container } = render(
+      <>
+        <LogoMark className="h-6 w-6" />
+        <LogoMark className="h-6 w-6" flicker />
+      </>
+    );
+    const [still, lit] = [...container.querySelectorAll("svg")].map(
+      svg => svg.querySelectorAll("path")[1]
+    );
+    expect(still?.getAttribute("class")).toBe("fill-accent");
+    expect(lit).toHaveClass(
+      "fill-accent",
+      "origin-flame",
+      "transform-box-fill",
+      "motion-safe:group-hover:animate-flicker"
+    );
+    expect(lit?.getAttribute("class")).not.toMatch(/(^| )animate-flicker/);
+  });
+
   it("draws the shared torch geometry on a 24 × 24 grid, sized by its class", () => {
     const { svg } = renderMark();
     expect(svg).toHaveAttribute("viewBox", "0 0 24 24");

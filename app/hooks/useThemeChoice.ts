@@ -8,14 +8,16 @@ import type { loader as rootLoader } from "~/root";
 import type { action as themeAction } from "~/routes/resources.theme";
 
 /**
- * The theme to show now: a choice still being saved wins over the one the
- * root loader read from the cookie, so the page switches immediately.
+ * The theme to show now: a choice still being saved wins, so the page
+ * switches immediately; then the choice the server just saved (the root
+ * loader doesn't run again for it); then the one the root loader read from
+ * the cookie.
  */
 export function useThemeChoice(): ThemeChoice {
-  const saved = useRouteLoaderData<typeof rootLoader>("root")?.theme;
-  const pending = useFetcher<typeof themeAction>({
-    key: THEME_FETCHER_KEY,
-  }).formData?.get("theme");
+  const loaded = useRouteLoaderData<typeof rootLoader>("root")?.theme;
+  const fetcher = useFetcher<typeof themeAction>({ key: THEME_FETCHER_KEY });
+  const pending = fetcher.formData?.get("theme");
   if (isThemeChoice(pending)) return pending;
-  return saved ?? "system";
+  if (fetcher.data?.ok) return fetcher.data.theme;
+  return loaded ?? "system";
 }

@@ -40,6 +40,15 @@
     outline-offset: 2px;
   }
 
+  /* Below md the bottom app bar is fixed over the end of the viewport. */
+  @media not all and (min-width: 768px) {
+    html {
+      scroll-padding-bottom: calc(
+        var(--app-bar-h) + env(safe-area-inset-bottom, 0px) + 0.5rem
+      );
+    }
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     html {
       scroll-behavior: smooth;
@@ -69,5 +78,10 @@
   /* The wordmark's fixed optical size (DESIGN §3.2). */
   .opsz-32 {
     font-variation-settings: "opsz" 32;
+  }
+
+  /* Transform an SVG part around its own box (the logo's flame), not the viewBox. */
+  .transform-box-fill {
+    transform-box: fill-box;
   }
 }

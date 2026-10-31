@@ -100,3 +100,45 @@ describe("no feed-only bindings", () => {
     expect(wranglerToml).not.toMatch(/d1_databases/);
   });
 });
+
+/**
+ * The original wiki is reached through app/constants/navigation.ts only
+ * (DESIGN §5.3), so the catalogue launch is a change to one module. The
+ * help content adapted from the wiki (app/content/) and the docs may name
+ * it too; navigation's own test pins its URLs.
+ */
+const WIKI_HOST = "bardictorch.miraheze.org";
+const WIKI_HOST_ALLOWED = [
+  /^app\/constants\/navigation(\.test)?\.ts$/,
+  /^app\/content\//,
+  /^docs\//,
+  /^(README|CLAUDE)\.md$/,
+];
+
+describe("wiki host only in allowed files", () => {
+  it("is named in navigation.ts", () => {
+    expect(
+      readFileSync(join(root, "app/constants/navigation.ts"), "utf8")
+    ).toContain(WIKI_HOST);
+  });
+
+  it("appears nowhere else in source, tests or config", () => {
+    const offenders = scannedFiles().filter(
+      path =>
+        !WIKI_HOST_ALLOWED.some(allowed => allowed.test(path)) &&
+        readFileSync(join(root, path), "utf8").includes(WIKI_HOST)
+    );
+    expect(offenders).toEqual([]);
+  });
+
+  it("allows only the listed places", () => {
+    const allowed = (path: string) =>
+      WIKI_HOST_ALLOWED.some(pattern => pattern.test(path));
+    expect(allowed("app/constants/navigation.ts")).toBe(true);
+    expect(allowed("app/content/help/licence.md")).toBe(true);
+    expect(allowed("docs/DESIGN.md")).toBe(true);
+    expect(allowed("app/styleguide/Content.tsx")).toBe(false);
+    expect(allowed("app/constants/navigation.tsx")).toBe(false);
+    expect(allowed("test/fixtures/wiki-categories.json")).toBe(false);
+  });
+});

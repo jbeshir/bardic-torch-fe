@@ -10,9 +10,8 @@ import { useState } from "react";
 import { Alert } from "~/components/ui/Alert";
 import { Button, ButtonLink } from "~/components/ui/Button";
 import { Link } from "~/components/ui/Link";
+import { WIKI_HOME_URL } from "~/constants/navigation";
 import { Example, Specimen } from "./Specimen";
-
-const WIKI = "https://bardictorch.miraheze.org/wiki/Main_Page";
 
 /** A toggle button: its pressed state flips on each press. */
 function PressedDemo() {
@@ -92,7 +91,7 @@ export function Buttons() {
         <ButtonLink to="/" variant="primary" icon={IconArrowRight}>
           Go to the home page
         </ButtonLink>
-        <ButtonLink to={WIKI} external="wiki">
+        <ButtonLink to={WIKI_HOME_URL} external="wiki">
           Browse on the original wiki
         </ButtonLink>
       </Example>
@@ -114,7 +113,7 @@ export function Links() {
             contributing guide
           </Link>{" "}
           first, or see the{" "}
-          <Link to={WIKI} appearance="prose" external="wiki">
+          <Link to={WIKI_HOME_URL} appearance="prose" external="wiki">
             page on the original wiki
           </Link>
           .

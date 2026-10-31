@@ -24,12 +24,40 @@ const OPTIONS: readonly {
   { value: "dark", label: "Dark", icon: IconMoon },
 ];
 
+const PLACEMENTS = {
+  // 36 × 32 px; icon-only at md (the names stay for screen readers), icon
+  // and text from lg. The error floats under the header instead of
+  // stretching it.
+  header: {
+    group: "flex items-center gap-x-2",
+    track: "inline-flex",
+    button: "min-h-8 min-w-9 justify-center px-2 lg:px-3",
+    label: "sr-only lg:not-sr-only",
+    error:
+      "absolute right-0 top-full z-header mt-2 w-max max-w-xs rounded-md border border-border bg-surface-raised px-3 py-2 shadow-2",
+  },
+  // In the drawer's thumb zone: 44 px tall, sharing the width, with text.
+  drawer: {
+    group: "flex flex-wrap items-center gap-x-3 gap-y-2",
+    track: "flex w-full",
+    button: "min-h-11 flex-1 justify-center px-3",
+    label: "",
+    error: "mt-2",
+  },
+} as const;
+
 /**
- * System / Light / Dark (DESIGN §6.24). Without JS it is a plain form that
- * posts the choice and comes back to this page. With JS the submit goes
- * through a fetcher instead, and the page switches before the answer.
+ * System / Light / Dark (DESIGN §6.24): in the header from md, in the
+ * drawer below. Without JS it is a plain form that posts the choice and
+ * comes back to this page. With JS the submit goes through a fetcher
+ * instead, and the page switches before the answer.
  */
-export function ThemeToggle() {
+export function ThemeToggle({
+  placement,
+}: {
+  placement: keyof typeof PLACEMENTS;
+}) {
+  const look = PLACEMENTS[placement];
   const choice = useThemeChoice();
   const fetcher = useFetcher<typeof themeAction>({ key: THEME_FETCHER_KEY });
   const { pathname, search } = useLocation();
@@ -47,17 +75,20 @@ export function ThemeToggle() {
   }
 
   return (
-    <Form method="post" action={THEME_ACTION} onSubmit={submitWithFetcher}>
+    <Form
+      method="post"
+      action={THEME_ACTION}
+      onSubmit={submitWithFetcher}
+      className="relative"
+    >
       <input type="hidden" name="returnTo" value={`${pathname}${search}`} />
-      <div
-        role="group"
-        aria-labelledby={labelId}
-        className="flex flex-wrap items-center gap-x-3 gap-y-2"
-      >
+      <div role="group" aria-labelledby={labelId} className={look.group}>
         <span id={labelId} className="text-caption font-medium text-fg-muted">
           Theme
         </span>
-        <div className="inline-flex max-w-full flex-wrap rounded-full border border-border bg-surface-sunken p-0.5">
+        <div
+          className={`${look.track} max-w-full flex-wrap rounded-full border border-border bg-surface-sunken p-0.5`}
+        >
           {OPTIONS.map(({ value, label, icon: OptionIcon }) => (
             <button
               key={value}
@@ -65,16 +96,16 @@ export function ThemeToggle() {
               name="theme"
               value={value}
               aria-pressed={choice === value}
-              className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-transparent px-3 text-body-sm font-medium text-fg-muted transition-colors duration-instant hover:text-fg aria-pressed:border-border-strong aria-pressed:bg-surface-raised aria-pressed:text-fg aria-pressed:shadow-1"
+              className={`inline-flex items-center gap-1.5 rounded-full border border-transparent text-body-sm font-medium text-fg-muted transition-colors duration-instant hover:text-fg aria-pressed:border-border-strong aria-pressed:bg-surface-raised aria-pressed:text-fg aria-pressed:shadow-1 ${look.button}`}
             >
               <OptionIcon size={18} stroke={1.75} aria-hidden="true" />
-              {label}
+              <span className={look.label || undefined}>{label}</span>
             </button>
           ))}
         </div>
       </div>
       {failed ? (
-        <p role="alert" className="mt-2 text-caption text-danger-fg">
+        <p role="alert" className={`text-caption text-danger-fg ${look.error}`}>
           Couldn&apos;t save your theme. Try again.
         </p>
       ) : null}

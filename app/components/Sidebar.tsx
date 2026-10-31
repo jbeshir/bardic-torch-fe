@@ -1,0 +1,100 @@
+import { Link as RemixLink, useLocation } from "@remix-run/react";
+import { IconArrowUpRight, IconInfoCircle } from "@tabler/icons-react";
+import { ButtonLink } from "~/components/ui/Button";
+import { CONTRIBUTE_HREF, NAV_GROUPS } from "~/constants/navigation";
+import { LogoMark } from "./LogoMark";
+
+const ITEM =
+  "group flex min-h-11 items-center gap-2 rounded-md px-3 text-body-sm transition-colors focus-visible:-outline-offset-2 lg:min-h-9";
+const ITEM_IDLE = "text-fg-muted hover:bg-surface-sunken hover:text-fg";
+const ITEM_CURRENT =
+  "bg-accent-subtle font-semibold text-accent-text shadow-current-bar";
+
+function NavItem({
+  label,
+  href,
+  external,
+  current,
+}: {
+  label: string;
+  href: string;
+  external: boolean;
+  current: boolean;
+}) {
+  if (external) {
+    // Same tab: the hidden text says where it goes, not how it opens.
+    return (
+      <a href={href} rel="noopener" className={`${ITEM} ${ITEM_IDLE}`}>
+        {label}
+        <IconArrowUpRight
+          size={14}
+          stroke={1.75}
+          aria-hidden="true"
+          className="ml-auto shrink-0 text-fg-subtle group-hover:text-accent-text motion-safe:transition-transform motion-safe:duration-fast motion-safe:group-hover:-translate-y-0.5 motion-safe:group-hover:translate-x-0.5"
+        />
+        <span className="sr-only"> (opens original wiki)</span>
+      </a>
+    );
+  }
+  return (
+    <RemixLink
+      to={href}
+      prefetch="intent"
+      aria-current={current ? "page" : undefined}
+      className={`${ITEM} ${current ? ITEM_CURRENT : ITEM_IDLE}`}
+    >
+      {label}
+    </RemixLink>
+  );
+}
+
+/**
+ * The site navigation's contents (DESIGN §5.3), from
+ * app/constants/navigation.ts: Browse with its note about the wiki, the
+ * facets, Help, then the ContributeCard. The caller wraps it in the "Site"
+ * nav: the persistent sidebar from lg, or the drawer below.
+ */
+export function Sidebar() {
+  const { pathname } = useLocation();
+  return (
+    <>
+      {NAV_GROUPS.map(({ heading, note, items }) => (
+        <div key={heading} className="mt-6 first:mt-0">
+          <h3 className="mb-2 px-3 font-sans text-label-caps uppercase text-fg-subtle">
+            {heading}
+          </h3>
+          {note ? (
+            <p className="mb-2 flex gap-2 rounded-lg bg-surface-sunken p-3 text-caption text-fg-muted">
+              <IconInfoCircle
+                size={16}
+                stroke={1.75}
+                aria-hidden="true"
+                className="mt-0.5 shrink-0 text-info-icon"
+              />
+              {note}
+            </p>
+          ) : null}
+          <ul role="list">
+            {items.map(item => (
+              <li key={item.href}>
+                <NavItem {...item} current={item.href === pathname} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+      <div className="mt-8 rounded-lg border border-border bg-surface p-4">
+        <LogoMark className="h-5 w-5" />
+        <h3 className="mt-2 font-sans text-h4 text-fg">Keep the torch lit</h3>
+        <p className="mt-1 text-body-sm text-fg-muted">
+          Anyone can add a piece, a link or a performance.
+        </p>
+        <div className="mt-3">
+          <ButtonLink to={CONTRIBUTE_HREF} size="sm" fullWidth>
+            Start contributing
+          </ButtonLink>
+        </div>
+      </div>
+    </>
+  );
+}

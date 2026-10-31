@@ -2,6 +2,7 @@ import { IconDeviceFloppy, IconMenu2, IconTrash } from "@tabler/icons-react";
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { WIKI_HOME_URL } from "~/constants/navigation";
 import { renderWithRouter } from "~/test/router";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { Button, ButtonLink } from "./Button";
@@ -228,21 +229,14 @@ describe("ButtonLink", () => {
 
   it("marks an external target with an icon and a hidden suffix after the label", async () => {
     await renderWithRouter(
-      <ButtonLink
-        to="https://bardictorch.miraheze.org/wiki/Main_Page"
-        external="wiki"
-        size="lg"
-      >
+      <ButtonLink to={WIKI_HOME_URL} external="wiki" size="lg">
         Browse on the original wiki
       </ButtonLink>
     );
     const link = screen.getByRole("link", {
       name: "Browse on the original wiki (opens original wiki)",
     });
-    expect(link).toHaveAttribute(
-      "href",
-      "https://bardictorch.miraheze.org/wiki/Main_Page"
-    );
+    expect(link).toHaveAttribute("href", WIKI_HOME_URL);
     expect(link).toHaveAttribute("rel", "noopener");
     expect(link).not.toHaveAttribute("target");
     expect(link.querySelector("svg")).toHaveAttribute("aria-hidden", "true");

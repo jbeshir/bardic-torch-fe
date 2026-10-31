@@ -8,6 +8,7 @@ import { Link } from "~/components/ui/Link";
 import { Skeleton, SkeletonRegion } from "~/components/ui/Skeleton";
 import { Spinner } from "~/components/ui/Spinner";
 import { useToast } from "~/components/ui/Toast";
+import { wikiSearchUrl } from "~/constants/navigation";
 import { Example, Specimen } from "./Specimen";
 
 const ALERTS: readonly {
@@ -156,10 +157,7 @@ export function ErrorStates() {
                 <ButtonLink to="/" variant="primary">
                   Go to the home page
                 </ButtonLink>
-                <Link
-                  to="https://bardictorch.miraheze.org/w/index.php?search=styleguide"
-                  external="wiki"
-                >
+                <Link to={wikiSearchUrl("styleguide")} external="wiki">
                   Look on the original wiki
                 </Link>
               </>

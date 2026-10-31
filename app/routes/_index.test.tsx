@@ -1,35 +1,29 @@
-import { json } from "@remix-run/cloudflare";
-import { render, screen } from "@testing-library/react";
-import { createMemoryRouter, RouterProvider } from "react-router-dom";
+import { screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
-import Index from "./_index";
-
-function renderHome() {
-  const router = createMemoryRouter([
-    {
-      id: "root",
-      path: "/",
-      loader: () => json({ theme: null }),
-      element: <Index />,
-    },
-  ]);
-  render(<RouterProvider router={router} />);
-}
-
-describe.each(["light", "dark"])("Index route (%s)", theme => {
-  it("renders the site name as the page heading and the theme choice", async () => {
-    document.documentElement.dataset.theme = theme;
-    renderHome();
-    expect(
-      await screen.findByRole("heading", { level: 1, name: "Bardic Torch" })
-    ).toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "Theme" })).toBeInTheDocument();
-    document.documentElement.removeAttribute("data-theme");
-  });
-});
+import { renderWithRouter } from "~/test/router";
+import { expectSameMarkupInBothThemes } from "~/test/themes";
+import Index, { meta } from "./_index";
 
 describe("Index route", () => {
-  it("runs in the jsdom environment", () => {
-    expect(typeof document).toBe("object");
+  it("renders the site name as the page heading and what the site is", async () => {
+    await renderWithRouter(<Index />);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Bardic Torch" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/A community-kept index of bardic pieces/)
+    ).toBeInTheDocument();
+  });
+
+  it("is titled Bardic Torch, with a description", () => {
+    const tags = meta({} as Parameters<typeof meta>[0]);
+    expect(tags).toContainEqual({ title: "Bardic Torch" });
+    expect(tags).toContainEqual(
+      expect.objectContaining({ name: "description" })
+    );
+  });
+
+  it("looks the same in both themes", async () => {
+    await expectSameMarkupInBothThemes(() => renderWithRouter(<Index />));
   });
 });

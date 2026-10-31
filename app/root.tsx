@@ -23,6 +23,7 @@ import { readTheme } from "~/server/theme.server";
 import type { Theme } from "~/styles/tokens";
 import { useThemeChoice } from "~/hooks/useThemeChoice";
 import { ToastProvider } from "~/components/ui/Toast";
+import { AppShell } from "~/components/AppShell";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
@@ -116,7 +117,9 @@ export default function App() {
   return (
     <SentryProvider dsn={sentryDsn}>
       <ToastProvider>
-        <Outlet />
+        <AppShell>
+          <Outlet />
+        </AppShell>
       </ToastProvider>
     </SentryProvider>
   );
