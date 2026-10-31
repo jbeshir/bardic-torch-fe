@@ -792,7 +792,8 @@ Help text that explains format.       ← caption text-fg-muted, id="{id}-help"
 ⚠ Error message in plain words.       ← caption 500 text-danger-fg + IconAlertCircle 16 danger-icon, id="{id}-error"
 ```
 
-- The control's `id` comes from `useId()` (§6.1), and the help and error ids derive from it.
+- The control's `id` comes from `useId()` (§6.1), and the help and error ids derive from it. When something else links to the control (the error summary), the parent calls `useId()` and passes it as `Field id`.
+- The error line starts with a visually hidden "Error: ", so the description says what kind of message it is.
 - Mark _optional_ fields, not required ones, because most fields are required. Required controls also get the `required` attribute and `aria-required="true"`.
 - The control has `aria-describedby="{id}-help {id}-error"`, listing only the ids that exist. In the error state it gets `aria-invalid="true"`.
 - **Error summary** (SG; FE1's forms have one field each): a danger Alert at the top of the form with the heading "Check {n} thing(s) below" and in-page links to each field.
@@ -812,7 +813,7 @@ Help text that explains format.       ← caption text-fg-muted, id="{id}-help"
 - **Hover:** `border-fg-subtle`.
 - **Focus-visible / focus:** the shared ring. The border stays put, so there is no shift.
 - **Disabled:** `bg-surface-sunken text-fg-subtle border-border`. **Read-only:** `bg-surface-sunken`, with the border kept.
-- **Error:** a 2 px `border-danger-icon` with padding reduced by 1 px to avoid a shift, plus the message.
+- **Error:** a 2 px `danger-icon` edge, plus the message: the 1 px `border-danger-icon` plus an inset 1 px `ring-danger-icon` inside it, so neither the padding nor the content moves.
 - **Loading** (FE2+, async check, e.g. duplicate name): a 16 px trailing Spinner inside, `aria-busy` on the field wrapper.
 - Use `type` correctly (`email`, `url`, `search`) and set `autocomplete`. Never use placeholder as the label.
 - Leading and trailing icon slots are 20 px with `pl-10`/`pr-10`. Icons are `text-fg-subtle`.
@@ -837,8 +838,8 @@ Help text that explains format.       ← caption text-fg-muted, id="{id}-help"
 **Tag: SG.**
 
 - Use a native `<input type="checkbox">` with `appearance: none`: 20 × 20 px, `rounded-sm`, `border-2 border-border-strong`, `bg-surface-raised`.
-  - **Checked:** `bg-accent border-accent`, with a check drawn by an SVG mask in `accent-fg` (`IconCheck` path, stroke 3).
-  - **Indeterminate:** a horizontal bar.
+  - **Checked:** `bg-accent border-accent`, with an `IconCheck` (stroke 3) in `accent-fg` laid over the box (`pointer-events-none`, shown by `peer-checked:`). An overlaid SVG rather than a CSS mask keeps the tick a token colour and needs no data URI.
+  - **Indeterminate:** a horizontal bar (`IconMinus`, `peer-indeterminate:`).
 - Wrapped in a `<label>` with the text, the whole row is the hit area: min height 44 px below lg, 32 px at ≥lg, with `gap-3`. Help text sits under the label text, indented to the text.
 - **States:**
   - Hover: border `fg-subtle`.
@@ -846,7 +847,7 @@ Help text that explains format.       ← caption text-fg-muted, id="{id}-help"
   - Disabled: `bg-surface-sunken border-border`, check `fg-subtle`.
   - Error: border `danger-icon`, plus the field error message below the group.
 - **Groups:** `<fieldset>` with `<legend>` styled as a field label.
-- **Forced colours:** the mask-drawn check is not rendered in Windows High Contrast, which would make checked and unchecked look the same. So `@media (forced-colors: active) { input[type=checkbox] { appearance: auto; } }` hands the box back to the system control (rule in `app/styles/base.css`).
+- **Forced colours:** a token-drawn check is not reliable in Windows High Contrast, which would make checked and unchecked look the same. So the box carries `forced-colors:appearance-auto`, handing it back to the system control, and the overlaid marks carry `forced-colors:!hidden` (important, because `peer-checked:block` is more specific than a media-query utility). (A utility, not only the `base.css` rule: `appearance-none` is a utility, and the base layer can't override it.)
 
 ### 6.9 Tabs
 
