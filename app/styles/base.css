@@ -1,0 +1,72 @@
+/* Element defaults and global accessibility rules (DESIGN §2, §3, §6.1, §8). */
+@layer base {
+  html {
+    background-color: rgb(var(--canvas));
+    color: rgb(var(--fg));
+    /* Focus and anchor targets never land under the sticky header (WCAG 2.4.11). */
+    scroll-padding-top: calc(var(--header-h) + 0.5rem);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply font-sans text-body;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+    text-wrap: balance;
+    scroll-margin-top: calc(var(--header-h) + 0.5rem);
+  }
+
+  /* Never fake bold or italic in Fraunces; let the size drive optical size. */
+  h1,
+  h2,
+  h3,
+  .font-display {
+    font-optical-sizing: auto;
+    font-synthesis: none;
+  }
+
+  ::selection {
+    background-color: rgb(var(--selection));
+    color: rgb(var(--fg));
+  }
+
+  /* The shared focus ring; dense containers inset it per component. */
+  :focus-visible {
+    outline: 2px solid rgb(var(--focus));
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  /* Windows High Contrast: keep control edges and state marks visible. */
+  @media (forced-colors: active) {
+    button {
+      border: 1px solid ButtonText;
+    }
+
+    [aria-current]:not([aria-current="false"]),
+    [aria-pressed="true"] {
+      outline: 2px solid Highlight;
+      outline-offset: -2px;
+    }
+
+    input[type="checkbox"] {
+      appearance: auto;
+    }
+  }
+}
+
+@layer utilities {
+  /* The wordmark's fixed optical size (DESIGN §3.2). */
+  .opsz-32 {
+    font-variation-settings: "opsz" 32;
+  }
+}

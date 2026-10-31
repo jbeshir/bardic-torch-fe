@@ -1,0 +1,162 @@
+/* Long-form content: help pages (DESIGN §3.3). */
+@layer components {
+  .prose-bt {
+    @apply max-w-prose text-body-lg;
+    text-wrap: pretty;
+  }
+
+  .prose-bt :where(p, ul, ol, dl, table, blockquote, pre) {
+    margin-block: 0 1em;
+  }
+
+  .prose-bt :where(h2) {
+    @apply text-h2;
+    margin-block: 2em 0.5em;
+    padding-bottom: 0.25em;
+    border-bottom: 1px solid rgb(var(--border));
+  }
+
+  .prose-bt :where(h3) {
+    @apply text-h3;
+    margin-block: 1.5em 0.4em;
+  }
+
+  .prose-bt :where(h4) {
+    @apply font-sans text-h4;
+    margin-block: 1.25em 0.25em;
+  }
+
+  .prose-bt :where(a) {
+    @apply text-link underline decoration-link/40 decoration-1 underline-offset-prose;
+  }
+
+  .prose-bt :where(a:visited) {
+    @apply text-link-visited decoration-link-visited/40;
+  }
+
+  .prose-bt :where(a:hover, a:active) {
+    @apply text-link-hover decoration-link-hover decoration-2;
+  }
+
+  .prose-bt :where(ul, ol) {
+    padding-left: 1.5em;
+  }
+
+  .prose-bt :where(ul) {
+    list-style-type: disc;
+  }
+
+  .prose-bt :where(ul ul) {
+    list-style-type: circle;
+  }
+
+  .prose-bt :where(ol) {
+    list-style-type: decimal;
+  }
+
+  .prose-bt :where(ol ol) {
+    list-style-type: lower-alpha;
+  }
+
+  .prose-bt :where(ul > li)::marker {
+    color: rgb(var(--fg-subtle));
+  }
+
+  .prose-bt :where(ol > li)::marker {
+    color: rgb(var(--fg-muted));
+  }
+
+  .prose-bt :where(li + li) {
+    margin-top: 0.25em;
+  }
+
+  .prose-bt :where(blockquote) {
+    @apply text-fg-muted;
+    border-left: 3px solid rgb(var(--border-strong));
+    padding: 0.25em 0 0.25em 1em;
+    font-style: normal;
+  }
+
+  .prose-bt :where(blockquote footer) {
+    @apply text-caption;
+  }
+
+  .prose-bt :where(blockquote footer)::before {
+    content: "— ";
+  }
+
+  .prose-bt :where(table) {
+    @apply w-full text-body-sm;
+    border-collapse: collapse;
+  }
+
+  .prose-bt :where(caption) {
+    @apply text-caption text-fg-muted;
+    caption-side: top;
+    text-align: left;
+  }
+
+  .prose-bt :where(th) {
+    @apply bg-surface-sunken text-left font-semibold text-fg;
+  }
+
+  .prose-bt :where(th, td) {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid rgb(var(--border));
+  }
+
+  .prose-bt :where(dl) {
+    display: grid;
+    gap: 0.25rem 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .prose-bt :where(dl) {
+      grid-template-columns: minmax(8rem, max-content) 1fr;
+    }
+  }
+
+  .prose-bt :where(dt) {
+    @apply text-body-sm font-semibold text-fg-muted;
+  }
+
+  .prose-bt :where(dd) {
+    @apply mb-2 text-body sm:mb-0;
+  }
+
+  .prose-bt :where(code) {
+    @apply rounded-sm border border-border bg-surface-sunken px-1.5 py-0.5 font-mono text-code text-fg;
+  }
+
+  .prose-bt :where(pre) {
+    @apply overflow-x-auto rounded-md bg-surface-sunken p-4;
+  }
+
+  .prose-bt :where(pre code) {
+    @apply border-0 bg-transparent p-0;
+  }
+
+  .prose-bt :where(hr) {
+    position: relative;
+    margin: 2em auto;
+    border: 0;
+    border-top: 1px solid rgb(var(--border));
+    overflow: visible;
+  }
+
+  /* A decorative lozenge; generated content in ::after is not read out. */
+  .prose-bt :where(hr)::after {
+    content: "";
+    position: absolute;
+    top: -0.3rem;
+    left: 50%;
+    width: 0.5rem;
+    height: 0.5rem;
+    background-color: rgb(var(--border-strong));
+    transform: translateX(-50%) rotate(45deg);
+  }
+
+  .prose-bt :where(abbr[title]) {
+    text-decoration: underline dotted;
+  }
+}

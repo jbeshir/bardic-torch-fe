@@ -9,14 +9,29 @@ import {
   isRouteErrorResponse,
   Link,
 } from "@remix-run/react";
-import "./tailwind.css";
-import type { LoaderFunctionArgs } from "@remix-run/cloudflare";
+import frauncesLatin from "@fontsource-variable/fraunces/files/fraunces-latin-opsz-normal.woff2?url";
+import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { json } from "@remix-run/cloudflare";
 import type { ReactNode } from "react";
 import { getServerAuthContext } from "~/server/auth.server";
 import { SentryProvider } from "~/contexts/SentryContext";
 import { useNonce } from "~/contexts/NonceContext";
 import { captureRemixErrorBoundaryError } from "@sentry/remix";
+import stylesheet from "~/styles/app.css?url";
+import { THEME_COLOURS } from "~/styles/theme-colour.gen";
+
+export const links: LinksFunction = () => [
+  { rel: "stylesheet", href: stylesheet },
+  {
+    rel: "preload",
+    href: frauncesLatin,
+    as: "font",
+    type: "font/woff2",
+    crossOrigin: "anonymous",
+  },
+  { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+  { rel: "manifest", href: "/site.webmanifest" },
+];
 
 export function Layout({ children }: { children: ReactNode }) {
   const nonce = useNonce();
@@ -25,6 +40,17 @@ export function Layout({ children }: { children: ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="color-scheme" content="light dark" />
+        <meta
+          name="theme-color"
+          media="(prefers-color-scheme: light)"
+          content={THEME_COLOURS.light}
+        />
+        <meta
+          name="theme-color"
+          media="(prefers-color-scheme: dark)"
+          content={THEME_COLOURS.dark}
+        />
         <Meta />
         <Links />
       </head>

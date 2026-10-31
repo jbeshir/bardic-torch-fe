@@ -1,0 +1,9 @@
+/* The stylesheet entry (DESIGN Appendix A). root.tsx links it in <head>. */
+@import "./tokens.css";
+@import "./fonts.css";
+@import "./base.css";
+@import "./prose.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
