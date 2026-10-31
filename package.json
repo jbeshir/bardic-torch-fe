@@ -17,7 +17,10 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:e2e": "playwright test",
-    "validate": "npm run format:check && npm run lint && npm run typecheck && npm run test:run"
+    "validate": "npm run format:check && npm run lint && npm run typecheck && npm run check:api && npm run test:run",
+    "gen:api": "node scripts/gen-api.mjs",
+    "check:api": "node scripts/gen-api.mjs --check",
+    "sync:api": "node scripts/sync-api.mjs"
   },
   "dependencies": {
     "@remix-run/cloudflare": "2.17.4",
@@ -34,6 +37,7 @@
     "@cloudflare/workers-types": "4.20250321.0",
     "@playwright/test": "1.61.1",
     "@remix-run/dev": "2.17.4",
+    "@seriousme/openapi-schema-validator": "2.11.0",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "14.3.1",
     "@types/react": "18.3.19",
@@ -48,6 +52,7 @@
     "eslint-plugin-react": "7.37.4",
     "eslint-plugin-react-hooks": "4.6.2",
     "jsdom": "24.1.3",
+    "openapi-typescript": "7.13.0",
     "postcss": "8.5.3",
     "prettier": "3.6.0",
     "tailwindcss": "3.4.17",
@@ -55,7 +60,8 @@
     "vite": "5.4.14",
     "vite-tsconfig-paths": "4.3.2",
     "vitest": "1.6.1",
-    "wrangler": "3.57.1"
+    "wrangler": "3.57.1",
+    "yaml": "2.9.1"
   },
   "engines": {
     "node": ">=20.0.0"
