@@ -46,7 +46,7 @@ const SIZES: Record<Size, { box: string; square: string; icon: number }> = {
 };
 
 const BASE =
-  "relative inline-flex shrink-0 select-none items-center justify-center rounded-md text-center transition-colors motion-safe:active:translate-y-px";
+  "relative inline-flex max-w-full shrink-0 select-none items-center justify-center rounded-md text-center transition-colors motion-safe:active:translate-y-px";
 
 /** Toggle buttons (`aria-pressed`), disabled and busy, for every variant. */
 const STATES =

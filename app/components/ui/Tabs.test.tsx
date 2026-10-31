@@ -1,6 +1,7 @@
 import { IconBook2, IconHistory, IconPencil } from "@tabler/icons-react";
 import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useEffect, useRef } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { renderWithRouter } from "~/test/router";
@@ -125,6 +126,70 @@ describe("Tabs", () => {
     expect(tabs[2]).toHaveAttribute("aria-controls", panel.id);
     expect(screen.queryByText("Light preview")).not.toBeVisible();
     expect(screen.queryByRole("heading")).toBeNull();
+  });
+
+  it("when lazy, renders only the default panel without JS", () => {
+    document.body.innerHTML = renderToString(
+      <Tabs label="Preview" panels={PANELS} defaultIndex={1} lazy />
+    );
+    const headings = [...document.querySelectorAll("section > h3")];
+    expect(headings.map(heading => heading.textContent)).toEqual(["Dark"]);
+    expect(document.body).toHaveTextContent("Dark preview");
+    expect(document.body).not.toHaveTextContent("Light preview");
+    expect(document.body).not.toHaveTextContent("Both previews");
+    document.body.innerHTML = "";
+  });
+
+  it("when lazy, keeps only the selected panel's content in the page", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<Tabs label="Preview" panels={PANELS} lazy />);
+    const panels = () => [...container.querySelectorAll("[role=tabpanel]")];
+    expect(panels().map(panel => panel.textContent)).toEqual([
+      "Light preview",
+      "",
+      "",
+    ]);
+    for (const tab of screen.getAllByRole("tab")) {
+      expect(
+        document.getElementById(tab.getAttribute("aria-controls") ?? "")
+      ).toHaveAttribute("role", "tabpanel");
+    }
+    await user.click(screen.getByRole("tab", { name: "Side by side" }));
+    expect(panels().map(panel => panel.textContent)).toEqual([
+      "",
+      "",
+      "Both previews",
+    ]);
+    expect(screen.getByRole("tabpanel")).toHaveAccessibleName("Side by side");
+  });
+
+  it("keeps focus on the chosen tab when its lazy panel focuses something as it mounts", async () => {
+    const user = userEvent.setup();
+    function Grabby() {
+      const ref = useRef<HTMLHeadingElement>(null);
+      useEffect(() => ref.current?.focus(), []);
+      return (
+        <h2 ref={ref} tabIndex={-1}>
+          Grabs focus
+        </h2>
+      );
+    }
+    render(
+      <Tabs
+        label="Preview"
+        lazy
+        panels={[
+          { label: "Plain", content: <p>Plain</p> },
+          { label: "Grabby", content: <Grabby /> },
+          { label: "Also grabby", content: <Grabby /> },
+        ]}
+      />
+    );
+    await user.click(screen.getByRole("tab", { name: "Grabby" }));
+    expect(screen.getByRole("tab", { name: "Grabby" })).toHaveFocus();
+    await user.keyboard("{ArrowRight}");
+    expect(screen.getByRole("tab", { name: "Also grabby" })).toHaveFocus();
+    expect(screen.getByRole("tabpanel")).toHaveTextContent("Grabs focus");
   });
 
   it("moves and activates with the arrow keys, wrapping, and jumps with Home and End", async () => {

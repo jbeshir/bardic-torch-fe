@@ -65,6 +65,8 @@ export default function Styleguide() {
         <Tabs
           label="Preview"
           headingLevel={2}
+          // Each panel is a whole gallery: keep only the one being viewed.
+          lazy
           panels={[
             { label: "Current", content: <Gallery /> },
             {

@@ -48,11 +48,24 @@ describe("/styleguide", () => {
     }
   });
 
-  it("never repeats an id, across all the preview copies", async () => {
+  it("renders one gallery at a time and never repeats an id", async () => {
+    const user = userEvent.setup();
     await renderStyleguide();
-    const ids = [...document.querySelectorAll("[id]")].map(({ id }) => id);
-    expect(ids.length).toBeGreaterThan(SPECIMENS.length * 5);
-    expect(new Set(ids).size).toBe(ids.length);
+    const expected = {
+      Current: SPECIMENS.length,
+      Light: SPECIMENS.length,
+      Dark: SPECIMENS.length,
+      "Side by side": SPECIMENS.length * 2,
+    };
+    for (const [name, blocks] of Object.entries(expected)) {
+      await act(() => user.click(screen.getByRole("tab", { name })));
+      expect(
+        document.querySelectorAll("section[data-specimen]"),
+        name
+      ).toHaveLength(blocks);
+      const ids = [...document.querySelectorAll("[id]")].map(({ id }) => id);
+      expect(new Set(ids).size, name).toBe(ids.length);
+    }
   });
 
   it("previews Current, Light, Dark and Side by side from a tablist", async () => {

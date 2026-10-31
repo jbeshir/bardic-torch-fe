@@ -1,8 +1,8 @@
 import { createContext, useContext, type ReactNode } from "react";
 
 /**
- * Each copy of the gallery (one per theme preview panel) prefixes its
- * anchors, so ids stay unique; the "Current" copy has none, which makes
+ * Each forced-theme copy of the gallery prefixes its anchors, so the two
+ * side-by-side copies never share an id; the "Current" copy has none, which makes
  * `/styleguide#button` and the e2e checkpoints point at it.
  */
 export const AnchorPrefix = createContext("");

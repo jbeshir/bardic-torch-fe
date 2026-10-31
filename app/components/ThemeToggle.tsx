@@ -57,7 +57,7 @@ export function ThemeToggle() {
         <span id={labelId} className="text-caption font-medium text-fg-muted">
           Theme
         </span>
-        <div className="inline-flex rounded-full border border-border bg-surface-sunken p-0.5">
+        <div className="inline-flex max-w-full flex-wrap rounded-full border border-border bg-surface-sunken p-0.5">
           {OPTIONS.map(({ value, label, icon: OptionIcon }) => (
             <button
               key={value}
@@ -65,7 +65,7 @@ export function ThemeToggle() {
               name="theme"
               value={value}
               aria-pressed={choice === value}
-              className="inline-flex h-8 items-center gap-1.5 rounded-full border border-transparent px-3 text-body-sm font-medium text-fg-muted transition-colors duration-instant hover:text-fg aria-pressed:border-border-strong aria-pressed:bg-surface-raised aria-pressed:text-fg aria-pressed:shadow-1"
+              className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-transparent px-3 text-body-sm font-medium text-fg-muted transition-colors duration-instant hover:text-fg aria-pressed:border-border-strong aria-pressed:bg-surface-raised aria-pressed:text-fg aria-pressed:shadow-1"
             >
               <OptionIcon size={18} stroke={1.75} aria-hidden="true" />
               {label}

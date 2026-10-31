@@ -124,7 +124,7 @@ test("the preview forces a theme on its panel, whatever the device prefers", asy
     "aria-selected",
     "true"
   );
-  const dark = page.locator('[data-preview="dark"]').first();
+  const dark = page.locator('[data-preview="dark"]');
   await expect(dark).toBeVisible();
   expect(
     await dark.evaluate(element =>
@@ -273,7 +273,10 @@ test.describe("Drawer", () => {
   }) => {
     await page.setViewportSize({ width: 360, height: 800 });
     await openStyleguide(page, "#drawer");
-    const trigger = block(page, "drawer").getByRole("button", { name: "Menu" });
+    const trigger = block(page, "drawer").getByRole("button", {
+      name: "Menu",
+      exact: true,
+    });
     await trigger.click();
     const drawer = page.getByRole("dialog", { name: "Site menu" });
     await expect(drawer).toBeVisible();
@@ -312,7 +315,10 @@ test.describe("Drawer", () => {
   }) => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await openStyleguide(page, "#drawer");
-    const trigger = block(page, "drawer").getByRole("button", { name: "Menu" });
+    const trigger = block(page, "drawer").getByRole("button", {
+      name: "Menu",
+      exact: true,
+    });
     await trigger.click();
     const drawer = page.getByRole("dialog", { name: "Site menu" });
     await expect(drawer).toBeVisible();
@@ -334,7 +340,9 @@ test.describe("Drawer", () => {
 
   test("checkpoint: drawer-open", async ({ page }) => {
     await openStyleguide(page, "#drawer");
-    await block(page, "drawer").getByRole("button", { name: "Menu" }).click();
+    await block(page, "drawer")
+      .getByRole("button", { name: "Menu", exact: true })
+      .click();
     await expect(page.getByRole("dialog", { name: "Site menu" })).toBeVisible();
     await checkpoint(page, "drawer-open", { target: "dialog[open]" });
   });
@@ -490,16 +498,36 @@ test.describe("text spacing (WCAG 1.4.12)", () => {
             );
           }
         }
-        // Controls grow with their text instead of cutting it off.
+        // Controls grow with their text instead of cutting it off: their
+        // content (text and icons) stays inside their padding box on both
+        // axes. Content is measured with a Range rather than scrollHeight,
+        // which also counts the small buttons' deliberate ::before hit-area
+        // pad (DESIGN §6.2) that reaches 4 px past the box below lg.
         for (const control of panel?.querySelectorAll<HTMLElement>(
           "button, a"
         ) ?? []) {
           if (control.closest("dialog")) continue;
           if (control.getClientRects().length === 0) continue;
-          if (getComputedStyle(control).display === "inline") continue;
-          if (control.scrollHeight > control.clientHeight + 1) {
+          const style = getComputedStyle(control);
+          if (style.display === "inline") continue;
+          const box = control.getBoundingClientRect();
+          const range = document.createRange();
+          range.selectNodeContents(control);
+          const content = range.getBoundingClientRect();
+          if (content.width === 0 && content.height === 0) continue;
+          const inside =
+            content.top >= box.top + parseFloat(style.borderTopWidth) - 1 &&
+            content.bottom <=
+              box.bottom - parseFloat(style.borderBottomWidth) + 1 &&
+            content.left >= box.left + parseFloat(style.borderLeftWidth) - 1 &&
+            content.right <= box.right - parseFloat(style.borderRightWidth) + 1;
+          if (!inside) {
+            const name =
+              control.textContent?.trim() ||
+              control.getAttribute("aria-label") ||
+              "";
             problems.push(
-              `${control.tagName.toLowerCase()} "${(control.textContent ?? control.getAttribute("aria-label") ?? "").trim().slice(0, 40)}" is cut off`
+              `${control.tagName.toLowerCase()} "${name.slice(0, 40)}" is cut off`
             );
           }
         }

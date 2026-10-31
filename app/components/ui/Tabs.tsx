@@ -1,6 +1,7 @@
 import { Link as RemixLink } from "@remix-run/react";
 import type { Icon } from "@tabler/icons-react";
 import {
+  useEffect,
   useId,
   useRef,
   useState,
@@ -56,7 +57,7 @@ export function ViewTabs({
         </span>
       ) : (
         <nav aria-label="Page views">
-          <ul className="flex">
+          <ul className="flex flex-wrap">
             {views.map(view => (
               <li key={view.to}>
                 <RemixLink
@@ -89,12 +90,18 @@ type Panel = {
  * page views. Arrow keys move and activate (panels are cheap), Home and End
  * jump, Tab goes into the panel. Without JS (and until hydration) the
  * tablist is hidden and every panel is shown in turn under its heading.
+ *
+ * `lazy` is for panels too heavy to keep in the page all at once (the
+ * styleguide's whole-gallery previews): only the selected panel's content
+ * is rendered (the others stay as empty hidden tabpanels, so every tab's
+ * `aria-controls` resolves), and without JS only the default panel is shown.
  */
 export function Tabs({
   label,
   panels,
   defaultIndex = 0,
   headingLevel = 3,
+  lazy = false,
 }: {
   /** The tablist's accessible name. */
   label: string;
@@ -102,14 +109,27 @@ export function Tabs({
   defaultIndex?: number;
   /** The level of the panel headings shown without JS. */
   headingLevel?: 2 | 3;
+  /** Render only the selected panel, and only the default one without JS. */
+  lazy?: boolean;
 }) {
   const id = useId();
   const enhanced = useHydrated();
   const [selected, setSelected] = useState(defaultIndex);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
+  const chosen = useRef(false);
   const Heading = headingLevel === 2 ? "h2" : "h3";
 
+  // Focus stays on the tab the user chose, even when the panel it mounts
+  // focuses something of its own (an ErrorState heading in the styleguide):
+  // this effect runs after the panel's own effects.
+  useEffect(() => {
+    if (!chosen.current) return;
+    chosen.current = false;
+    tabs.current[selected]?.focus();
+  }, [selected]);
+
   function select(index: number) {
+    chosen.current = true;
     setSelected(index);
     tabs.current[index]?.focus();
   }
@@ -148,7 +168,7 @@ export function Tabs({
             aria-selected={index === selected}
             aria-controls={`${id}-panel-${index}`}
             tabIndex={index === selected ? 0 : -1}
-            onClick={() => setSelected(index)}
+            onClick={() => select(index)}
             onKeyDown={onKeyDown}
             className="min-h-9 rounded-md border border-transparent px-3 text-body-sm font-medium text-fg-muted transition-colors hover:text-fg aria-selected:border-border aria-selected:bg-surface-raised aria-selected:text-fg aria-selected:shadow-1"
           >
@@ -167,9 +187,9 @@ export function Tabs({
             hidden={index !== selected}
             className="mt-4 rounded-lg"
           >
-            {panel.content}
+            {lazy && index !== selected ? null : panel.content}
           </div>
-        ) : (
+        ) : lazy && index !== defaultIndex ? null : (
           <section
             key={panel.label}
             aria-labelledby={`${id}-heading-${index}`}
