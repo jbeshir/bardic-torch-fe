@@ -147,6 +147,13 @@ describe("AccountMenu signed in", () => {
     expect(panel).toHaveClass("bottom-full");
     expect(document.querySelector("summary")).toHaveClass("min-h-11");
   });
+
+  it("keeps an edge on the header trigger in forced colours", async () => {
+    await renderMenu(SIGNED_IN, "header");
+    expect(document.querySelector("summary")).toHaveClass(
+      "forced-colors:border"
+    );
+  });
 });
 
 describe("AccountMenu when the profile didn't load", () => {

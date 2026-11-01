@@ -212,6 +212,8 @@ describe("ButtonLink", () => {
     const link = screen.getByRole("link", { name: "How to contribute" });
     expect(link).toHaveAttribute("href", "/help/contributing");
     expect(link).toHaveClass("bg-accent", "min-h-13");
+    // An edge in forced colours, like a <button> (base.css).
+    expect(link).toHaveClass("forced-colors:border");
     await act(() => userEvent.click(link));
     expect(router.state.location.pathname).toBe("/help/contributing");
   });

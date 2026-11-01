@@ -184,7 +184,7 @@ export function AccountMenu({
         aria-controls={panelId}
         className={
           placement === "header"
-            ? "summary-plain inline-flex min-h-11 cursor-pointer items-center gap-1 rounded-full px-1 text-fg-muted transition-colors hover:text-fg"
+            ? "summary-plain inline-flex min-h-11 cursor-pointer items-center gap-1 rounded-full px-1 text-fg-muted transition-colors hover:text-fg forced-colors:border"
             : `summary-plain cursor-pointer ${BAR_CELL}`
         }
       >

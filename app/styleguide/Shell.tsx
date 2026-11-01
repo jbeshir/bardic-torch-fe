@@ -6,7 +6,7 @@ import { WikiPage } from "~/components/WikiPage";
 import { Infobox } from "~/components/ui/Infobox";
 import { Link } from "~/components/ui/Link";
 import { wikiPageUrl } from "~/constants/navigation";
-import { useContext } from "react";
+import { useContext, type ReactNode } from "react";
 import { AnchorPrefix, Example, Specimen } from "./Specimen";
 
 const MORWEN = {
@@ -35,6 +35,14 @@ function useContents() {
   ];
 }
 
+/**
+ * At the right of its example, as in the header: the panel opens leftwards
+ * from the trigger's right edge, so it stays on screen at 360.
+ */
+function HeaderEnd({ children }: { children: ReactNode }) {
+  return <div className="flex w-full justify-end">{children}</div>;
+}
+
 export function AccountMenus() {
   return (
     <Specimen
@@ -43,26 +51,34 @@ export function AccountMenus() {
       summary="The account control in the header and the bottom bar (DESIGN §6.25): Log in, or a disclosure with the profile, Settings and Log out. Open one to see its panel."
     >
       <Example label="Signed out">
-        <AccountMenu account={{ state: "signed-out" }} placement="header" />
+        <HeaderEnd>
+          <AccountMenu account={{ state: "signed-out" }} placement="header" />
+        </HeaderEnd>
       </Example>
       <Example label="Signed in">
-        <AccountMenu account={MORWEN} placement="header" />
+        <HeaderEnd>
+          <AccountMenu account={MORWEN} placement="header" />
+        </HeaderEnd>
       </Example>
       <Example label="Profile couldn’t load">
-        <AccountMenu
-          account={{ state: "profile-unavailable" }}
-          placement="header"
-        />
+        <HeaderEnd>
+          <AccountMenu
+            account={{ state: "profile-unavailable" }}
+            placement="header"
+          />
+        </HeaderEnd>
       </Example>
       <Example label="Blocked account">
-        <AccountMenu
-          account={{
-            state: "blocked",
-            message:
-              "Your account is blocked, so you can’t make changes. Contact the Bardic Torch team if you think this is a mistake.",
-          }}
-          placement="header"
-        />
+        <HeaderEnd>
+          <AccountMenu
+            account={{
+              state: "blocked",
+              message:
+                "Your account is blocked, so you can’t make changes. Contact the Bardic Torch team if you think this is a mistake.",
+            }}
+            placement="header"
+          />
+        </HeaderEnd>
       </Example>
     </Specimen>
   );

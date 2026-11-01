@@ -45,8 +45,10 @@ const SIZES: Record<Size, { box: string; square: string; icon: number }> = {
   },
 };
 
+// forced-colors:border: a button-styled link keeps an edge in forced colours,
+// as base.css gives every <button>.
 const BASE =
-  "relative inline-flex max-w-full shrink-0 select-none items-center justify-center rounded-md text-center transition-colors motion-safe:active:translate-y-px";
+  "relative inline-flex max-w-full shrink-0 select-none items-center justify-center rounded-md text-center transition-colors motion-safe:active:translate-y-px forced-colors:border";
 
 /** Toggle buttons (`aria-pressed`), disabled and busy, for every variant. */
 const STATES =
