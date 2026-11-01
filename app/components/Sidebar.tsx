@@ -58,8 +58,10 @@ function NavItem({
  */
 export function Sidebar() {
   const { pathname } = useLocation();
+  // One wrapper, so the first group (first:mt-0) starts flush with the
+  // nav whatever the caller puts before it.
   return (
-    <>
+    <div>
       {NAV_GROUPS.map(({ heading, note, items }) => (
         <div key={heading} className="mt-6 first:mt-0 lg:mt-5">
           <h3 className="mb-2 px-3 font-sans text-label-caps uppercase text-fg-subtle lg:mb-1">
@@ -97,6 +99,6 @@ export function Sidebar() {
           </ButtonLink>
         </div>
       </div>
-    </>
+    </div>
   );
 }

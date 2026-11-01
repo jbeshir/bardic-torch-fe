@@ -17,7 +17,12 @@
   h1,
   h2,
   h3 {
-    @apply font-display;
+    /*
+     * The display stack by theme(), not `@apply font-display`: @apply also
+     * copies the rule below that names .font-display, and with it
+     * font-synthesis: none onto every heading, sans ones included.
+     */
+    font-family: theme("fontFamily.display");
     text-wrap: balance;
     scroll-margin-top: calc(var(--header-h) + 0.5rem);
   }
