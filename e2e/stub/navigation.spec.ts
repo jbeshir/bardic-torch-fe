@@ -2,7 +2,6 @@ import { expect, type Page } from "@playwright/test";
 import { waitForHydration } from "../support/hydration";
 import { checkpoint } from "../support/journey";
 import {
-  expectFocusNotObscured,
   expectNoHorizontalOverflow,
   expectPrimaryTargetsAtLeast44,
   settled,
@@ -13,8 +12,9 @@ import { test } from "../support/test";
 /**
  * The shell's navigation (DESIGN §5, R18, R20, R26): the bottom app bar
  * below md, the navigation drawer with its real focus trap, the header
- * from md, the persistent sidebar from lg, the account menu signed out and
- * in, and the no-JS fallbacks. Stub phase, for stub sign-in.
+ * from md, the persistent sidebar from lg, and the account menu signed out
+ * and in. Stub phase, for stub sign-in. The no-JS fallbacks are the
+ * no-js.spec.ts files.
  */
 
 const MOBILE = { width: 360, height: 800 };
@@ -83,7 +83,7 @@ test.describe("below md", () => {
     expect((footer?.y ?? 0) + (footer?.height ?? 0)).toBeLessThanOrEqual(
       (bar?.y ?? 0) + 1
     );
-    await expectFocusNotObscured(page);
+    // Focus behind the bar is the journey-page sweep's (sweeps.spec.ts).
   });
 
   test("Menu opens the drawer as a bottom sheet that traps focus, closes on Escape and gives focus back", async ({
@@ -299,76 +299,5 @@ test.describe("from md", () => {
     const panel = await accountPanel(trigger);
     await expect(panel.getByText("Contributor", { exact: true })).toBeVisible();
     await checkpoint(page, "account-open");
-  });
-});
-
-test.describe("without JavaScript", () => {
-  test.use({ javaScriptEnabled: false, viewport: MOBILE });
-
-  test("Menu and Search jump to the site menu after the content, which has search, theme and the nav", async ({
-    page,
-  }) => {
-    await page.goto("/");
-    const bar = appBar(page);
-    const menu = bar.getByRole("link", { name: "Menu" });
-    await expect(menu).toHaveAttribute("href", "#site-nav");
-    await expect(
-      bar.getByRole("link", { name: "Search", exact: true })
-    ).toHaveAttribute("href", "#site-nav");
-    await expectPrimaryTargetsAtLeast44([menu]);
-
-    await menu.click();
-    await expect(page).toHaveURL(/#site-nav$/);
-    const nav = page.getByRole("navigation", { name: "Site" });
-    await expect(nav).toBeInViewport();
-    await expect(nav.getByRole("heading", { name: "Site menu" })).toBeVisible();
-    await expect(nav.getByRole("search")).toBeVisible();
-    await expect(nav.getByRole("group", { name: "Theme" })).toBeVisible();
-    await expect(
-      nav.getByRole("link", { name: "Mood (opens original wiki)" })
-    ).toBeVisible();
-
-    // It comes after main and before the footer.
-    const order = await page.evaluate(() => {
-      const main = document.querySelector("main");
-      const site = document.getElementById("site-nav");
-      const footer = document.querySelector("footer");
-      return Boolean(
-        main &&
-          site &&
-          footer &&
-          main.compareDocumentPosition(site) &
-            Node.DOCUMENT_POSITION_FOLLOWING &&
-          site.compareDocumentPosition(footer) &
-            Node.DOCUMENT_POSITION_FOLLOWING
-      );
-    });
-    expect(order).toBe(true);
-  });
-
-  test("the account panel opens and closes from its summary", async ({
-    page,
-  }) => {
-    await page.goto("/auth/login?as=contributor&returnTo=/");
-    const account = accountTrigger(appBar(page));
-    await account.click();
-    await expect(
-      appBar(page).getByRole("button", { name: "Log out" })
-    ).toBeVisible();
-    await account.click();
-    await expect(
-      appBar(page).getByRole("button", { name: "Log out" })
-    ).toBeHidden();
-  });
-
-  test("at lg the sidebar shows without JS too", async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto("/");
-    await expect(page.getByRole("navigation", { name: "Site" })).toBeVisible();
-    await expect(
-      page
-        .getByRole("navigation", { name: "Site" })
-        .getByRole("heading", { name: "Site menu" })
-    ).toBeHidden();
   });
 });

@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from "@playwright/test";
+import { waitForHydration } from "./hydration";
 
 /** Layout and WCAG 2.2 checks for journeys to run on their pages. */
 
@@ -218,4 +219,84 @@ export async function expectPrimaryTargetsAtLeast44(
     }
   }
   expect(failures, "primary controls smaller than 44×44").toEqual([]);
+}
+
+/** The part of a `layout-shift` performance entry the CLS check reads. */
+type LayoutShiftEntry = PerformanceEntry & {
+  readonly value: number;
+  readonly hadRecentInput: boolean;
+  readonly sources?: readonly {
+    readonly node: Node | null;
+    readonly previousRect: DOMRectReadOnly;
+    readonly currentRect: DOMRectReadOnly;
+  }[];
+};
+
+/** Where the init script below keeps its observer, on `window`. */
+type ShiftRecorder = {
+  readonly __layoutShifts: {
+    readonly observer: PerformanceObserver;
+    readonly entries: LayoutShiftEntry[];
+  };
+};
+
+/**
+ * Cumulative layout shift is 0 while `path` loads at `viewport`
+ * (DESIGN principle 6; plan §0.11): from the first paint of the server's
+ * HTML, through the web font (preloaded, `font-display: optional`, with a
+ * metric-matched fallback), hydration (which hides the site menu below lg
+ * and folds the contents below md) and the frames after it. Every shift
+ * without recent input counts, each reported with the elements it moved.
+ */
+export async function expectNoLayoutShift(
+  page: Page,
+  path: string,
+  viewport: { readonly width: number; readonly height: number }
+): Promise<void> {
+  await page.setViewportSize(viewport);
+  await page.addInitScript(() => {
+    const entries: PerformanceEntry[] = [];
+    const observer = new PerformanceObserver(list => {
+      entries.push(...list.getEntries());
+    });
+    observer.observe({ type: "layout-shift", buffered: true });
+    Object.assign(window, { __layoutShifts: { observer, entries } });
+  });
+  const response = await page.goto(path);
+  expect(response?.status()).toBe(200);
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  await waitForHydration(page);
+
+  const shifts = await page.evaluate(async () => {
+    // Two frames, so whatever hydration changed has been laid out, painted
+    // and reported.
+    for (let frame = 0; frame < 2; frame += 1) {
+      await new Promise(resolve => requestAnimationFrame(resolve));
+    }
+    const { observer, entries } = (window as unknown as ShiftRecorder)
+      .__layoutShifts;
+    const all = [
+      ...entries,
+      ...(observer.takeRecords() as LayoutShiftEntry[]),
+    ] as LayoutShiftEntry[];
+    const describe = (node: Node | null) => {
+      if (!(node instanceof Element)) return node?.nodeName ?? "?";
+      const id = node.id ? `#${node.id}` : "";
+      const classes = [...node.classList].slice(0, 3).join(".");
+      return `${node.tagName.toLowerCase()}${id}${classes ? `.${classes}` : ""}`;
+    };
+    return all
+      .filter(entry => !entry.hadRecentInput)
+      .map(
+        entry =>
+          `${entry.value.toFixed(4)} at ${Math.round(entry.startTime)} ms: ` +
+          (entry.sources ?? [])
+            .map(
+              ({ node, previousRect, currentRect }) =>
+                `${describe(node)} y ${Math.round(previousRect.y)}→${Math.round(currentRect.y)}, h ${Math.round(previousRect.height)}→${Math.round(currentRect.height)}`
+            )
+            .join("; ")
+      );
+  });
+  expect(shifts, `layout shifts on ${path} at ${viewport.width}px`).toEqual([]);
 }

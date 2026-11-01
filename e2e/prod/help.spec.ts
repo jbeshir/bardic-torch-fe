@@ -1,10 +1,6 @@
 import { expect } from "@playwright/test";
 import { checkpoint } from "../support/journey";
-import {
-  expectFocusNotObscured,
-  expectNoHorizontalOverflow,
-  expectTargetSizesAtLeast24,
-} from "../support/layout";
+import { expectNoLayoutShift } from "../support/layout";
 import { waitForHydration } from "../support/hydration";
 import { test } from "../support/test";
 
@@ -14,8 +10,9 @@ test.describe.configure({ mode: "parallel" });
 
 /**
  * The help pages from the production build (DESIGN §10.2, R24): each one's
- * checkpoint, reflow, target sizes and focus visibility, the infobox's
- * place at 360 and 1280, the contents, and the index's cards.
+ * checkpoint, the infobox's
+ * place at 360 and 1280, the contents, and the index's cards. Their
+ * layout sweep is a row each in support/journey-pages.ts.
  */
 
 type HelpPageCase = {
@@ -103,17 +100,6 @@ for (const help of PAGES) {
       ).toHaveText(["Help"]);
     }
     await checkpoint(page, help.checkpoint);
-  });
-
-  test(`${help.path} reflows, its targets are big enough and focus is never hidden`, async ({
-    page,
-  }) => {
-    const response = await page.goto(help.path);
-    expect(response?.status()).toBe(200);
-    await waitForHydration(page);
-    await expectNoHorizontalOverflow(page);
-    await expectTargetSizesAtLeast24(page);
-    await expectFocusNotObscured(page);
   });
 }
 
@@ -285,4 +271,13 @@ test("an unknown help page is the 404 page", async ({ page }) => {
       .getByRole("main")
       .getByRole("heading", { level: 1, name: "We couldn't find that page" })
   ).toBeVisible();
+});
+
+test("at 360 nothing on a help page moves as it loads, the contents folding included", async ({
+  page,
+}) => {
+  await expectNoLayoutShift(page, "/help/contributing", {
+    width: 360,
+    height: 800,
+  });
 });

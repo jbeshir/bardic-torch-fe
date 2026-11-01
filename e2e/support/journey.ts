@@ -98,7 +98,8 @@ export async function checkpoint(
   { target }: { readonly target?: string } = {}
 ): Promise<void> {
   const info = test.info();
-  const phase = info.project.name as Phase;
+  // The phase, not the project: a phase's no-JS project shares its list.
+  const phase = info.config.metadata.phase as Phase;
   const journey = path.basename(info.file, ".spec.ts");
   if (!CHECKPOINTS[phase]?.[journey]?.includes(name)) {
     throw new Error(

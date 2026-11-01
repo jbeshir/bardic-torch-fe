@@ -2,12 +2,6 @@ import { expect, type Page } from "@playwright/test";
 import { createFixtureUser, failNext } from "../support/fixture-api";
 import { waitForHydration } from "../support/hydration";
 import { checkpoint } from "../support/journey";
-import {
-  expectFocusNotObscured,
-  expectNoHorizontalOverflow,
-  expectPrimaryTargetsAtLeast44,
-  expectTargetSizesAtLeast24,
-} from "../support/layout";
 import { accountTrigger } from "../support/shell";
 import { test } from "../support/test";
 
@@ -304,7 +298,7 @@ test("checkpoint: revoke-confirm", async ({ page }) => {
   await checkpoint(page, "revoke-confirm", { target: "dialog[open]" });
 });
 
-test("at 360 the tokens are cards; the page reflows, its targets are big enough and focus is never hidden", async ({
+test("at 360 the tokens are cards, each with its own Revoke", async ({
   page,
 }) => {
   await openSettings(page);
@@ -319,40 +313,4 @@ test("at 360 the tokens are cards; the page reflows, its targets are big enough 
   await expect(
     cards.getByRole("button", { name: "Revoke token Token 9c1e7d3b…" })
   ).toBeVisible();
-  await expectPrimaryTargetsAtLeast44([
-    main(page).getByRole("button", { name: "Save changes" }),
-    main(page).getByRole("button", { name: "Create token" }),
-  ]);
-  await expectNoHorizontalOverflow(page);
-  await expectTargetSizesAtLeast24(page);
-  await expectFocusNotObscured(page);
-});
-
-test.describe("without JavaScript", () => {
-  test.use({ javaScriptEnabled: false });
-
-  test("settings says changes need JavaScript, and its buttons wait for it", async ({
-    page,
-  }) => {
-    const id = await createFixtureUser(page.request);
-    await page.goto(`/auth/login?as=${id}&returnTo=/settings`);
-    await expect(page).toHaveURL(/\/settings$/);
-    // Playwright's text and role engines skip <noscript>, so the notice is
-    // found by CSS. With scripting off it is parsed as markup and rendered.
-    const notice = main(page).locator("noscript > div");
-    await expect(notice).toBeVisible();
-    await expect(notice).toHaveText(
-      "Warning: Changing your settings needs JavaScript. Everything else on Bardic Torch works without it."
-    );
-    await expect(nameField(page)).toHaveValue(/.+/);
-    await expect(
-      main(page).getByRole("button", { name: "Save changes" })
-    ).toBeDisabled();
-    await expect(
-      main(page).getByRole("button", { name: "Create token" })
-    ).toBeDisabled();
-    await expect(
-      tokens(page).getByRole("button", { name: "Revoke token Laptop scripts" })
-    ).toBeDisabled();
-  });
 });

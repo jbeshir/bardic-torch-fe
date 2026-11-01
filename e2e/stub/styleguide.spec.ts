@@ -4,12 +4,7 @@ import { STYLEGUIDE_BLOCKS } from "../support/checkpoints";
 import { findCutOffControls } from "../support/cut-off";
 import { waitForHydration } from "../support/hydration";
 import { checkpoint } from "../support/journey";
-import {
-  expectFocusNotObscured,
-  expectNoHorizontalOverflow,
-  expectTargetSizesAtLeast24,
-  settled,
-} from "../support/layout";
+import { expectNoHorizontalOverflow, settled } from "../support/layout";
 import { test } from "../support/test";
 
 // Every test opens its own page and shares no state, so they spread over
@@ -101,16 +96,6 @@ test("renders every block in the order the checkpoints declare, and isn't indexe
     .locator("section[data-specimen]")
     .evaluateAll(sections => sections.map(section => section.id));
   expect(ids).toEqual([...STYLEGUIDE_BLOCKS]);
-  await expectNoHorizontalOverflow(page);
-  await expectTargetSizesAtLeast24(page);
-});
-
-test("no focused control is hidden behind the header or the app bar", async ({
-  page,
-}) => {
-  test.slow();
-  await openStyleguide(page);
-  await expectFocusNotObscured(page);
 });
 
 for (const id of STYLEGUIDE_BLOCKS) {

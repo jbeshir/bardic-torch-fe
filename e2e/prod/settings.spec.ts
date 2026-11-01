@@ -1,12 +1,5 @@
 import { expect } from "@playwright/test";
-import { waitForHydration } from "../support/hydration";
 import { checkpoint } from "../support/journey";
-import {
-  expectFocusNotObscured,
-  expectNoHorizontalOverflow,
-  expectPrimaryTargetsAtLeast44,
-  expectTargetSizesAtLeast24,
-} from "../support/layout";
 import { test } from "../support/test";
 
 /**
@@ -14,8 +7,6 @@ import { test } from "../support/test";
  * that comes back here, never cached. The signed-in journey needs stub
  * sign-in, so it is stub/account.spec.ts.
  */
-
-test.describe.configure({ mode: "parallel" });
 
 test("signed out, settings offers Log in back to it and is never cached", async ({
   page,
@@ -39,18 +30,4 @@ test("signed out, settings offers Log in back to it and is never cached", async 
   );
   await expect(main.getByRole("textbox")).toHaveCount(0);
   await checkpoint(page, "signed-out");
-});
-
-test("signed out, settings reflows, its targets are big enough and focus is never hidden", async ({
-  page,
-}) => {
-  await page.goto("/settings");
-  await waitForHydration(page);
-  await page.setViewportSize({ width: 360, height: 800 });
-  await expectPrimaryTargetsAtLeast44([
-    page.getByRole("main").getByRole("link", { name: "Log in" }),
-  ]);
-  await expectNoHorizontalOverflow(page);
-  await expectTargetSizesAtLeast24(page);
-  await expectFocusNotObscured(page);
 });

@@ -1,14 +1,8 @@
 import { expect } from "@playwright/test";
 import { checkpoint } from "../support/journey";
-import {
-  expectFocusNotObscured,
-  expectNoHorizontalOverflow,
-  expectPrimaryTargetsAtLeast44,
-  expectTargetSizesAtLeast24,
-} from "../support/layout";
+import { expectNoLayoutShift } from "../support/layout";
 import { HOME_HEADLINE } from "../support/pages";
 import { waitForHydration } from "../support/hydration";
-import { appBar } from "../support/shell";
 import { test } from "../support/test";
 
 // Every test opens its own page and shares no state, so they spread over
@@ -30,17 +24,6 @@ test("the home page renders from the production build", async ({ page }) => {
     /^A community index of SCA bardic songs, stories and poems/
   );
   await checkpoint(page, "home");
-});
-
-test("the home page reflows, its targets are big enough and focus is never hidden", async ({
-  page,
-}) => {
-  const response = await page.goto("/");
-  expect(response?.status()).toBe(200);
-  await waitForHydration(page);
-  await expectNoHorizontalOverflow(page);
-  await expectTargetSizesAtLeast24(page);
-  await expectFocusNotObscured(page);
 });
 
 test("the home page says what the site is and leads to contributing here, then to the wiki", async ({
@@ -160,7 +143,7 @@ test("the footer has the licence, the non-affiliation statement and the help lin
   ).toHaveText([/^Contact/, "Help", "Licence & attribution", /^Original wiki/]);
 });
 
-test("at 360 the hero buttons stack full width, primary first, and the primary controls are 44 px", async ({
+test("at 360 the hero buttons stack full width, primary first", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 360, height: 800 });
@@ -185,19 +168,18 @@ test("at 360 the hero buttons stack full width, primary first, and the primary c
     expect(Math.abs(first.width - second.width)).toBeLessThanOrEqual(1);
     expect(Math.abs(first.x - second.x)).toBeLessThanOrEqual(1);
   }
-  const bar = appBar(page);
-  await expectPrimaryTargetsAtLeast44([
-    contribute,
-    browse,
-    search,
-    page.getByRole("banner").getByRole("link", { name: "Bardic Torch" }),
-    bar
-      .getByRole("button", { name: "Menu" })
-      .or(bar.getByRole("link", { name: "Menu" })),
-    bar
-      .getByRole("button", { name: "Search", exact: true })
-      .or(bar.getByRole("link", { name: "Search", exact: true })),
-    bar.getByRole("link", { name: "Log in" }),
-  ]);
-  await expectNoHorizontalOverflow(page);
 });
+
+// CLS = 0 (plan §0.11): at 360 and 768 hydration hides the no-JS site menu
+// after the content; at 1280 the sidebar stays.
+for (const viewport of [
+  { width: 360, height: 800 },
+  { width: 768, height: 1024 },
+  { width: 1280, height: 800 },
+]) {
+  test(`at ${viewport.width}px nothing on the home page moves as it loads, fonts and hydration included`, async ({
+    page,
+  }) => {
+    await expectNoLayoutShift(page, "/", viewport);
+  });
+}

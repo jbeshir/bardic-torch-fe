@@ -53,6 +53,14 @@ const bindings = {
  */
 const LOCAL_ONLY_RESOLVER = `--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE ${HOST}, EXCLUDE ${BIND_IP}`;
 
+const browser = {
+  ...devices["Desktop Chrome"],
+  launchOptions: { args: [LOCAL_ONLY_RESOLVER] },
+};
+
+/** The no-JS journeys of a phase (see `projects`). */
+const NO_JS_SPEC = "no-js.spec.ts";
+
 const bindingFlags = Object.entries(bindings)
   .map(([name, value]) => `--binding ${name}=${value}`)
   .join(" ");
@@ -83,15 +91,25 @@ export default defineConfig({
     baseURL: BASE_URL,
     trace: "retain-on-failure",
   },
+  /**
+   * Each phase has two projects over its spec folder: the journeys with JS,
+   * and its no-JS journeys (`no-js.spec.ts`, plan §0.11) with scripting off
+   * for the whole browser context, so a page can't hydrate by accident.
+   */
   projects: [
     {
       name: phase,
       testDir: `./e2e/${phase}`,
+      testIgnore: NO_JS_SPEC,
       teardown: "screenshots",
-      use: {
-        ...devices["Desktop Chrome"],
-        launchOptions: { args: [LOCAL_ONLY_RESOLVER] },
-      },
+      use: browser,
+    },
+    {
+      name: `${phase}-no-js`,
+      testDir: `./e2e/${phase}`,
+      testMatch: NO_JS_SPEC,
+      teardown: "screenshots",
+      use: { ...browser, javaScriptEnabled: false },
     },
     { name: "screenshots", testDir: "./e2e", testMatch: "global-teardown.ts" },
   ],

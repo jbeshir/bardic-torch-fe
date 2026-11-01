@@ -1,53 +1,22 @@
-import { expect, type Page } from "@playwright/test";
-import {
-  channelString,
-  resolveColour,
-  type Theme,
-} from "../../app/styles/tokens";
+import { expect } from "@playwright/test";
 import { waitForHydration } from "../support/hydration";
 import { checkpoint } from "../support/journey";
 import { test } from "../support/test";
+import {
+  canvas,
+  expectRenderedTheme,
+  rendered,
+  themeCookie,
+} from "../support/theme";
 
 /**
  * The theme (DESIGN §6.24, R17): System by default, an explicit choice in
  * the `theme` cookie, rendered server-side so nothing flashes, switched
- * optimistically with JS and by a plain form post without it.
+ * optimistically with JS and by a plain form post without it (that one is
+ * in no-js.spec.ts).
  */
 
 const THEME_COOKIE = "theme";
-
-/** The canvas token's channels, as the CSS custom property holds them. */
-function canvas(theme: Theme): string {
-  return channelString(resolveColour(theme, "canvas"));
-}
-
-/** What the page shows: the --canvas value and the painted background. */
-async function rendered(page: Page) {
-  return page.evaluate(() => {
-    const root = document.documentElement;
-    const style = getComputedStyle(root);
-    return {
-      attribute: root.getAttribute("data-theme"),
-      canvas: style.getPropertyValue("--canvas").trim(),
-      // The painted colour's numbers ("22 18 14"), to compare with the token.
-      background: (style.backgroundColor.match(/\d+/g) ?? []).join(" "),
-    };
-  });
-}
-
-async function expectRenderedTheme(page: Page, theme: Theme) {
-  await expect
-    .poll(async () => {
-      const { canvas: value, background } = await rendered(page);
-      return { canvas: value, background };
-    })
-    .toEqual({ canvas: canvas(theme), background: canvas(theme) });
-}
-
-async function themeCookie(page: Page) {
-  const cookies = await page.context().cookies();
-  return cookies.find(({ name }) => name === THEME_COOKIE);
-}
 
 test.describe("server-rendered theme", () => {
   test("raw HTML has data-theme=dark for a dark cookie and none without one", async ({
@@ -199,65 +168,5 @@ test.describe("theme toggle with JS", () => {
     await system;
     expect(await themeCookie(page)).toBeUndefined();
     await expectRenderedTheme(page, "light");
-  });
-});
-
-test.describe("theme toggle without JS", () => {
-  test.use({ javaScriptEnabled: false });
-
-  test("posts the choice and comes back to the page, rendered in that theme", async ({
-    page,
-  }) => {
-    await page.emulateMedia({ colorScheme: "light" });
-    await page.goto("/");
-    // From md the toggle is the header's. The site menu's copy below lg is
-    // display: none here, but while the posted page is still loading its
-    // stylesheet both are briefly exposed, so stay inside the banner.
-    const theme = page
-      .getByRole("banner")
-      .getByRole("group", { name: "Theme" });
-
-    await Promise.all([
-      page.waitForURL("/"),
-      theme.getByRole("button", { name: "Dark" }).click(),
-    ]);
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-    await expect(theme.getByRole("button", { name: "Dark" })).toHaveAttribute(
-      "aria-pressed",
-      "true"
-    );
-    await expectRenderedTheme(page, "dark");
-    expect((await themeCookie(page))?.value).toBe("dark");
-
-    await theme.getByRole("button", { name: "System" }).click();
-    await expect(theme.getByRole("button", { name: "System" })).toHaveAttribute(
-      "aria-pressed",
-      "true"
-    );
-    await expect(page.locator("html")).not.toHaveAttribute("data-theme");
-    expect(await themeCookie(page)).toBeUndefined();
-    await expectRenderedTheme(page, "light");
-  });
-
-  test("below md the choice is in the site menu after the content, and comes back there", async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 360, height: 800 });
-    await page.emulateMedia({ colorScheme: "light" });
-    await page.goto("/help");
-    const banner = page.getByRole("banner");
-    await expect(banner.getByRole("group", { name: "Theme" })).toBeHidden();
-    const nav = page.getByRole("navigation", { name: "Site" });
-    await Promise.all([
-      page.waitForURL("/help"),
-      nav.getByRole("button", { name: "Dark" }).click(),
-    ]);
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-    await expect(nav.getByRole("button", { name: "Dark" })).toHaveAttribute(
-      "aria-pressed",
-      "true"
-    );
-    await nav.getByRole("button", { name: "System" }).click();
-    await expect(page.locator("html")).not.toHaveAttribute("data-theme");
   });
 });
