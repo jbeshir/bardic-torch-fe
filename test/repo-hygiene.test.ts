@@ -382,3 +382,124 @@ describe("ops: static files", () => {
     }
   });
 });
+
+const DOCS = [
+  "README.md",
+  "CLAUDE.md",
+  "docs/DESIGN.md",
+  "docs/TESTING.md",
+  "docs/DEPLOY.md",
+];
+
+/** The node ids of a mermaid flowchart: labels and edge texts removed. */
+function flowchartNodes(chart: string): Set<string> {
+  const body = chart.split("\n").slice(1).join("\n");
+  const ids = body
+    .replace(/"[^"]*"/g, " ")
+    .replace(/\[[^\]]*\]/g, " ")
+    .match(/\b[A-Za-z]\w*\b/g);
+  return new Set(ids ?? []);
+}
+
+/** A Markdown table row starting with `cells`, however Prettier pads it. */
+function tableRow(cells: readonly string[]): RegExp {
+  const escaped = cells.map(cell =>
+    cell.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  );
+  return new RegExp(`^\\|\\s*${escaped.join("\\s*\\|\\s*")}`, "m");
+}
+
+describe("docs", () => {
+  it.each(DOCS)("%s exists", path => {
+    expect(statSync(join(root, path)).isFile()).toBe(true);
+  });
+
+  it("README has one top-down mermaid flowchart under 12 nodes, unstyled", () => {
+    const charts = [
+      ...read("README.md").matchAll(/```mermaid\n([\s\S]*?)```/g),
+    ].map(([, chart]) => chart!);
+    expect(charts).toHaveLength(1);
+    const chart = charts[0]!;
+    expect(chart.split("\n")[0]).toBe("flowchart TD");
+    expect(chart).not.toMatch(/^\s*(style|classDef|class|linkStyle)\b/m);
+    const nodes = flowchartNodes(chart);
+    expect(nodes.size).toBeGreaterThan(1);
+    expect(nodes.size).toBeLessThan(12);
+  });
+
+  it("counts flowchart nodes, not labels", () => {
+    expect(
+      flowchartNodes(
+        'flowchart TD\n  A["Label words"] -- "edge text" --> B\n  B --> C\n'
+      )
+    ).toEqual(new Set(["A", "B", "C"]));
+  });
+
+  it("CLAUDE.md gives the validation commands, the e2e recipe and the manual checks", () => {
+    const claude = read("CLAUDE.md");
+    for (const text of [
+      "npm run validate",
+      "npm run test:e2e",
+      "npx playwright install --with-deps chromium",
+      "1.61.1",
+      "**Theming.**",
+      "**Error handling.**",
+      "**Accessibility.**",
+    ]) {
+      expect(claude).toContain(text);
+    }
+    const workers = /workers: (\d+),/.exec(read("playwright.config.ts"))?.[1];
+    expect(claude).toContain(`Workers are fixed at ${workers}`);
+  });
+
+  it("TESTING.md records that e2e is separate from validate (PLAN §9)", () => {
+    const testing = read("docs/TESTING.md");
+    expect(testing).toContain("## Deviation from the product plan (PLAN §9)");
+    expect(testing).toContain("**`npm run test:e2e` is a separate command**");
+  });
+
+  it.each(DOCS)("every npm script %s names exists", path => {
+    const scripts = Object.keys(
+      (JSON.parse(read("package.json")) as { scripts: Record<string, string> })
+        .scripts
+    );
+    const named = [...read(path).matchAll(/npm run ([a-z][\w:-]*)/g)].map(
+      ([, script]) => script
+    );
+    expect(named.filter(script => !scripts.includes(script!))).toEqual([]);
+  });
+
+  it.each(DOCS)("every cookie %s names is set by the app", path => {
+    const appSource = filesUnder("app")
+      .filter(file => !/\.test\.tsx?$/.test(file))
+      .map(file => read(file))
+      .join("\n");
+    const cookies = [...read(path).matchAll(/__Host-[\w-]+/g)].map(
+      ([cookie]) => cookie
+    );
+    expect(
+      cookies.filter(cookie => !appSource.includes(`"${cookie}"`))
+    ).toEqual([]);
+  });
+
+  it("DEPLOY.md covers every variable, the build and both sign-in origins", () => {
+    const deploy = read("docs/DEPLOY.md");
+    for (const name of ENV_NAMES) expect(deploy).toContain(`\`${name}\``);
+    expect(deploy).toContain("`npm run build:pages`");
+    const outputDirectory = wrangler.pages_build_output_dir?.replace(
+      /^\.\//,
+      ""
+    );
+    expect(deploy).toMatch(
+      tableRow(["build output directory", `\`${outputDirectory}\``])
+    );
+    for (const environment of ["production", "preview"]) {
+      const origin = varsOf(environment).AUTH0_DEFAULT_REDIRECT_URI;
+      expect(deploy).toContain(`\`${origin}/auth/callback\``);
+      expect(deploy).toContain(`\`${origin}\``);
+    }
+    for (const secret of SECRET_NAMES) {
+      expect(deploy).toMatch(tableRow([`\`${secret}\``, "**secret**"]));
+    }
+  });
+});
