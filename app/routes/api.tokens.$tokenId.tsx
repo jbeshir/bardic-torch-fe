@@ -2,8 +2,7 @@ import type { ActionFunctionArgs } from "@remix-run/cloudflare";
 import { z } from "zod";
 import {
   methodNotAllowed,
-  proxyResponse,
-  readFormBody,
+  proxyForm,
   revokeApiToken,
 } from "~/server/api.server";
 import { assertSameOrigin } from "~/server/csrf.server";
@@ -16,9 +15,7 @@ export async function action({ request, params, context }: ActionFunctionArgs) {
   if (request.method !== "DELETE") return methodNotAllowed("DELETE");
   assertSameOrigin(request);
 
-  const body = await readFormBody(request, emptyFormSchema);
-  if (!body.ok) return proxyResponse(body);
-  return proxyResponse(
-    await revokeApiToken(request, context, params.tokenId ?? "")
+  return proxyForm(request, context, emptyFormSchema, () =>
+    revokeApiToken(request, context, params.tokenId ?? "")
   );
 }

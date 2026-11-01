@@ -1,7 +1,12 @@
 import { http, HttpResponse } from "msw";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DISPLAY_NAME_RULE } from "~/schemas/rules";
-import { API_BASE_URL, formRequest, sessionCookie } from "~/test/context";
+import {
+  API_BASE_URL,
+  formRequest,
+  sessionCookie,
+  sessionTokens,
+} from "~/test/context";
 import { runAction } from "~/test/proxy";
 import { action } from "./api.me";
 import { serveMocks } from "~/test/msw";
@@ -39,6 +44,22 @@ async function patch(form: Record<string, string>, headers = {}) {
       headers: { Cookie: await sessionCookie(), ...headers },
     })
   );
+}
+
+/** A body of `chunks` chunks of `size` bytes, read only on demand. */
+function streamedBody(size: number, chunks: number) {
+  let pulls = 0;
+  const body = new ReadableStream<Uint8Array>(
+    {
+      pull(controller) {
+        pulls += 1;
+        if (pulls > chunks) controller.close();
+        else controller.enqueue(new TextEncoder().encode("a".repeat(size)));
+      },
+    },
+    { highWaterMark: 0 }
+  );
+  return { body, pulled: () => pulls };
 }
 
 const echo = (body: unknown) =>
@@ -172,6 +193,11 @@ describe("PATCH /api/me", () => {
     upstream(() => HttpResponse.json({ nope: true }));
     const response = await patch({ display_name: "Morwen" });
     expect(response.status).toBe(502);
+    expect(await response.json()).toMatchObject({
+      ok: false,
+      error: { code: "bad_gateway" },
+    });
+    expect(sent).toEqual([{ display_name: "Morwen" }]);
   });
 
   it("rejects JSON bodies with 415", async () => {
@@ -204,6 +230,66 @@ describe("PATCH /api/me", () => {
     expect(await response.json()).toMatchObject({
       error: { code: "request_too_large" },
     });
+  });
+
+  it("stops reading a chunked body without Content-Length once it passes 8 KB", async () => {
+    const { body, pulled } = streamedBody(1024, 64);
+    const response = await runAction(
+      action,
+      new Request("https://app.test/api/me", {
+        method: "PATCH",
+        headers: {
+          Origin: "https://app.test",
+          "Content-Type": "application/x-www-form-urlencoded",
+          Cookie: await sessionCookie(),
+        },
+        body,
+        duplex: "half",
+      } as RequestInit)
+    );
+    expect(response.status).toBe(413);
+    expect(pulled()).toBeLessThanOrEqual(9);
+    expect(sent).toEqual([]);
+  });
+
+  it("answers a signed-out request with 401 without reading its body", async () => {
+    const { body, pulled } = streamedBody(1024, 64);
+    const response = await runAction(
+      action,
+      new Request("https://app.test/api/me", {
+        method: "PATCH",
+        headers: {
+          Origin: "https://app.test",
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body,
+        duplex: "half",
+      } as RequestInit)
+    );
+    expect(response.status).toBe(401);
+    expect(pulled()).toBe(0);
+  });
+
+  it("sends a refreshed session cookie with a form error", async () => {
+    server.use(
+      http.post("https://auth0.test/oauth/token", () =>
+        HttpResponse.json({ access_token: "renewed", token_type: "Bearer" })
+      )
+    );
+    const response = await runAction(
+      action,
+      formRequest({
+        method: "PATCH",
+        path: "/api/me",
+        form: { display_name: "" },
+        headers: {
+          Cookie: await sessionCookie(sessionTokens({ expiresAt: Date.now() })),
+        },
+      })
+    );
+    expect(response.status).toBe(400);
+    expect(response.headers.get("Set-Cookie")).toMatch(/^__Host-bt_session=\S/);
+    expect(sent).toEqual([]);
   });
 
   it.each(["POST", "PUT", "DELETE"])("answers %s with 405", async method => {

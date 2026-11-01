@@ -39,14 +39,15 @@ Other FE1 differences from the plan's test list follow from the real API (no rev
 
   ```ts
   import { serveFixtureApi } from "~/test/msw";
-  import { loadContext, sessionCookie, sessionUser } from "~/test/context";
+  import { loadContext, sessionCookie, sessionTokens } from "~/test/context";
 
-  const api = serveFixtureApi(); // fresh fixture state per test; unhandled requests fail
+  const api = serveFixtureApi(); // fresh fixture state per test
 
   const cookie = await sessionCookie(
-    sessionUser({ accessToken: "fixture:contributor" })
+    sessionTokens({ accessToken: "fixture:contributor" })
   );
   ```
+  - **Every msw server comes from `serveMocks()`** (`app/test/msw.ts`; `serveFixtureApi()` uses it). A request no handler answers is refused **and fails the test** that made it, so a test can't pass because the code under test turned msw's refusal into a 502. `server.use()` adds one test's handlers, e.g. a fake Auth0 token endpoint answering with Auth0's real response shapes.
   - `loadContext()` gives a validated env whose API base URL is `https://api.test`.
   - `formRequest()` builds a same-origin, form-encoded request.
   - `runAction()` (`app/test/proxy.ts`) runs a proxy action.

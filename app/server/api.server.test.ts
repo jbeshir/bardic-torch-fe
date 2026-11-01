@@ -14,7 +14,6 @@ import {
   listApiTokens,
   revokeApiToken,
   updateMe,
-  UPSTREAM_TIMEOUT_MS,
 } from "./api.server";
 import { serveMocks } from "~/test/msw";
 
@@ -331,7 +330,7 @@ describe("responses", () => {
   });
 
   it("maps a redirect to 502 without following it", async () => {
-    captureUpstream(
+    const seen = captureUpstream(
       "get",
       "/v1/me",
       () =>
@@ -341,7 +340,13 @@ describe("responses", () => {
         })
     );
     const result = await getMe(await signedInRequest(), loadContext());
-    expect(result).toMatchObject({ ok: false, status: 502 });
+    expect(result).toMatchObject({
+      ok: false,
+      status: 502,
+      error: { code: "bad_gateway" },
+    });
+    // Following it would be an unhandled request to evil.example.
+    expect(seen).toHaveLength(1);
   });
 
   it("maps an error without an Error body to 502", async () => {
@@ -369,6 +374,56 @@ describe("responses", () => {
   });
 });
 
+describe("upstream body failures", () => {
+  it("maps a body that breaks off midway to 502", async () => {
+    const seen = captureUpstream(
+      "get",
+      "/v1/me",
+      () =>
+        new HttpResponse(
+          new ReadableStream({
+            start(controller) {
+              controller.enqueue(new TextEncoder().encode('{"id":'));
+              controller.error(new TypeError("connection reset"));
+            },
+          }),
+          { headers: { "Content-Type": "application/json" } }
+        )
+    );
+    const result = await getMe(await signedInRequest(), loadContext());
+    expect(seen).toHaveLength(1);
+    expect(result).toMatchObject({
+      ok: false,
+      status: 502,
+      error: { code: "upstream_unavailable" },
+    });
+  });
+
+  it("gives up on a body that stalls past the timeout with a 504", async () => {
+    const timeout = AbortSignal.timeout.bind(AbortSignal);
+    vi.spyOn(AbortSignal, "timeout").mockImplementation(() => timeout(20));
+    captureUpstream(
+      "get",
+      "/v1/me",
+      () =>
+        new HttpResponse(
+          new ReadableStream({
+            start(controller) {
+              controller.enqueue(new TextEncoder().encode('{"id":'));
+            },
+          }),
+          { headers: { "Content-Type": "application/json" } }
+        )
+    );
+    const result = await getMe(await signedInRequest(), loadContext());
+    expect(result).toMatchObject({
+      ok: false,
+      status: 504,
+      error: { code: "upstream_unavailable" },
+    });
+  });
+});
+
 describe("upstream timeout", () => {
   it("gives up on a hung API with a 504, so the form can say so", async () => {
     const timeout = AbortSignal.timeout.bind(AbortSignal);
@@ -388,7 +443,7 @@ describe("upstream timeout", () => {
         name: "Laptop",
       }
     );
-    expect(asked).toHaveBeenCalledWith(UPSTREAM_TIMEOUT_MS);
+    expect(asked).toHaveBeenCalledWith(10_000);
     expect(result).toMatchObject({
       ok: false,
       status: 504,

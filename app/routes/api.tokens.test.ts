@@ -154,6 +154,11 @@ describe("POST /api/tokens", () => {
     upstream(() => HttpResponse.json(withoutSecret, { status: 201 }));
     const response = await post({});
     expect(response.status).toBe(502);
+    expect(await response.json()).toMatchObject({
+      ok: false,
+      error: { code: "bad_gateway" },
+    });
+    expect(sent).toEqual([{}]);
   });
 
   it("rejects multipart bodies with 415", async () => {

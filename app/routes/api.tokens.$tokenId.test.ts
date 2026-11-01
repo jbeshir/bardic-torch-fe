@@ -98,6 +98,11 @@ describe("DELETE /api/tokens/:tokenId", () => {
     upstream(() => new HttpResponse("oops", { status: 500 }));
     const response = await remove("t1");
     expect(response.status).toBe(502);
+    expect(await response.json()).toMatchObject({
+      ok: false,
+      error: { code: "bad_gateway" },
+    });
+    expect(revoked).toEqual(["/v1/tokens/t1"]);
   });
 
   it("answers POST with 405", async () => {

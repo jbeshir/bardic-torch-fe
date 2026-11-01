@@ -12,7 +12,8 @@ import {
 /**
  * Runtime schemas for the Bardic Torch API, checked at compile time against
  * the types generated from `api/openapi.yaml`, plus the form bodies the
- * `/api/*` proxy routes accept and the rules they share with the UI.
+ * `/api/*` proxy routes accept. The field rules they check live in
+ * `rules.ts`, which the UI shares.
  */
 
 type Schemas = components["schemas"];

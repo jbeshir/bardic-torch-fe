@@ -3,8 +3,7 @@ import { createApiTokenFormSchema } from "~/schemas/api";
 import {
   createApiToken,
   methodNotAllowed,
-  proxyResponse,
-  readFormBody,
+  proxyForm,
 } from "~/server/api.server";
 import { assertSameOrigin } from "~/server/csrf.server";
 
@@ -13,7 +12,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
   if (request.method !== "POST") return methodNotAllowed("POST");
   assertSameOrigin(request);
 
-  const body = await readFormBody(request, createApiTokenFormSchema);
-  if (!body.ok) return proxyResponse(body);
-  return proxyResponse(await createApiToken(request, context, body.data));
+  return proxyForm(request, context, createApiTokenFormSchema, data =>
+    createApiToken(request, context, data)
+  );
 }

@@ -19,6 +19,7 @@ import type { ProxyBody, ProxyError } from "~/schemas/proxy";
 import {
   createAuthenticatedFetch,
   getOrCreateSessionStorage,
+  getServerAuthContext,
 } from "./auth.server";
 
 /**
@@ -37,7 +38,7 @@ type ErrorCode =
   | "bad_gateway"
   | "method_not_allowed";
 
-/** `fields` lists per-field problems with a request body, shown next to the fields. */
+/** An error the app reports, with its own copy (see `upstreamError`). */
 type ApiError = ProxyError & { readonly code: ErrorCode };
 
 type ApiResult<T> = (
@@ -54,30 +55,54 @@ const MAX_BODY_BYTES = 8 * 1024;
 
 type Method = "GET" | "PATCH" | "POST" | "DELETE";
 
-type OperationId =
-  | "getMe"
-  | "updateMe"
-  | "listAPITokens"
-  | "createAPIToken"
-  | "revokeAPIToken";
+/**
+ * The (path, method) pair at which `paths` declares `operation`. Methods a
+ * path doesn't have are typed `never` there, which would match anything,
+ * so they are excluded first.
+ */
+type EndpointOf<Operation> = {
+  [Path in keyof paths]: {
+    [M in Method]: [paths[Path][Lowercase<M>]] extends [never]
+      ? never
+      : [paths[Path][Lowercase<M>]] extends [Operation]
+        ? { readonly path: Path; readonly method: M }
+        : never;
+  }[Method];
+}[keyof paths];
+
+/** Where each FE1 operation lives; the compiler checks it against the spec. */
+const ENDPOINTS = {
+  getMe: { method: "GET", path: "/v1/me" },
+  updateMe: { method: "PATCH", path: "/v1/me" },
+  listAPITokens: { method: "GET", path: "/v1/tokens" },
+  createAPIToken: { method: "POST", path: "/v1/tokens" },
+  revokeAPIToken: { method: "DELETE", path: "/v1/tokens/{token_id}" },
+} as const satisfies {
+  readonly [Id in keyof operations]?: EndpointOf<operations[Id]>;
+};
+
+type OperationId = keyof typeof ENDPOINTS;
 
 type ApiRequest<T> = {
   readonly operationId: OperationId;
-  readonly method: Method;
-  readonly path: keyof paths;
   readonly params?: Readonly<Record<string, string>>;
   readonly body?: unknown;
   readonly schema: z.ZodType<T>;
 };
 
 /**
- * How long the proxy waits for the API before giving up with a 504, so a
- * hung upstream still ends every form's request with a visible Alert
- * instead of a button that stays busy.
+ * How long the proxy waits for the API (its answer and the whole body)
+ * before giving up with a 504, so a hung upstream still ends every form's
+ * request with a visible Alert instead of a button that stays busy.
  */
-export const UPSTREAM_TIMEOUT_MS = 10_000;
+const UPSTREAM_TIMEOUT_MS = 10_000;
 
 const TRY_AGAIN = "Bardic Torch couldn't do that just now. Try again shortly.";
+
+const SIGNED_OUT: ApiError = {
+  code: "unauthenticated",
+  message: "Log in to continue.",
+};
 
 /** What the user is told for an upstream error, per operation. */
 function upstreamError(
@@ -158,20 +183,31 @@ function failure(
 }
 
 function upstreamUrl(base: string, request: ApiRequest<unknown>): string {
-  const path = request.path.replace(/\{(\w+)\}/g, (_match, name: string) =>
-    encodeURIComponent(request.params?.[name] ?? "")
+  const path = ENDPOINTS[request.operationId].path.replace(
+    /\{(\w+)\}/g,
+    (_match, name: string) => encodeURIComponent(request.params?.[name] ?? "")
   );
   return `${base}${path}`;
 }
 
-async function readJson(response: Response): Promise<unknown> {
-  const text = await response.text();
+/** `text` as JSON: null when empty, undefined when it isn't JSON. */
+function parseJson(text: string): unknown {
   if (text === "") return null;
   try {
     return JSON.parse(text);
   } catch {
     return undefined;
   }
+}
+
+/** Rejects with the signal's reason once it aborts. */
+function aborted(signal: AbortSignal): Promise<never> {
+  return new Promise((_resolve, reject) => {
+    if (signal.aborted) reject(signal.reason);
+    signal.addEventListener("abort", () => reject(signal.reason), {
+      once: true,
+    });
+  });
 }
 
 /** `AbortSignal.timeout` rejects with a DOMException named TimeoutError. */
@@ -192,20 +228,18 @@ async function callApi<T>(
   const auth = await createAuthenticatedFetch(request, context);
   const headers = new Headers(auth.headers);
 
-  if (!auth.isAuthenticated) {
-    return failure(
-      401,
-      { code: "unauthenticated", message: "Log in to continue." },
-      headers
-    );
-  }
+  if (!auth.isAuthenticated) return failure(401, SIGNED_OUT, headers);
 
+  // The timeout covers the body too: a body that stalls or breaks off
+  // ends in the same 504/502 as a request that never got an answer.
+  const signal = AbortSignal.timeout(UPSTREAM_TIMEOUT_MS);
   let response: Response;
+  let text: string;
   try {
     response = await auth.authFetch(
       upstreamUrl(env.BARDIC_TORCH_API_BASE_URL, apiRequest),
       {
-        method: apiRequest.method,
+        method: ENDPOINTS[apiRequest.operationId].method,
         headers:
           apiRequest.body === undefined
             ? { Accept: "application/json" }
@@ -217,9 +251,10 @@ async function callApi<T>(
           ? {}
           : { body: JSON.stringify(apiRequest.body) }),
         redirect: "manual",
-        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+        signal,
       }
     );
+    text = await Promise.race([response.text(), aborted(signal)]);
   } catch (error) {
     console.error(`${apiRequest.operationId} failed:`, error);
     if (isTimeout(error)) {
@@ -255,7 +290,7 @@ async function callApi<T>(
     );
   }
 
-  const payload = await readJson(response);
+  const payload = parseJson(text);
   if (response.ok) {
     const parsed = apiRequest.schema.safeParse(payload);
     if (parsed.success) {
@@ -286,10 +321,41 @@ async function callApi<T>(
 }
 
 /**
+ * The body as text, read until it ends or passes `limit` bytes (null), so
+ * an oversized body is never held in memory, whatever Content-Length says.
+ */
+async function readLimited(
+  request: Request,
+  limit: number
+): Promise<string | null> {
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > limit) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(bytes);
+}
+
+/**
  * Read and validate a proxy route's form-encoded body. Other content types
  * get a 415, bodies over 8 KB a 413 and invalid fields a 400 listing them.
  */
-export async function readFormBody<S extends z.ZodTypeAny>(
+async function readFormBody<S extends z.ZodTypeAny>(
   request: Request,
   schema: S
 ): Promise<
@@ -303,14 +369,20 @@ export async function readFormBody<S extends z.ZodTypeAny>(
     });
   }
   const declaredLength = Number(request.headers.get("Content-Length") ?? 0);
-  const text = declaredLength > MAX_BODY_BYTES ? "" : await request.text();
-  if (
-    declaredLength > MAX_BODY_BYTES ||
-    new TextEncoder().encode(text).byteLength > MAX_BODY_BYTES
-  ) {
+  const text =
+    declaredLength > MAX_BODY_BYTES
+      ? null
+      : await readLimited(request, MAX_BODY_BYTES).catch(() => undefined);
+  if (text === null) {
     return failure(413, {
       code: "request_too_large",
       message: "The form is too large to send.",
+    });
+  }
+  if (text === undefined) {
+    return failure(400, {
+      code: "invalid_request",
+      message: "The form didn't arrive in full. Try again.",
     });
   }
 
@@ -329,10 +401,33 @@ export async function readFormBody<S extends z.ZodTypeAny>(
 }
 
 /**
+ * A proxy route's answer to a form submission: signed out gets a 401
+ * before the body is read; then the form is read and validated
+ * (`readFormBody`) and `send` makes the API call with it. A refreshed
+ * session cookie goes out on every answer, including the form's errors.
+ */
+export async function proxyForm<S extends z.ZodTypeAny>(
+  request: Request,
+  context: AppLoadContext,
+  schema: S,
+  send: (data: z.output<S>) => Promise<ApiResult<unknown>>
+): Promise<Response> {
+  const auth = await getServerAuthContext(request, context);
+  if (!auth.authContext.isAuthenticated) {
+    return proxyResponse(failure(401, SIGNED_OUT, new Headers(auth.headers)));
+  }
+  const body = await readFormBody(request, schema);
+  if (!body.ok) {
+    return proxyResponse({ ...body, headers: new Headers(auth.headers) });
+  }
+  return proxyResponse(await send(body.data));
+}
+
+/**
  * The JSON response of a proxy route: the result without its headers, never
  * cached. A 204 becomes a 200 so fetchers can read the body.
  */
-export function proxyResponse(result: ApiResult<unknown>): Response {
+function proxyResponse(result: ApiResult<unknown>): Response {
   const headers = new Headers(result.headers);
   headers.set("Cache-Control", "no-store");
   return json<ProxyBody<unknown>>(
@@ -366,8 +461,6 @@ type RequestBody<Id extends OperationId> = operations[Id] extends {
 export function getMe(request: Request, context: AppLoadContext) {
   return callApi<User>(request, context, {
     operationId: "getMe",
-    method: "GET",
-    path: "/v1/me",
     schema: userSchema,
   });
 }
@@ -379,8 +472,6 @@ export function updateMe(
 ) {
   return callApi(request, context, {
     operationId: "updateMe",
-    method: "PATCH",
-    path: "/v1/me",
     body,
     schema: userSchema,
   });
@@ -389,8 +480,6 @@ export function updateMe(
 export function listApiTokens(request: Request, context: AppLoadContext) {
   return callApi(request, context, {
     operationId: "listAPITokens",
-    method: "GET",
-    path: "/v1/tokens",
     schema: apiTokenListSchema,
   });
 }
@@ -402,8 +491,6 @@ export function createApiToken(
 ) {
   return callApi(request, context, {
     operationId: "createAPIToken",
-    method: "POST",
-    path: "/v1/tokens",
     body,
     schema: createdApiTokenSchema,
   });
@@ -416,8 +503,6 @@ export function revokeApiToken(
 ) {
   return callApi(request, context, {
     operationId: "revokeAPIToken",
-    method: "DELETE",
-    path: "/v1/tokens/{token_id}",
     params: { token_id: tokenId },
     schema: z.null(),
   });
