@@ -19,8 +19,8 @@ export function TokenReveal({
   secret,
   onDismiss,
 }: {
-  secret: string;
-  onDismiss: () => void;
+  readonly secret: string;
+  readonly onDismiss: () => void;
 }) {
   const value = useRef<HTMLTextAreaElement>(null);
   const [copy, setCopy] = useState<CopyState>("idle");

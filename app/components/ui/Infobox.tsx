@@ -23,23 +23,31 @@ const ROW =
  * `:::infobox`, whose labels may be links): the list, a row, and the row's
  * label and value. `sections` uses the same parts.
  */
-export function InfoboxFacts({ children }: { children: ReactNode }) {
+export function InfoboxFacts({ children }: { readonly children: ReactNode }) {
   return <dl className="mt-1 text-body-sm">{children}</dl>;
 }
 
-export function InfoboxFact({ children }: { children: ReactNode }) {
+export function InfoboxFact({ children }: { readonly children: ReactNode }) {
   return <div className={ROW}>{children}</div>;
 }
 
-export function InfoboxFactLabel({ children }: { children: ReactNode }) {
+export function InfoboxFactLabel({
+  children,
+}: {
+  readonly children: ReactNode;
+}) {
   return <dt className="text-fg-muted">{children}</dt>;
 }
 
-export function InfoboxFactValue({ children }: { children: ReactNode }) {
+export function InfoboxFactValue({
+  children,
+}: {
+  readonly children: ReactNode;
+}) {
   return <dd className="text-fg">{children}</dd>;
 }
 
-function Rows({ rows }: { rows: readonly InfoboxRow[] }) {
+function Rows({ rows }: { readonly rows: readonly InfoboxRow[] }) {
   return (
     <InfoboxFacts>
       {rows.map(({ label, value }) => (
@@ -97,16 +105,16 @@ export function Infobox({
   loading = false,
   error,
 }: {
-  title: string;
-  subtitle?: ReactNode;
-  sections?: readonly InfoboxSection[];
+  readonly title: string;
+  readonly subtitle?: ReactNode;
+  readonly sections?: readonly InfoboxSection[];
   /** Facts outside any section: an InfoboxFacts list. */
-  children?: ReactNode;
+  readonly children?: ReactNode;
   /** An action under the facts, e.g. "Help complete this page". */
-  footer?: ReactNode;
-  loading?: boolean;
+  readonly footer?: ReactNode;
+  readonly loading?: boolean;
   /** Shown instead of the facts when they failed: a "Try again" control. */
-  error?: { retry: ReactNode };
+  readonly error?: { retry: ReactNode };
 }) {
   const titleId = useId();
   const filled = sections.filter(({ rows }) => rows.length > 0);

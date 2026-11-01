@@ -12,10 +12,10 @@ export function useDismiss({
   close,
   areas,
 }: {
-  open: boolean;
+  readonly open: boolean;
   /** Close; `returnFocus` is true when focus should go back to the trigger. */
-  close: (returnFocus: boolean) => void;
-  areas: readonly RefObject<HTMLElement>[];
+  readonly close: (returnFocus: boolean) => void;
+  readonly areas: readonly RefObject<HTMLElement>[];
 }): void {
   const latest = useRef({ close, areas });
   latest.current = { close, areas };

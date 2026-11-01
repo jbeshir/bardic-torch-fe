@@ -29,7 +29,7 @@ export function useSlowNavigation(): boolean {
  * assistive tech. It sweeps when motion is allowed and stands still,
  * full width, when it isn't.
  */
-export function NavigationProgress({ visible }: { visible: boolean }) {
+export function NavigationProgress({ visible }: { readonly visible: boolean }) {
   if (!visible) return null;
   return (
     <div

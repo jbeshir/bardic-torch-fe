@@ -14,9 +14,9 @@ export function ProblemAlert({
   error,
   fallback,
 }: {
-  error: ProxyError;
+  readonly error: ProxyError;
   /** The form's own words for a failure on the service's side. */
-  fallback: string;
+  readonly fallback: string;
 }) {
   return (
     <Alert

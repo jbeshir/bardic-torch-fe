@@ -35,12 +35,12 @@ export function Checkbox({
   InputHTMLAttributes<HTMLInputElement>,
   "className" | "style" | "id" | "type" | "children"
 > & {
-  label: ReactNode;
-  help?: ReactNode;
+  readonly label: ReactNode;
+  readonly help?: ReactNode;
   /** A message for this box alone; in a group, give the group the error. */
-  error?: ReactNode;
+  readonly error?: ReactNode;
   /** The "some of these" state, e.g. for a select-all box. */
-  indeterminate?: boolean;
+  readonly indeterminate?: boolean;
 }) {
   const id = useId();
   const ref = useRef<HTMLInputElement>(null);
@@ -107,11 +107,11 @@ export function CheckboxGroup({
   optional = false,
   children,
 }: {
-  legend: string;
-  help?: ReactNode;
-  error?: ReactNode;
-  optional?: boolean;
-  children: ReactNode;
+  readonly legend: string;
+  readonly help?: ReactNode;
+  readonly error?: ReactNode;
+  readonly optional?: boolean;
+  readonly children: ReactNode;
 }) {
   const id = useId();
   return (

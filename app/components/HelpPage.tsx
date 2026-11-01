@@ -30,7 +30,7 @@ export function helpMeta({
 }
 
 /** "‘A’", "‘A’ and ‘B’", "‘A’, ‘B’ and ‘C’", each a link to the wiki page. */
-function SourceList({ titles }: { titles: readonly string[] }) {
+function SourceList({ titles }: { readonly titles: readonly string[] }) {
   return titles.map((title, index) => (
     <Fragment key={title}>
       {index === 0 ? "" : index === titles.length - 1 ? " and " : ", "}
@@ -46,7 +46,11 @@ function SourceList({ titles }: { titles: readonly string[] }) {
  * CC BY-SA 4.0, and, for text adapted from the original wiki, which pages
  * it came from and that its contributors wrote them.
  */
-function LicenceLine({ frontmatter }: { frontmatter: HelpFrontmatter }) {
+function LicenceLine({
+  frontmatter,
+}: {
+  readonly frontmatter: HelpFrontmatter;
+}) {
   const { sourcePages, lastReviewed } = frontmatter;
   return (
     <>
@@ -77,7 +81,7 @@ function LicenceLine({ frontmatter }: { frontmatter: HelpFrontmatter }) {
  * four h2s, the prose and the licence line. The index (/help) has no
  * breadcrumbs or source, and its summary is its intro.
  */
-export function HelpPage({ content }: { content: HelpContent }) {
+export function HelpPage({ content }: { readonly content: HelpContent }) {
   const { slug, page, frontmatter, contents } = content;
   const [source] = frontmatter.sourcePages;
   const isIndex = slug === null;

@@ -26,10 +26,10 @@ function manifestEntry({
   hasErrorBoundary = false,
   ...route
 }: {
-  id: string;
-  parentId?: string;
-  hasLoader: boolean;
-  hasErrorBoundary?: boolean;
+  readonly id: string;
+  readonly parentId?: string;
+  readonly hasLoader: boolean;
+  readonly hasErrorBoundary?: boolean;
 } & ({ path: string } | { index: true })) {
   return {
     ...route,

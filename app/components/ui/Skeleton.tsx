@@ -24,9 +24,9 @@ export function Skeleton({
   shape = "line",
   width = "full",
 }: {
-  shape?: SkeletonShape;
+  readonly shape?: SkeletonShape;
   /** Line length; only for `line`. */
-  width?: keyof typeof LINE_WIDTHS;
+  readonly width?: keyof typeof LINE_WIDTHS;
 }) {
   if (shape === "line") {
     return (
@@ -44,7 +44,7 @@ export function Skeleton({
   );
 }
 
-function Block({ className }: { className: string }) {
+function Block({ className }: { readonly className: string }) {
   return (
     <span className={`relative overflow-hidden bg-surface-sunken ${className}`}>
       <span className="absolute inset-0 hidden bg-gradient-to-r from-transparent via-surface-raised/shimmer to-transparent motion-safe:block motion-safe:animate-shimmer" />
@@ -61,8 +61,8 @@ export function SkeletonRegion({
   children,
 }: {
   /** What is loading, e.g. "page details". */
-  label: string;
-  children: ReactNode;
+  readonly label: string;
+  readonly children: ReactNode;
 }) {
   return (
     <div aria-busy="true">

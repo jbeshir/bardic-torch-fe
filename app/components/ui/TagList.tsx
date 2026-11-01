@@ -27,8 +27,8 @@ function Chip({
   tag: { label, to, prefix, current = false },
   size,
 }: {
-  tag: Tag;
-  size: keyof typeof SIZES;
+  readonly tag: Tag;
+  readonly size: keyof typeof SIZES;
 }) {
   const className = `${CHIP} ${SIZES[size]} ${current ? CURRENT : REST}`;
   const text = (
@@ -70,10 +70,10 @@ export function TagList({
   size = "md",
   emptyText = "No categories yet.",
 }: {
-  tags: readonly Tag[];
+  readonly tags: readonly Tag[];
   /** `sm` (28 px) for chips inside the infobox. */
-  size?: keyof typeof SIZES;
-  emptyText?: string;
+  readonly size?: keyof typeof SIZES;
+  readonly emptyText?: string;
 }) {
   if (tags.length === 0) {
     return <p className="text-caption text-fg-subtle">{emptyText}</p>;

@@ -113,8 +113,8 @@ export function AppShell({
   account,
   children,
 }: {
-  account: Account;
-  children: ReactNode;
+  readonly account: Account;
+  readonly children: ReactNode;
 }) {
   const busy = useSlowNavigation();
   const hydrated = useHydrated();

@@ -12,8 +12,8 @@ export function LogoMark({
   className,
   flicker = false,
 }: {
-  className: string;
-  flicker?: boolean;
+  readonly className: string;
+  readonly flicker?: boolean;
 }) {
   return (
     <svg
@@ -50,8 +50,8 @@ export function UnlitMark({
   size = 48,
   dashed = false,
 }: {
-  size?: 48 | 64;
-  dashed?: boolean;
+  readonly size?: 48 | 64;
+  readonly dashed?: boolean;
 }) {
   return (
     <svg

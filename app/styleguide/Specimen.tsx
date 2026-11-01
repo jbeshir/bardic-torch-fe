@@ -15,11 +15,11 @@ export function Specimen({
   children,
 }: {
   /** The anchor, e.g. "button" for `/styleguide#button`. */
-  id: string;
-  title: string;
+  readonly id: string;
+  readonly title: string;
   /** One line on what it is for, with its DESIGN section. */
-  summary: ReactNode;
-  children: ReactNode;
+  readonly summary: ReactNode;
+  readonly children: ReactNode;
 }) {
   const prefix = useContext(AnchorPrefix);
   return (
@@ -45,12 +45,12 @@ export function Example({
   wide = false,
   stack = false,
 }: {
-  label: string;
-  children: ReactNode;
+  readonly label: string;
+  readonly children: ReactNode;
   /** Let the example run the full width (a layout or a list). */
-  wide?: boolean;
+  readonly wide?: boolean;
   /** Put the parts under each other (fields) instead of in a row. */
-  stack?: boolean;
+  readonly stack?: boolean;
 }) {
   return (
     <figure className={wide ? "min-w-0" : "min-w-0 max-w-form"}>

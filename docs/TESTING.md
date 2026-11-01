@@ -18,6 +18,7 @@ Tests come in three layers:
 - `no-raw-colours.test.ts`: colour only from the tokens.
 - `motion.test.ts`: movement only under `motion-safe:`.
 - `lint-coverage.test.ts`: ESLint lints every code file (`.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`: scripts and config files too) with `import/no-unused-modules`.
+- `readonly-props.test.ts`: every component's props (and every hook's options object) are `readonly`.
 - `component-usage.test.ts`: every export of an app module (components, server, schemas, constants, hooks, contexts, content; not the framework-read routes, root and entries, nor `app/test`) is imported by non-test code, not only by tests.
 
 The scans walk the tree with one helper, `filesUnder` (`test/support/files.ts`), which skips the gitignored e2e screenshots.

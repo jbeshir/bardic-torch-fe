@@ -37,11 +37,11 @@ function Step({
   rel,
   trailing = false,
 }: {
-  to: string | null;
-  label: string;
-  icon: Icon;
-  rel: "prev" | "next";
-  trailing?: boolean;
+  readonly to: string | null;
+  readonly label: string;
+  readonly icon: Icon;
+  readonly rel: "prev" | "next";
+  readonly trailing?: boolean;
 }) {
   const content = (
     <>
@@ -87,10 +87,10 @@ export function Pagination({
   href,
 }: {
   /** The current page, from 1. */
-  page: number;
-  pageCount: number;
+  readonly page: number;
+  readonly pageCount: number;
   /** The address of page `n`, e.g. `?page=n` on the same path. */
-  href: (n: number) => string;
+  readonly href: (n: number) => string;
 }) {
   return (
     <nav aria-label="Pagination">

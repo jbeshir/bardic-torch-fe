@@ -49,8 +49,8 @@ export function FieldHelp({
   id,
   children,
 }: {
-  id: string;
-  children: ReactNode;
+  readonly id: string;
+  readonly children: ReactNode;
 }) {
   return (
     <p id={id} className="mt-1 text-caption text-fg-muted">
@@ -64,8 +64,8 @@ export function FieldError({
   id,
   children,
 }: {
-  id: string;
-  children: ReactNode;
+  readonly id: string;
+  readonly children: ReactNode;
 }) {
   return (
     <p
@@ -99,17 +99,17 @@ export function Field({
   id: givenId,
   children,
 }: {
-  label: string;
-  help?: ReactNode;
+  readonly label: string;
+  readonly help?: ReactNode;
   /** The message for an invalid value; also sets `aria-invalid`. */
-  error?: ReactNode;
-  optional?: boolean;
+  readonly error?: ReactNode;
+  readonly optional?: boolean;
   /**
    * The control's id, when something else on the page links to it (an
    * error summary). It must come from the parent's `useId()`.
    */
-  id?: string;
-  children: ReactNode;
+  readonly id?: string;
+  readonly children: ReactNode;
 }) {
   const ownId = useId();
   const id = givenId ?? ownId;

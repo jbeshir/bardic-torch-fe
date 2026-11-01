@@ -20,11 +20,11 @@ export function MenuControl({
   siteNavId,
   onOpen,
 }: {
-  look: "icon" | "cell";
-  hydrated: boolean;
-  drawerId: string;
-  siteNavId: string;
-  onOpen: () => void;
+  readonly look: "icon" | "cell";
+  readonly hydrated: boolean;
+  readonly drawerId: string;
+  readonly siteNavId: string;
+  readonly onOpen: () => void;
 }) {
   const className =
     look === "cell"
@@ -70,8 +70,8 @@ function SearchCell({
   hydrated,
   siteNavId,
 }: {
-  hydrated: boolean;
-  siteNavId: string;
+  readonly hydrated: boolean;
+  readonly siteNavId: string;
 }) {
   const [open, setOpen] = useState(false);
   const sheetId = useId();
@@ -148,11 +148,11 @@ export function BottomBar({
   siteNavId,
   onOpenMenu,
 }: {
-  account: Account;
-  hydrated: boolean;
-  drawerId: string;
-  siteNavId: string;
-  onOpenMenu: () => void;
+  readonly account: Account;
+  readonly hydrated: boolean;
+  readonly drawerId: string;
+  readonly siteNavId: string;
+  readonly onOpenMenu: () => void;
 }) {
   return (
     <div

@@ -22,7 +22,11 @@ const VIEW_CURRENT = "border-accent font-semibold text-fg";
 const VIEW_OTHER =
   "border-transparent font-medium text-fg-muted transition-colors hover:border-border-strong hover:text-fg";
 
-function ViewLabel({ view: { label, icon: ViewIcon } }: { view: View }) {
+function ViewLabel({
+  view: { label, icon: ViewIcon },
+}: {
+  readonly view: View;
+}) {
   return (
     <>
       <ViewIcon size={18} stroke={1.75} aria-hidden="true" />
@@ -45,10 +49,10 @@ export function ViewTabs({
   current,
   meta,
 }: {
-  views: readonly [View, ...View[]];
+  readonly views: readonly [View, ...View[]];
   /** The `to` of the view being shown. */
-  current: string;
-  meta?: ReactNode;
+  readonly current: string;
+  readonly meta?: ReactNode;
 }) {
   const [only] = views;
   return (
@@ -111,13 +115,13 @@ export function Tabs({
   lazy = false,
 }: {
   /** The tablist's accessible name. */
-  label: string;
-  panels: readonly [Panel, ...Panel[]];
-  defaultIndex?: number;
+  readonly label: string;
+  readonly panels: readonly [Panel, ...Panel[]];
+  readonly defaultIndex?: number;
   /** The level of the panel headings shown without JS. */
-  headingLevel?: 2 | 3;
+  readonly headingLevel?: 2 | 3;
   /** Render only the selected panel, and only the default one without JS. */
-  lazy?: boolean;
+  readonly lazy?: boolean;
 }) {
   const id = useId();
   const enhanced = useHydrated();

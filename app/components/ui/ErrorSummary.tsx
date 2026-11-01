@@ -27,12 +27,12 @@ export function ErrorSummary({
   problems,
   attempt,
 }: {
-  problems: readonly [Problem, ...Problem[]];
+  readonly problems: readonly [Problem, ...Problem[]];
   /**
    * Counts the form's failed submits: focus moves on each one, even when
    * the problems are the same as last time, but not on other renders.
    */
-  attempt: number;
+  readonly attempt: number;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const signature = problems

@@ -19,8 +19,8 @@ function Forced({
   theme,
   anchorPrefix,
 }: {
-  theme: "light" | "dark";
-  anchorPrefix: string;
+  readonly theme: "light" | "dark";
+  readonly anchorPrefix: string;
 }) {
   return (
     <div

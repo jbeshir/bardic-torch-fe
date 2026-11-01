@@ -16,8 +16,8 @@ export function TryAgain({
   variant = "secondary",
   size = "md",
 }: {
-  variant?: "primary" | "secondary";
-  size?: "sm" | "md";
+  readonly variant?: "primary" | "secondary";
+  readonly size?: "sm" | "md";
 }) {
   const hydrated = useHydrated();
   const revalidator = useRevalidator();
@@ -57,9 +57,9 @@ export function SectionError({
   title,
   children,
 }: {
-  title: string;
+  readonly title: string;
   /** The cause, in plain words, when it is known. */
-  children?: ReactNode;
+  readonly children?: ReactNode;
 }) {
   return (
     <Alert tone="danger" title={title} actions={<TryAgain size="sm" />}>
@@ -82,14 +82,14 @@ export function ErrorState({
   actions,
   art = "broken",
 }: {
-  title: string;
-  children: ReactNode;
+  readonly title: string;
+  readonly children: ReactNode;
   /** The Sentry event id, when Sentry is configured; omitted otherwise. */
-  reference?: string | undefined;
+  readonly reference?: string | undefined;
   /** Buttons and links: e.g. TryAgain and "Go to the home page". */
-  actions: ReactNode;
+  readonly actions: ReactNode;
   /** `missing` (404): the plain unlit torch; `broken`: its flame dashed. */
-  art?: "missing" | "broken";
+  readonly art?: "missing" | "broken";
 }) {
   const heading = useRef<HTMLHeadingElement>(null);
   // True on the first render only when mounted after hydration, i.e. the

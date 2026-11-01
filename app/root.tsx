@@ -80,7 +80,7 @@ export const meta: MetaFunction = ({ error }) => {
  * while a new choice is saved), so the first paint is already right: no
  * theme script, nothing to flash.
  */
-function ThemeMeta({ theme }: { theme: Theme | null }) {
+function ThemeMeta({ theme }: { readonly theme: Theme | null }) {
   if (theme) {
     return (
       <>
@@ -106,7 +106,7 @@ function ThemeMeta({ theme }: { theme: Theme | null }) {
   );
 }
 
-export function Layout({ children }: { children: ReactNode }) {
+export function Layout({ children }: { readonly children: ReactNode }) {
   const data = useRouteLoaderData<typeof loader>("root");
   return (
     <SentryProvider dsn={data?.sentryDsn}>

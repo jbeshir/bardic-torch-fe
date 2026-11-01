@@ -27,7 +27,7 @@ const SIZES = {
  * Enter too. No suggestions, no shortcut.
  */
 export const SearchBox = forwardRef(function SearchBox(
-  { size }: { size: keyof typeof SIZES },
+  { size }: { readonly size: keyof typeof SIZES },
   ref: Ref<HTMLInputElement>
 ) {
   const inputId = useId();

@@ -14,8 +14,8 @@ export function textControlClasses({
   invalid,
   readOnly = false,
 }: {
-  invalid: boolean;
-  readOnly?: boolean | undefined;
+  readonly invalid: boolean;
+  readonly readOnly?: boolean | undefined;
 }): string {
   const edge = invalid
     ? "border-danger-icon ring-1 ring-inset ring-danger-icon"
@@ -30,9 +30,16 @@ type InputProps = Omit<
   InputHTMLAttributes<HTMLInputElement>,
   "className" | "style" | "id" | "type"
 > & {
-  type?: "text" | "email" | "url" | "search" | "tel" | "password" | "number";
+  readonly type?:
+    | "text"
+    | "email"
+    | "url"
+    | "search"
+    | "tel"
+    | "password"
+    | "number";
   /** A decorative 20 px icon before the value (e.g. a search glass). */
-  icon?: Icon;
+  readonly icon?: Icon;
 };
 
 /**

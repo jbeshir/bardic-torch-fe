@@ -33,7 +33,7 @@ export const SERVER_ERROR_META = [
  * home and a search of the original wiki for the address's last part,
  * since its old pages don't redirect here yet.
  */
-export function NotFound({ pathname }: { pathname: string }) {
+export function NotFound({ pathname }: { readonly pathname: string }) {
   return (
     <ErrorState
       art="missing"
@@ -67,8 +67,8 @@ export function ServerError({
   reference,
   title = "Something went wrong",
 }: {
-  reference: string | undefined;
-  title?: string;
+  readonly reference: string | undefined;
+  readonly title?: string;
 }) {
   return (
     <ErrorState

@@ -28,16 +28,16 @@ export function Drawer({
   closeFrom,
 }: {
   /** For the trigger's `aria-controls`. */
-  id?: string;
-  open: boolean;
+  readonly id?: string;
+  readonly open: boolean;
   /** Called for every way of closing; set `open` false in response. */
-  onClose: () => void;
-  title: string;
-  closeLabel?: string;
-  children: ReactNode;
-  footer?: ReactNode;
+  readonly onClose: () => void;
+  readonly title: string;
+  readonly closeLabel?: string;
+  readonly children: ReactNode;
+  readonly footer?: ReactNode;
   /** Close once the viewport reaches this breakpoint. */
-  closeFrom?: "lg" | undefined;
+  readonly closeFrom?: "lg" | undefined;
 }) {
   const titleId = useId();
   const close = useRef<HTMLButtonElement>(null);

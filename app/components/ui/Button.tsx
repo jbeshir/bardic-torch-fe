@@ -107,11 +107,11 @@ function Inside({
   loading,
   children,
 }: {
-  icon?: Icon | undefined;
-  trailingIcon?: Icon | undefined;
-  size?: Size | undefined;
-  loading?: boolean;
-  children?: ReactNode;
+  readonly icon?: Icon | undefined;
+  readonly trailingIcon?: Icon | undefined;
+  readonly size?: Size | undefined;
+  readonly loading?: boolean;
+  readonly children?: ReactNode;
 }) {
   const iconSize = SIZES[size].icon;
   return (
@@ -209,12 +209,12 @@ export const Button = forwardRef(function Button(
 type ButtonLinkProps = Look &
   Content & {
     /** An internal path (through Remix), or an absolute URL (external). */
-    to: string;
+    readonly to: string;
     /**
      * Load the page from the server instead of navigating in the app: the
      * no-JS "Try again", which must work when the app itself failed.
      */
-    reloadDocument?: boolean;
+    readonly reloadDocument?: boolean;
   };
 
 /**

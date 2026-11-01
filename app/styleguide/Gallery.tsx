@@ -65,7 +65,11 @@ export const SPECIMENS = [
  * One copy of the whole gallery. `anchorPrefix` keeps its ids apart from
  * the other preview panels' copies.
  */
-export function Gallery({ anchorPrefix = "" }: { anchorPrefix?: string }) {
+export function Gallery({
+  anchorPrefix = "",
+}: {
+  readonly anchorPrefix?: string;
+}) {
   return (
     <AnchorPrefix.Provider value={anchorPrefix}>
       {SPECIMENS.map(({ id, Block }) => (

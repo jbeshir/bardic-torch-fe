@@ -12,8 +12,8 @@ export function Spinner({
   size = 16,
   tone = "accent",
 }: {
-  size?: SpinnerSize;
-  tone?: "accent" | "inherit";
+  readonly size?: SpinnerSize;
+  readonly tone?: "accent" | "inherit";
 }) {
   const stroke = size === 16 ? 2 : 2.5;
   const radius = (size - stroke) / 2;

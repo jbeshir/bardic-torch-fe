@@ -37,21 +37,21 @@ export function Dialog({
   initialFocus,
   fallbackFocus,
 }: {
-  open: boolean;
+  readonly open: boolean;
   /** Called for every way of closing; set `open` false in response. */
-  onClose: () => void;
-  title: string;
+  readonly onClose: () => void;
+  readonly title: string;
   /** A short body, which becomes the dialog's description. */
-  description?: string;
+  readonly description?: string;
   /** Anything else in the body, e.g. a form with its fields. */
-  children?: ReactNode;
-  confirm: Confirm;
-  cancelLabel?: string;
-  pending?: boolean;
+  readonly children?: ReactNode;
+  readonly confirm: Confirm;
+  readonly cancelLabel?: string;
+  readonly pending?: boolean;
   /** Focus this on open instead of Cancel: a form's first field. */
-  initialFocus?: RefObject<HTMLElement>;
+  readonly initialFocus?: RefObject<HTMLElement>;
   /** Where focus goes on close if the opener is gone, e.g. a list heading. */
-  fallbackFocus?: () => HTMLElement | null;
+  readonly fallbackFocus?: () => HTMLElement | null;
 }) {
   const titleId = useId();
   const descriptionId = useId();

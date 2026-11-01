@@ -7,11 +7,11 @@ import { formatDate, tokenLabel } from "./format";
 
 type APIToken = components["schemas"]["APIToken"];
 
-function Prefix({ prefix }: { prefix: string }) {
+function Prefix({ prefix }: { readonly prefix: string }) {
   return <code className="font-mono text-code text-fg">{prefix}…</code>;
 }
 
-function When({ timestamp }: { timestamp: string | null }) {
+function When({ timestamp }: { readonly timestamp: string | null }) {
   if (timestamp === null) return <>Never</>;
   return <time dateTime={timestamp}>{formatDate(timestamp)}</time>;
 }
@@ -21,8 +21,8 @@ function RevokeButton({
   token,
   onRevoke,
 }: {
-  token: APIToken;
-  onRevoke: (token: APIToken) => void;
+  readonly token: APIToken;
+  readonly onRevoke: (token: APIToken) => void;
 }) {
   const hydrated = useHydrated();
   return (
@@ -49,8 +49,8 @@ export function TokenList({
   tokens,
   onRevoke,
 }: {
-  tokens: readonly APIToken[];
-  onRevoke: (token: APIToken) => void;
+  readonly tokens: readonly APIToken[];
+  readonly onRevoke: (token: APIToken) => void;
 }) {
   return (
     <>

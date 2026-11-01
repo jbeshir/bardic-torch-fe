@@ -24,7 +24,13 @@ export const meta: MetaFunction = () => [
 ];
 
 /** A home page section: an h2 with a rule under it, then its content. */
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  readonly title: string;
+  readonly children: ReactNode;
+}) {
   const titleId = useId();
   return (
     <section aria-labelledby={titleId} className="mt-12">

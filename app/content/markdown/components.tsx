@@ -19,7 +19,7 @@ function contentLink(appearance: "prose" | "standalone") {
   return function ContentLink({
     href,
     children,
-  }: Children & { href?: string | undefined }) {
+  }: Children & { readonly href?: string | undefined }) {
     if (!href) {
       throw new Error("A link in a help page has no address");
     }
@@ -57,12 +57,16 @@ const COMPONENTS = {
       <CardList columns={2}>{children}</CardList>
     </div>
   ),
-  card: ({ title, to, children }: Children & { title: string; to: string }) => (
+  card: ({
+    title,
+    to,
+    children,
+  }: Children & { readonly title: string; readonly to: string }) => (
     <Card title={title} to={to}>
       {children}
     </Card>
   ),
-  infobox: ({ title, children }: Children & { title: string }) => (
+  infobox: ({ title, children }: Children & { readonly title: string }) => (
     <Infobox title={title}>{children}</Infobox>
   ),
   infoboxfacts: InfoboxFacts,
@@ -78,7 +82,7 @@ function slotComponents(slot: MarkdownSlot): MDXComponents {
   return {
     ...COMPONENTS,
     ...(slot === "infobox" ? { a: contentLink("standalone") } : {}),
-    pageslot: ({ name, children }: Children & { name: string }) =>
+    pageslot: ({ name, children }: Children & { readonly name: string }) =>
       name === slot ? <>{children}</> : null,
   };
 }
@@ -94,8 +98,8 @@ export function MarkdownPart({
   page: Page,
   slot,
 }: {
-  page: HelpContent["page"];
-  slot: MarkdownSlot;
+  readonly page: HelpContent["page"];
+  readonly slot: MarkdownSlot;
 }) {
   return <Page components={SLOT_COMPONENTS[slot]} />;
 }

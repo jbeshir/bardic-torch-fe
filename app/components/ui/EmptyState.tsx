@@ -12,12 +12,12 @@ export function EmptyState({
   action,
   headingLevel = 3,
 }: {
-  title: string;
+  readonly title: string;
   /** One or two sentences: why it is empty and what to do. */
-  children: ReactNode;
+  readonly children: ReactNode;
   /** One primary or secondary Button or ButtonLink. */
-  action?: ReactNode;
-  headingLevel?: 2 | 3;
+  readonly action?: ReactNode;
+  readonly headingLevel?: 2 | 3;
 }) {
   const titleId = useId();
   const Heading = headingLevel === 2 ? "h2" : "h3";

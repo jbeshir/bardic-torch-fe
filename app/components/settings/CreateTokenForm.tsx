@@ -22,13 +22,13 @@ export function CreateTokenForm({
   fieldError,
   onInvalid,
 }: {
-  fetcher: FetcherWithComponents<unknown>;
+  readonly fetcher: FetcherWithComponents<unknown>;
   /** The name field, which the section focuses when the server rejects it. */
-  inputRef: RefObject<HTMLInputElement>;
+  readonly inputRef: RefObject<HTMLInputElement>;
   /** The server's or the browser's message for the name, if any. */
-  fieldError: string | null;
+  readonly fieldError: string | null;
   /** Called with the browser's message when the name breaks the rule. */
-  onInvalid: (message: string) => void;
+  readonly onInvalid: (message: string) => void;
 }) {
   const hydrated = useHydrated();
   const [name, setName] = useState("");

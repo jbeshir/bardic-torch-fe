@@ -40,8 +40,8 @@ function Avatar({
   account,
   size,
 }: {
-  account: Exclude<Account, { state: "signed-out" }>;
-  size: 24 | 32;
+  readonly account: Exclude<Account, { state: "signed-out" }>;
+  readonly size: 24 | 32;
 }) {
   const glyph = size === 32 ? 18 : 14;
   return (
@@ -71,7 +71,7 @@ const ROW =
 function AccountPanel({
   account,
 }: {
-  account: Exclude<Account, { state: "signed-out" }>;
+  readonly account: Exclude<Account, { state: "signed-out" }>;
 }) {
   return (
     <div className="space-y-1">
@@ -135,8 +135,8 @@ export function AccountMenu({
   account,
   placement,
 }: {
-  account: Account;
-  placement: Placement;
+  readonly account: Account;
+  readonly placement: Placement;
 }) {
   const { pathname, search } = useLocation();
   const panelId = useId();

@@ -70,16 +70,16 @@ export function Alert({
   icon,
   headingLevel,
 }: {
-  tone: AlertTone;
-  title?: ReactNode;
-  children?: ReactNode;
+  readonly tone: AlertTone;
+  readonly title?: ReactNode;
+  readonly children?: ReactNode;
   /** Buttons or links under the body. */
-  actions?: ReactNode;
-  banner?: boolean;
+  readonly actions?: ReactNode;
+  readonly banner?: boolean;
   /** Replaces the tone's icon, e.g. a lock for the restricted banner. */
-  icon?: Icon;
+  readonly icon?: Icon;
   /** Makes the title a heading, for alerts that head a form or section. */
-  headingLevel?: 2 | 3;
+  readonly headingLevel?: 2 | 3;
 }) {
   const { box, icon: iconColour } = TONES[tone];
   const Glyph = icon ?? TONE_GLYPHS[tone];
@@ -129,8 +129,8 @@ export function AlertRegion({
   urgent = false,
   children,
 }: {
-  urgent?: boolean;
-  children?: ReactNode;
+  readonly urgent?: boolean;
+  readonly children?: ReactNode;
 }) {
   return urgent ? (
     <div role="alert">{children}</div>

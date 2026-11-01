@@ -167,7 +167,7 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({
   return defaultShouldRevalidate;
 };
 
-function Page({ children }: { children: ReactNode }) {
+function Page({ children }: { readonly children: ReactNode }) {
   return (
     <div className="max-w-form">
       <h1 className="text-h1 text-fg">Settings</h1>

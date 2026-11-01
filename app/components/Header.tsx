@@ -37,11 +37,11 @@ export function Header({
   bottomBar,
 }: {
   /** The md–lg Menu control (the drawer's trigger). */
-  menu: ReactNode;
+  readonly menu: ReactNode;
   /** The account control from md. */
-  account: ReactNode;
+  readonly account: ReactNode;
   /** The bottom app bar, below md. */
-  bottomBar: ReactNode;
+  readonly bottomBar: ReactNode;
 }) {
   const { sentinel, scrolled } = useScrolled();
   return (

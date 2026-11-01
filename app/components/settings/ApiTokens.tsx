@@ -44,7 +44,11 @@ type Problem = { readonly error: ProxyError; readonly fallback: string };
  * 10"), and at the limit the form gives way to a note saying to revoke one;
  * the API's 409 stays the backstop for a list that is out of date.
  */
-export function ApiTokens({ tokens }: { tokens: readonly APIToken[] }) {
+export function ApiTokens({
+  tokens,
+}: {
+  readonly tokens: readonly APIToken[];
+}) {
   const show = useToast();
   const reportOffline = useOfflineToast();
   const heading = useRef<HTMLHeadingElement>(null);

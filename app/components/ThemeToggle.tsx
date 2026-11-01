@@ -59,7 +59,7 @@ const PLACEMENTS = {
 export function ThemeToggle({
   placement,
 }: {
-  placement: keyof typeof PLACEMENTS;
+  readonly placement: keyof typeof PLACEMENTS;
 }) {
   const look = PLACEMENTS[placement];
   const { choice, failure, save } = useThemeChoice();

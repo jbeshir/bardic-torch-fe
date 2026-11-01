@@ -19,7 +19,13 @@ const MD_QUERY = "(min-width: 768px)";
 // An in-page anchor, so a plain <a> with the Link look (no Remix routing).
 const ITEM = `${linkClasses("plain")} inline-flex min-h-6 items-baseline gap-2`;
 
-function Item({ number, section }: { number: string; section: Section }) {
+function Item({
+  number,
+  section,
+}: {
+  readonly number: string;
+  readonly section: Section;
+}) {
   return (
     <a href={`#${section.id}`} className={ITEM}>
       <span className="min-w-6 shrink-0 text-right tabular-nums text-fg-subtle">
@@ -38,7 +44,11 @@ function Item({ number, section }: { number: string; section: Section }) {
  * block formatting context (`flow-root`), so beside the floated infobox the
  * whole box narrows instead of running underneath it.
  */
-export function TableOfContents({ entries }: { entries: readonly TocEntry[] }) {
+export function TableOfContents({
+  entries,
+}: {
+  readonly entries: readonly TocEntry[];
+}) {
   const titleId = useId();
   const details = useRef<HTMLDetailsElement>(null);
 

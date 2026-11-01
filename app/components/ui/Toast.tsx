@@ -101,7 +101,7 @@ function withRoomFor(toasts: readonly ToastEntry[]): readonly ToastEntry[] {
  * Holds the toasts and renders their region once, after the page. Rendered
  * by root.tsx; pages call `useToast()`.
  */
-export function ToastProvider({ children }: { children: ReactNode }) {
+export function ToastProvider({ children }: { readonly children: ReactNode }) {
   const [toasts, setToasts] = useState<readonly ToastEntry[]>([]);
   const nextId = useRef(1);
 
@@ -148,8 +148,8 @@ function ToastRegion({
   toasts,
   onDismiss,
 }: {
-  toasts: readonly ToastEntry[];
-  onDismiss: (id: number) => void;
+  readonly toasts: readonly ToastEntry[];
+  readonly onDismiss: (id: number) => void;
 }) {
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -204,9 +204,9 @@ function Toast({
   paused,
   onDismiss,
 }: {
-  toast: ToastEntry;
-  paused: boolean;
-  onDismiss: (id: number) => void;
+  readonly toast: ToastEntry;
+  readonly paused: boolean;
+  readonly onDismiss: (id: number) => void;
 }) {
   // What is left of the 6 s, kept across pauses.
   const remaining = useRef(AUTO_DISMISS_MS);

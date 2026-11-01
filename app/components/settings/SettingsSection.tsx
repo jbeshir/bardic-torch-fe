@@ -10,9 +10,9 @@ export function SettingsSection({
   headingRef,
   children,
 }: {
-  title: string;
-  headingRef?: RefObject<HTMLHeadingElement>;
-  children: ReactNode;
+  readonly title: string;
+  readonly headingRef?: RefObject<HTMLHeadingElement>;
+  readonly children: ReactNode;
 }) {
   const titleId = useId();
   return (

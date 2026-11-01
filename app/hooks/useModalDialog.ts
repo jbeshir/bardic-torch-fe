@@ -60,12 +60,12 @@ export function useModalDialog({
   dismissible = true,
   closeOnBackdrop,
 }: {
-  open: boolean;
-  onClose: () => void;
-  initialFocus: RefObject<HTMLElement>;
-  fallbackFocus?: (() => HTMLElement | null) | undefined;
-  dismissible?: boolean;
-  closeOnBackdrop: boolean;
+  readonly open: boolean;
+  readonly onClose: () => void;
+  readonly initialFocus: RefObject<HTMLElement>;
+  readonly fallbackFocus?: (() => HTMLElement | null) | undefined;
+  readonly dismissible?: boolean;
+  readonly closeOnBackdrop: boolean;
 }): RefObject<HTMLDialogElement> {
   const dialog = useRef<HTMLDialogElement>(null);
   // The latest props, for listeners that live as long as the dialog is open.

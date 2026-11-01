@@ -16,15 +16,15 @@ export function Card({
   headingLevel = 3,
   children,
 }: {
-  title: string;
+  readonly title: string;
   /** A short label above the title (`label-caps`). */
-  eyebrow?: string;
+  readonly eyebrow?: string;
   /** A caption row under the body. */
-  meta?: ReactNode;
+  readonly meta?: ReactNode;
   /** An internal path: makes the whole card a link to it. */
-  to?: string;
-  headingLevel?: 2 | 3;
-  children: ReactNode;
+  readonly to?: string;
+  readonly headingLevel?: 2 | 3;
+  readonly children: ReactNode;
 }) {
   const Heading = headingLevel === 2 ? "h2" : "h3";
   return (
@@ -80,8 +80,8 @@ export function CardList({
   children,
 }: {
   /** The most columns: 2 within the prose measure, 3 on a full-width page. */
-  columns?: keyof typeof COLUMNS;
-  children: ReactNode;
+  readonly columns?: keyof typeof COLUMNS;
+  readonly children: ReactNode;
 }) {
   return (
     <ul role="list" className={`not-prose grid gap-4 ${COLUMNS[columns]}`}>

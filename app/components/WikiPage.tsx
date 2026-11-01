@@ -25,20 +25,20 @@ export function WikiPage({
   licence,
   children,
 }: {
-  title: string;
-  breadcrumbs?: ComponentProps<typeof Breadcrumbs>;
+  readonly title: string;
+  readonly breadcrumbs?: ComponentProps<typeof Breadcrumbs>;
   /** At the right end of the title rule: e.g. the source link. */
-  meta?: ReactNode;
+  readonly meta?: ReactNode;
   /** An Infobox. */
-  infobox?: ReactNode;
+  readonly infobox?: ReactNode;
   /** The prose before the contents. */
-  intro?: ReactNode;
+  readonly intro?: ReactNode;
   /** The page's h2s (and h3s); shown as the contents from four h2s. */
-  contents?: readonly TocEntry[];
-  categories?: ComponentProps<typeof TagList>["tags"];
+  readonly contents?: readonly TocEntry[];
+  readonly categories?: ComponentProps<typeof TagList>["tags"];
   /** The page's licence and credit line, at the very end. */
-  licence?: ReactNode;
-  children: ReactNode;
+  readonly licence?: ReactNode;
+  readonly children: ReactNode;
 }) {
   const { pathname } = useLocation();
   const categoriesId = useId();
