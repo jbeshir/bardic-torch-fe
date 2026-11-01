@@ -317,7 +317,7 @@ test("an unnamed token is listed and confirmed by its prefix; one already gone s
   ).toBeVisible();
 });
 
-test("the count shows the 10-token limit; a stale list still gets the 409; checkpoint: form-errors", async ({
+test("the count shows the 10-token limit; a stale list still gets the 409 and reloads; checkpoints: form-errors, at-limit", async ({
   page,
   baseURL,
 }) => {
@@ -355,13 +355,20 @@ test("the count shows the 10-token limit; a stale list still gets the 409; check
   await expect(
     main(page).getByRole("textbox", { name: "New token value" })
   ).toHaveCount(0);
-  // A refused create changes nothing, so the list is not reloaded (the
-  // settings route's shouldRevalidate): the alert stays with this page's
-  // nine, and the form, until the reader reloads.
-  await expect(tokens(page).getByRole("rowheader")).toHaveCount(9);
+  // The 409 says this page's list is out of date, so it is reloaded (the
+  // settings route's shouldRevalidate): the tenth token is listed, the
+  // count agrees with the alert, and the form gives way to the note.
+  await expect(tokens(page).getByRole("rowheader")).toHaveCount(10);
+  await expect(
+    main(page).getByText("You have 10 of 10 API tokens.")
+  ).toBeVisible();
+  await expect(main(page).getByText(/You have 9 of 10/)).toHaveCount(0);
   await expect(
     main(page).getByRole("button", { name: "Create token" })
-  ).toBeVisible();
+  ).toHaveCount(0);
+  await expect(
+    main(page).getByRole("heading", { level: 2, name: "API tokens" })
+  ).toBeFocused();
 
   // Both forms' errors at once, for the record: the name's inline error
   // (checked in the browser) above the token form's alert.
@@ -373,9 +380,13 @@ test("the count shows the 10-token limit; a stale list still gets the 409; check
   await expectTargetSizesAtLeast24(page);
   await checkpoint(page, "form-errors");
 
-  // Up to date, at the limit the form gives way to the note.
+  // Loaded at the limit: the note instead of the form, and no alert.
   await page.reload();
   await waitForHydration(page);
+  // (The alert regions stay mounted, empty.)
+  await expect(
+    main(page).getByText(/You already have 10 API tokens/)
+  ).toHaveCount(0);
   await expect(
     main(page).getByText("You have 10 of 10 API tokens.")
   ).toBeVisible();
@@ -387,6 +398,7 @@ test("the count shows the 10-token limit; a stale list still gets the 409; check
   await expect(
     main(page).getByRole("button", { name: "Create token" })
   ).toHaveCount(0);
+  await checkpoint(page, "at-limit");
 });
 
 test("at 320 and 360 the one-time token is shown whole, nothing cut off", async ({

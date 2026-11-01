@@ -20,7 +20,7 @@ type Sent = { url: string; method: string; body: string };
 
 const OFFLINE_TOAST =
   "You seem to be offline. Your changes haven’t been saved yet.";
-const SAVE_FAILED = "Couldn’t save your theme. Try again.";
+const SAVE_FAILED = "We couldn’t save your theme. Try again.";
 
 /** The theme route's answer to a save. */
 const saved = (theme: ThemeChoice) =>

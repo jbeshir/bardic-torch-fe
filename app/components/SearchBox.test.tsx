@@ -27,6 +27,21 @@ describe("SearchBox", () => {
       "placeholder",
       "Search the original wiki…"
     );
+    expect(screen.queryByTestId("search-long-placeholder")).toBeNull();
+  });
+
+  it("in the header, shows the long placeholder from lg, in place of the short one, while empty", async () => {
+    await renderWithRouter(<SearchBox size="md" />);
+    const input = screen.getByRole("searchbox");
+    expect(input).toHaveClass("peer", "lg:placeholder:text-transparent");
+    const hint = screen.getByTestId("search-long-placeholder");
+    expect(hint).toHaveTextContent("Search the original wiki…");
+    expect(hint).toHaveAttribute("aria-hidden", "true");
+    expect(hint).toHaveClass("hidden", "lg:peer-placeholder-shown:flex");
+    // After the input: the peer variant only looks at earlier siblings.
+    expect(input.compareDocumentPosition(hint)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
   });
 
   it.each([

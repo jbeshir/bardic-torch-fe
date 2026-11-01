@@ -9,17 +9,23 @@ function unnamed(word: "Token" | "token", prefix: string): string {
   return `${word} ${prefix}…`;
 }
 
+/** The token's name, or null when it has none (missing or empty). */
+function nameOf(token: Named): string | null {
+  return token.name ? token.name : null;
+}
+
 /**
  * A token's name for people: its own, or "Token {prefix}…" when it has
  * none, both on screen and in the names of its controls.
  */
 export function tokenLabel(token: Named): string {
-  return token.name ?? unnamed("Token", token.prefix);
+  return nameOf(token) ?? unnamed("Token", token.prefix);
 }
 
 /** The same, inside a sentence: "‘Laptop MCP’", or "token {prefix}…". */
 export function tokenInSentence(token: Named): string {
-  return token.name ? `‘${token.name}’` : unnamed("token", token.prefix);
+  const name = nameOf(token);
+  return name ? `‘${name}’` : unnamed("token", token.prefix);
 }
 
 const MONTHS = [

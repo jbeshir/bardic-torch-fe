@@ -19,7 +19,7 @@ export function Inputs() {
       <Example label="Rest, with help" stack>
         <Field
           label="Display name"
-          help="Shown on your edits. Use 1 to 64 characters."
+          help="Shown on your edits. Up to 64 characters."
         >
           <Input name="display-name" defaultValue="Morwen of the Marches" />
         </Field>

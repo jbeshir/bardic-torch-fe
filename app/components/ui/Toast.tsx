@@ -46,8 +46,11 @@ function useToastScrollPadding(region: RefObject<HTMLElement>) {
     const root = document.documentElement;
     const narrow = window.matchMedia(BELOW_SM);
     const update = () => {
+      // Whether a toast is shown, not the height: the empty region still
+      // measures the gap between its two lists.
+      const shown = element.querySelector(":scope > * > *") !== null;
       const height = element.getBoundingClientRect().height;
-      if (narrow.matches && height > 0) {
+      if (narrow.matches && shown) {
         root.style.setProperty("--toast-stack-h", `${Math.ceil(height) + 8}px`);
       } else {
         root.style.removeProperty("--toast-stack-h");

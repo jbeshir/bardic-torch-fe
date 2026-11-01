@@ -326,13 +326,18 @@ describe("ops: wrangler.toml", () => {
     expect(assigned).not.toContain("AUTH_MODE");
   });
 
-  it("builds previews from the preview branch only, as DEPLOY.md says", () => {
+  it("builds previews from the preview branch only, as DEPLOY.md and the README say", () => {
     expect(read("wrangler.toml")).toContain(
       "PREVIEW environment (the `preview` branch only)"
     );
     expect(read("docs/DEPLOY.md")).toContain(
       "**Preview branches:** **Custom branches**, include `preview` only."
     );
+    const readme = read("README.md");
+    expect(readme).toContain(
+      "`preview` on the `preview` branch; any other branch fails the build"
+    );
+    expect(readme).not.toMatch(/`preview` otherwise/);
   });
 
   it("returns production sign-ins to bardictorch.org and preview ones elsewhere", () => {
@@ -592,19 +597,27 @@ describe("error copy", () => {
    * changes."), never in the third person about itself (review CQ-10).
    */
   const THIRD_PERSON = /Bardic Torch (?:couldn’t|could not|sent|took|failed)/;
+  /** JSX copy that starts "Couldn’t…", with no subject at all (UI only; logs may). */
+  const NO_SUBJECT = /(?:^|>)\s*Couldn’t /m;
 
   it("uses one voice: “We couldn’t…”, not “Bardic Torch couldn’t…”", () => {
     const offenders = filesUnder("app").filter(
       path =>
         /\.tsx?$/.test(path) &&
         !/\.test\.tsx?$/.test(path) &&
-        THIRD_PERSON.test(read(path))
+        (THIRD_PERSON.test(read(path)) ||
+          (path.endsWith(".tsx") && NO_SUBJECT.test(read(path))))
     );
     expect(offenders).toEqual([]);
   });
 
-  it("recognises the third-person voice", () => {
+  it("recognises the third-person voice and a missing subject", () => {
     expect(THIRD_PERSON.test("Bardic Torch couldn’t do that.")).toBe(true);
     expect(THIRD_PERSON.test("We couldn’t do that.")).toBe(false);
+    expect(NO_SUBJECT.test("<span>Couldn’t load these details.</span>")).toBe(
+      true
+    );
+    expect(NO_SUBJECT.test("  Couldn’t save your theme.")).toBe(true);
+    expect(NO_SUBJECT.test('"We couldn’t save."')).toBe(false);
   });
 });

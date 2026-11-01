@@ -30,7 +30,7 @@ function manifestEntry({
   readonly parentId?: string;
   readonly hasLoader: boolean;
   readonly hasErrorBoundary?: boolean;
-} & ({ path: string } | { index: true })) {
+} & ({ readonly path: string } | { readonly index: true })) {
   return {
     ...route,
     module: `/assets/${route.id}.js`,

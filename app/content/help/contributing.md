@@ -14,7 +14,7 @@ Bardic Torch gathers the bardic community’s scattered songbooks, playlists and
 :::infobox{title="At a glance"}
 
 - **Who can contribute:** anyone with an account (log in with Google or Facebook)
-- **What we collect:** links, credits, categories and sourced notes. Never lyrics, files, audio or video
+- **What we collect:** links, credits, categories and sourced notes; never lyrics, files, audio or video
 - **Review:** a moderator checks every contributor’s edit before it goes live
 - **Licence:** your contributions are released under CC BY-SA 4.0
 

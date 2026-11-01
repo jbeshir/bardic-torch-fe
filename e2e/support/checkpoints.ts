@@ -93,6 +93,7 @@ export const CHECKPOINTS: Readonly<
       "token-revealed",
       "revoke-confirm",
       "form-errors",
+      "at-limit",
       "profile-unavailable",
       "blocked",
     ],

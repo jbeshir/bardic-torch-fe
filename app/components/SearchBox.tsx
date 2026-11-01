@@ -3,10 +3,11 @@ import { forwardRef, useId, type Ref } from "react";
 import { WIKI_SEARCH } from "~/constants/navigation";
 
 const SIZES = {
-  // 40 px: the header from md, where the field is narrow, so the placeholder
-  // is short. The 32 px submit's hit area is padded to 44 px below lg.
+  // 40 px: the header from md. The field is narrow until lg, so the
+  // placeholder is short there; from lg it is replaced by the long one (the
+  // hint below). The 32 px submit's hit area is padded to 44 px below lg.
   md: {
-    input: "h-10 pr-11",
+    input: "h-10 pr-11 lg:placeholder:text-transparent",
     button:
       "right-1 h-8 w-8 before:absolute before:-inset-1.5 lg:before:hidden",
     placeholder: "Search the wiki…",
@@ -32,6 +33,7 @@ export const SearchBox = forwardRef(function SearchBox(
 ) {
   const inputId = useId();
   const { input, button, placeholder } = SIZES[size];
+  const longPlaceholder = SIZES.lg.placeholder;
   return (
     <form role="search" method="get" action={WIKI_SEARCH.action}>
       <label htmlFor={inputId} className="sr-only">
@@ -52,8 +54,19 @@ export const SearchBox = forwardRef(function SearchBox(
           autoComplete="off"
           enterKeyHint="search"
           placeholder={placeholder}
-          className={`${input} w-full rounded-full border border-border-strong bg-input-bg pl-10 text-body text-fg transition-colors placeholder:text-fg-subtle hover:border-fg-subtle`}
+          className={`${input} peer w-full rounded-full border border-border-strong bg-input-bg pl-10 text-body text-fg transition-colors placeholder:text-fg-subtle hover:border-fg-subtle`}
         />
+        {placeholder === longPlaceholder ? null : (
+          // A placeholder can't change with the width: from lg, while the
+          // field is empty, the long one is drawn over the hidden short one.
+          <span
+            aria-hidden="true"
+            data-testid="search-long-placeholder"
+            className="pointer-events-none absolute inset-y-0 left-10 right-11 hidden items-center truncate text-body text-fg-subtle lg:peer-placeholder-shown:flex"
+          >
+            {longPlaceholder}
+          </span>
+        )}
         {/* The hover wash is see-through, so it shows on the field's own
             fill in both themes (surface-sunken would vanish on dark's well). */}
         <button

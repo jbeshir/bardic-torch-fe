@@ -2,6 +2,7 @@ import { useLocation } from "@remix-run/react";
 import { IconX } from "@tabler/icons-react";
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { Button } from "./Button";
+import { showCurrentPage } from "~/client/scroll-within";
 import { useModalDialog } from "~/hooks/useModalDialog";
 
 /** Tailwind's `lg`, where the persistent sidebar takes over from the drawer. */
@@ -11,7 +12,8 @@ const LG_QUERY = "(min-width: 1024px)";
  * The navigation drawer (DESIGN §6.21) on a native modal `<dialog>`, opened
  * nearest its trigger: a bottom sheet below md (the bottom app bar), the
  * left edge from md. A visible h2 names it; focus starts on the close
- * button and returns to the opener. The body scrolls between the title
+ * button and returns to the opener; a link to the current page in it is
+ * scrolled into view. The body scrolls between the title
  * row and a footer that stays in the thumb zone: `footer` (e.g. the
  * ThemeToggle) above a full-width close button. It closes on Escape, the
  * backdrop, either close button and any navigation, and, with
@@ -47,6 +49,12 @@ export function Drawer({
     initialFocus: close,
     closeOnBackdrop: true,
   });
+
+  // Opened on a long menu, the current page's link is in view.
+  const body = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (open && body.current) showCurrentPage(body.current);
+  }, [open]);
 
   const { key } = useLocation();
   const shownAt = useRef(key);
@@ -99,7 +107,7 @@ export function Drawer({
               onClick={onClose}
             />
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+          <div ref={body} className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
             {children}
           </div>
           <div className="shrink-0 space-y-3 border-t border-border px-4 py-3">

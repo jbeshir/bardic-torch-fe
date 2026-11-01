@@ -77,6 +77,16 @@ describe("the Pages Function", () => {
     );
     expect(response.status).toBe(500);
     expect(await response.text()).toContain("Site configuration error");
+    // Like every response, with the security headers: here the strictest.
+    expect(response.headers.get("Content-Security-Policy")).toBe(
+      "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+    );
+    expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(response.headers.get("Referrer-Policy")).toBe(
+      "strict-origin-when-cross-origin"
+    );
+    expect(response.headers.get("Permissions-Policy")).toContain("camera=()");
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
   });
 
   it("keeps entry.server's headers on documents (one nonce, in the page)", async () => {

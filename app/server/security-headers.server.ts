@@ -60,6 +60,30 @@ function contentSecurityPolicy({
   ].join("; ");
 }
 
+function withPolicy(headers: HeadersInit, policy: string): Headers {
+  const result = new Headers(headers);
+  result.set("Content-Security-Policy", policy);
+  result.set("X-Content-Type-Options", "nosniff");
+  result.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  result.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+  );
+  return result;
+}
+
+/**
+ * The security headers for a static page served without a valid
+ * environment (the configuration error page): no script, style, form or
+ * frame at all, since there is no Auth0 domain or nonce to allow.
+ */
+export function withStaticPageHeaders(headers: HeadersInit): Headers {
+  return withPolicy(
+    headers,
+    "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+  );
+}
+
 /**
  * `headers` plus the security headers. Responses are private and revalidated
  * unless the route chose its own Cache-Control (such as `no-store`), and
@@ -69,14 +93,7 @@ export function withSecurityHeaders(
   headers: Headers,
   options: SecurityHeaderOptions
 ): Headers {
-  const result = new Headers(headers);
-  result.set("Content-Security-Policy", contentSecurityPolicy(options));
-  result.set("X-Content-Type-Options", "nosniff");
-  result.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  result.set(
-    "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
-  );
+  const result = withPolicy(headers, contentSecurityPolicy(options));
   if (!result.has("Cache-Control")) {
     result.set("Cache-Control", DOCUMENT_CACHE_CONTROL);
   }

@@ -15,7 +15,10 @@ import { fileURLToPath } from "node:url";
  *
  * Tests get one retry (playwright.config.ts). Every test that only passed
  * on its retry is listed after each phase and again at the very end, from
- * the phase's JSON report, so a flake is never hidden in a green run.
+ * the phase's JSON report, and each is also printed as a GitHub Actions
+ * `::warning` line, an annotation on the CI run (and a plain line in any
+ * other log), so a flake is never hidden in a green run. A phase that
+ * leaves no JSON report counts as failed: its flakes can't be listed.
  */
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -26,10 +29,13 @@ const filtered = args.length > 0;
 const reportPath = phase =>
   path.join(ROOT, "playwright-report", `${phase}.json`);
 
-/** `[project] file:line › title` of every flaky test in a JSON report. */
+/**
+ * `[project] file:line › title` of every flaky test in a JSON report, or
+ * null when the phase wrote no report.
+ */
 function flakyTests(phase) {
   const file = reportPath(phase);
-  if (!existsSync(file)) return [];
+  if (!existsSync(file)) return null;
   const report = JSON.parse(readFileSync(file, "utf8"));
   const found = [];
   const walk = (suite, titles) => {
@@ -84,11 +90,20 @@ const failed = PHASES.filter(phase => {
     }
   );
   const phaseFlaky = flakyTests(phase);
+  if (phaseFlaky === null) {
+    console.error(
+      `\nThe ${phase} phase wrote no JSON report (${reportPath(phase)}).`
+    );
+    return true;
+  }
   if (phaseFlaky.length > 0) {
     banner([
       `FLAKY in the ${phase} phase: ${phaseFlaky.length} test(s) passed only on their retry`,
       ...phaseFlaky.map(name => `  ${name}`),
     ]);
+  }
+  for (const name of phaseFlaky) {
+    console.log(`::warning title=Flaky e2e test (${phase})::${name}`);
   }
   flaky.push(...phaseFlaky.map(name => `${phase}: ${name}`));
   return result.status !== 0;

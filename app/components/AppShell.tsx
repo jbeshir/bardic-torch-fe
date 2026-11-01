@@ -3,11 +3,13 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
   type RefObject,
 } from "react";
+import { showCurrentPage } from "~/client/scroll-within";
 import { Drawer } from "~/components/ui/Drawer";
 import type { Account } from "~/constants/account";
 import { useHydrated } from "~/hooks/useHydrated";
@@ -22,11 +24,14 @@ import { ThemeToggle } from "./ThemeToggle";
 
 const SITE_NAV_ID = "site-nav";
 
+/** The height of the sidebar's "more below" fade (`h-6`). */
+const SIDEBAR_FADE_PX = 24;
+
 /**
  * The persistent sidebar scrolls on its own when it is taller than the
  * window (a laptop's 800 px): on each page it brings the current item into
- * view, scrolling only itself, and `more` says whether anything is still
- * below its fold (shown as a fade at its foot).
+ * view clear of the fade, scrolling only itself, and `more` says whether
+ * anything is still below its fold (shown as a fade at its foot).
  */
 function useSidebarScroll(nav: RefObject<HTMLElement>, pathname: string) {
   const [more, setMore] = useState(false);
@@ -48,45 +53,52 @@ function useSidebarScroll(nav: RefObject<HTMLElement>, pathname: string) {
   }, [nav]);
 
   useEffect(() => {
-    const element = nav.current;
-    const current = element?.querySelector<HTMLElement>(
-      '[aria-current="page"]'
-    );
-    if (!element || !current) return;
-    if (element.scrollHeight <= element.clientHeight) return;
-    const top =
-      current.getBoundingClientRect().top -
-      element.getBoundingClientRect().top +
-      element.scrollTop;
-    const bottom = top + current.offsetHeight;
-    const margin = 16;
-    if (top < element.scrollTop) {
-      element.scrollTop = top - margin;
-    } else if (bottom > element.scrollTop + element.clientHeight) {
-      element.scrollTop = bottom - element.clientHeight + margin;
+    // Anything below the current item is more below: keep it above the fade.
+    if (nav.current) {
+      showCurrentPage(nav.current, { endInset: SIDEBAR_FADE_PX });
     }
   }, [nav, pathname]);
 
   return more;
 }
 
+/** A layout effect in the browser; on the server, where it can't run, none. */
+const useBrowserLayoutEffect =
+  typeof document === "undefined" ? useEffect : useLayoutEffect;
+
 /**
  * After a client navigation to another page (not a hash jump, not a reload
  * of the same page's data), focus moves to the main content, as a page load
  * would leave it at the start, and the new page's title is announced. The
- * first render (the document load) is left alone.
+ * first render (the document load) is left alone, and so is a new page
+ * that put focus inside the main content itself (an error page focuses its
+ * heading).
  */
 function useNavigationFocus(main: RefObject<HTMLElement>, pathname: string) {
   const previous = useRef(pathname);
+  const focusedBefore = useRef<Element | null>(null);
   const [announcement, setAnnouncement] = useState("");
+
+  // Layout effects run before any page's own (passive) focus effect, so
+  // this is what had focus when the new page was committed.
+  useBrowserLayoutEffect(() => {
+    focusedBefore.current = document.activeElement;
+  }, [pathname]);
 
   useEffect(() => {
     if (previous.current === pathname) return;
     previous.current = pathname;
     // After this render's own focus moves (a closing drawer gives focus
-    // back to its trigger) and the new <title>.
+    // back to its trigger, an error page focuses its heading) and the new
+    // <title>.
     const frame = requestAnimationFrame(() => {
-      main.current?.focus({ preventScroll: true });
+      const focused = document.activeElement;
+      const pageMovedFocus =
+        focused !== focusedBefore.current &&
+        focused !== null &&
+        focused !== main.current &&
+        main.current?.contains(focused) === true;
+      if (!pageMovedFocus) main.current?.focus({ preventScroll: true });
       setAnnouncement(document.title);
     });
     return () => cancelAnimationFrame(frame);
@@ -175,20 +187,25 @@ export function AppShell({
           ref={siteNav}
           id={SITE_NAV_ID}
           aria-label="Site"
-          className={`${hydrated ? "hidden lg:block" : ""} border-t border-border px-4 py-8 md:px-6 lg:sticky lg:top-header lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:max-h-below-header lg:self-start lg:overflow-y-auto lg:border-t-0 lg:px-0 lg:pb-8 lg:pr-4 lg:pt-6 xl:pr-6`}
+          className={`${hydrated ? "hidden lg:block" : ""} border-t border-border px-4 pt-8 md:px-6 lg:sticky lg:top-header lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:max-h-below-header lg:self-start lg:overflow-y-auto lg:border-t-0 lg:px-0 lg:pr-4 lg:pt-6 xl:pr-6`}
         >
-          {/* The heading stays for screen readers at lg, so the sidebar's
+          {/* The end space is inside this wrapper, not the scroller's
+              padding: a sticky element stops at the padding edge, so the
+              fade below meets the sidebar's visible foot. */}
+          <div className="pb-8">
+            {/* The heading stays for screen readers at lg, so the sidebar's
               group headings (h3) sit under an h2 there too. */}
-          <h2 className="pb-4 text-h3 text-fg lg:sr-only">Site menu</h2>
-          <div className="space-y-4 pb-6 md:hidden">
-            <SearchBox size="lg" />
-            <ThemeToggle placement="drawer" />
+            <h2 className="pb-4 text-h3 text-fg lg:sr-only">Site menu</h2>
+            <div className="space-y-4 pb-6 md:hidden">
+              <SearchBox size="lg" />
+              <ThemeToggle placement="drawer" />
+            </div>
+            <Sidebar />
           </div>
-          <Sidebar />
           <div
             aria-hidden="true"
             data-testid="sidebar-more"
-            className={`pointer-events-none sticky bottom-0 -mt-10 hidden h-10 bg-gradient-to-t from-canvas ${moreBelow ? "lg:block" : ""}`}
+            className={`pointer-events-none sticky bottom-0 -mt-6 hidden h-6 bg-gradient-to-t from-canvas ${moreBelow ? "lg:block" : ""}`}
           />
         </nav>
         <div className="lg:col-start-2 lg:row-start-2">

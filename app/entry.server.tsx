@@ -5,7 +5,7 @@ import type {
   HandleDataRequestFunction,
   HandleErrorFunction,
 } from "@remix-run/cloudflare";
-import { RemixServer } from "@remix-run/react";
+import { isRouteErrorResponse, RemixServer } from "@remix-run/react";
 import { isbot } from "isbot";
 import { renderToReadableStream } from "react-dom/server";
 import { NonceContext } from "~/contexts/NonceContext";
@@ -14,22 +14,31 @@ import {
   withSecurityHeaders,
 } from "~/server/security-headers.server";
 
+/** Errors already reported: a render error reaches both handlers below. */
+const reported = new WeakSet<object>();
+
 /**
  * Errors are logged (Cloudflare's real-time logs) and reported to Sentry,
  * which functions/_middleware.ts sets up per request; without SENTRY_DSN
- * `captureException` does nothing.
+ * `captureException` does nothing. Each error object is reported once.
  */
 function report(error: unknown): void {
+  if (typeof error === "object" && error !== null) {
+    if (reported.has(error)) return;
+    reported.add(error);
+  }
   console.error(error);
   captureException(error);
 }
 
 /**
  * What a loader or action throws (Remix renders the error boundary). A
- * request the reader abandoned is not an error.
+ * request the reader abandoned is not an error, and neither is a 4xx
+ * answer (Remix's own 405 for a form posted to a page without an action).
  */
 export const handleError: HandleErrorFunction = (error, { request }) => {
   if (request.signal.aborted) return;
+  if (isRouteErrorResponse(error) && error.status < 500) return;
   report(error);
 };
 

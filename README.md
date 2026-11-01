@@ -34,7 +34,7 @@ Catalogue pages come in FE2. Until then, Browse, the facets and search link to t
   | `e2e`         | `npm run build:e2e`     | compiled in  | included      |
   | `development` | `npm run dev`           | compiled in  | included      |
 
-  Cloudflare Pages runs `npm run build:pages`. It picks `production` on `main`, or whenever the branch is unknown, and `preview` otherwise. `check:prod-build` proves that production and preview builds contain no stub code.
+  Cloudflare Pages runs `npm run build:pages`. It picks `production` on `main`, or whenever the branch is unknown, and `preview` on the `preview` branch; any other branch fails the build (docs/DEPLOY.md §2). `check:prod-build` proves that production and preview builds contain no stub code.
 
 - **Fixture API.** `test/fixture-api/` implements the FE1 operations from one operation table, with state kept per user and failures injected on request. The same table drives the msw handlers in unit tests, the HTTP server in e2e, and `npm run dev:fixtures`. Every fixture response is validated against the spec.
 - **Design tokens.** All colour comes from `app/styles/tokens.ts`.

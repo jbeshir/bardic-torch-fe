@@ -111,7 +111,7 @@ export function ThemeToggle({
       </div>
       {failure ? (
         <p role="alert" className={`text-caption text-danger-fg ${look.error}`}>
-          Couldn’t save your theme. Try again.
+          We couldn’t save your theme. Try again.
         </p>
       ) : null}
     </Form>

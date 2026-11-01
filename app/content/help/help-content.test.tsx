@@ -102,6 +102,16 @@ describe.each(ALL)("help page %s", (slug, content) => {
     );
   });
 
+  it("gives each infobox value as one phrase: no full stop, inside or after", async () => {
+    const main = await renderHelp(content);
+    const values = [...main.querySelectorAll("aside dd")].map(
+      value => value.textContent ?? ""
+    );
+    for (const value of values) {
+      expect(value).not.toMatch(/\.(\s|$)/);
+    }
+  });
+
   it("never skips a heading level", async () => {
     const main = await renderHelp(content);
     const levels = within(main)
@@ -201,7 +211,7 @@ describe("contributing guide", () => {
     );
     expect(
       within(main).getByRole("complementary", { name: "At a glance" })
-    ).toHaveTextContent("Never lyrics, files, audio or video");
+    ).toHaveTextContent("never lyrics, files, audio or video");
   });
 
   it("needs a public source for every licensing and etiquette claim, even from the bard", async () => {

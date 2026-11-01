@@ -155,6 +155,36 @@ describe("Drawer", () => {
     expect(dialog().open).toBe(false);
   });
 
+  it("brings the current page's link into view in a long menu, scrolling only its body", async () => {
+    const scrollTo = vi.spyOn(window, "scrollTo");
+    vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(900);
+    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(400);
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(40);
+    const original = HTMLElement.prototype.getBoundingClientRect;
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+      function (this: HTMLElement) {
+        if (this.getAttribute("aria-current") === "page") {
+          return { top: 50 + 700 } as DOMRect;
+        }
+        if (this.classList.contains("overflow-y-auto")) {
+          return { top: 50 } as DOMRect;
+        }
+        return original.call(this);
+      }
+    );
+    await renderWithRouter(
+      <Drawer open onClose={() => {}} title="Site menu">
+        <a href="/help/licence" aria-current="page">
+          Licence & attribution
+        </a>
+      </Drawer>
+    );
+    const link = screen.getByRole("link", { name: "Licence & attribution" });
+    // 700 + 40 - 400 + 16: the link's foot, with a margin.
+    expect(link.parentElement?.scrollTop).toBe(356);
+    expect(scrollTo).not.toHaveBeenCalled();
+  });
+
   it("locks page scroll while open", async () => {
     await renderWithRouter(<Menu />);
     await act(openMenu);

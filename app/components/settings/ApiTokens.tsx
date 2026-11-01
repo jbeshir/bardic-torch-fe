@@ -1,6 +1,6 @@
 import { useFetcher } from "@remix-run/react";
 import { IconTrash } from "@tabler/icons-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { components } from "~/api/schema.gen";
 import { Alert, AlertRegion } from "~/components/ui/Alert";
 import { Dialog } from "~/components/ui/Dialog";
@@ -42,7 +42,8 @@ type Problem = { readonly error: ProxyError; readonly fallback: string };
  * already gone, signed out, the service's trouble or no network), and a
  * typed token name stays. The limit is shown before it is reached ("3 of
  * 10"), and at the limit the form gives way to a note saying to revoke one;
- * the API's 409 stays the backstop for a list that is out of date.
+ * the API’s 409 stays the backstop for a list that is out of date, and
+ * reloads it, so the count and the note then agree with the alert.
  */
 export function ApiTokens({
   tokens,
@@ -64,6 +65,22 @@ export function ApiTokens({
   const [revoking, setRevoking] = useState<APIToken | null>(null);
 
   const [problem, setProblem] = useState<Problem | null>(null);
+
+  // At the limit the form gives way to a note. If that takes the focused
+  // control with it (a create refused at the limit, the list then
+  // reloaded), focus goes to the section's heading, not the page's start.
+  const atLimit = tokens.length >= ACTIVE_TOKEN_LIMIT;
+  const wasAtLimit = useRef(atLimit);
+  useEffect(() => {
+    if (
+      atLimit &&
+      !wasAtLimit.current &&
+      document.activeElement === document.body
+    ) {
+      heading.current?.focus();
+    }
+    wasAtLimit.current = atLimit;
+  }, [atLimit]);
 
   useFetcherResult(create, result => {
     if (result.ok) {
@@ -124,7 +141,7 @@ export function ApiTokens({
         </p>
       ) : null}
       <div className="mt-6">
-        {tokens.length >= ACTIVE_TOKEN_LIMIT ? (
+        {atLimit ? (
           <Alert tone="info">
             That’s the most allowed. Revoke one to create another.
           </Alert>

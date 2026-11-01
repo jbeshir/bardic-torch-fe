@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { withStaticPageHeaders } from "./security-headers.server";
 
 /**
  * The Worker's environment, validated on every request. Bindings arrive as
@@ -94,10 +95,10 @@ export function configurationErrorResponse(
       "Please try again later.</p></main></body></html>",
     {
       status: 500,
-      headers: {
+      headers: withStaticPageHeaders({
         "Content-Type": "text/html; charset=utf-8",
         "Cache-Control": "no-store",
-      },
+      }),
     }
   );
 }

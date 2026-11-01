@@ -122,7 +122,7 @@ export function Tags() {
           ]}
         />
       </Example>
-      <Example label="Facet prefix, current chip, small size" wide>
+      <Example label="Facet prefix, current chip" wide>
         <TagList
           tags={[
             {
@@ -138,6 +138,8 @@ export function Tags() {
             },
           ]}
         />
+      </Example>
+      <Example label="Small size">
         <TagList
           size="sm"
           tags={[{ label: "Comic", to: "/styleguide?mood=comic" }]}

@@ -48,3 +48,15 @@ test("signed out, settings offers Log in back to it, is never cached and has the
   expect(violations).toEqual([]);
   await checkpoint(page, "signed-out");
 });
+
+test("a form posted to /settings itself (no JS) says settings need JavaScript, not that they failed to load", async ({
+  page,
+}) => {
+  const response = await page.request.post("/settings", {
+    form: { intent: "update-profile", displayName: "Someone" },
+  });
+  expect(response.status()).toBe(405);
+  const html = await response.text();
+  expect(html).toContain("Changing your settings needs JavaScript");
+  expect(html).not.toContain("We couldn’t load your settings");
+});

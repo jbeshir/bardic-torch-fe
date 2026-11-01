@@ -10,7 +10,6 @@ import {
 } from "~/root";
 import {
   ACTIVE_TOKEN_LIMIT,
-  DISPLAY_NAME_HINT,
   DISPLAY_NAME_RULE,
   TOKEN_NAME_RULE,
 } from "~/schemas/rules";
@@ -43,9 +42,10 @@ import Settings, {
 // `platform` can answer instead of the app (a 503 from Cloudflare, or no
 // network at all).
 
+const reportBoundary = vi.hoisted(() => vi.fn(() => "event-id"));
 vi.mock("@sentry/remix", () => ({
   isInitialized: () => false,
-  captureRemixErrorBoundaryError: () => "event-id",
+  captureRemixErrorBoundaryError: reportBoundary,
 }));
 
 const fixtures = serveFixtureApi();
@@ -202,7 +202,7 @@ describe("settings page", () => {
     await openPage();
     expect(nameField()).toHaveValue("Morwen of the Marches");
     expect(nameField()).toHaveAccessibleDescription(
-      `Shown on your edits and in page history. Use your SCA name if you like. ${DISPLAY_NAME_HINT}`
+      "Shown on your edits and in page history. Use your SCA name if you like. Up to 64 characters."
     );
     expect(
       screen.getByRole("heading", { level: 2, name: "Profile" })
@@ -547,6 +547,21 @@ describe("creating a token", () => {
     expect(
       screen.queryByRole("textbox", { name: "New token value" })
     ).toBeNull();
+    // The list is reloaded: the tenth token is there to revoke, the count
+    // agrees with the alert, and the form gives way to the note, focus
+    // going to the section's heading with it.
+    expect(
+      await screen.findByText("You have 10 of 10 API tokens.")
+    ).toBeVisible();
+    expect(screen.queryByText(/You have 9 of 10/)).toBeNull();
+    expect(
+      screen.getByText("That’s the most allowed. Revoke one to create another.")
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Create token" })).toBeNull();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "API tokens" })
+    ).toHaveFocus();
+    expect(message).toBeVisible();
   });
 
   it.each([
@@ -829,6 +844,42 @@ describe("settings error boundary", () => {
   });
 });
 
+describe("a form posted to the settings page without JS", () => {
+  it("says changing settings needs JavaScript and nothing changed, and reports nothing", async () => {
+    reportBoundary.mockClear();
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    await renderRoutes(
+      [
+        {
+          path: "/settings",
+          loader: () => {
+            // What Remix throws for a POST to a route with no action.
+            throw new Response(null, {
+              status: 405,
+              statusText: "Method Not Allowed",
+            });
+          },
+          element: null,
+          errorElement: <ErrorBoundary />,
+        },
+      ],
+      "/settings"
+    );
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Changing your settings needs JavaScript",
+      })
+    ).toBeInTheDocument();
+    expect(screen.getByText(/^Nothing was changed\./)).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Back to settings" })
+    ).toHaveAttribute("href", "/settings");
+    expect(screen.queryByText(/couldn’t load your settings/)).toBeNull();
+    expect(reportBoundary).not.toHaveBeenCalled();
+  });
+});
+
 describe("settings shouldRevalidate", () => {
   const base = {
     currentUrl: new URL("https://app.test/settings"),
@@ -858,7 +909,7 @@ describe("settings shouldRevalidate", () => {
     ["create-token", { ok: true, data: {} }, true],
     ["revoke-token", { ok: true, data: null }, true],
     ["revoke-token", failure("not_found"), true],
-    ["create-token", failure("token_limit_reached"), false],
+    ["create-token", failure("token_limit_reached"), true],
     ["create-token", failure("offline"), false],
     ["revoke-token", failure("unexpected_response"), false],
     ["revoke-token", failure("upstream_unavailable"), false],

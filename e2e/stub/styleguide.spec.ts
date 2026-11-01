@@ -188,9 +188,14 @@ for (const id of STYLEGUIDE_BLOCKS) {
     const state = BLOCK_STATES[id];
     if (state) {
       await state(page);
-    } else if ((await firstControl(page, id).count()) > 0) {
-      await showFocusRing(page, firstControl(page, id));
     }
+    // The first control is looked up again at each width: the one at one
+    // width can be hidden at another (pagination's page numbers below sm),
+    // and focus is lost with it.
+    const focusFirst =
+      !state && (await firstControl(page, id).count()) > 0
+        ? (each: Page) => showFocusRing(each, firstControl(each, id))
+        : undefined;
     await checkpoint(
       page,
       id,
@@ -202,7 +207,7 @@ for (const id of STYLEGUIDE_BLOCKS) {
               await block(each, "toast").scrollIntoViewIfNeeded();
             },
           }
-        : { target: `section#${id}` }
+        : { target: `section#${id}`, atEachViewport: focusFirst }
     );
   });
 }

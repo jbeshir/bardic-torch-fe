@@ -57,12 +57,12 @@ const STATES =
   "aria-busy:cursor-progress";
 
 type Look = {
-  variant?: Variant | undefined;
-  size?: Size | undefined;
+  readonly variant?: Variant | undefined;
+  readonly size?: Size | undefined;
   /** Stretch to the container's width (mobile form submits, sheets). */
-  fullWidth?: boolean | undefined;
+  readonly fullWidth?: boolean | undefined;
   /** Trailing icon, decorative (e.g. a chevron or an arrow). */
-  trailingIcon?: Icon | undefined;
+  readonly trailingIcon?: Icon | undefined;
 };
 
 /**
@@ -72,25 +72,27 @@ type Look = {
  */
 type Content =
   | {
-      variant?: Exclude<Variant, "danger" | "secondary-danger">;
-      icon?: Icon;
-      children: ReactNode;
-      label?: never;
+      readonly variant?: Exclude<Variant, "danger" | "secondary-danger">;
+      readonly icon?: Icon;
+      readonly children: ReactNode;
+      readonly label?: never;
     }
   | {
-      variant: "danger" | "secondary-danger";
-      icon: Icon;
-      children: ReactNode;
-      label?: never;
+      readonly variant: "danger" | "secondary-danger";
+      readonly icon: Icon;
+      readonly children: ReactNode;
+      readonly label?: never;
     }
   | {
       /** Icon-only: the accessible name (`aria-label`); no visible text. */
-      label: string;
-      icon: Icon;
-      children?: never;
+      readonly label: string;
+      readonly icon: Icon;
+      readonly children?: never;
     };
 
-type Busy = { loading?: never } | { loading: boolean; icon: Icon };
+type Busy =
+  | { readonly loading?: never }
+  | { readonly loading: boolean; readonly icon: Icon };
 
 function classes(
   { variant = "secondary", size = "md", fullWidth }: Look,

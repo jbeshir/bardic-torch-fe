@@ -6,7 +6,9 @@ import { filesUnder } from "./support/files";
 /**
  * Data is immutable (CLAUDE.md rule 4), and props are no exception: every
  * member of a destructured first parameter's type literal (a component's
- * props, a hook's options) and of a `…Props` type is `readonly`.
+ * props, a hook's options) and of a `…Props` type is `readonly`, and so is
+ * every member of a type alias in the same file that those types are built
+ * from (e.g. `Props = Look & Content`).
  */
 function mutableMembers(path: string, text: string): string[] {
   const source = ts.createSourceFile(
@@ -16,12 +18,31 @@ function mutableMembers(path: string, text: string): string[] {
     true,
     path.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS
   );
-  const literals: ts.TypeLiteralNode[] = [];
+  const aliases = new Map<string, ts.TypeNode>();
+  const index = (node: ts.Node): void => {
+    if (ts.isTypeAliasDeclaration(node)) {
+      aliases.set(node.name.text, node.type);
+    }
+    ts.forEachChild(node, index);
+  };
+  index(source);
+
+  const literals = new Set<ts.TypeLiteralNode>();
+  const followed = new Set<string>();
   const collect = (type: ts.TypeNode | undefined): void => {
     if (!type) return;
-    if (ts.isTypeLiteralNode(type)) literals.push(type);
+    if (ts.isTypeLiteralNode(type)) literals.add(type);
     else if (ts.isIntersectionTypeNode(type) || ts.isUnionTypeNode(type)) {
       type.types.forEach(collect);
+    } else if (ts.isParenthesizedTypeNode(type)) {
+      collect(type.type);
+    } else if (
+      ts.isTypeReferenceNode(type) &&
+      ts.isIdentifier(type.typeName) &&
+      !followed.has(type.typeName.text)
+    ) {
+      followed.add(type.typeName.text);
+      collect(aliases.get(type.typeName.text));
     }
   };
   const visit = (node: ts.Node): void => {
@@ -40,7 +61,7 @@ function mutableMembers(path: string, text: string): string[] {
     ts.forEachChild(node, visit);
   };
   visit(source);
-  return literals.flatMap(literal =>
+  return [...literals].flatMap(literal =>
     literal.members
       .filter(
         member =>
@@ -74,5 +95,11 @@ describe("readonly props", () => {
     expect(mutableMembers("x.ts", "type ButtonProps = { a: string };")).toEqual(
       ["x.ts: a"]
     );
+    expect(
+      mutableMembers(
+        "x.tsx",
+        "type Look = { a: string }; type Content = { readonly b: string } | { c: string }; type Props = Look & (Content); function A({ a }: Props) {}"
+      )
+    ).toEqual(["x.tsx: a", "x.tsx: c"]);
   });
 });

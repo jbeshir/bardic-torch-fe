@@ -1,4 +1,5 @@
 import { json } from "@remix-run/cloudflare";
+import { UNSAFE_ErrorResponseImpl } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { handleError } from "./entry.server";
 import * as indexModule from "./routes/_index";
@@ -95,6 +96,38 @@ describe("server error reporting (R28)", () => {
     expect(captured).toContainEqual(
       expect.objectContaining({ message: "The page broke while rendering" })
     );
+  });
+
+  it("doesn't report a 4xx answer (Remix's 405 for a POST without an action)", () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    handleError(
+      new UNSAFE_ErrorResponseImpl(405, "Method Not Allowed", "no action"),
+      {
+        request: new Request("https://app.test/", { method: "POST" }),
+        params: {},
+        context: loadContext(),
+      }
+    );
+    expect(captured).toEqual([]);
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it("reports an error once, though it reaches both handlers", () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const error = new Error("Seen twice");
+    const args = {
+      request: new Request("https://app.test/"),
+      params: {},
+      context: loadContext(),
+    };
+    handleError(error, args);
+    handleError(error, args);
+    expect(captured).toEqual([error]);
+    expect(consoleError).toHaveBeenCalledTimes(1);
   });
 
   it("ignores a request the reader abandoned", () => {

@@ -29,6 +29,14 @@ describe("tokenInSentence", () => {
   });
 });
 
+describe("an empty name", () => {
+  it("counts as no name, in a label and mid-sentence alike", () => {
+    const token = { name: "", prefix: "9c1e7d3b" };
+    expect(tokenLabel(token)).toBe("Token 9c1e7d3b…");
+    expect(tokenInSentence(token)).toBe("token 9c1e7d3b…");
+  });
+});
+
 describe("formatDate", () => {
   it.each([
     ["2026-10-03T09:00:00Z", "3 Oct 2026"],

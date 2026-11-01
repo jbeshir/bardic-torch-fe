@@ -12,7 +12,7 @@ import {
 import { Link } from "~/components/ui/Link";
 import type { HelpContent } from "~/content/help/pages";
 
-type Children = { children?: ReactNode };
+type Children = { readonly children?: ReactNode };
 
 /** A Markdown link: internal paths through Remix, absolute URLs marked as external. */
 function contentLink(appearance: "prose" | "standalone") {

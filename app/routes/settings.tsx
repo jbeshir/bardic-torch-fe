@@ -5,6 +5,7 @@ import type {
 } from "@remix-run/cloudflare";
 import { json } from "@remix-run/cloudflare";
 import {
+  isRouteErrorResponse,
   useLoaderData,
   useRouteError,
   useRouteLoaderData,
@@ -20,7 +21,7 @@ import { ProfileForm } from "~/components/settings/ProfileForm";
 import { SettingsSection } from "~/components/settings/SettingsSection";
 import { Alert } from "~/components/ui/Alert";
 import { ButtonLink } from "~/components/ui/Button";
-import { SectionError } from "~/components/ui/ErrorState";
+import { ErrorState, SectionError } from "~/components/ui/ErrorState";
 import { Link } from "~/components/ui/Link";
 import { sendForm } from "~/client/send-form";
 import {
@@ -144,9 +145,17 @@ const TOKEN_INTENTS: ReadonlySet<unknown> = new Set([
   SETTINGS_INTENT.revokeToken,
 ]);
 
+/** Token answers after which the list on the page is known to be out of date. */
+const LIST_OUT_OF_DATE: ReadonlySet<string> = new Set([
+  "not_found",
+  "token_limit_reached",
+]);
+
 /**
  * The list only changes when a token is created or revoked: it is
- * reloaded after a token form succeeds, or finds the token already gone.
+ * reloaded after a token form succeeds, or finds the list out of date (the
+ * token already gone, or the limit reached from another tab, so the page
+ * shows the tenth token and the count agrees with the API's answer).
  * After any other outcome nothing changed, and reloading could only fail
  * the same way (into the error boundary). A display-name change or a theme
  * choice leaves it alone.
@@ -161,7 +170,7 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({
     const result = actionResult as ProxyBody<unknown> | undefined;
     return (
       TOKEN_INTENTS.has(formData?.get("intent")) &&
-      (result?.ok === true || result?.error.code === "not_found")
+      (result?.ok === true || LIST_OUT_OF_DATE.has(result?.error.code ?? ""))
     );
   }
   return defaultShouldRevalidate;
@@ -261,9 +270,33 @@ export default function Settings() {
  * content only, so the shell, the account menu and the theme toggle (all
  * from the root) still work. It reports to Sentry like the root boundary.
  */
+/**
+ * A form posted to the page itself (only possible without JS, since the
+ * settings forms need it) has no server action to answer it: Remix's 405
+ * says so, plainly, rather than as a failure to load. Anything else is
+ * the settings failing to load.
+ */
 export function ErrorBoundary() {
   const error = useRouteError();
-  const reference = useErrorReference(error, true);
+  const posted = isRouteErrorResponse(error) && error.status === 405;
+  const reference = useErrorReference(error, !posted);
+  if (posted) {
+    return (
+      <ErrorState
+        title="Changing your settings needs JavaScript"
+        actions={
+          <ButtonLink to={SETTINGS_PATH} reloadDocument variant="primary">
+            Back to settings
+          </ButtonLink>
+        }
+      >
+        <p>
+          Nothing was changed. Turn JavaScript on, then make the change again.
+          Everything else on Bardic Torch works without it.
+        </p>
+      </ErrorState>
+    );
+  }
   return (
     <ServerError title="We couldn’t load your settings" reference={reference} />
   );

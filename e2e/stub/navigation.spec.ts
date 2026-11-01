@@ -326,6 +326,26 @@ test.describe("from md", () => {
     expect(room).toBeGreaterThanOrEqual(0);
   });
 
+  test("from lg the header search says it searches the original wiki, until something is typed", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await openHydrated(page);
+    const banner = page.getByRole("banner");
+    const hint = banner.getByTestId("search-long-placeholder");
+    await expect(hint).toBeVisible();
+    await expect(hint).toHaveText("Search the original wiki…");
+    // The whole hint fits.
+    expect(
+      await hint.evaluate(element => element.scrollWidth <= element.clientWidth)
+    ).toBe(true);
+    await banner.getByRole("searchbox").fill("ballad");
+    await expect(hint).toBeHidden();
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await banner.getByRole("searchbox").fill("");
+    await expect(hint).toBeHidden();
+  });
+
   test("a short page fills the window: the footer at the bottom, nothing to scroll", async ({
     page,
   }) => {
@@ -411,6 +431,20 @@ test.describe("from md", () => {
     const current = nav.getByRole("link", { name: "Licence & attribution" });
     await expect(current).toHaveAttribute("aria-current", "page");
     await expect(current).toBeInViewport({ ratio: 1 });
+    // The fade is a cue at the sidebar's visible foot: its solid end meets
+    // the foot, and it never lies over the current page's item.
+    const more = page.getByTestId("sidebar-more");
+    await expect(more).toBeVisible();
+    const [navBox, moreBox, currentBox] = await Promise.all([
+      nav.boundingBox(),
+      more.boundingBox(),
+      current.boundingBox(),
+    ]);
+    if (!navBox || !moreBox || !currentBox) throw new Error("not laid out");
+    expect(
+      Math.abs(moreBox.y + moreBox.height - (navBox.y + navBox.height))
+    ).toBeLessThanOrEqual(1);
+    expect(currentBox.y + currentBox.height).toBeLessThanOrEqual(moreBox.y);
     // The whole Help group fits above the fold on any page.
     await openHydrated(page, "/");
     await expect(

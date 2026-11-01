@@ -10,7 +10,8 @@ import type { UpstreamErrorCode } from "./api";
 /**
  * Every `code` an error body can carry: the API's own; the proxy's (the
  * API timed out, couldn't be reached or answered something unreadable, a
- * method it doesn't route); the CSRF check's; and the browser's own
+ * method it doesn't route); the theme route's (a choice it doesn't know);
+ * the CSRF check's; and the browser's own
  * (`sendForm`: offline, or an answer the app didn't make).
  */
 export type ProxyErrorCode =
@@ -18,6 +19,7 @@ export type ProxyErrorCode =
   | "upstream_unavailable"
   | "bad_gateway"
   | "method_not_allowed"
+  | "invalid_theme"
   | "forbidden"
   | "offline"
   | "unexpected_response";

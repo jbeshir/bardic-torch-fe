@@ -80,32 +80,132 @@ async function expectNoAxeViolations(
   expect(summary, `axe violations, ${label}`).toEqual([]);
 }
 
+/** Room around an element screenshot, so an outset focus ring shows whole. */
+const ELEMENT_SHOT_PAD = 8;
+
 /**
- * During an element screenshot the shell header (and the app bar inside
- * it) is not painted: Playwright stitches a tall element from scrolled
- * captures, and the sticky header and the fixed bar would otherwise be
- * drawn over the specimen mid-image. Viewport and full-page captures keep
- * them, since there they are part of the page as a reader sees it. Set
- * through the CSSOM: the nonce CSP blocks the <style> that the
- * screenshot's own `style` option would inject.
+ * An element screenshot, taken from the viewport with the element wholly
+ * inside it: Chromium paints what lies beyond the viewport as bare canvas
+ * (a band across the foot of a tall block at 1280 × 800), so the element
+ * is scrolled to the top and, if it is still taller, the viewport is made
+ * taller for the shot. The shell header (and the app bar inside it) is not
+ * painted, so it never covers the specimen. Styles are set through the
+ * CSSOM: the nonce CSP blocks the <style> that the screenshot's own
+ * `style` option would inject.
  */
 async function elementShot(page: Page, target: string, file: string) {
+  const viewport = page.viewportSize();
   const hideChrome = (hidden: boolean) =>
     page.evaluate(value => {
       for (const header of document.querySelectorAll("header")) {
         header.style.visibility = value ? "hidden" : "";
       }
     }, hidden);
+  const element = page.locator(target);
+  const place = () =>
+    element.evaluate(node => {
+      node.scrollIntoView({ block: "start", behavior: "instant" });
+      const { bottom } = node.getBoundingClientRect();
+      return Math.ceil(bottom);
+    });
   await hideChrome(true);
   try {
-    await page
-      .locator(target)
-      .screenshot({ path: file, animations: "disabled" });
+    const bottom = await place();
+    if (viewport && bottom + ELEMENT_SHOT_PAD > viewport.height) {
+      await page.setViewportSize({
+        width: viewport.width,
+        height: bottom + ELEMENT_SHOT_PAD,
+      });
+      await place();
+    }
+    const box = await element.boundingBox();
+    const size = page.viewportSize();
+    if (!box || !size) throw new Error(`${target} is not laid out`);
+    const left = Math.max(0, Math.floor(box.x) - ELEMENT_SHOT_PAD);
+    const top = Math.max(0, Math.floor(box.y) - ELEMENT_SHOT_PAD);
+    const right = Math.min(
+      size.width,
+      Math.ceil(box.x + box.width) + ELEMENT_SHOT_PAD
+    );
+    const foot = Math.min(
+      size.height,
+      Math.ceil(box.y + box.height) + ELEMENT_SHOT_PAD
+    );
+    expect(
+      box.y + box.height,
+      `${target} fits the viewport for its screenshot`
+    ).toBeLessThanOrEqual(size.height);
+    await page.screenshot({
+      path: file,
+      animations: "disabled",
+      clip: { x: left, y: top, width: right - left, height: foot - top },
+    });
   } finally {
     await hideChrome(false);
+    if (viewport) await page.setViewportSize(viewport);
   }
 }
 
+/**
+ * A full-page screenshot as the page reads from its top: scrolled back
+ * there first, so the sticky header is drawn at the top of the image and
+ * not over whatever the page was scrolled to (a field's inline error).
+ */
+async function fullPageShot(page: Page, file: string) {
+  await page.evaluate(() =>
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" })
+  );
+  await page.screenshot({ path: file, fullPage: true, animations: "disabled" });
+}
+
+/**
+ * Shows the page in its web fonts, as on any visit after the first. The
+ * site's @font-face rules use `font-display: optional`: on a cold load a
+ * page whose Fraunces arrives late keeps the fallback serif for its whole
+ * life, by design, so captures would differ by timing alone. Here each
+ * optional face is fetched and added again from JS with `display: block`
+ * (same file, same descriptors), then every font load is awaited.
+ */
+async function fontsLoaded(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    const marker = "data-e2e-fonts-blocked";
+    const root = document.documentElement;
+    if (!root.hasAttribute(marker)) {
+      root.setAttribute(marker, "");
+      const rules = [...document.styleSheets].flatMap(sheet =>
+        [...sheet.cssRules].filter(
+          (rule): rule is CSSFontFaceRule => rule instanceof CSSFontFaceRule
+        )
+      );
+      await Promise.all(
+        rules
+          .filter(
+            rule => rule.style.getPropertyValue("font-display") === "optional"
+          )
+          .map(async rule => {
+            const url = /url\(["']?([^"')]+)["']?\)/.exec(
+              rule.style.getPropertyValue("src")
+            )?.[1];
+            if (!url) return;
+            const data = await (await fetch(url)).arrayBuffer();
+            const face = new FontFace(
+              rule.style.getPropertyValue("font-family").replaceAll('"', ""),
+              data,
+              {
+                style: rule.style.getPropertyValue("font-style") || "normal",
+                weight: rule.style.getPropertyValue("font-weight") || "normal",
+                unicodeRange:
+                  rule.style.getPropertyValue("unicode-range") || "U+0-10FFFF",
+                display: "block",
+              }
+            );
+            document.fonts.add(await face.load());
+          })
+      );
+    }
+    await document.fonts.ready;
+  });
+}
 /** The `canvas` token the page paints in, as `r g b`. */
 async function renderedCanvas(page: Page): Promise<string> {
   return page.evaluate(() =>
@@ -151,7 +251,7 @@ export async function checkpoint(
     viewportOnly = false,
   }: {
     readonly target?: string;
-    readonly atEachViewport?: (page: Page) => Promise<void>;
+    readonly atEachViewport?: ((page: Page) => Promise<void>) | undefined;
     readonly viewportOnly?: boolean;
   } = {}
 ): Promise<void> {
@@ -186,17 +286,18 @@ export async function checkpoint(
           );
         }
         await page.mouse.move(0, 0);
+        await fontsLoaded(page);
         const file = path.join(
           SCREENSHOT_DIR,
           screenshotName(journey, name, theme, viewport)
         );
-        await (target && !viewportOnly
-          ? elementShot(page, target, file)
-          : page.screenshot({
-              path: file,
-              fullPage: !viewportOnly,
-              animations: "disabled",
-            }));
+        if (target && !viewportOnly) {
+          await elementShot(page, target, file);
+        } else if (viewportOnly) {
+          await page.screenshot({ path: file, animations: "disabled" });
+        } else {
+          await fullPageShot(page, file);
+        }
       }
     }
     if (original) await restoreTheme(page, original);

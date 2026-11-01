@@ -2,6 +2,7 @@ import type { ActionFunctionArgs } from "@remix-run/cloudflare";
 import { json, redirect } from "@remix-run/cloudflare";
 import { z } from "zod";
 import { THEME_CHOICES } from "~/constants/theme";
+import type { ProxyErrorCode } from "~/schemas/proxy";
 import { assertSameOrigin } from "~/server/csrf.server";
 import { safeReturnTo } from "~/server/return-to.server";
 import { themeCookie } from "~/server/theme.server";
@@ -16,7 +17,7 @@ const NO_STORE = { "Cache-Control": "no-store" };
 
 const themeForm = z.object({ theme: z.enum(THEME_CHOICES) });
 
-function failure(status: number, code: string, message: string) {
+function failure(status: number, code: ProxyErrorCode, message: string) {
   return json(
     { ok: false as const, error: { code, message } },
     {

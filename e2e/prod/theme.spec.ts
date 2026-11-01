@@ -230,7 +230,7 @@ test.describe("theme toggle when the save fails", () => {
 
     const banner = page.getByRole("banner");
     await expect(
-      banner.getByText("Couldn’t save your theme. Try again.")
+      banner.getByText("We couldn’t save your theme. Try again.")
     ).toBeVisible();
     await expect(page.locator("html")).not.toHaveAttribute("data-theme");
     await expect(page.getByRole("button", { name: "System" })).toHaveAttribute(

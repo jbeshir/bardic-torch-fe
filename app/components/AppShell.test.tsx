@@ -1,6 +1,8 @@
 import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { useLocation } from "@remix-run/react";
+import { ErrorState } from "~/components/ui/ErrorState";
 import { ToastProvider } from "~/components/ui/Toast";
 import { renderWithRouter } from "~/test/router";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
@@ -106,8 +108,9 @@ describe("AppShell", () => {
     try {
       await renderShell("/help/licence");
       const nav = screen.getByRole("navigation", { name: "Site" });
-      // 900 + 32 - 736 + 16: the item's foot, a margin above the fold.
-      expect(nav.scrollTop).toBe(212);
+      // 900 + 32 - 736 + 24 + 16: the item's foot clear of the 24 px fade,
+      // with a margin.
+      expect(nav.scrollTop).toBe(236);
       expect(scrollTo).not.toHaveBeenCalled();
       // More below the fold: the fade shows (from lg).
       expect(screen.getByTestId("sidebar-more")).toHaveClass("lg:block");
@@ -139,6 +142,55 @@ describe("AppShell", () => {
       screen.getByRole("button", { name: "Elsewhere" }).focus();
       await act(() => router.navigate("/help/faq-for-bards#opt-out"));
       expect(screen.getByRole("button", { name: "Elsewhere" })).toHaveFocus();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("leaves focus on an error page's heading after a client navigation", async () => {
+    vi.stubGlobal("requestAnimationFrame", (callback: () => void) => {
+      callback();
+      return 0;
+    });
+    function Page() {
+      const { pathname } = useLocation();
+      return pathname === "/missing" ? (
+        <ErrorState title="Page not found" actions={null}>
+          That page isn’t here.
+        </ErrorState>
+      ) : (
+        <h1>Page title</h1>
+      );
+    }
+    try {
+      const router = await renderWithRouter(
+        <ToastProvider>
+          <AppShell account={{ state: "signed-out" }}>
+            <Page />
+          </AppShell>
+        </ToastProvider>,
+        "/help/licence"
+      );
+      await act(() => router.navigate("/missing"));
+      expect(
+        screen.getByRole("heading", { level: 1, name: "Page not found" })
+      ).toHaveFocus();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("still moves focus to the main content when the focused control inside it stays on the new page", async () => {
+    vi.stubGlobal("requestAnimationFrame", (callback: () => void) => {
+      callback();
+      return 0;
+    });
+    try {
+      const router = await renderShell("/help/licence");
+      // The same button is rendered on both pages, keeping its focus.
+      screen.getByRole("button", { name: "Elsewhere" }).focus();
+      await act(() => router.navigate("/help/faq-for-bards"));
+      expect(screen.getByRole("main")).toHaveFocus();
     } finally {
       vi.unstubAllGlobals();
     }

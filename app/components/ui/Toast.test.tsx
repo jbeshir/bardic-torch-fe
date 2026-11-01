@@ -226,13 +226,15 @@ describe("Toast region", () => {
       addEventListener: () => undefined,
       removeEventListener: () => undefined,
     }));
-    let height = 0;
+    // Empty, the region is still the gap between its two lists high.
+    let height = 8;
     vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
       () => ({ height }) as DOMRect
     );
     const root = document.documentElement;
     try {
       const { unmount } = render(<Page />);
+      act(() => observed?.());
       expect(root.style.getPropertyValue("--toast-stack-h")).toBe("");
       height = 71.5;
       raise("You seem to be offline. Your changes haven’t been saved yet.");

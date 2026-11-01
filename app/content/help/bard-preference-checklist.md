@@ -15,7 +15,7 @@ Bardic communities have customs that standard licences don’t cover. You might 
 - **What it is:** a long list of preferences a bard might have, grouped into 8 sections
 - **Who it’s for:** anyone who writes or performs bardic work
 - **How to use it:** copy the list, delete what doesn’t apply, and publish the rest on your own site
-- **Time needed:** as much as you like. Start with the sections that matter most to you
+- **Time needed:** as much as you like; start with the sections that matter most to you
 - **Full list:** [on the original wiki](https://bardictorch.miraheze.org/wiki/Bard_Preference_Checklist)
 
 :::
