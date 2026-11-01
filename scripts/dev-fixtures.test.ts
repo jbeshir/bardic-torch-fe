@@ -145,6 +145,33 @@ describe("npm run dev:fixtures", () => {
     });
   });
 
+  it("renders /settings for a signed-in fixture user from the fixture API (root /v1/me, settings /v1/tokens)", async () => {
+    const login = await fetch(
+      `${origin}/auth/login?as=contributor&returnTo=%2Fsettings`,
+      { redirect: "manual" }
+    );
+    expect(login.status).toBe(302);
+    const session = login.headers
+      .getSetCookie()
+      .map(value => value.split(";")[0] ?? "")
+      .find(pair => pair.startsWith("__Host-bt_session="));
+    expect(session).toBeDefined();
+
+    const response = await fetch(`${origin}/settings`, {
+      headers: { Cookie: session ?? "" },
+    });
+    expect(response.status).toBe(200);
+    const html = await response.text();
+    // The display name field holds the seeded name, and the token list has
+    // the seeded tokens.
+    expect(html).toMatch(/<input[^>]*value="Morwen of the Marches"/);
+    expect(html).toContain("Laptop scripts");
+    expect(html).toContain("Songbook importer");
+    expect(html).not.toContain(
+      "Log in to change your display name and manage your API tokens."
+    );
+  });
+
   it("refuses the same call without the session", async () => {
     const response = await patchMe("Master Tobias Fiddler", "");
     expect(response.status).toBe(401);
