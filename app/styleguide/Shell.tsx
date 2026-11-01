@@ -39,7 +39,7 @@ function useContents() {
  * At the right of its example, as in the header: the panel opens leftwards
  * from the trigger's right edge, so it stays on screen at 360.
  */
-function HeaderEnd({ children }: { children: ReactNode }) {
+function HeaderEnd({ children }: { readonly children: ReactNode }) {
   return <div className="flex w-full justify-end">{children}</div>;
 }
 
