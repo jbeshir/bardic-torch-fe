@@ -1,6 +1,8 @@
-import { expect } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { waitForHydration } from "../support/hydration";
 import { checkpoint } from "../support/journey";
+import { settled } from "../support/layout";
+import { appBar } from "../support/shell";
 import { test } from "../support/test";
 import {
   canvas,
@@ -17,6 +19,34 @@ import {
  */
 
 const THEME_COOKIE = "theme";
+/** Tailwind `md`: from here the header has the theme toggle. */
+const MD = 768;
+
+/**
+ * Where a reader sees their choice, for the dark-choice checkpoint: below
+ * md the toggle is in the site menu, so the drawer is opened; from md it
+ * is in the header, with the drawer closed.
+ */
+async function showThemeChoice(page: Page): Promise<void> {
+  const drawer = page.getByRole("dialog", { name: "Site menu" });
+  if ((page.viewportSize()?.width ?? 0) >= MD) {
+    if (await drawer.isVisible()) await page.keyboard.press("Escape");
+    await expect(drawer).toBeHidden();
+    await expect(
+      page.getByRole("banner").getByRole("button", { name: "Dark" })
+    ).toHaveAttribute("aria-pressed", "true");
+    return;
+  }
+  if (!(await drawer.isVisible())) {
+    await appBar(page).getByRole("button", { name: "Menu" }).click();
+  }
+  await expect(drawer).toBeVisible();
+  await settled(drawer);
+  await expect(drawer.getByRole("button", { name: "Dark" })).toHaveAttribute(
+    "aria-pressed",
+    "true"
+  );
+}
 
 test.describe("server-rendered theme", () => {
   test("raw HTML has data-theme=dark for a dark cookie and none without one", async ({
@@ -158,7 +188,12 @@ test.describe("theme toggle with JS", () => {
       sameSite: "Lax",
       path: "/",
     });
-    await checkpoint(page, "dark-choice");
+    // Dark only (checkpoints.ts): a light capture would show Dark pressed
+    // on a light page, which no reader can reach.
+    await checkpoint(page, "dark-choice", {
+      atEachViewport: showThemeChoice,
+      viewportOnly: true,
+    });
 
     await page.reload();
     await waitForHydration(page);

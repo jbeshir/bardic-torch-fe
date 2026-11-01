@@ -2,6 +2,7 @@ import { expect, type Page } from "@playwright/test";
 import { createFixtureUser, failNext } from "../support/fixture-api";
 import { waitForHydration } from "../support/hydration";
 import { checkpoint } from "../support/journey";
+import { expectTargetSizesAtLeast24 } from "../support/layout";
 import { accountTrigger } from "../support/shell";
 import { test } from "../support/test";
 
@@ -354,7 +355,13 @@ test("the count shows the 10-token limit; a stale list still gets the 409; check
   await expect(
     main(page).getByRole("textbox", { name: "New token value" })
   ).toHaveCount(0);
-  await expect(tokens(page).getByRole("rowheader")).toHaveCount(10);
+  // A refused create changes nothing, so the list is not reloaded (the
+  // settings route's shouldRevalidate): the alert stays with this page's
+  // nine, and the form, until the reader reloads.
+  await expect(tokens(page).getByRole("rowheader")).toHaveCount(9);
+  await expect(
+    main(page).getByRole("button", { name: "Create token" })
+  ).toBeVisible();
 
   // Both forms' errors at once, for the record: the name's inline error
   // (checked in the browser) above the token form's alert.
@@ -363,6 +370,7 @@ test("the count shows the 10-token limit; a stale list still gets the 409; check
   await expect(nameField(page)).toHaveAccessibleDescription(
     /Error: Enter a display name\.$/
   );
+  await expectTargetSizesAtLeast24(page);
   await checkpoint(page, "form-errors");
 
   // Up to date, at the limit the form gives way to the note.
@@ -411,6 +419,7 @@ test("checkpoint: token-revealed", async ({ page }) => {
   await expect(
     main(page).getByRole("textbox", { name: "New token value" })
   ).toBeFocused();
+  await expectTargetSizesAtLeast24(page);
   await checkpoint(page, "token-revealed");
 });
 
@@ -462,7 +471,12 @@ test("checkpoint: revoke-confirm", async ({ page }) => {
   await expect(
     page.getByRole("dialog", { name: "Revoke this token?" })
   ).toBeVisible();
-  await checkpoint(page, "revoke-confirm", { target: "dialog[open]" });
+  await expectTargetSizesAtLeast24(page);
+  // Axe on the dialog; the capture is the viewport, scrim and placement too.
+  await checkpoint(page, "revoke-confirm", {
+    target: "dialog[open]",
+    viewportOnly: true,
+  });
 });
 
 test("at 360 the tokens are cards, each with its own Revoke", async ({

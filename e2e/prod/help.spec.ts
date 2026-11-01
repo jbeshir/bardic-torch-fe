@@ -204,11 +204,25 @@ test("the help index has a card for each help page, and each one opens it", asyn
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/help");
   const cards = page.getByRole("main").getByRole("listitem");
-  // Cards, not prose bullets: no marker, and each row's tops level.
+  // Cards, not prose bullets: no marker, no list indent or item spacing
+  // from the prose styles, and each row's tops level. (An <li> stays
+  // `display: list-item` whatever its marker, so the marker is what counts.)
+  const list = page.getByRole("main").getByRole("list");
+  await expect(list).toHaveCount(1);
+  expect(
+    await list.evaluate(element => getComputedStyle(element).paddingLeft)
+  ).toBe("0px");
   for (const item of await cards.all()) {
     expect(
-      await item.evaluate(element => getComputedStyle(element).display)
-    ).not.toBe("list-item");
+      await item.evaluate(element => {
+        const style = getComputedStyle(element);
+        return {
+          marker: style.listStyleType,
+          markerContent: getComputedStyle(element, "::marker").content,
+          marginTop: style.marginTop,
+        };
+      })
+    ).toEqual({ marker: "none", markerContent: "normal", marginTop: "0px" });
   }
   const [first, second] = await Promise.all([
     cards.nth(0).boundingBox(),

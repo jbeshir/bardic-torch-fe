@@ -141,6 +141,9 @@ test("Log in opens the fixture-user chooser, which signs in a seeded or a fresh 
     .getByRole("link", { name: /^Log in as the seeded moderator/ })
     .click();
   await expect(page).toHaveURL(`${baseURL}/help`);
+  // The URL changes as the document starts to arrive; the header's and the
+  // app bar's triggers only hide each other once its stylesheet applies.
+  await waitForHydration(page);
   await expect(accountTrigger(page.getByRole("banner"))).toHaveText(
     /Account: Master Tobias Fiddler$/
   );
@@ -152,6 +155,7 @@ test("Log in opens the fixture-user chooser, which signs in a seeded or a fresh 
   await page.getByLabel("Another fixture user’s id").fill(id);
   await page.getByRole("button", { name: "Log in" }).click();
   await expect(page).toHaveURL(`${baseURL}/`);
+  await waitForHydration(page);
   await expect(accountTrigger(page.getByRole("banner"))).toHaveText(
     /Account: Wynn the Watchful$/
   );

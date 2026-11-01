@@ -1,9 +1,10 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { waitForHydration } from "../support/hydration";
 import { checkpoint } from "../support/journey";
 import {
   expectNoHorizontalOverflow,
   expectPrimaryTargetsAtLeast44,
+  expectTargetSizesAtLeast24,
   settled,
 } from "../support/layout";
 import {
@@ -13,6 +14,7 @@ import {
   openShownAccountPanel,
 } from "../support/shell";
 import { test } from "../support/test";
+import { applyTextSpacing, expectNothingCutOff } from "../support/text-spacing";
 
 /**
  * The shell's navigation (DESIGN §5, R18, R20, R26): the bottom app bar
@@ -243,6 +245,8 @@ test.describe("below md", () => {
   test("checkpoint: drawer-open", async ({ page }) => {
     await openHydrated(page, "/help/licence");
     await showSiteMenu(page);
+    // The drawer is a dialog: only its controls are targets while it is open.
+    await expectTargetSizesAtLeast24(page, [360, 768]);
     await checkpoint(page, "drawer-open", {
       atEachViewport: showSiteMenu,
       viewportOnly: true,
@@ -266,6 +270,7 @@ test.describe("below md", () => {
     const accountBox = await account.boundingBox();
     expect(panelBox?.y ?? 999).toBeLessThan(accountBox?.y ?? 0);
     await expect(panel.getByRole("link", { name: "Settings" })).toBeVisible();
+    await expectTargetSizesAtLeast24(page, [360]);
     await page.keyboard.press("Escape");
     await expect(panel).toBeHidden();
     await expect(account).toBeFocused();
@@ -468,9 +473,96 @@ test.describe("from md", () => {
     await trigger.click();
     const panel = await accountPanel(trigger);
     await expect(panel.getByText("Contributor", { exact: true })).toBeVisible();
+    await expectTargetSizesAtLeast24(page, [1280]);
     await checkpoint(page, "account-open", {
       atEachViewport: openShownAccountPanel,
       viewportOnly: true,
     });
   });
+});
+
+test.describe("text spacing (WCAG 1.4.12) on the shell and a help page", () => {
+  // The override is an injected <style>, which the nonce CSP would block.
+  test.use({ bypassCSP: true });
+
+  test("the app bar, the header, the account panel and help prose keep all their text", async ({
+    page,
+  }) => {
+    await page.setViewportSize(MOBILE);
+    await page.goto("/auth/login?as=contributor&returnTo=/");
+    await openHydrated(page);
+    await applyTextSpacing(page);
+    // Below md: the bottom app bar with its labelled cells, and its panel.
+    await expectNothingCutOff(page, "header", "in the header at 360");
+    await expectNothingCutOff(page, "main", "on the home page at 360");
+    await openShownAccountPanel(page);
+    const barPanel = await accountPanel(accountTrigger(appBar(page)));
+    await expectNothingCutOff(
+      page,
+      `[id="${await barPanel.getAttribute("id")}"]`,
+      "in the app bar's account panel"
+    );
+    await page.keyboard.press("Escape");
+    // From md: the header's search, theme toggle and account control.
+    for (const width of [768, 1280]) {
+      await page.setViewportSize({ width, height: 800 });
+      await expectNothingCutOff(page, "header", `in the header at ${width}`);
+    }
+    await openShownAccountPanel(page);
+    const headerPanel = await accountPanel(
+      accountTrigger(page.getByRole("banner"))
+    );
+    await expectNothingCutOff(
+      page,
+      `[id="${await headerPanel.getAttribute("id")}"]`,
+      "in the header's account panel"
+    );
+    await expectNoHorizontalOverflow(page);
+
+    await page.setViewportSize(MOBILE);
+    await openHydrated(page, "/help/contributing");
+    await applyTextSpacing(page);
+    await expectNothingCutOff(page, "main", "on a help page at 360");
+    await expectNoHorizontalOverflow(page);
+  });
+});
+
+test("in forced colours the shell's marked controls show focus, and button links keep an edge", async ({
+  page,
+}) => {
+  await page.emulateMedia({ forcedColors: "active" });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openHydrated(page, "/help/licence");
+  const outline = (locator: Locator) =>
+    locator.evaluate(element => {
+      const style = getComputedStyle(element);
+      return `${style.outlineStyle} ${style.outlineWidth} ${style.outlineColor} ${style.outlineOffset}`;
+    });
+  const marked = [
+    page
+      .getByRole("navigation", { name: "Site" })
+      .getByRole("link", { name: "Licence & attribution" }),
+    page.getByRole("banner").getByRole("button", { name: "System" }),
+  ];
+  for (const control of marked) {
+    const resting = await outline(control);
+    expect(resting, "the state mark").toMatch(/^solid /);
+    await page.keyboard.press("Shift");
+    await control.focus();
+    expect(
+      await control.evaluate(element => element.matches(":focus-visible"))
+    ).toBe(true);
+    const focusedOutline = await outline(control);
+    expect(focusedOutline).toMatch(/^solid /);
+    expect(focusedOutline, "focus differs from the state mark").not.toBe(
+      resting
+    );
+  }
+  const login = page.getByRole("banner").getByRole("link", { name: "Log in" });
+  expect(
+    await login.evaluate(element => {
+      const style = getComputedStyle(element);
+      return `${style.borderTopStyle} ${style.borderTopWidth}`;
+    })
+  ).toBe("solid 1px");
 });

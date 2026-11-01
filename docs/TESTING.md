@@ -33,7 +33,7 @@ Other FE1 differences from the plan's test list follow from the real API (no rev
 - **Environment by file name.** `*.test.tsx` runs in jsdom; everything else runs in node, like the Workers runtime. A `.ts` test that needs a DOM says so with `// @vitest-environment jsdom`.
 - **Components** use testing-library and `@testing-library/user-event`.
   - Test every state, and the keyboard.
-  - Test both themes: `expectSameMarkupInBothThemes` in `app/test/themes.ts` checks that a component's markup doesn't depend on the theme, because the colour is all in the token CSS.
+  - `expectSameMarkupInBothThemes` in `app/test/themes.ts` is a **guard, not theme coverage**: it fails only if a component starts branching on the theme. It says nothing about how either theme looks. The theme evidence is `check:contrast` (every token pair in both themes) and the e2e checkpoints (axe and screenshots in both themes, each asserting that the page paints that theme).
   - `renderWithRouter` and `renderRoutes` (`app/test/router.tsx`) supply Remix's router context.
 - **Loaders and actions** run against the fixture API through msw:
 
@@ -112,27 +112,28 @@ Both are followed by the `screenshots` teardown project.
 
 **Network isolation.** Every spec imports `test` from `e2e/support/test.ts`. Its automatic network guard aborts, and fails the test on, any request to a host other than this machine. Chromium also gets a host-resolver rule that resolves nothing else. A test that expects a redirect off the machine (logout to Auth0) names the host in `offHostRedirects` and asserts that hop itself. The suite never needs network access or secrets.
 
-**Workers and timeouts.** There are 4 workers (see CLAUDE.md for why), a 90 s test timeout and a 15 s `expect` timeout. Call `waitForHydration(page)` (`e2e/support/hydration.ts`) before any step that needs JS behaviour.
+**Workers, retries and timeouts.** There are 4 workers (see CLAUDE.md for why), a 90 s test timeout and a 15 s `expect` timeout. Each test gets **one retry**, for the dev runtime's own flakes: `wrangler pages dev` answers a POST or PATCH that was in flight when its workerd restarted with a 503 ("Your worker restarted mid-request"; it retries GETs itself). A test that passes only on its retry is _flaky_. `scripts/e2e.mjs` reads each phase's JSON report (`playwright-report/<phase>.json`) and prints every flaky test by name in a banner after the phase and again at the end, so a retry is never silent. Treat a flaky test as a bug to look into. The server runs with `--live-reload=false`. wrangler 3.57 has no switch for its own file watching (esbuild watch of the Functions bundle and a watch of `functions/`), but nothing writes those files during a run, and the logs show no rebuild. Don't build into `build/` or edit `functions/` while a run is going. Call `waitForHydration(page)` (`e2e/support/hydration.ts`) before any step that needs JS behaviour.
 
 ### Checkpoints and screenshots
 
 `checkpoint(page, name, options?)` (`e2e/support/journey.ts`) is the visual and accessibility gate for a page or state:
 
 - **axe** with tags wcag2a, wcag2aa, wcag21a, wcag21aa and wcag22aa, in light and dark, at 360 and 1280 px. There must be zero violations.
-- **Six PNGs** in `e2e/screenshots/`, named `{journey}-{checkpoint}-{light|dark}-{360x800|768x1024|1280x800}.png`. They are full-page unless `viewportOnly`.
+- **Six PNGs** in `e2e/screenshots/`, named `{journey}-{checkpoint}-{light|dark}-{360x800|768x1024|1280x800}.png`. They are full-page unless `viewportOnly`. A state only one theme can reach is captured in that theme only: `checkpointThemes` in `checkpoints.ts` lists them (today just `theme/dark-choice`, dark).
+- Before each capture it asserts that the page paints that theme's `canvas` token, so both-theme evidence is real. It also moves the pointer to the corner, so no hover is left over (hover is not captured; DESIGN §10.6).
 
-`target: "<selector>"` limits axe and the screenshot to one element, such as a styleguide block or an open dialog. `atEachViewport` rebuilds a width-specific state (the account panel, the drawer) at each width.
+`target: "<selector>"` limits axe and the screenshot to one element, such as a styleguide block. The sticky header and the app bar are hidden during that capture, so they are never stitched over it. With `target` and `viewportOnly`, axe covers the element and the screenshot is the viewport. Use this for an open dialog with its scrim, or toasts in place. `atEachViewport` rebuilds a width-specific state (the account panel, the drawer) at each width.
 
 Every checkpoint is declared per phase and journey in `e2e/support/checkpoints.ts`; the journey is the spec file name. `checkpoint()` refuses undeclared names. On a full run, the `screenshots` teardown (`e2e/global-teardown.ts`) fails unless the screenshot directory holds exactly the declared set: every checkpoint × 6, nothing undeclared, and no name in both phases. Filtered runs skip that check.
 
 The layout sweep (`e2e/support/journey-pages.ts`, run by `e2e/{prod,stub}/sweeps.spec.ts`) checks every page a reader can land on for:
 
 - horizontal overflow at 360 and 320 px;
-- 24 px targets (WCAG 2.5.8);
-- focus never hidden (WCAG 2.4.11) at the page's width and at 360;
+- 24 px targets (WCAG 2.5.8) at 360 and 1280 px. An undersized target fails if the 24 px circle on its centre touches another target, or another undersized target's circle. Only an inline link in a sentence (its block has text of its own) is exempt. With a modal dialog open only its contents count. Open states (drawer, account panels, token reveal, form errors, dialogs) call `expectTargetSizesAtLeast24(page, widths)` themselves;
+- focus never hidden (WCAG 2.4.11, AA: not _entirely_ hidden) at the page's width and at 360. The Tab walk fails if it hasn't come back to its first stop in 400 stops, so nothing goes unchecked. The hit test sees toasts, which take pointer events;
 - 44 px primary controls at 360.
 
-`e2e/support/layout.ts` also has `expectNoLayoutShift` for CLS.
+`e2e/support/layout.ts` also has `expectNoLayoutShift` for CLS. `e2e/support/text-spacing.ts` applies the WCAG 1.4.12 override and checks that nothing is clipped. It runs on the styleguide and on the shell: the app bar, the header at md and lg, both account panels, and help prose (`stub/navigation.spec.ts`). The same spec checks forced colours on the shell (focus on the current sidebar item and the pressed theme button changes the outline, and button links keep an edge).
 
 ### Adding a journey
 

@@ -4,11 +4,13 @@ import { waitForHydration } from "./hydration";
 /** Layout and WCAG 2.2 checks for journeys to run on their pages. */
 
 const REFLOW_WIDTHS = [360, 320];
-const MAX_TABS = 200;
+/** A walk that has not come back to its first stop by then fails. */
+const MAX_TABS = 400;
 /** Below md: the width with the fixed bottom app bar. */
 const FOCUS_WIDTH = 360;
 
-const FOCUSABLE =
+/** What the sweeps (and the styleguide focus states) count as a control. */
+export const FOCUSABLE =
   'a[href], button, input:not([type="hidden"]), select, textarea, summary, ' +
   '[tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
 
@@ -54,63 +56,142 @@ export async function expectNoHorizontalOverflow(page: Page): Promise<void> {
   }
 }
 
+/** Widths the 2.5.8 sweep runs at: below md (app bar) and the desktop shell. */
+const TARGET_WIDTHS: readonly number[] = [360, 1280];
+
 /**
- * WCAG 2.5.8 at 360 px: every visible focusable outside running text is at
- * least 24×24, or a 24 px circle on its centre touches no other target.
- * Inline links inside paragraphs, list items and table cells are exempt.
+ * WCAG 2.5.8 at 360 and 1280 px (the header's md+ controls are only there):
+ * every visible focusable is at least 24×24, or the 24 px circle on its
+ * centre intersects no other target and no other undersized target's
+ * circle (centres at least 24 px apart). The inline exception covers only
+ * a target in a sentence: an inline link whose block also has text of its
+ * own. A link alone in a list item, cell or paragraph is checked.
+ *
+ * With a modal dialog open only its contents are targets (the page behind
+ * it is inert). Open states call it too (drawer, panels, dialogs, the
+ * token reveal), passing just the widths at which that state exists: a
+ * drawer closes itself at lg, and each width has its own account panel.
  */
-export async function expectTargetSizesAtLeast24(page: Page): Promise<void> {
-  const failures = await withWidth(page, 360, () =>
-    page.evaluate(selector => {
-      const MIN = 24;
-      const RUNNING_TEXT = "p, li, dd, dt, td, th, blockquote, figcaption";
-      const targets = [...document.querySelectorAll<HTMLElement>(selector)]
-        .filter(element => {
-          const rect = element.getBoundingClientRect();
-          const style = getComputedStyle(element);
-          return (
-            rect.width > 0 &&
-            rect.height > 0 &&
-            style.visibility !== "hidden" &&
-            !(style.display === "inline" && element.closest(RUNNING_TEXT))
-          );
-        })
-        .map(element => ({ element, rect: element.getBoundingClientRect() }));
+export async function expectTargetSizesAtLeast24(
+  page: Page,
+  widths: readonly number[] = TARGET_WIDTHS
+): Promise<void> {
+  for (const width of widths) {
+    const failures = await withWidth(page, width, () =>
+      page.evaluate(findSmallTargets, FOCUSABLE)
+    );
+    expect(
+      failures,
+      `targets smaller than 24×24 without spacing at ${width}px`
+    ).toEqual([]);
+  }
+}
 
-      const describe = (element: HTMLElement) =>
-        `${element.tagName.toLowerCase()} "${(element.textContent ?? element.getAttribute("aria-label") ?? "").trim().slice(0, 40)}"`;
+/** Runs in the page (self-contained): the 2.5.8 failures under the page. */
+function findSmallTargets(selector: string): string[] {
+  const MIN = 24;
+  const modal = document.querySelector("dialog[open]:modal");
+  const root = modal ?? document;
 
-      const circleHits = (
-        x: number,
-        y: number,
-        rect: DOMRect,
-        radius: number
-      ) => {
-        const dx = Math.max(rect.left - x, 0, x - rect.right);
-        const dy = Math.max(rect.top - y, 0, y - rect.bottom);
-        return dx * dx + dy * dy < radius * radius;
+  const isInline = (element: Element) =>
+    getComputedStyle(element).display === "inline";
+
+  /** In a sentence: its nearest non-inline ancestor has text besides it. */
+  const inSentence = (element: HTMLElement) => {
+    if (!isInline(element)) return false;
+    let block = element.parentElement;
+    while (block && isInline(block)) block = block.parentElement;
+    if (!block) return false;
+    const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (!element.contains(node) && (node.textContent ?? "").trim() !== "") {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const name = (element: HTMLElement) => {
+    const labelledBy = element.getAttribute("aria-labelledby");
+    const byIds = labelledBy
+      ?.split(/\s+/)
+      .map(id => document.getElementById(id)?.textContent ?? "")
+      .join(" ");
+    const label =
+      element.getAttribute("aria-label") ??
+      (byIds || null) ??
+      (element instanceof HTMLInputElement && element.labels?.length
+        ? [...element.labels].map(each => each.textContent).join(" ")
+        : null) ??
+      element.textContent ??
+      "";
+    const type =
+      element instanceof HTMLInputElement ? `[type=${element.type}]` : "";
+    return `${element.tagName.toLowerCase()}${type} "${label.trim().replace(/\s+/g, " ").slice(0, 40)}"`;
+  };
+
+  const targets = [...root.querySelectorAll<HTMLElement>(selector)]
+    .filter(element => {
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return (
+        rect.width > 0 &&
+        rect.height > 0 &&
+        style.visibility !== "hidden" &&
+        !element.closest("[inert]") &&
+        !inSentence(element)
+      );
+    })
+    .map(element => {
+      const rect = element.getBoundingClientRect();
+      return {
+        element,
+        layer: layerOf(element),
+        rect,
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+        small: rect.width < MIN || rect.height < MIN,
       };
+    });
 
-      return targets.flatMap(({ element, rect }) => {
-        if (rect.width >= MIN && rect.height >= MIN) return [];
-        const x = rect.left + rect.width / 2;
-        const y = rect.top + rect.height / 2;
-        const crowded = targets.some(
-          other =>
-            other.element !== element &&
-            !other.element.contains(element) &&
-            !element.contains(other.element) &&
-            circleHits(x, y, other.rect, MIN / 2)
-        );
-        return crowded
-          ? [
-              `${describe(element)} is ${Math.round(rect.width)}×${Math.round(rect.height)} and too close to another target`,
-            ]
-          : [];
-      });
-    }, FOCUSABLE)
-  );
-  expect(failures, "targets smaller than 24×24 without spacing").toEqual([]);
+  /**
+   * The fixed or sticky box a target rides in (the header, the app bar, a
+   * toast), or null for the page. Spacing is between targets of one layer:
+   * a link that has scrolled under the app bar isn't "next to" its cells
+   * (whether focus is hidden there is expectFocusNotObscured's question).
+   */
+  function layerOf(element: HTMLElement): Element | null {
+    for (let node: Element | null = element; node; node = node.parentElement) {
+      const { position } = getComputedStyle(node);
+      if (position === "fixed" || position === "sticky") return node;
+    }
+    return null;
+  }
+
+  const related = (a: HTMLElement, b: HTMLElement) =>
+    a === b || a.contains(b) || b.contains(a);
+  const circleHitsRect = (x: number, y: number, rect: DOMRect) => {
+    const dx = Math.max(rect.left - x, 0, x - rect.right);
+    const dy = Math.max(rect.top - y, 0, y - rect.bottom);
+    return dx * dx + dy * dy < (MIN / 2) ** 2;
+  };
+
+  return targets.flatMap(target => {
+    if (!target.small) return [];
+    const crowding = targets.find(
+      other =>
+        other.layer === target.layer &&
+        !related(other.element, target.element) &&
+        (circleHitsRect(target.x, target.y, other.rect) ||
+          (other.small &&
+            Math.hypot(other.x - target.x, other.y - target.y) < MIN))
+    );
+    return crowding
+      ? [
+          `${name(target.element)} is ${Math.round(target.rect.width)}×${Math.round(target.rect.height)} and too close to ${name(crowding.element)}`,
+        ]
+      : [];
+  });
 }
 
 /**
@@ -128,8 +209,9 @@ async function focusProblems(page: Page): Promise<string[]> {
   });
   const problems: string[] = [];
   let first: string | null = null;
+  let wrapped = false;
 
-  for (let tab = 0; tab < MAX_TABS; tab += 1) {
+  for (let tab = 0; tab < MAX_TABS && !wrapped; tab += 1) {
     await page.keyboard.press("Tab");
     const result = await page.evaluate(() => {
       const element = document.activeElement;
@@ -165,16 +247,21 @@ async function focusProblems(page: Page): Promise<string[]> {
       }
       return {
         key: path.join(">"),
-        label: `${element.tagName.toLowerCase()} "${(element.textContent ?? "").trim().slice(0, 40)}"`,
+        label: `${element.tagName.toLowerCase()} "${(element.getAttribute("aria-label") ?? element.textContent ?? "").trim().slice(0, 40)}"`,
         visible,
       };
     });
 
-    if (result === null || result.key === first) break;
-    first ??= result.key;
-    if (!result.visible)
-      problems.push(`${result.label} is obscured when focused`);
+    if (result === null || result.key === first) {
+      wrapped = true;
+    } else {
+      first ??= result.key;
+      if (!result.visible)
+        problems.push(`${result.label} is obscured when focused`);
+    }
   }
+  // Stops past the limit would go unchecked: say so rather than pass.
+  if (!wrapped) problems.push(`the Tab walk did not wrap in ${MAX_TABS} stops`);
   return problems;
 }
 

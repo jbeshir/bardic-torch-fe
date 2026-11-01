@@ -2,9 +2,9 @@ import { expect, test } from "@playwright/test";
 import { existsSync, readdirSync } from "node:fs";
 import {
   CHECKPOINTS,
+  checkpointThemes,
   SCREENSHOT_DIR,
   screenshotName,
-  THEMES,
   VIEWPORTS,
   type Phase,
 } from "./support/checkpoints";
@@ -12,7 +12,8 @@ import {
 /**
  * Runs as each phase's teardown project, after all of its journeys (with
  * and without JS). The screenshots that belong to the phase must be
- * exactly its declared checkpoints × 2 themes × 3 viewports, and
+ * exactly its declared checkpoints × their themes (both, unless
+ * checkpointThemes says otherwise) × 3 viewports, and
  * e2e/screenshots must hold nothing that no checkpoint of either phase
  * declares. `npm run test:e2e` empties the folder first; filtered runs
  * (E2E_PARTIAL=1, set by scripts/e2e.mjs) skip the check.
@@ -23,7 +24,7 @@ const PHASES: readonly Phase[] = ["prod", "stub"];
 function expectedFiles(phase: Phase): string[] {
   return Object.entries(CHECKPOINTS[phase]).flatMap(([journey, names]) =>
     names.flatMap(name =>
-      THEMES.flatMap(theme =>
+      checkpointThemes(journey, name).flatMap(theme =>
         VIEWPORTS.map(viewport =>
           screenshotName(journey, name, theme, viewport)
         )

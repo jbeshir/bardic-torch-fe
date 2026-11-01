@@ -8,6 +8,12 @@ const THEMES = ["light", "dark"] as const;
  * document root and expects identical markup: colours come only from token
  * classes, whose values the theme swaps in CSS (DESIGN §9.2), so nothing in
  * the DOM may depend on the theme.
+ *
+ * A guard, not theme coverage: it can only fail if a component starts
+ * branching on the theme, and proves nothing about how either theme looks.
+ * That evidence is check:contrast (every token pair in both themes) and the
+ * e2e checkpoints (axe and screenshots per theme, each asserting the page
+ * paints that theme's canvas; docs/TESTING.md).
  */
 export async function expectSameMarkupInBothThemes(
   renderUi: () => unknown

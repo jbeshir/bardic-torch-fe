@@ -48,6 +48,20 @@ export const STYLEGUIDE_BLOCKS = [
   "page-template",
 ] as const;
 
+/**
+ * The styleguide AccountMenu examples whose panel has its own checkpoint,
+ * open (by keyboard) one at a time: each state's panel says something
+ * different (DESIGN §6.25).
+ */
+export const ACCOUNT_MENU_OPEN = [
+  { checkpoint: "account-menu-open-signed-in", example: "Signed in" },
+  {
+    checkpoint: "account-menu-open-unavailable",
+    example: "Profile couldn’t load",
+  },
+  { checkpoint: "account-menu-open-blocked", example: "Blocked account" },
+] as const;
+
 export const CHECKPOINTS: Readonly<
   Record<Phase, Readonly<Record<string, readonly string[]>>>
 > = {
@@ -66,7 +80,12 @@ export const CHECKPOINTS: Readonly<
     settings: ["signed-out"],
   },
   stub: {
-    styleguide: [...STYLEGUIDE_BLOCKS, "dialog-open", "drawer-open"],
+    styleguide: [
+      ...STYLEGUIDE_BLOCKS,
+      ...ACCOUNT_MENU_OPEN.map(({ checkpoint }) => checkpoint),
+      "dialog-open",
+      "drawer-open",
+    ],
     navigation: ["account-open", "drawer-open"],
     errors: ["profile-unavailable", "settings-error"],
     account: [
@@ -80,7 +99,25 @@ export const CHECKPOINTS: Readonly<
   },
 };
 
-export const THEMES: readonly Theme[] = ["light", "dark"];
+const THEMES: readonly Theme[] = ["light", "dark"];
+
+/**
+ * Checkpoints of a state that only exists in some themes, by
+ * `journey/name`: a reader who chose Dark is never shown a light page, so
+ * `theme/dark-choice` is captured dark only. Every other checkpoint is
+ * captured in THEMES.
+ */
+const ONLY_IN: Readonly<Record<string, readonly Theme[]>> = {
+  "theme/dark-choice": ["dark"],
+};
+
+/** The themes `journey/name` is captured in. */
+export function checkpointThemes(
+  journey: string,
+  name: string
+): readonly Theme[] {
+  return ONLY_IN[`${journey}/${name}`] ?? THEMES;
+}
 
 export const VIEWPORTS: readonly Viewport[] = [
   { width: 360, height: 800 },

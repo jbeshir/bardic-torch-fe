@@ -1,10 +1,16 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 import { channelString, resolveColour } from "../../app/styles/tokens";
-import { STYLEGUIDE_BLOCKS } from "../support/checkpoints";
-import { findCutOffControls } from "../support/cut-off";
+import { ACCOUNT_MENU_OPEN, STYLEGUIDE_BLOCKS } from "../support/checkpoints";
 import { waitForHydration } from "../support/hydration";
 import { checkpoint } from "../support/journey";
-import { expectNoHorizontalOverflow, settled } from "../support/layout";
+import {
+  expectNoHorizontalOverflow,
+  expectTargetSizesAtLeast24,
+  FOCUSABLE,
+  settled,
+} from "../support/layout";
+import { accountPanel } from "../support/shell";
+import { applyTextSpacing, expectNothingCutOff } from "../support/text-spacing";
 import { test } from "../support/test";
 
 // Every test opens its own page and shares no state, so they spread over
@@ -100,10 +106,132 @@ test("renders every block in the order the checkpoints declare, and isn't indexe
   expect(ids).toEqual([...STYLEGUIDE_BLOCKS]);
 });
 
+/**
+ * Keyboard focus on `control`, so a checkpoint records its real focus ring
+ * (DESIGN §10.6): after a key press, programmatic focus counts as keyboard
+ * focus (`:focus-visible`), as it would after a Tab.
+ */
+async function showFocusRing(page: Page, control: Locator): Promise<void> {
+  await page.keyboard.press("Shift");
+  await control.focus();
+  await expect(control).toBeFocused();
+  expect(
+    await control.evaluate(element => element.matches(":focus-visible")),
+    "focus shows its ring"
+  ).toBe(true);
+}
+
+/** The block's first control a reader can reach: its checkpoint shows it focused. */
+function firstControl(page: Page, id: string): Locator {
+  return block(page, id)
+    .locator(`:is(${FOCUSABLE}):not(:disabled)`)
+    .filter({ visible: true })
+    .first();
+}
+
+/**
+ * The state each block's checkpoint is taken in, beyond rest: the first
+ * control focused by keyboard (every block with one), the error summary
+ * after a keyboard submit (its focused danger summary), and the toast
+ * block with one toast of each tone held on screen by focus on the first
+ * one's dismiss button, captured as the viewport so their placement shows. Hover can't be held for a static
+ * capture and isn't recorded (DESIGN §10.6).
+ */
+const BLOCK_STATES: Partial<
+  Record<(typeof STYLEGUIDE_BLOCKS)[number], (page: Page) => Promise<void>>
+> = {
+  "error-summary": async page => {
+    const submit = block(page, "error-summary").getByRole("button", {
+      name: "Check the form",
+    });
+    await showFocusRing(page, submit);
+    await page.keyboard.press("Enter");
+    const summary = block(page, "error-summary").getByRole("alert");
+    await expect(summary).toContainText("Check 2 things below");
+    await expect(summary.getByRole("link")).toHaveCount(2);
+    await expect(summary).toBeFocused();
+    expect(
+      await summary.evaluate(element => element.matches(":focus-visible"))
+    ).toBe(true);
+  },
+  toast: async page => {
+    for (const name of [
+      "Show a success toast",
+      "Show an info toast",
+      "Show an error toast",
+    ]) {
+      const trigger = block(page, "toast").getByRole("button", { name });
+      await showFocusRing(page, trigger);
+      await page.keyboard.press("Enter");
+    }
+    const region = page.getByRole("region", { name: "Notifications" });
+    await expect(region.getByRole("status")).toContainText(
+      "Display name saved."
+    );
+    await expect(region.getByRole("status")).toContainText(
+      "Copied the token to the clipboard."
+    );
+    await expect(region.getByRole("alert")).toContainText("offline");
+    // Focus in the stack holds every toast (Toast.tsx) through the capture,
+    // without holding the page clock (axe runs on timers), and shows the
+    // dismiss button's ring.
+    await showFocusRing(
+      page,
+      region.getByRole("button", { name: "Dismiss notification" }).first()
+    );
+  },
+};
+
 for (const id of STYLEGUIDE_BLOCKS) {
   test(`checkpoint: ${id}`, async ({ page }) => {
     await openStyleguide(page);
-    await checkpoint(page, id, { target: `section#${id}` });
+    const state = BLOCK_STATES[id];
+    if (state) {
+      await state(page);
+    } else if ((await firstControl(page, id).count()) > 0) {
+      await showFocusRing(page, firstControl(page, id));
+    }
+    await checkpoint(
+      page,
+      id,
+      id === "toast"
+        ? {
+            target: 'section[aria-label="Notifications"]',
+            viewportOnly: true,
+            atEachViewport: async each => {
+              await block(each, "toast").scrollIntoViewIfNeeded();
+            },
+          }
+        : { target: `section#${id}` }
+    );
+  });
+}
+
+for (const { checkpoint: name, example } of ACCOUNT_MENU_OPEN) {
+  test(`checkpoint: ${name}`, async ({ page }) => {
+    await openStyleguide(page);
+    const figure = block(page, "account-menu")
+      .locator("figure")
+      .filter({ has: page.getByText(example, { exact: true }) });
+    const trigger = figure.locator("summary");
+    const open = async (each: Page) => {
+      const panel = await accountPanel(trigger);
+      if (!(await panel.isVisible())) {
+        await showFocusRing(each, trigger);
+        await each.keyboard.press("Enter");
+      }
+      await expect(panel).toBeVisible();
+      await trigger.evaluate(element =>
+        element.scrollIntoView({ block: "center" })
+      );
+      await expect(trigger).toBeFocused();
+    };
+    await open(page);
+    await checkpoint(page, name, {
+      target: "section#account-menu",
+      viewportOnly: true,
+      atEachViewport: open,
+    });
   });
 }
 
@@ -269,13 +397,28 @@ test.describe("Dialog", () => {
     expect(cancel.x).toBeCloseTo(revoke.x, 0);
   });
 
-  test("checkpoint: dialog-open", async ({ page }) => {
+  test("checkpoint: dialog-open, opened by keyboard: Cancel shows its ring over the scrim", async ({
+    page,
+  }) => {
     await openStyleguide(page, "#dialog");
-    await block(page, "dialog")
-      .getByRole("button", { name: "Revoke", exact: true })
-      .click();
-    await expect(page.getByRole("dialog")).toBeVisible();
-    await checkpoint(page, "dialog-open", { target: "dialog[open]" });
+    await showFocusRing(
+      page,
+      block(page, "dialog").getByRole("button", { name: "Revoke", exact: true })
+    );
+    await page.keyboard.press("Enter");
+    const dialog = page.getByRole("dialog", { name: "Revoke this token?" });
+    await expect(dialog).toBeVisible();
+    const cancel = dialog.getByRole("button", { name: "Cancel" });
+    await expect(cancel).toBeFocused();
+    expect(
+      await cancel.evaluate(element => element.matches(":focus-visible"))
+    ).toBe(true);
+    await expectTargetSizesAtLeast24(page, [360, 1280]);
+    // Axe on the dialog; the capture is the viewport, scrim included.
+    await checkpoint(page, "dialog-open", {
+      target: "dialog[open]",
+      viewportOnly: true,
+    });
   });
 });
 
@@ -350,13 +493,31 @@ test.describe("Drawer", () => {
     await expect(page).toHaveURL(/#button$/);
   });
 
-  test("checkpoint: drawer-open", async ({ page }) => {
+  test("checkpoint: drawer-open, opened by keyboard: Close shows its ring over the scrim", async ({
+    page,
+  }) => {
     await openStyleguide(page, "#drawer");
-    await block(page, "drawer")
-      .getByRole("button", { name: "Menu", exact: true })
-      .click();
-    await expect(page.getByRole("dialog", { name: "Site menu" })).toBeVisible();
-    await checkpoint(page, "drawer-open", { target: "dialog[open]" });
+    await showFocusRing(
+      page,
+      block(page, "drawer").getByRole("button", { name: "Menu", exact: true })
+    );
+    await page.keyboard.press("Enter");
+    const drawer = page.getByRole("dialog", { name: "Site menu" });
+    await expect(drawer).toBeVisible();
+    const close = drawer.getByRole("button", { name: "Close menu" }).first();
+    await expect(close).toBeFocused();
+    expect(
+      await close.evaluate(element => element.matches(":focus-visible"))
+    ).toBe(true);
+    await expectTargetSizesAtLeast24(page, [360, 768]);
+    await checkpoint(page, "drawer-open", {
+      target: "dialog[open]",
+      viewportOnly: true,
+      atEachViewport: async () => {
+        await expect(drawer).toBeVisible();
+        await settled(drawer);
+      },
+    });
   });
 });
 
@@ -533,49 +694,15 @@ test.describe("text spacing (WCAG 1.4.12)", () => {
     page,
   }) => {
     await openStyleguide(page);
-    await page.addStyleTag({
-      content:
-        "* { line-height: 1.5 !important; letter-spacing: 0.12em !important; word-spacing: 0.16em !important; } " +
-        "p { margin-bottom: 2em !important; }",
-    });
+    await applyTextSpacing(page);
     for (const width of [1280, 360]) {
       await page.setViewportSize({ width, height: 800 });
-      const clipped = await page.evaluate(() => {
-        const panel = document.querySelector('[role="tabpanel"]:not([hidden])');
-        const problems: string[] = [];
-        for (const element of panel?.querySelectorAll<HTMLElement>("*") ?? []) {
-          // Hidden helpers, closed dialogs and form controls (which scroll
-          // their own value) aren't clipped text.
-          if (
-            !(element instanceof HTMLElement) ||
-            element.matches("input, select, textarea") ||
-            element.closest("[aria-hidden='true'], .sr-only, dialog")
-          ) {
-            continue;
-          }
-          const style = getComputedStyle(element);
-          const clips = [style.overflowX, style.overflowY].some(value =>
-            ["hidden", "clip"].includes(value)
-          );
-          if (!clips) continue;
-          if (
-            element.scrollWidth > element.clientWidth + 1 ||
-            element.scrollHeight > element.clientHeight + 1
-          ) {
-            problems.push(
-              `${element.tagName.toLowerCase()} "${(element.textContent ?? "").trim().slice(0, 40)}"`
-            );
-          }
-        }
-        return problems;
-      });
-      expect(clipped, `clipped at ${width}px`).toEqual([]);
       // Controls grow with their text instead of cutting it off.
-      const cutOff = await page.evaluate(
-        findCutOffControls,
-        '[role="tabpanel"]:not([hidden])'
+      await expectNothingCutOff(
+        page,
+        '[role="tabpanel"]:not([hidden])',
+        `at ${width}px`
       );
-      expect(cutOff, `controls cut off at ${width}px`).toEqual([]);
     }
     await expectNoHorizontalOverflow(page);
   });

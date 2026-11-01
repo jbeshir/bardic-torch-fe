@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test";
 import { checkpoint } from "../support/journey";
-import { expectNoLayoutShift } from "../support/layout";
+import { expectNoLayoutShift, FOCUSABLE } from "../support/layout";
 import { HOME_HEADLINE } from "../support/pages";
 import { waitForHydration } from "../support/hydration";
 import { appBar } from "../support/shell";
@@ -120,13 +120,19 @@ test("the shell has one of each landmark and a skip link to the content", async 
   await page.keyboard.press("Enter");
   await expect(page.getByRole("main")).toBeFocused();
   await page.keyboard.press("Tab");
-  // The next stop is inside the content (or after it), not back in the header.
-  const inHeader = await page.evaluate(
-    () =>
-      document.querySelector("header")?.contains(document.activeElement) ??
-      false
-  );
-  expect(inHeader).toBe(false);
+  // The next stop is the content's first control, not the header or <body>.
+  const next = await page.evaluate(selector => {
+    const main = document.querySelector("main");
+    const first = [
+      ...(main?.querySelectorAll<HTMLElement>(selector) ?? []),
+    ].find(element => element.getClientRects().length > 0);
+    return {
+      firstInMain: first !== undefined && first === document.activeElement,
+      label: document.activeElement?.textContent?.trim().slice(0, 40) ?? "",
+    };
+  }, FOCUSABLE);
+  expect(next.label).not.toBe("");
+  expect(next.firstInMain, `focused "${next.label}"`).toBe(true);
 });
 
 test("the header links home, searches the wiki and has the theme and Log in from md", async ({

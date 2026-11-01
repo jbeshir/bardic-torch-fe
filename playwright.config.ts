@@ -71,6 +71,8 @@ export default defineConfig({
   reporter: [
     ["list"],
     ["html", { open: "never", outputFolder: `./playwright-report/${phase}` }],
+    // Read by scripts/e2e.mjs, which lists every flaky test (see retries).
+    ["json", { outputFile: `./playwright-report/${phase}.json` }],
   ],
   metadata: { phase },
   forbidOnly: true,
@@ -88,6 +90,17 @@ export default defineConfig({
    * drops requests and checkpoints time out. Four keeps runs stable.
    */
   workers: 4,
+  /**
+   * One retry, for the runtime's own flakes: wrangler's dev proxy answers
+   * a POST or PATCH that was in flight when workerd restarted with a 503
+   * ("Your worker restarted mid-request"; GETs it retries itself), and
+   * aborted requests log `disconnected: remote.worker_do_not_log`. A test
+   * that passes on its retry is "flaky": scripts/e2e.mjs prints every one
+   * by name at the end of the run, so a retry is never silent. The
+   * server runs with live reload off (its default) and nothing writes
+   * the files it watches during a run (docs/TESTING.md).
+   */
+  retries: 1,
   use: {
     baseURL: BASE_URL,
     trace: "retain-on-failure",
@@ -125,7 +138,7 @@ export default defineConfig({
     {
       command:
         `${PHASES[phase]} && ` +
-        `npx wrangler pages dev build/client --port ${PORT} --ip ${BIND_IP} ` +
+        `npx wrangler pages dev build/client --port ${PORT} --ip ${BIND_IP} --live-reload=false ` +
         `--compatibility-date=${COMPATIBILITY_DATE} ` +
         `--compatibility-flags=${COMPATIBILITY_FLAGS} ${bindingFlags}`,
       url: `http://${BIND_IP}:${PORT}`,

@@ -1,12 +1,13 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test, type Cookie, type Page } from "@playwright/test";
 import path from "node:path";
+import { channelString, resolveColour } from "../../app/styles/tokens";
 import {
   AXE_WIDTHS,
   CHECKPOINTS,
+  checkpointThemes,
   SCREENSHOT_DIR,
   screenshotName,
-  THEMES,
   VIEWPORTS,
   type Phase,
   type Theme,
@@ -80,12 +81,54 @@ async function expectNoAxeViolations(
 }
 
 /**
+ * During an element screenshot the shell header (and the app bar inside
+ * it) is not painted: Playwright stitches a tall element from scrolled
+ * captures, and the sticky header and the fixed bar would otherwise be
+ * drawn over the specimen mid-image. Viewport and full-page captures keep
+ * them, since there they are part of the page as a reader sees it. Set
+ * through the CSSOM: the nonce CSP blocks the <style> that the
+ * screenshot's own `style` option would inject.
+ */
+async function elementShot(page: Page, target: string, file: string) {
+  const hideChrome = (hidden: boolean) =>
+    page.evaluate(value => {
+      for (const header of document.querySelectorAll("header")) {
+        header.style.visibility = value ? "hidden" : "";
+      }
+    }, hidden);
+  await hideChrome(true);
+  try {
+    await page
+      .locator(target)
+      .screenshot({ path: file, animations: "disabled" });
+  } finally {
+    await hideChrome(false);
+  }
+}
+
+/** The `canvas` token the page paints in, as `r g b`. */
+async function renderedCanvas(page: Page): Promise<string> {
+  return page.evaluate(() =>
+    getComputedStyle(document.documentElement)
+      .getPropertyValue("--canvas")
+      .trim()
+  );
+}
+
+/**
  * A visual and accessibility checkpoint of the current page: zero axe
- * violations in light and dark at 360 and 1280 px wide, and a full-page
- * screenshot per theme and viewport in e2e/screenshots. With `target` (a
- * CSS selector, e.g. one styleguide block or an open dialog), axe and the
- * screenshot cover that element only. The name must be declared for this
- * journey in support/checkpoints.ts.
+ * violations at 360 and 1280 px wide, and a full-page screenshot per
+ * viewport in e2e/screenshots, in light and dark (or in the themes
+ * `checkpointThemes` gives for a state only one theme can reach). Before
+ * each capture it checks the page really paints that theme's canvas, and
+ * moves the pointer to the corner, so no hover left by an earlier click
+ * shows (hover states can't be captured statically; DESIGN §10.6).
+ *
+ * With `target` (a CSS selector, e.g. one styleguide block or an open
+ * dialog), axe and the screenshot cover that element only; with `target`
+ * and `viewportOnly`, axe covers the element and the screenshot is the
+ * viewport (an open dialog with its scrim, toasts where they appear).
+ * The name must be declared for this journey in support/checkpoints.ts.
  *
  * A state that lives in a width-specific control (the account panel is the
  * header's from md and the app bar's below; the drawer becomes the sidebar
@@ -126,12 +169,15 @@ export async function checkpoint(
   const originalViewport = page.viewportSize();
   await test.step(`checkpoint ${journey}/${name}`, async () => {
     let original: ThemeState | undefined;
-    for (const theme of THEMES) {
+    for (const theme of checkpointThemes(journey, name)) {
       const before = await applyTheme(page, theme);
       original ??= before;
       for (const viewport of VIEWPORTS) {
         await page.setViewportSize(viewport);
         if (atEachViewport) await atEachViewport(page);
+        expect(await renderedCanvas(page), `${theme} canvas`).toBe(
+          channelString(resolveColour(theme, "canvas"))
+        );
         if (AXE_WIDTHS.includes(viewport.width)) {
           await expectNoAxeViolations(
             page,
@@ -139,14 +185,13 @@ export async function checkpoint(
             target
           );
         }
+        await page.mouse.move(0, 0);
         const file = path.join(
           SCREENSHOT_DIR,
           screenshotName(journey, name, theme, viewport)
         );
-        await (target
-          ? page
-              .locator(target)
-              .screenshot({ path: file, animations: "disabled" })
+        await (target && !viewportOnly
+          ? elementShot(page, target, file)
           : page.screenshot({
               path: file,
               fullPage: !viewportOnly,
