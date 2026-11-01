@@ -110,7 +110,7 @@ describe("the Pages Function", () => {
       302,
     ],
     [
-      "a cross-site POST's CSRF 403",
+      "a cross-site POST’s CSRF 403",
       () =>
         new Request(`${APP_ORIGIN}/auth/logout`, {
           method: "POST",
@@ -119,7 +119,7 @@ describe("the Pages Function", () => {
       403,
     ],
     [
-      "the no-JS theme form's 303",
+      "the no-JS theme form’s 303",
       () =>
         new Request(`${APP_ORIGIN}/resources/theme`, {
           method: "POST",
@@ -132,7 +132,7 @@ describe("the Pages Function", () => {
       303,
     ],
     [
-      "the theme route's GET 405",
+      "the theme route’s GET 405",
       () => new Request(`${APP_ORIGIN}/resources/theme`),
       405,
     ],

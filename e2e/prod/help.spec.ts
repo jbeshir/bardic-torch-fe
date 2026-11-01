@@ -207,7 +207,7 @@ test("an in-page link goes to its section, and the breadcrumb back to Help", asy
   await expect(
     main.getByRole("heading", {
       level: 2,
-      name: "Why can't I just tell you I'm the bard?",
+      name: "Why can’t I just tell you I’m the bard?",
     })
   ).toBeInViewport();
   await main
@@ -254,7 +254,7 @@ test("the licence page links the licence, the original wiki and its contributors
   ).toHaveAttribute("href", "https://creativecommons.org/licenses/by-sa/4.0/");
   await expect(
     main.getByRole("link", {
-      name: "original wiki's list of users (opens original wiki)",
+      name: "original wiki’s list of users (opens original wiki)",
     })
   ).toHaveAttribute("href", /\/wiki\/Special:ListUsers$/);
   await expect(main).toContainText(
@@ -269,7 +269,7 @@ test("an unknown help page is the 404 page", async ({ page }) => {
   await expect(
     page
       .getByRole("main")
-      .getByRole("heading", { level: 1, name: "We couldn't find that page" })
+      .getByRole("heading", { level: 1, name: "We couldn’t find that page" })
   ).toBeVisible();
 });
 

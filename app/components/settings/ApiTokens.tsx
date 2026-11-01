@@ -20,14 +20,14 @@ type Schemas = components["schemas"];
 type APIToken = Schemas["APIToken"];
 
 const CREATE_FAILED =
-  "We couldn't create a token. Check your connection and try again.";
+  "We couldn’t create a token. Check your connection and try again.";
 const REVOKE_FAILED =
-  "We couldn't revoke that token. Check your connection and try again.";
+  "We couldn’t revoke that token. Check your connection and try again.";
 
 /** What the confirm dialog calls a token: its name, or "token {prefix}…". */
 function revokeDescription(token: APIToken): string {
   const called = token.name ? `‘${token.name}’` : `token ${token.prefix}…`;
-  return `Anything using ${called} will stop working straight away. This can't be undone.`;
+  return `Anything using ${called} will stop working straight away. This can’t be undone.`;
 }
 
 type Problem = { readonly error: ProxyError; readonly fallback: string };

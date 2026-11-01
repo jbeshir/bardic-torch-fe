@@ -13,7 +13,7 @@ import type { ProxyBody, ProxyError } from "~/schemas/proxy";
 /** The request never got an answer: offline, or the connection broke. */
 export const OFFLINE: ProxyError = {
   code: "offline",
-  message: "You seem to be offline. Your changes haven't been saved yet.",
+  message: "You seem to be offline. Your changes haven’t been saved yet.",
 };
 
 /**

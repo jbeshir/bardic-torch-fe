@@ -19,8 +19,8 @@ function RootProbe() {
 type Sent = { url: string; method: string; body: string };
 
 const OFFLINE_TOAST =
-  "You seem to be offline. Your changes haven't been saved yet.";
-const SAVE_FAILED = "Couldn't save your theme. Try again.";
+  "You seem to be offline. Your changes haven’t been saved yet.";
+const SAVE_FAILED = "Couldn’t save your theme. Try again.";
 
 /** The theme route's answer to a save. */
 const saved = (theme: ThemeChoice) =>
@@ -214,7 +214,7 @@ describe("ThemeToggle", () => {
 
   it.each([
     [
-      "the theme route's own failure",
+      "the theme route’s own failure",
       async () =>
         Response.json(
           {
@@ -225,7 +225,7 @@ describe("ThemeToggle", () => {
         ),
     ],
     [
-      "a 503 the app didn't make",
+      "a 503 the app didn’t make",
       async () => new Response("", { status: 503 }),
     ],
     [
@@ -236,7 +236,7 @@ describe("ThemeToggle", () => {
           headers: { "Content-Type": "text/html" },
         }),
     ],
-    ["a 200 that isn't the route's JSON", async () => new Response("ok")],
+    ["a 200 that isn’t the route’s JSON", async () => new Response("ok")],
   ])(
     "on %s goes back to the saved choice and says so inline",
     async (_case, respond) => {

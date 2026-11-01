@@ -26,7 +26,7 @@ function RevokeToken({
         open={open}
         onClose={() => setOpen(false)}
         title="Revoke this token?"
-        description="Anything using 'Laptop MCP' will stop working straight away. This can't be undone."
+        description="Anything using ‘Laptop MCP’ will stop working straight away. This can’t be undone."
         pending={pending}
         confirm={{
           label: "Revoke token",
@@ -92,7 +92,7 @@ describe("Dialog", () => {
     expect(showModal).toHaveBeenCalledTimes(1);
     const box = screen.getByRole("dialog", { name: "Revoke this token?" });
     expect(box).toHaveAccessibleDescription(
-      "Anything using 'Laptop MCP' will stop working straight away. This can't be undone."
+      "Anything using ‘Laptop MCP’ will stop working straight away. This can’t be undone."
     );
     expect(
       screen.getByRole("heading", { level: 2, name: "Revoke this token?" })

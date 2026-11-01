@@ -24,7 +24,7 @@ const MODERATOR: Account = {
 };
 const BLOCKED: Account = {
   state: "blocked",
-  message: "Your account is blocked, so you can't make changes.",
+  message: "Your account is blocked, so you can’t make changes.",
 };
 
 function renderMenu(
@@ -155,7 +155,7 @@ describe("AccountMenu when the profile didn't load", () => {
     const summary = document.querySelector("summary") as HTMLElement;
     expect(summary).toHaveTextContent(/^Account$/);
     expect(
-      screen.getByText("We couldn't load your profile.")
+      screen.getByText("We couldn’t load your profile.")
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Try again" })
@@ -169,7 +169,7 @@ describe("AccountMenu for a blocked account", () => {
   it("says the account is blocked and offers Log out, not Settings", async () => {
     await renderMenu(BLOCKED);
     expect(
-      screen.getByText("Your account is blocked, so you can't make changes.")
+      screen.getByText("Your account is blocked, so you can’t make changes.")
     ).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Settings" })).toBeNull();
     expect(screen.getByRole("button", { name: "Log out" })).toBeInTheDocument();

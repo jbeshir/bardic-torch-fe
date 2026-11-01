@@ -51,15 +51,15 @@ describe("displayNameProblem", () => {
     ],
     [
       "Morwen\u202e",
-      "Display names can't contain control or invisible formatting characters.",
+      "Display names can’t contain control or invisible formatting characters.",
     ],
     [
       "Mor\u200bwen",
-      "Display names can't contain control or invisible formatting characters.",
+      "Display names can’t contain control or invisible formatting characters.",
     ],
     [
       "Mor\u0007wen",
-      "Display names can't contain control or invisible formatting characters.",
+      "Display names can’t contain control or invisible formatting characters.",
     ],
   ])("rejects %j: %s", (value, message) => {
     expect(displayNameProblem(value)).toBe(message);

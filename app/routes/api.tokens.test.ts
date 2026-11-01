@@ -117,7 +117,7 @@ describe("POST /api/tokens", () => {
   });
 
   it.each([
-    ["api_token_not_allowed", "API tokens can't manage API tokens."],
+    ["api_token_not_allowed", "API tokens can’t manage API tokens."],
     ["user_blocked", "Your account is blocked"],
   ])("explains 403 %s", async (code, message) => {
     upstream(upstreamError(403, code));
@@ -143,7 +143,7 @@ describe("POST /api/tokens", () => {
       ok: false,
       error: {
         code: "internal",
-        message: "Bardic Torch couldn't do that just now. Try again shortly.",
+        message: "Bardic Torch couldn’t do that just now. Try again shortly.",
       },
     });
   });

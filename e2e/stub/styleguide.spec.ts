@@ -160,7 +160,7 @@ test.describe("Dialog", () => {
     const dialog = page.getByRole("dialog", { name: "Revoke this token?" });
     await expect(dialog).toBeVisible();
     await expect(dialog).toHaveAccessibleDescription(
-      "Anything using 'Laptop MCP' will stop working straight away. This can't be undone."
+      "Anything using ‘Laptop MCP’ will stop working straight away. This can’t be undone."
     );
     await expect(dialog.getByRole("button", { name: "Cancel" })).toBeFocused();
 

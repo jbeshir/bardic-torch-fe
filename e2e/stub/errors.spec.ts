@@ -45,7 +45,7 @@ test("a /v1/me 500 leaves the page working, with the profile warning and Try aga
 
   await trigger.click();
   const panel = await accountPanel(trigger);
-  const warning = panel.getByText("Warning: We couldn't load your profile.");
+  const warning = panel.getByText("Warning: We couldn’t load your profile.");
   await expect(warning).toBeVisible();
   await expect(panel.getByRole("link", { name: "Settings" })).toBeVisible();
   await expect(panel.getByRole("button", { name: "Log out" })).toBeVisible();
@@ -108,7 +108,7 @@ test("settings route boundary on GET /v1/tokens 500 while root degrades on /v1/m
   await expect(
     main.getByRole("heading", {
       level: 1,
-      name: "We couldn't load your settings",
+      name: "We couldn’t load your settings",
     })
   ).toBeVisible();
   await expect(

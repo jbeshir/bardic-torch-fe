@@ -16,7 +16,7 @@ import { test } from "../support/test";
 test.describe.configure({ mode: "parallel" });
 test.use({ viewport: { width: 1280, height: 800 } });
 
-const OFFLINE = "You seem to be offline. Your changes haven't been saved yet.";
+const OFFLINE = "You seem to be offline. Your changes haven’t been saved yet.";
 
 const DISPLAY_NAME_RULE =
   "Use 1 to 64 characters, without control or invisible formatting characters.";
@@ -123,7 +123,7 @@ test("Log in from settings, then rename: the toast, the account menu, and the AP
     main(page)
       .getByRole("alert")
       .getByText(
-        "We couldn't save your changes. Check your connection and try again."
+        "We couldn’t save your changes. Check your connection and try again."
       )
   ).toBeVisible();
   await expect(nameField(page)).not.toHaveAttribute("aria-invalid", "true");
@@ -162,7 +162,7 @@ test("a 503 from the platform or no network ends inline in the form, keeping wha
   await expect(
     main(page).getByRole("alert").filter({
       hasText:
-        "We couldn't save your changes. Check your connection and try again.",
+        "We couldn’t save your changes. Check your connection and try again.",
     })
   ).toBeVisible();
   await expect(nameField(page)).toHaveValue("Wynn of the Long Road");
@@ -170,7 +170,7 @@ test("a 503 from the platform or no network ends inline in the form, keeping wha
     main(page).getByRole("heading", { level: 1, name: "Settings", exact: true })
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "We couldn't load your settings" })
+    page.getByRole("heading", { name: "We couldn’t load your settings" })
   ).toHaveCount(0);
   await expect(notifications(page).getByText(OFFLINE)).toHaveCount(0);
   // The shell is still the app's: the header kept the saved name.
@@ -187,7 +187,7 @@ test("a 503 from the platform or no network ends inline in the form, keeping wha
   await main(page).getByRole("button", { name: "Create token" }).click();
   await expect(
     main(page).getByText(
-      "We couldn't create a token. Check your connection and try again."
+      "We couldn’t create a token. Check your connection and try again."
     )
   ).toBeVisible();
   await expect(notifications(page).getByText(OFFLINE)).toBeVisible();
@@ -225,7 +225,7 @@ test("create a token, see it once, copy it, then revoke it after confirming", as
   const secret = main(page).getByRole("textbox", { name: "New token value" });
   await expect(secret).toBeFocused();
   await expect(
-    main(page).getByText("Token created. Copy it now — you won't see it again.")
+    main(page).getByText("Token created. Copy it now — you won’t see it again.")
   ).toBeVisible();
   const value = await secret.inputValue();
   expect(value).toMatch(/^user_api\|[0-9a-f]{64}$/);
@@ -241,7 +241,7 @@ test("create a token, see it once, copy it, then revoke it after confirming", as
   ).toBeVisible();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(value);
 
-  await main(page).getByRole("button", { name: "I've copied it" }).click();
+  await main(page).getByRole("button", { name: "I’ve copied it" }).click();
   await expect(secret).toHaveCount(0);
   expect(await page.content()).not.toContain(value);
   await expect(
@@ -255,7 +255,7 @@ test("create a token, see it once, copy it, then revoke it after confirming", as
   const dialog = page.getByRole("dialog", { name: "Revoke this token?" });
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText(
-    "Anything using ‘E2E laptop’ will stop working straight away. This can't be undone."
+    "Anything using ‘E2E laptop’ will stop working straight away. This can’t be undone."
   );
   await expect(dialog.getByRole("button", { name: "Cancel" })).toBeFocused();
   // Destructive: a press on the backdrop doesn't close it, Escape does.
@@ -291,7 +291,7 @@ test("an unnamed token is listed and confirmed by its prefix; one already gone s
   await expect(row).toBeVisible();
   const label = (await row.textContent()) ?? "";
   const prefix = /^Token ([0-9a-f]{8})…$/.exec(label)?.[1] ?? "";
-  await main(page).getByRole("button", { name: "I've copied it" }).click();
+  await main(page).getByRole("button", { name: "I’ve copied it" }).click();
 
   await tokens(page)
     .getByRole("button", { name: `Revoke token ${label}` })
@@ -386,7 +386,7 @@ test("checkpoint: profile-unavailable: /v1/me fails, so the profile says so and 
   await page.reload();
   await waitForHydration(page);
   await expect(
-    main(page).getByText(/We couldn't load your profile\./)
+    main(page).getByText(/We couldn’t load your profile\./)
   ).toBeVisible();
   await expect(nameField(page)).toHaveCount(0);
   await expect(tokens(page).getByRole("rowheader")).toHaveCount(3);

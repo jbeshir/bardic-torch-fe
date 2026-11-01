@@ -28,7 +28,7 @@ export function createPagesHandler(build: ServerBuild): PagesFunction<Env> {
     // one auth result, preventing multiple refreshes with single-use tokens.
     getLoadContext: ({ request }) => {
       const env = envOf.get(request);
-      if (!env) throw new Error("The request's environment wasn't validated");
+      if (!env) throw new Error("The request’s environment wasn’t validated");
       return { cloudflare: { env }, authCache: {} };
     },
   });

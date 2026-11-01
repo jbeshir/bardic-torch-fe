@@ -11,11 +11,11 @@ describe("NotFound", () => {
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: "We couldn't find that page",
+        name: "We couldn’t find that page",
       })
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/pages from the old wiki don't redirect here yet/)
+      screen.getByText(/pages from the old wiki don’t redirect here yet/)
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Go to the home page" })
@@ -55,7 +55,7 @@ describe("ServerError", () => {
       screen.getByRole("heading", { level: 1, name: "Something went wrong" })
     ).toBeInTheDocument();
     expect(
-      screen.getByText("That's on us, not you. Try again in a moment.")
+      screen.getByText("That’s on us, not you. Try again in a moment.")
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Try again" })

@@ -84,7 +84,7 @@ export function Selects() {
     <Specimen
       id="select"
       title="Select"
-      summary="A native select styled like Input; the options use the system picker in the page's colour scheme (DESIGN §6.7)."
+      summary="A native select styled like Input; the options use the system picker in the page’s colour scheme (DESIGN §6.7)."
     >
       <Example label="Rest, error, disabled" stack>
         <Field label="Mood">
@@ -137,7 +137,7 @@ export function Checkboxes() {
         />
         <Checkbox
           name="terms"
-          label="I have the bard's permission to link this"
+          label="I have the bard’s permission to link this"
           error="Confirm you have permission."
         />
       </Example>

@@ -48,7 +48,7 @@ export function AccountMenus() {
       <Example label="Signed in">
         <AccountMenu account={MORWEN} placement="header" />
       </Example>
-      <Example label="Profile couldn't load">
+      <Example label="Profile couldn’t load">
         <AccountMenu
           account={{ state: "profile-unavailable" }}
           placement="header"
@@ -59,7 +59,7 @@ export function AccountMenus() {
           account={{
             state: "blocked",
             message:
-              "Your account is blocked, so you can't make changes. Contact the Bardic Torch team if you think this is a mistake.",
+              "Your account is blocked, so you can’t make changes. Contact the Bardic Torch team if you think this is a mistake.",
           }}
           placement="header"
         />
@@ -91,7 +91,7 @@ export function Contents() {
     <Specimen
       id="table-of-contents"
       title="Table of contents"
-      summary="A help page's numbered contents, from four h2s (DESIGN §6.27). Folded below md."
+      summary="A help page’s numbered contents, from four h2s (DESIGN §6.27). Folded below md."
     >
       <Example label="Open" wide>
         <TableOfContents entries={contents} />
@@ -167,7 +167,7 @@ export function PageTemplate() {
                 to: wikiPageUrl("Category:Conservation Status"),
               },
             ]}
-            licence="This page is available under CC BY-SA 4.0. Adapted from 'Conservation Status' on the original Bardic Torch wiki by its contributors."
+            licence="This page is available under CC BY-SA 4.0. Adapted from ‘Conservation Status’ on the original Bardic Torch wiki by its contributors."
           >
             <h2 id={contents[0]?.id}>Low risk</h2>
             <p>

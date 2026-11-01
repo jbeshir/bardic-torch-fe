@@ -271,7 +271,7 @@ describe("display name", () => {
     ["x".repeat(65), "Display names can be up to 64 characters."],
     [
       "Morwen\u202e",
-      "Display names can't contain control or invisible formatting characters.",
+      "Display names can’t contain control or invisible formatting characters.",
     ],
   ])("checks %j in the browser before sending: %s", async (value, message) => {
     const user = userEvent.setup();
@@ -321,19 +321,19 @@ describe("display name", () => {
       )
     );
     expect(nameField()).toHaveFocus();
-    expect(screen.queryByText(/We couldn't save/)).toBeNull();
+    expect(screen.queryByText(/We couldn’t save/)).toBeNull();
   });
 
   it.each([
     [
       500,
       "internal",
-      "We couldn't save your changes. Check your connection and try again.",
+      "We couldn’t save your changes. Check your connection and try again.",
     ],
     [
       403,
       "user_blocked",
-      "Your account is blocked, so you can't make changes. Contact the Bardic Torch team if you think this is a mistake.",
+      "Your account is blocked, so you can’t make changes. Contact the Bardic Torch team if you think this is a mistake.",
     ],
   ] as const)("a %i %s is a danger alert", async (status, code, message) => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -408,7 +408,7 @@ describe("creating a token", () => {
       name: "New token value",
     });
     expect(
-      screen.getByText("Token created. Copy it now — you won't see it again.")
+      screen.getByText("Token created. Copy it now — you won’t see it again.")
     ).toBeInTheDocument();
     const value = (secret as HTMLTextAreaElement).value;
     expect(value).toMatch(/^user_api\|[0-9a-f]{64}$/);
@@ -431,7 +431,7 @@ describe("creating a token", () => {
     expect(screen.getByRole("button", { name: "Copied" })).toBeInTheDocument();
     expect(screen.getByText("Token copied")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "I've copied it" }));
+    await user.click(screen.getByRole("button", { name: "I’ve copied it" }));
     expect(
       screen.queryByRole("textbox", { name: "New token value" })
     ).toBeNull();
@@ -453,7 +453,7 @@ describe("creating a token", () => {
 
     expect(
       await screen.findByText(
-        "Your browser didn't let us copy it. The token is selected: copy it with your keyboard or menu."
+        "Your browser didn’t let us copy it. The token is selected: copy it with your keyboard or menu."
       )
     ).not.toHaveClass("sr-only");
     expect(secret).toHaveFocus();
@@ -524,12 +524,12 @@ describe("creating a token", () => {
     [
       403,
       "api_token_not_allowed",
-      "API tokens can't manage API tokens. Log in on the website to do this.",
+      "API tokens can’t manage API tokens. Log in on the website to do this.",
     ],
     [
       500,
       "internal",
-      "We couldn't create a token. Check your connection and try again.",
+      "We couldn’t create a token. Check your connection and try again.",
     ],
   ] as const)("a %i %s is a danger alert", async (status, code, message) => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -560,7 +560,7 @@ describe("revoking a token", () => {
   it("confirms with a destructive dialog, removes the token, says so and focuses the heading", async () => {
     const { user, dialog } = await openRevoke("Laptop scripts");
     expect(dialog).toHaveAccessibleDescription(
-      "Anything using ‘Laptop scripts’ will stop working straight away. This can't be undone."
+      "Anything using ‘Laptop scripts’ will stop working straight away. This can’t be undone."
     );
     expect(
       within(dialog).getByRole("button", { name: "Cancel" })
@@ -606,7 +606,7 @@ describe("revoking a token", () => {
   it("calls an unnamed token by its prefix", async () => {
     const { dialog } = await openRevoke("Token 9c1e7d3b…");
     expect(dialog).toHaveAccessibleDescription(
-      "Anything using token 9c1e7d3b… will stop working straight away. This can't be undone."
+      "Anything using token 9c1e7d3b… will stop working straight away. This can’t be undone."
     );
   });
 
@@ -647,7 +647,7 @@ describe("revoking a token", () => {
 
     expect(
       await screen.findByText(
-        "We couldn't revoke that token. Check your connection and try again."
+        "We couldn’t revoke that token. Check your connection and try again."
       )
     ).toBeInTheDocument();
     expect(contributor().tokens).toHaveLength(3);
@@ -660,7 +660,7 @@ describe("when the app can't be reached", () => {
   // ends inline in the form, with the typed input kept; never in the
   // settings or root error boundary.
   const OFFLINE =
-    "You seem to be offline. Your changes haven't been saved yet.";
+    "You seem to be offline. Your changes haven’t been saved yet.";
   const PLATFORM = {
     "a 503 from the platform": async () =>
       new Response("<!doctype html><title>Service unavailable</title>", {
@@ -677,7 +677,7 @@ describe("when the app can't be reached", () => {
 
   function expectNoBoundary() {
     expect(
-      screen.queryByRole("heading", { name: "We couldn't load your settings" })
+      screen.queryByRole("heading", { name: "We couldn’t load your settings" })
     ).toBeNull();
     expect(
       screen.getByRole("heading", { level: 1, name: "Settings" })
@@ -705,7 +705,7 @@ describe("when the app can't be reached", () => {
       await user.click(screen.getByRole("button", { name: "Save changes" }));
 
       const alert = await screen.findByText(
-        "We couldn't save your changes. Check your connection and try again."
+        "We couldn’t save your changes. Check your connection and try again."
       );
       expect(alert.closest('[role="alert"]')).not.toBeNull();
       expect(nameField()).toHaveValue("Wynn of the Long Road");
@@ -734,7 +734,7 @@ describe("when the app can't be reached", () => {
       await user.click(screen.getByRole("button", { name: "Create token" }));
 
       const alert = await screen.findByText(
-        "We couldn't create a token. Check your connection and try again."
+        "We couldn’t create a token. Check your connection and try again."
       );
       expect(alert.closest('[role="alert"]')).not.toBeNull();
       expect(tokenNameField()).toHaveValue("Laptop MCP");
@@ -765,7 +765,7 @@ describe("when the app can't be reached", () => {
 
       expect(
         await screen.findByText(
-          "We couldn't revoke that token. Check your connection and try again."
+          "We couldn’t revoke that token. Check your connection and try again."
         )
       ).toBeInTheDocument();
       expect(screen.queryByRole("dialog")).toBeNull();
@@ -789,7 +789,7 @@ describe("settings error boundary", () => {
     expect(
       await screen.findByRole("heading", {
         level: 1,
-        name: "We couldn't load your settings",
+        name: "We couldn’t load your settings",
       })
     ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Try again" }));

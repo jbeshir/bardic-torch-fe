@@ -65,7 +65,7 @@ function AccountPanel({
       ) : null}
       {account.state === "profile-unavailable" ? (
         <Alert tone="warning" actions={<TryAgain size="sm" />}>
-          We couldn&apos;t load your profile.
+          We couldn’t load your profile.
         </Alert>
       ) : null}
       {account.state === "blocked" ? (

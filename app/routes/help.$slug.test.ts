@@ -53,7 +53,7 @@ describe("/help/:slug", () => {
     const response = await get("/help/lyrics");
     expect(response.status).toBe(404);
     const html = await response.text();
-    expect(mainOf(html)).toContain("We couldn&#x27;t find that page");
+    expect(mainOf(html)).toContain("We couldn’t find that page");
     expect(html).toContain("<title>Page not found · Bardic Torch</title>");
     expect(html).toContain('<meta name="robots" content="noindex"/>');
     expect(html).toContain("<footer");

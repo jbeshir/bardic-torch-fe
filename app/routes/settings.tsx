@@ -231,7 +231,7 @@ export default function Settings() {
         {account.state === "signed-in" ? (
           <ProfileForm user={account.user} />
         ) : (
-          <SectionError title="We couldn't load your profile.">
+          <SectionError title="We couldn’t load your profile.">
             Your display name can be changed once it loads.
           </SectionError>
         )}
@@ -256,6 +256,6 @@ export function ErrorBoundary() {
   const error = useRouteError();
   const reference = useErrorReference(error, true);
   return (
-    <ServerError title="We couldn't load your settings" reference={reference} />
+    <ServerError title="We couldn’t load your settings" reference={reference} />
   );
 }

@@ -52,7 +52,7 @@ describe("Alert", () => {
 
   it("is not a live region when rendered with the page", () => {
     render(
-      <Alert tone="danger" title="We couldn't save your changes">
+      <Alert tone="danger" title="We couldn’t save your changes">
         Check your connection and try again.
       </Alert>
     );
@@ -85,7 +85,7 @@ describe("Alert", () => {
     render(
       <Alert
         tone="danger"
-        title="We couldn't load your profile"
+        title="We couldn’t load your profile"
         actions={<button type="button">Try again</button>}
       >
         Try again in a moment.

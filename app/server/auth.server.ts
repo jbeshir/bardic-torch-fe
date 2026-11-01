@@ -168,7 +168,7 @@ export async function revokeRefreshToken(
       "token revocation"
     );
   } catch (error) {
-    console.error("Couldn't revoke the refresh token at logout:", error);
+    console.error("Couldn’t revoke the refresh token at logout:", error);
   }
 }
 
@@ -237,7 +237,7 @@ async function refreshTokens(
       console.warn("Auth0 refused the refresh token:", error);
       return { kind: "rejected" };
     }
-    console.error("Couldn't refresh the access token:", error);
+    console.error("Couldn’t refresh the access token:", error);
     return { kind: "unavailable" };
   }
 }

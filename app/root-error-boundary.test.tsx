@@ -74,7 +74,7 @@ describe("root ErrorBoundary", () => {
     expect(
       await screen.findByRole("heading", {
         level: 1,
-        name: "We couldn't find that page",
+        name: "We couldn’t find that page",
       })
     ).toBeInTheDocument();
     expect(sentry.captured).toEqual([]);

@@ -22,7 +22,7 @@ function Page() {
       <Raise tone="info" message="Token copied." />
       <Raise
         tone="danger"
-        message="You seem to be offline. Your changes haven't been saved yet."
+        message="You seem to be offline. Your changes haven’t been saved yet."
       />
     </ToastProvider>
   );
@@ -77,14 +77,14 @@ describe("Toast region", () => {
     render(<Page />);
     raise("Display name saved.");
     raise("Token copied.");
-    raise("You seem to be offline. Your changes haven't been saved yet.");
+    raise("You seem to be offline. Your changes haven’t been saved yet.");
     const status = within(region()).getByRole("status");
     const alert = within(region()).getByRole("alert");
     expect(status).toHaveTextContent(
       "Success: Display name saved.Information: Token copied."
     );
     expect(alert).toHaveTextContent(
-      "Error: You seem to be offline. Your changes haven't been saved yet."
+      "Error: You seem to be offline. Your changes haven’t been saved yet."
     );
   });
 
@@ -129,14 +129,14 @@ describe("Toast region", () => {
 
   it("never dismisses an error on its own", () => {
     render(<Page />);
-    raise("You seem to be offline. Your changes haven't been saved yet.");
+    raise("You seem to be offline. Your changes haven’t been saved yet.");
     act(() => vi.advanceTimersByTime(60_000));
     expect(screen.getByText(/^You seem to be offline/)).toBeVisible();
   });
 
   it("closes with its Dismiss notification button", () => {
     render(<Page />);
-    raise("You seem to be offline. Your changes haven't been saved yet.");
+    raise("You seem to be offline. Your changes haven’t been saved yet.");
     const dismiss = screen.getByRole("button", {
       name: "Dismiss notification",
     });
@@ -186,7 +186,7 @@ describe("Toast region", () => {
 
   it("shows at most three, dropping the oldest that would leave anyway", () => {
     render(<Page />);
-    raise("You seem to be offline. Your changes haven't been saved yet.");
+    raise("You seem to be offline. Your changes haven’t been saved yet.");
     raise("Display name saved.");
     raise("Token copied.");
     raise("Token copied.");
@@ -217,7 +217,7 @@ describe("Toast region", () => {
     await expectSameMarkupInBothThemes(() => {
       render(<Page />);
       raise("Display name saved.");
-      raise("You seem to be offline. Your changes haven't been saved yet.");
+      raise("You seem to be offline. Your changes haven’t been saved yet.");
     });
   });
 });

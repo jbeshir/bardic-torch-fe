@@ -43,10 +43,10 @@ export function TokenReveal({
   return (
     <Alert
       tone="success"
-      title="Token created. Copy it now — you won't see it again."
+      title="Token created. Copy it now — you won’t see it again."
       actions={
         <Button variant="ghost" onClick={onDismiss}>
-          I&apos;ve copied it
+          I’ve copied it
         </Button>
       }
     >
@@ -70,7 +70,7 @@ export function TokenReveal({
       <p role="status" className={copy === "failed" ? "mt-2" : "sr-only"}>
         {copy === "copied" ? "Token copied" : null}
         {copy === "failed"
-          ? "Your browser didn't let us copy it. The token is selected: copy it with your keyboard or menu."
+          ? "Your browser didn’t let us copy it. The token is selected: copy it with your keyboard or menu."
           : null}
       </p>
     </Alert>

@@ -12,7 +12,7 @@ describe("ProblemAlert", () => {
           code: "token_limit_reached",
           message: "You already have 10 API tokens.",
         }}
-        fallback="We couldn't create a token."
+        fallback="We couldn’t create a token."
       />
     );
     expect(
@@ -27,14 +27,14 @@ describe("ProblemAlert", () => {
       <ProblemAlert
         error={{
           code: "internal",
-          message: "Bardic Torch couldn't do that just now.",
+          message: "Bardic Torch couldn’t do that just now.",
         }}
-        fallback="We couldn't create a token. Check your connection and try again."
+        fallback="We couldn’t create a token. Check your connection and try again."
       />
     );
     expect(
       screen.getByText(
-        "We couldn't create a token. Check your connection and try again."
+        "We couldn’t create a token. Check your connection and try again."
       )
     ).toBeInTheDocument();
   });
@@ -45,9 +45,9 @@ describe("ProblemAlert", () => {
         error={{
           code: "unauthenticated",
           message:
-            "You've been signed out. Log in again and we'll bring you back here.",
+            "You’ve been signed out. Log in again and we’ll bring you back here.",
         }}
-        fallback="We couldn't save your changes."
+        fallback="We couldn’t save your changes."
       />
     );
     expect(screen.getByRole("link", { name: "Log in" })).toHaveAttribute(

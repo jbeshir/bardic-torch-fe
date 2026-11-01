@@ -46,7 +46,7 @@ export function displayNameProblem(value: string | undefined): string | null {
   if (name === "") return DISPLAY_NAME_MISSING;
   if (characterCount(name) > DISPLAY_NAME_MAX) return DISPLAY_NAME_TOO_LONG;
   if (CONTROL_OR_FORMAT.test(name)) {
-    return "Display names can't contain control or invisible formatting characters.";
+    return "Display names can’t contain control or invisible formatting characters.";
   }
   return null;
 }

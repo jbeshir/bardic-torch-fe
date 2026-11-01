@@ -18,7 +18,7 @@ import {
 import { serveMocks } from "~/test/msw";
 
 const { server } = serveMocks();
-const TRY_AGAIN = "Bardic Torch couldn't do that just now. Try again shortly.";
+const TRY_AGAIN = "Bardic Torch couldn’t do that just now. Try again shortly.";
 
 /** How to call each FE1 operation, for table-driven error mapping. */
 const OPERATIONS = {
@@ -140,7 +140,7 @@ describe("authentication", () => {
       error: {
         code: "unauthenticated",
         message:
-          "You've been signed out. Log in again and we'll bring you back here.",
+          "You’ve been signed out. Log in again and we’ll bring you back here.",
       },
     });
     expect(result.headers.get("Set-Cookie")).toMatch(
@@ -230,7 +230,7 @@ describe("responses", () => {
       "user_blocked",
       {
         message:
-          "Your account is blocked, so you can't make changes. Contact the Bardic Torch team if you think this is a mistake.",
+          "Your account is blocked, so you can’t make changes. Contact the Bardic Torch team if you think this is a mistake.",
       },
     ],
     [
@@ -239,7 +239,7 @@ describe("responses", () => {
       "api_token_not_allowed",
       {
         message:
-          "API tokens can't manage API tokens. Log in on the website to do this.",
+          "API tokens can’t manage API tokens. Log in on the website to do this.",
       },
     ],
     [
@@ -266,7 +266,7 @@ describe("responses", () => {
       "not_found",
       {
         message:
-          "Bardic Torch couldn't find what you asked for. Reload the page and try again.",
+          "Bardic Torch couldn’t find what you asked for. Reload the page and try again.",
       },
     ],
     [

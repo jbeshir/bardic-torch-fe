@@ -36,7 +36,7 @@ describe("sendForm", () => {
   it.each([
     ["a success", 200, { ok: true, data: { id: "t1" } }],
     [
-      "the proxy's own failure",
+      "the proxy’s own failure",
       409,
       { ok: false, error: { code: "token_limit_reached", message: "Ten." } },
     ],
@@ -48,15 +48,15 @@ describe("sendForm", () => {
   it.each([
     ["a bare 503 from the platform", () => new Response("", { status: 503 })],
     [
-      "a gateway's HTML error page",
+      "a gateway’s HTML error page",
       () =>
         new Response("<!doctype html><title>502</title>", {
           status: 502,
           headers: { "Content-Type": "text/html" },
         }),
     ],
-    ["a 200 that isn't JSON", () => new Response("ok")],
-    ["JSON that isn't a proxy body", () => Response.json({ data: 1 })],
+    ["a 200 that isn’t JSON", () => new Response("ok")],
+    ["JSON that isn’t a proxy body", () => Response.json({ data: 1 })],
     ["a success without data", () => Response.json({ ok: true })],
     [
       "a failure without a message",
@@ -74,7 +74,7 @@ describe("sendForm", () => {
       error: OFFLINE,
     });
     expect(OFFLINE.message).toBe(
-      "You seem to be offline. Your changes haven't been saved yet."
+      "You seem to be offline. Your changes haven’t been saved yet."
     );
   });
 

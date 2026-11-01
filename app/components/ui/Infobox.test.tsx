@@ -135,7 +135,7 @@ describe("Infobox", () => {
         error={{ retry: <button type="button">Try again</button> }}
       />
     );
-    expect(screen.getByText("Couldn't load these details.")).toBeVisible();
+    expect(screen.getByText("Couldn’t load these details.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
     expect(screen.queryByRole("term")).toBeNull();
   });

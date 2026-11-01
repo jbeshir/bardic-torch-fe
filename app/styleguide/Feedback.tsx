@@ -29,11 +29,11 @@ const ALERTS: readonly {
   {
     tone: "warning",
     title: "This link may be broken",
-    body: "It didn't answer the last time we checked.",
+    body: "It didn’t answer the last time we checked.",
   },
   {
     tone: "danger",
-    title: "We couldn't save your changes",
+    title: "We couldn’t save your changes",
     body: "Check your connection and try again.",
   },
   {
@@ -82,7 +82,7 @@ export function Alerts() {
         <Alert tone="warning">Changing your settings needs JavaScript.</Alert>
         <Alert
           tone="danger"
-          title="We couldn't load your profile"
+          title="We couldn’t load your profile"
           actions={
             <>
               <TryAgain size="sm" />
@@ -92,7 +92,7 @@ export function Alerts() {
             </>
           }
         >
-          The account service didn&apos;t answer.
+          The account service didn’t answer.
         </Alert>
       </Example>
       <Example label="Banner (full-bleed below md)" wide>
@@ -140,17 +140,17 @@ export function ErrorStates() {
     <Specimen
       id="error-state"
       title="Error state"
-      summary="A region that failed, and the body of the 404 and error pages (DESIGN §6.16, §10.4, §10.5). On a real page the heading is the page's h1."
+      summary="A region that failed, and the body of the 404 and error pages (DESIGN §6.16, §10.4, §10.5). On a real page the heading is the page’s h1."
     >
       <Example label="Section failed to load" stack>
-        <SectionError title="We couldn't load your profile">
-          The account service didn&apos;t answer. Everything else still works.
+        <SectionError title="We couldn’t load your profile">
+          The account service didn’t answer. Everything else still works.
         </SectionError>
       </Example>
       <Example label="Page not found" wide>
         <div className="w-full rounded-lg border border-border bg-surface px-4 md:px-8">
           <ErrorState
-            title="We couldn't find that page"
+            title="We couldn’t find that page"
             art="missing"
             actions={
               <>
@@ -164,7 +164,7 @@ export function ErrorStates() {
             }
           >
             It may have moved, or the link may be mistyped. Bardic Torch is new,
-            so pages from the old wiki don&apos;t redirect here yet.
+            so pages from the old wiki don’t redirect here yet.
           </ErrorState>
         </div>
       </Example>
@@ -180,8 +180,8 @@ export function ErrorStates() {
               </>
             }
           >
-            That&apos;s on us, not you. Try again in a moment. If it keeps
-            happening, let us know and include the reference below.
+            That’s on us, not you. Try again in a moment. If it keeps happening,
+            let us know and include the reference below.
           </ErrorState>
         </div>
       </Example>
@@ -260,7 +260,7 @@ export function Toasts() {
             show({
               tone: "danger",
               message:
-                "You seem to be offline. Your changes haven't been saved yet.",
+                "You seem to be offline. Your changes haven’t been saved yet.",
             })
           }
         >

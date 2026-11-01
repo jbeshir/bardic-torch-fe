@@ -47,7 +47,7 @@ function RevokeDemo() {
         open={open}
         onClose={() => setOpen(false)}
         title="Revoke this token?"
-        description="Anything using 'Laptop MCP' will stop working straight away. This can't be undone."
+        description="Anything using ‘Laptop MCP’ will stop working straight away. This can’t be undone."
         pending={pending}
         confirm={{
           label: "Revoke token",

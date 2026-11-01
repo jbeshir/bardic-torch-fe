@@ -73,7 +73,7 @@ describe("root loader", () => {
     const page = await get("/", await contributor());
     expect(page.status).toBe(200);
     const html = await page.text();
-    expect(html).toContain("We couldn&#x27;t load your profile.");
+    expect(html).toContain("We couldn’t load your profile.");
     expect(html).toContain("<h1");
   });
 
@@ -221,7 +221,7 @@ describe("root error boundary", () => {
     const response = await get("/gone/old-page");
     expect(response.status).toBe(404);
     const html = await response.text();
-    expect(html).toContain("We couldn&#x27;t find that page");
+    expect(html).toContain("We couldn’t find that page");
     expect(html).toContain("index.php?search=old+page");
     expect(html).toContain("<title>Page not found · Bardic Torch</title>");
   });

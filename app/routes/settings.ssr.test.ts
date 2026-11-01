@@ -99,7 +99,7 @@ describe("/settings document", () => {
     blocked.blocked = true;
     const html = await (await get("/settings", await signedIn())).text();
     expect(html).toContain(
-      "Your account is blocked, so you can&#x27;t make changes."
+      "Your account is blocked, so you can’t make changes."
     );
     expect(html).not.toContain('name="display_name"');
     expect(html).not.toContain('name="name"');
@@ -109,7 +109,7 @@ describe("/settings document", () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     fail("getMe", 500, "internal");
     const html = await (await get("/settings", await signedIn())).text();
-    expect(html).toContain("We couldn&#x27;t load your profile.");
+    expect(html).toContain("We couldn’t load your profile.");
     expect(html).not.toContain('name="display_name"');
     expect(html).toContain(">Laptop scripts</th>");
   });
@@ -120,7 +120,7 @@ describe("/settings document", () => {
     expect(response.status).toBe(200);
     const html = await response.text();
     expect(html).toContain(
-      "API tokens can&#x27;t manage API tokens. Log in on the website to do this."
+      "API tokens can’t manage API tokens. Log in on the website to do this."
     );
     expect(html).toContain('value="Morwen of the Marches"');
   });
@@ -139,7 +139,7 @@ describe("/settings route error boundary", () => {
       expect(response.status).toBe(500);
       expect(response.headers.get("Cache-Control")).toBe("no-store");
       const html = await response.text();
-      expect(html).toContain("We couldn&#x27;t load your settings");
+      expect(html).toContain("We couldn’t load your settings");
       expect(html).toContain("Try again");
       expect(html).toContain("Go to the home page");
       // The shell and the root's data are still there.
@@ -157,8 +157,8 @@ describe("/settings route error boundary", () => {
     const response = await get("/settings", await signedIn());
     expect(response.status).toBe(500);
     const html = await response.text();
-    expect(html).toContain("We couldn&#x27;t load your settings");
-    expect(html).toContain("We couldn&#x27;t load your profile.");
+    expect(html).toContain("We couldn’t load your settings");
+    expect(html).toContain("We couldn’t load your profile.");
     expect(html).toContain('id="site-nav"');
   });
 
@@ -172,7 +172,7 @@ describe("/settings route error boundary", () => {
     expect(response.status).toBe(500);
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     expect(await response.json()).toEqual({
-      message: "Bardic Torch couldn't do that just now. Try again shortly.",
+      message: "Bardic Torch couldn’t do that just now. Try again shortly.",
     });
   });
 
@@ -214,8 +214,6 @@ describe("/settings route error boundary", () => {
     });
     const response = await get("/settings", await signedIn());
     expect(response.status).toBe(502);
-    expect(await response.text()).toContain(
-      "We couldn&#x27;t load your settings"
-    );
+    expect(await response.text()).toContain("We couldn’t load your settings");
   });
 });

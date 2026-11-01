@@ -39,7 +39,7 @@ function ServerError({ reference }: { reference?: string }) {
         </>
       }
     >
-      That&apos;s on us, not you. Try again in a moment.
+      That’s on us, not you. Try again in a moment.
     </ErrorState>
   );
 }
@@ -50,7 +50,7 @@ describe("ErrorState", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Something went wrong" })
     ).toBeInTheDocument();
-    expect(screen.getByText(/That's on us, not you/)).toHaveClass(
+    expect(screen.getByText(/That’s on us, not you/)).toHaveClass(
       "text-fg-muted"
     );
     expect(screen.getByRole("button", { name: "Try again" })).toHaveClass(
@@ -83,7 +83,7 @@ describe("ErrorState", () => {
     });
     await renderWithRouter(
       <ErrorState
-        title="We couldn't find that page"
+        title="We couldn’t find that page"
         art="missing"
         actions={<ButtonLink to="/">Go to the home page</ButtonLink>}
       >
@@ -166,14 +166,14 @@ describe("TryAgain", () => {
 describe("SectionError", () => {
   it("is a danger alert with the cause and a small Try again", async () => {
     await renderWithRouter(
-      <SectionError title="We couldn't load your profile">
-        The account service didn&apos;t answer.
+      <SectionError title="We couldn’t load your profile">
+        The account service didn’t answer.
       </SectionError>
     );
     expect(
-      screen.getByText("We couldn't load your profile").closest(".bg-danger-bg")
+      screen.getByText("We couldn’t load your profile").closest(".bg-danger-bg")
     ).not.toBeNull();
-    expect(screen.getByText(/didn't answer/)).toBeVisible();
+    expect(screen.getByText(/didn’t answer/)).toBeVisible();
     expect(screen.getByRole("button", { name: "Try again" })).toHaveClass(
       "min-h-9"
     );

@@ -15,7 +15,7 @@ test("an unknown URL is a 404 page inside the shell", async ({ page }) => {
   await expect(page).toHaveTitle("Page not found · Bardic Torch");
   const main = page.getByRole("main");
   await expect(
-    main.getByRole("heading", { level: 1, name: "We couldn't find that page" })
+    main.getByRole("heading", { level: 1, name: "We couldn’t find that page" })
   ).toBeVisible();
   await expect(
     main.getByRole("link", { name: "Go to the home page" })
@@ -45,7 +45,7 @@ test("an unexpected error is the standalone error page, and Try again recovers",
   await expect(
     page.getByRole("banner").getByRole("link", { name: "Bardic Torch" })
   ).toHaveAttribute("href", "/");
-  await expect(main).toContainText("That's on us, not you.");
+  await expect(main).toContainText("That’s on us, not you.");
   // Without Sentry there is no reference to quote.
   await expect(main).not.toContainText("reference");
   await expect(
@@ -80,6 +80,6 @@ test("the styleguide is not part of the production build", async ({ page }) => {
   const response = await page.goto("/styleguide");
   expect(response?.status()).toBe(404);
   await expect(
-    page.getByRole("heading", { level: 1, name: "We couldn't find that page" })
+    page.getByRole("heading", { level: 1, name: "We couldn’t find that page" })
   ).toBeVisible();
 });

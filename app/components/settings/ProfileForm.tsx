@@ -16,7 +16,7 @@ import { ProblemAlert } from "./ProblemAlert";
 import { fieldMessage, useFetcherResult } from "./results";
 
 const SAVE_FAILED =
-  "We couldn't save your changes. Check your connection and try again.";
+  "We couldn’t save your changes. Check your connection and try again.";
 
 /**
  * The display name form (DESIGN §10.3). It checks the name with the API's

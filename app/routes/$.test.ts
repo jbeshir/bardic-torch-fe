@@ -17,7 +17,7 @@ describe("$ (any other address)", () => {
       html.indexOf('<main id="content"'),
       html.indexOf("</main>")
     );
-    expect(main).toContain("We couldn&#x27;t find that page");
+    expect(main).toContain("We couldn’t find that page");
     expect(html).toContain('<nav id="site-nav" aria-label="Site"');
     expect(html).toContain("<footer");
     expect(html).toContain("<title>Page not found · Bardic Torch</title>");

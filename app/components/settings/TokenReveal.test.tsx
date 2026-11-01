@@ -10,7 +10,7 @@ describe("TokenReveal", () => {
   it("says it is shown once, and puts focus on the selected value", () => {
     render(<TokenReveal secret={SECRET} onDismiss={() => undefined} />);
     expect(
-      screen.getByText("Token created. Copy it now — you won't see it again.")
+      screen.getByText("Token created. Copy it now — you won’t see it again.")
     ).toBeInTheDocument();
     const value = screen.getByRole("textbox", { name: "New token value" });
     expect(value).toHaveValue(SECRET);
@@ -40,7 +40,7 @@ describe("TokenReveal", () => {
     await user.click(screen.getByRole("button", { name: "Copy" }));
     const status = screen.getByRole("status");
     expect(status).toHaveTextContent(
-      "Your browser didn't let us copy it. The token is selected: copy it with your keyboard or menu."
+      "Your browser didn’t let us copy it. The token is selected: copy it with your keyboard or menu."
     );
     expect(status).not.toHaveClass("sr-only");
     expect(
@@ -57,7 +57,7 @@ describe("TokenReveal", () => {
     expect(screen.getByRole("button", { name: "Copy" })).toHaveFocus();
     await user.tab();
     expect(
-      screen.getByRole("button", { name: "I've copied it" })
+      screen.getByRole("button", { name: "I’ve copied it" })
     ).toHaveFocus();
     await user.keyboard("{Enter}");
     expect(onDismiss).toHaveBeenCalledTimes(1);

@@ -97,15 +97,15 @@ describe("updateMeFormSchema", () => {
     ],
     [
       { display_name: "Morwen\u202e" },
-      "Display names can't contain control or invisible formatting characters.",
+      "Display names can’t contain control or invisible formatting characters.",
     ],
     [
       { display_name: "Mor\u0000wen" },
-      "Display names can't contain control or invisible formatting characters.",
+      "Display names can’t contain control or invisible formatting characters.",
     ],
     [
       { display_name: "Mor\u00adwen" },
-      "Display names can't contain control or invisible formatting characters.",
+      "Display names can’t contain control or invisible formatting characters.",
     ],
   ])("rejects %j", (input, message) => {
     expect(messages(updateMeFormSchema.safeParse(input))).toEqual([message]);

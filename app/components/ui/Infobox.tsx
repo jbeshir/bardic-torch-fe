@@ -128,7 +128,7 @@ export function Infobox({
             aria-hidden="true"
             className="shrink-0 text-danger-icon"
           />
-          <span>Couldn&apos;t load these details.</span>
+          <span>Couldn’t load these details.</span>
           {error.retry}
         </p>
       ) : null}

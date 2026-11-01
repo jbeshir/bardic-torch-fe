@@ -110,17 +110,17 @@ describe("PATCH /api/me", () => {
     [
       "a right-to-left override (Cf)",
       "Morwen\u202e",
-      "Display names can't contain control or invisible formatting characters.",
+      "Display names can’t contain control or invisible formatting characters.",
     ],
     [
       "a zero-width space (Cf)",
       "Mor\u200bwen",
-      "Display names can't contain control or invisible formatting characters.",
+      "Display names can’t contain control or invisible formatting characters.",
     ],
     [
       "a control character (Cc)",
       "Mor\u0007wen",
-      "Display names can't contain control or invisible formatting characters.",
+      "Display names can’t contain control or invisible formatting characters.",
     ],
   ])("rejects a %s name with a field error", async (_label, name, message) => {
     const response = await patch(

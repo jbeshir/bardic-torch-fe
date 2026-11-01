@@ -1499,6 +1499,7 @@ The head is the h1 "Settings" with no tab row. Sections are separated by h2 plus
 - **Sentence case** everywhere: "Create token", "FAQ for bards", "Licence & attribution". Proper nouns keep their capitals (Bardic Torch, SCA, Creative Commons). Never use Title Case or ALL CAPS in source text. The `label-caps` style is CSS-only, and screen readers read the sentence-case source.
 - **Address the reader as "you" and the project as "we".**
 - **Buttons start with a verb** and say what will happen: "Save changes", "Revoke token". Don't use "OK", "Submit" or "Yes".
+- **Typographic punctuation in copy:** the apostrophe ’ (U+2019), and British quotes ‘…’ with “…” inside them; never the straight `'` or `"` (this document's own examples use straight quotes). This covers JSX text, strings shown in the UI or logs, and the help pages' Markdown outside code. `test/typographic-quotes.test.ts` enforces it.
 - **Use numbers as numerals, and dates as "3 Oct 2026".** Relative dates ("3 days ago") always have the absolute date in a `<time datetime>` `title`. Use the `en-GB` locale for formatting.
 - **Respect bards.** Credit names exactly as the bard uses them. Say "creator's wishes", never "restrictions" in user-facing text, apart from the formal status name "Restricted".
 - Don't use exclamation marks, except in a thank-you.

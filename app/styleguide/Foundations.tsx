@@ -206,7 +206,7 @@ export function SpacingAndShape() {
     <Specimen
       id="spacing"
       title="Spacing, radii and elevation"
-      summary="Tailwind's 4 px spacing scale, the radius tokens and the three shadows (DESIGN §4). In dark, raised things keep a border."
+      summary="Tailwind’s 4 px spacing scale, the radius tokens and the three shadows (DESIGN §4). In dark, raised things keep a border."
     >
       <Example label="Spacing" wide>
         <ul role="list" className="grid gap-2">

@@ -97,7 +97,7 @@ type ApiRequest<T> = {
  */
 const UPSTREAM_TIMEOUT_MS = 10_000;
 
-const TRY_AGAIN = "Bardic Torch couldn't do that just now. Try again shortly.";
+const TRY_AGAIN = "Bardic Torch couldn’t do that just now. Try again shortly.";
 
 const SIGNED_OUT: ApiError = {
   code: "unauthenticated",
@@ -114,19 +114,19 @@ function upstreamError(
       return {
         code,
         message:
-          "You've been signed out. Log in again and we'll bring you back here.",
+          "You’ve been signed out. Log in again and we’ll bring you back here.",
       };
     case "user_blocked":
       return {
         code,
         message:
-          "Your account is blocked, so you can't make changes. Contact the Bardic Torch team if you think this is a mistake.",
+          "Your account is blocked, so you can’t make changes. Contact the Bardic Torch team if you think this is a mistake.",
       };
     case "api_token_not_allowed":
       return {
         code,
         message:
-          "API tokens can't manage API tokens. Log in on the website to do this.",
+          "API tokens can’t manage API tokens. Log in on the website to do this.",
       };
     case "token_limit_reached":
       return {
@@ -143,7 +143,7 @@ function upstreamError(
         message:
           operationId === "revokeAPIToken"
             ? "That token no longer exists. Reload the page to see your current tokens."
-            : "Bardic Torch couldn't find what you asked for. Reload the page and try again.",
+            : "Bardic Torch couldn’t find what you asked for. Reload the page and try again.",
       };
     case "conflict":
       return {
@@ -271,7 +271,7 @@ async function callApi<T>(
       502,
       {
         code: "upstream_unavailable",
-        message: "We couldn't reach Bardic Torch. Try again shortly.",
+        message: "We couldn’t reach Bardic Torch. Try again shortly.",
       },
       headers
     );
@@ -382,7 +382,7 @@ async function readFormBody<S extends z.ZodTypeAny>(
   if (text === undefined) {
     return failure(400, {
       code: "invalid_request",
-      message: "The form didn't arrive in full. Try again.",
+      message: "The form didn’t arrive in full. Try again.",
     });
   }
 

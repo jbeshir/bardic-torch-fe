@@ -164,7 +164,7 @@ describe("/styleguide", () => {
       accounts.getByText("Account: Morwen of the Marches")
     ).toBeInTheDocument();
     expect(
-      accounts.getByText("We couldn't load your profile.")
+      accounts.getByText("We couldn’t load your profile.")
     ).toBeInTheDocument();
     expect(accounts.getByText(/Your account is blocked/)).toBeInTheDocument();
     const page = within(panel.getByRole("region", { name: "Wiki page" }));

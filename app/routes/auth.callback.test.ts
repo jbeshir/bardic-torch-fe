@@ -185,7 +185,7 @@ describe("/auth/callback", () => {
   });
 
   it.each([
-    ["a state that doesn't match the cookie", "code=abc&state=forged"],
+    ["a state that doesn’t match the cookie", "code=abc&state=forged"],
     ["an Auth0 server error", "error=server_error&error_description=no"],
   ])(
     "on %s goes back to the page logged out, logs an error and clears returnTo",

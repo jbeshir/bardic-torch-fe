@@ -102,7 +102,7 @@ export function Pages() {
     <Specimen
       id="pagination"
       title="Pagination"
-      summary="Styleguide-only in FE1: links to the pages of a long list (DESIGN §6.20). Below sm it shows 'Page n of m'."
+      summary="Styleguide-only in FE1: links to the pages of a long list (DESIGN §6.20). Below sm it shows ‘Page n of m’."
     >
       <Example label="First page" wide>
         <Pagination page={1} pageCount={12} href={pageHref} />

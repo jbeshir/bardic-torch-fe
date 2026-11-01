@@ -197,7 +197,7 @@ describe("contributing guide", () => {
   it("says links only: no lyrics or text ever, no uploads", async () => {
     const main = await renderHelp(page("contributing"));
     expect(section(main, "Our principles")).toContain(
-      "Links only. Bardic Torch is an index, not an archive. We never host lyrics or the text of a work, not even public-domain or Creative Commons text. We don't accept uploads of files, audio or video."
+      "Links only. Bardic Torch is an index, not an archive. We never host lyrics or the text of a work, not even public-domain or Creative Commons text. We don’t accept uploads of files, audio or video."
     );
     expect(
       within(main).getByRole("complementary", { name: "At a glance" })
@@ -207,7 +207,7 @@ describe("contributing guide", () => {
   it("needs a public source for every licensing and etiquette claim, even from the bard", async () => {
     const main = await renderHelp(page("contributing"));
     expect(section(main, "Our principles")).toContain(
-      "Any statement about permissions, licences or a bard's wishes needs a link to a public page where the creator said it. This applies even if you are the bard"
+      "Any statement about permissions, licences or a bard’s wishes needs a link to a public page where the creator said it. This applies even if you are the bard"
     );
   });
 
@@ -218,12 +218,12 @@ describe("contributing guide", () => {
       "Every edit from a contributor waits for a moderator before it goes live."
     );
     expect(review).toContain(
-      "Moderators' own edits go live straight away, but they are recorded in the page history like everyone else's."
+      "Moderators’ own edits go live straight away, but they are recorded in the page history like everyone else’s."
     );
     expect(
       within(main).getByRole("complementary", { name: "At a glance" })
     ).toHaveTextContent(
-      "a moderator checks every contributor's edit before it goes live."
+      "a moderator checks every contributor’s edit before it goes live."
     );
   });
 
@@ -241,7 +241,7 @@ describe("contributing guide", () => {
     expect(rules).toContain("Welsh (Language)");
     expect(rules).toContain("Every new term needs a parent");
     expect(section(main, "Categories and naming")).toContain(
-      'Please don\'t use "filk"'
+      "Please don’t use ‘filk’"
     );
   });
 
@@ -267,8 +267,8 @@ describe("contributing guide", () => {
 describe("FAQ for bards", () => {
   it("explains opting out: a public, permanent statement that's clearly yours, sent through the form", async () => {
     const main = await renderHelp(page("faq-for-bards"));
-    const optOut = section(main, "What if I don't want a page?");
-    expect(optOut).toContain("That's your choice, and we'll respect it.");
+    const optOut = section(main, "What if I don’t want a page?");
+    expect(optOut).toContain("That’s your choice, and we’ll respect it.");
     expect(optOut).toContain(
       "the page must be public, permanent and clearly yours"
     );
@@ -280,7 +280,7 @@ describe("FAQ for bards", () => {
     );
     const heading = within(main).getByRole("heading", {
       level: 2,
-      name: "What if I don't want a page?",
+      name: "What if I don’t want a page?",
     });
     const list = heading.parentElement?.querySelector(`#${heading.id} ~ ol`);
     expect(
@@ -298,7 +298,7 @@ describe("FAQ for bards", () => {
 
   it("says a bard's own word needs a public source too", async () => {
     const main = await renderHelp(page("faq-for-bards"));
-    expect(section(main, "Why can't I just tell you I'm the bard?")).toContain(
+    expect(section(main, "Why can’t I just tell you I’m the bard?")).toContain(
       "every statement about licensing, permissions or etiquette needs a link to a public page where you said it. This applies to you too"
     );
   });
@@ -306,20 +306,20 @@ describe("FAQ for bards", () => {
   it("never hosts or uploads works, and says removing a link doesn't take content down", async () => {
     const main = await renderHelp(page("faq-for-bards"));
     expect(section(main, "Can I upload my work to Bardic Torch?")).toMatch(
-      /^No\. We don't host any works, including yours/
+      /^No\. We don’t host any works, including yours/
     );
     expect(section(main, "Is Bardic Torch violating my copyright?")).toContain(
       "We never host lyrics, text, audio or video, and nobody can upload files."
     );
     expect(
-      section(main, "Someone links to a copy of my work that I didn't allow")
-    ).toContain("removing our link doesn't take the content down");
+      section(main, "Someone links to a copy of my work that I didn’t allow")
+    ).toContain("removing our link doesn’t take the content down");
   });
 
   it("says bards' edits are moderated like everyone's", async () => {
     const main = await renderHelp(page("faq-for-bards"));
     expect(section(main, "Can I edit my own page?")).toContain(
-      "Like everyone's, your edits are checked by a moderator before they go live."
+      "Like everyone’s, your edits are checked by a moderator before they go live."
     );
   });
 });
@@ -357,7 +357,7 @@ describe("bard preference checklist", () => {
       "publish it on your own website, blog or album page and send us the link"
     );
     expect(section(main, "What it is")).toContain(
-      "We can't host your preferences as original text, because we can't check who wrote them."
+      "We can’t host your preferences as original text, because we can’t check who wrote them."
     );
     expect(
       within(main).getByRole("link", {
@@ -389,7 +389,7 @@ describe("conservation status", () => {
       "The work exists in at least 4 known places."
     );
     expect(meaning("Endangered")).toBe(
-      "The work exists in 3 or fewer known places, and isn't Restricted."
+      "The work exists in 3 or fewer known places, and isn’t Restricted."
     );
     expect(meaning("Restricted")).toContain(
       "This overrides every other status."
@@ -432,7 +432,7 @@ describe("conservation status", () => {
     const main = await renderHelp(page("conservation-status"));
     const setting = section(main, "How a status is set");
     expect(setting).toContain(
-      "counting the distinct places among a piece's links that are still working"
+      "counting the distinct places among a piece’s links that are still working"
     );
     expect(setting).toContain("A moderator confirms it.");
   });
@@ -443,10 +443,10 @@ describe("conservation status", () => {
     expect(restricted).toContain(
       "A Restricted piece is never marked Endangered or Critically Endangered"
     );
-    expect(restricted).toContain('No "help preserve" prompts.');
+    expect(restricted).toContain("No ‘help preserve’ prompts.");
     expect(restricted).toContain("It needs a source.");
     expect(section(main, "How you can help")).toContain(
-      "and the creator's wishes allow it"
+      "and the creator’s wishes allow it"
     );
   });
 });
@@ -466,7 +466,7 @@ describe("licence & attribution", () => {
       "href",
       "https://creativecommons.org/licenses/by-sa/4.0/"
     );
-    expect(section(main, "What the licence doesn't cover")).toContain(
+    expect(section(main, "What the licence doesn’t cover")).toContain(
       "Our CC BY-SA licence gives you no rights in the works themselves."
     );
   });
@@ -478,7 +478,7 @@ describe("licence & attribution", () => {
     );
     expect(
       within(main).getByRole("link", {
-        name: "original wiki's list of users (opens original wiki)",
+        name: "original wiki’s list of users (opens original wiki)",
       })
     ).toHaveAttribute("href", wikiPageUrl("Special:ListUsers"));
     expect(
@@ -500,7 +500,7 @@ describe("licence & attribution", () => {
       "We can remove or hide a link, but the content will stay online wherever it is hosted."
     );
     expect(section(main, "Your contributions")).toContain(
-      "Never paste in lyrics, the text of a work, or someone else's writing."
+      "Never paste in lyrics, the text of a work, or someone else’s writing."
     );
   });
 });

@@ -15,7 +15,7 @@ describe("Index route", () => {
     expect(h1).toHaveClass("text-display");
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(
-      screen.getByText(/We gather the bardic community's scattered songbooks/)
+      screen.getByText(/We gather the bardic community’s scattered songbooks/)
     ).toBeInTheDocument();
     expect(h1.parentElement).toHaveClass("bg-hero", "rounded-xl");
   });
@@ -61,7 +61,7 @@ describe("Index route", () => {
       "Anyone can contribute",
     ]);
     expect(cards[0]).toHaveTextContent(
-      "We never host lyrics, recordings or video: every piece points to where it already lives, and to its creator's wishes about sharing."
+      "We never host lyrics, recordings or video: every piece points to where it already lives, and to its creator’s wishes about sharing."
     );
     expect(
       within(cards[1] as HTMLElement).getByRole("link", {

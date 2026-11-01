@@ -273,7 +273,7 @@ describe("getServerAuthContext", () => {
     });
     expect(result.headers).toBeUndefined();
     expect(consoleError).toHaveBeenCalledWith(
-      "Couldn't refresh the access token:",
+      "Couldn’t refresh the access token:",
       expect.objectContaining({ message: "Auth0 token refresh timed out" })
     );
   });
@@ -394,7 +394,7 @@ describe("revokeRefreshToken", () => {
     );
     await expect(revokeRefreshToken("refresh-1", env)).resolves.toBeUndefined();
     expect(consoleError).toHaveBeenCalledWith(
-      "Couldn't revoke the refresh token at logout:",
+      "Couldn’t revoke the refresh token at logout:",
       expect.anything()
     );
   });

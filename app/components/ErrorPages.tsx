@@ -37,7 +37,7 @@ export function NotFound({ pathname }: { pathname: string }) {
   return (
     <ErrorState
       art="missing"
-      title="We couldn't find that page"
+      title="We couldn’t find that page"
       actions={
         <>
           <ButtonLink to="/" variant="primary">
@@ -51,7 +51,7 @@ export function NotFound({ pathname }: { pathname: string }) {
     >
       <p>
         It may have moved, or the link may be mistyped. Bardic Torch is new, so
-        pages from the old wiki don&apos;t redirect here yet.
+        pages from the old wiki don’t redirect here yet.
       </p>
     </ErrorState>
   );
@@ -82,7 +82,7 @@ export function ServerError({
       }
     >
       <p>
-        That&apos;s on us, not you. Try again in a moment.
+        That’s on us, not you. Try again in a moment.
         {reference
           ? " If it keeps happening, let us know and include the reference below."
           : null}

@@ -51,9 +51,9 @@ export default function Index() {
         <p className="mt-4 max-w-prose text-body-lg text-fg-muted">
           Bardic Torch helps bards find music, lyrics, history, context and
           etiquette, and helps audiences find that song they loved around the
-          campfire but forgot the title of. We gather the bardic
-          community&apos;s scattered songbooks, playlists and album pages into
-          one index, so works can be found, sung and passed on.
+          campfire but forgot the title of. We gather the bardic community’s
+          scattered songbooks, playlists and album pages into one index, so
+          works can be found, sung and passed on.
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <ButtonLink to={CONTRIBUTE_HREF} variant="primary" size="lg">
@@ -81,10 +81,10 @@ export default function Index() {
         <CardList>
           <Card title="An index, not an archive">
             Bardic works are spread across many songbooks, playlists and album
-            pages. We don&apos;t replace them. We link to them and make them
-            findable by mood, topic, culture, origin and more. We never host
-            lyrics, recordings or video: every piece points to where it already
-            lives, and to its creator&apos;s wishes about sharing.
+            pages. We don’t replace them. We link to them and make them findable
+            by mood, topic, culture, origin and more. We never host lyrics,
+            recordings or video: every piece points to where it already lives,
+            and to its creator’s wishes about sharing.
           </Card>
           <Card title="Every version, everywhere">
             <p>
@@ -101,10 +101,10 @@ export default function Index() {
           </Card>
           <Card title="Anyone can contribute">
             <p>
-              You don&apos;t have to be a bard, and no contribution is too
-              small. Log in, add what you know, and a moderator will review it
-              before it goes live. That way the index can keep growing beyond
-              what any one person could maintain.
+              You don’t have to be a bard, and no contribution is too small. Log
+              in, add what you know, and a moderator will review it before it
+              goes live. That way the index can keep growing beyond what any one
+              person could maintain.
             </p>
             <p className="mt-3">
               <Link to={CONTRIBUTE_HREF}>How to contribute</Link>
@@ -122,11 +122,11 @@ export default function Index() {
       <Section title="For bards">
         <p className="max-w-prose text-body text-fg">
           Your wishes matter here. We want to show people who wrote a piece, how
-          it&apos;s licensed, whether to ask before performing it, and how you
-          feel about sing-alongs, recordings and adaptations. Publish your
-          preferences on your own site and we&apos;ll link to them, so everyone
-          can find them. You&apos;re welcome to help with your own page, or to
-          ask not to have one.
+          it’s licensed, whether to ask before performing it, and how you feel
+          about sing-alongs, recordings and adaptations. Publish your
+          preferences on your own site and we’ll link to them, so everyone can
+          find them. You’re welcome to help with your own page, or to ask not to
+          have one.
         </p>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <ButtonLink to="/help/faq-for-bards" variant="secondary">
