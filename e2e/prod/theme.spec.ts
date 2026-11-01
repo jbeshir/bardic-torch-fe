@@ -144,7 +144,7 @@ test.describe("theme toggle with JS", () => {
     expect(answer.status()).toBe(200);
     expect(await answer.headerValue("cache-control")).toBe("no-store");
     const csp = (await answer.headerValue("content-security-policy")) ?? "";
-    expect(csp).toMatch(/script-src 'self' 'nonce-[^']+'/);
+    expect(csp).toMatch(/script-src 'self' 'nonce-([^']+)'/);
     expect(csp).toContain("form-action 'self' https://auth0.invalid");
     expect(csp).toContain("frame-ancestors 'none'");
     expect(await answer.headerValue("x-content-type-options")).toBe("nosniff");
