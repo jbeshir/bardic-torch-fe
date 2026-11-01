@@ -117,7 +117,7 @@ export function Layout({ children }: { children: ReactNode }) {
   );
 }
 
-function Document({ children }: { children: ReactNode }) {
+function Document({ children }: { readonly children: ReactNode }) {
   const nonce = useNonce();
   const { choice } = useThemeChoice();
   const theme = choice === "system" ? null : choice;
@@ -140,11 +140,11 @@ function Document({ children }: { children: ReactNode }) {
 }
 
 type LoaderData = {
-  sentryDsn: string | undefined;
+  readonly sentryDsn: string | undefined;
   /** The explicit theme from the cookie; null follows the device. */
-  theme: Theme | null;
+  readonly theme: Theme | null;
   /** Who is reading, for the account control on every page. */
-  account: Account;
+  readonly account: Account;
 };
 
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {
@@ -200,7 +200,7 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({
 };
 
 export default function App() {
-  const { account } = useLoaderData<LoaderData>();
+  const { account } = useLoaderData<typeof loader>();
 
   return (
     <ToastProvider>

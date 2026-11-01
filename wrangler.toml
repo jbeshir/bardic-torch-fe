@@ -14,7 +14,9 @@ pages_build_output_dir = "./build/client"
 # SENTRY_DSN are set per environment in the Pages dashboard, or in .dev.vars
 # locally. See docs/DEPLOY.md.
 
-######## PREVIEW environment (every branch but main) ########
+######## PREVIEW environment (the `preview` branch only) ########
+# Pages builds no other branch (docs/DEPLOY.md §2): previews share the
+# production Auth0 application's secret and the production API.
 
 [env.preview.vars]
 BARDIC_TORCH_API_BASE_URL = "https://api.bardictorch.org"

@@ -215,8 +215,10 @@ describe("contributing guide", () => {
     const main = await renderHelp(page("contributing"));
     const review = section(main, "How review works");
     expect(review).toContain(
-      "Every edit from a contributor waits for a moderator before it goes live."
+      "Every edit from a contributor waits for one of our moderators before it goes live."
     );
+    // Who moderates changes over time and is a privacy choice: never named.
+    expect(review).not.toMatch(/moderators are|currently/i);
     expect(review).toContain(
       "Moderators’ own edits go live straight away, but they are recorded in the page history like everyone else’s."
     );

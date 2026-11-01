@@ -1,6 +1,7 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { extname, join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { filesUnder } from "./support/files";
 import { renderTokenFiles } from "../scripts/build-tokens.mjs";
 
 /**
@@ -36,7 +37,6 @@ const TEXT_EXTENSIONS = new Set([
   ".html",
   "",
 ]);
-const SKIPPED_DIRECTORIES = new Set(["e2e/screenshots"]);
 
 // The CSS named colours (CSS Color 4), lower-case.
 const NAMED_COLOURS = new Set(
@@ -138,14 +138,6 @@ function rawColours(source: string, css: boolean): Finding[] {
     }
   }
   return findings;
-}
-
-function filesUnder(directory: string): string[] {
-  if (SKIPPED_DIRECTORIES.has(directory)) return [];
-  return readdirSync(join(root, directory)).flatMap(name => {
-    const path = join(directory, name);
-    return statSync(join(root, path)).isDirectory() ? filesUnder(path) : [path];
-  });
 }
 
 const generated = await renderTokenFiles();

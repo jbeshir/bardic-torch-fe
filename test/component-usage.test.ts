@@ -1,6 +1,7 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
+import { filesUnder } from "./support/files";
 
 /**
  * Every export of an app module is used by app code, not only by tests
@@ -14,13 +15,6 @@ import { describe, expect, it } from "vitest";
  */
 
 const root = process.cwd();
-
-function filesUnder(directory: string): string[] {
-  return readdirSync(join(root, directory)).flatMap(name => {
-    const path = join(directory, name);
-    return statSync(join(root, path)).isDirectory() ? filesUnder(path) : [path];
-  });
-}
 
 const isTest = (path: string) =>
   /\.test\.tsx?$/.test(path) || path.startsWith(join("app", "test"));

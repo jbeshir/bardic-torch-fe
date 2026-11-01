@@ -11,17 +11,17 @@ The dashboard steps are done by a maintainer with access to the Cloudflare accou
 
 Names used below:
 
-| thing                | value                                                   |
-| -------------------- | ------------------------------------------------------- |
-| Pages project        | `bardic-torch-fe` (the `name` in `wrangler.toml`)       |
-| production branch    | `main`                                                  |
-| preview branch alias | `preview` → `https://preview.bardic-torch-fe.pages.dev` |
-| site                 | `https://bardictorch.org` (`www` redirects to it)       |
-| API                  | `https://api.bardictorch.org` (dokku)                   |
+| thing             | value                                                   |
+| ----------------- | ------------------------------------------------------- |
+| Pages project     | `bardic-torch-fe` (the `name` in `wrangler.toml`)       |
+| production branch | `main`                                                  |
+| preview branch    | `preview` → `https://preview.bardic-torch-fe.pages.dev` |
+| site              | `https://bardictorch.org` (`www` redirects to it)       |
+| API               | `https://api.bardictorch.org` (dokku)                   |
 
 ## 1. Before the first deploy
 
-1. **Set the two Auth0 values in `wrangler.toml`.** Replace `AUTH0_DOMAIN` and the placeholder `AUTH0_CLIENT_ID`, in both `[env.preview.vars]` and `[env.production.vars]`, with the real tenant domain and client ID (from §4). Both are public values, so they belong in the repository. Commit and push. Until the placeholder is replaced, a deploy serves only the "Site configuration error" page (§2), not a site whose sign-in fails at Auth0.
+1. **Set the two Auth0 values in `wrangler.toml`.** First create the Auth0 application and API (§4). Then replace `AUTH0_DOMAIN` and the placeholder `AUTH0_CLIENT_ID`, in both `[env.preview.vars]` and `[env.production.vars]`, with the tenant domain and the application's client ID. Both are public values, so they belong in the repository. Commit and push. Until the placeholder is replaced, a deploy serves only the "Site configuration error" page (§2), not a site whose sign-in fails at Auth0.
 2. **Protect `main`.** In GitHub → Settings → Branches, add a branch protection rule (or ruleset) for `main`:
    - require a pull request;
    - require the status checks **`validate`** and **`e2e`** (the two jobs in `.github/workflows/ci.yml`) to pass.
@@ -41,16 +41,29 @@ Go to Workers & Pages → Create → Pages → **Connect to Git**, choose the Gi
 | build output directory | `build/client`                                          |
 | root directory         | `/` (empty)                                             |
 | Node version           | from `.nvmrc` (`22`), which the Pages build image reads |
+| runtime                | from `wrangler.toml`; see below                         |
+
+**Check the project's `*.pages.dev` subdomain** once the project exists. These subdomains are globally unique, so if `bardic-torch-fe` is taken, Cloudflare assigns something like `bardic-torch-fe-1ab.pages.dev`. In that case, replace `bardic-torch-fe.pages.dev` everywhere it is named: `AUTH0_DEFAULT_REDIRECT_URI` in `wrangler.toml`'s `[env.preview.vars]`, this runbook (§3, §4, §5), and the preview-origin pattern in `test/repo-hygiene.test.ts`.
 
 Then set the branch controls under Settings → Builds & deployments → Branch control:
 
-- **Production branch:** `main`.
-- **Preview branches:** all non-production branches. That includes `preview`, whose alias is the one Auth0 knows (§4).
+- **Production branch:** `main`. It must stay `main`: `scripts/build-pages.mjs` names it.
+- **Preview branches:** **Custom branches**, include `preview` only. No other branch is built.
 
 `npm run build:pages` (`scripts/build-pages.mjs`) reads the `CF_PAGES_BRANCH` variable that Pages sets:
 
 - `main`, or no branch at all → the **production** build: no styleguide, no stub sign-in.
-- Any other branch → the **preview** build: includes `/styleguide`, still no stub sign-in.
+- `preview` → the **preview** build: includes `/styleguide`, still no stub sign-in.
+- Any other branch → the build **fails** ("Branch … is not deployed"). This catches a branch control that was widened by mistake, or a production branch renamed in the dashboard.
+
+**Why only `preview`.** A preview build runs with the Preview environment's secrets, and Pages builds a branch whether or not CI passed. The Preview environment shares the production Auth0 application (its client secret) and the production API (§4). If every branch were built, anyone who can push a branch could deploy unreviewed code that reads the client secret or uses real tokens against `api.bardictorch.org`. With one preview branch, the trade-off is:
+
+- only people who may push to `preview` can run code with those secrets, so protect `preview` like `main` in GitHub (restrict who can push to it);
+- feature branches get no deployment of their own. Push a branch to `preview` to try it on Pages (§7), or run it locally (README).
+
+A separate Auth0 application for previews would remove the shared client secret too. It isn't used: previews would then sign in against a different set of Auth0 users from production.
+
+**Runtime.** Because `wrangler.toml` exists, Pages takes the compatibility date (`2024-05-12`) and flags (`nodejs_als`, §6) from it. The dashboard's runtime settings are ignored or read-only: change these in `wrangler.toml` only. The date is the newest that wrangler 3.57.1's local workerd can run. To bump it, bump wrangler too, and change the date in `wrangler.toml` and `playwright.config.ts` together (a hygiene test checks they agree).
 
 The Pages Function is `functions/[[path]].ts` (`app/server/pages-function.server.ts`: one Remix handler per isolate; the environment is validated on every request), behind `functions/_middleware.ts` (Sentry, §6). `public/_routes.json` keeps `/assets/*`, `/favicon.svg` and `/site.webmanifest` away from it, so static files never cost a Function invocation. `public/_headers` gives `/assets/*` a one-year immutable cache. Everything else (security headers and the nonce CSP on every response the Function makes, resource routes and redirects included, `Cache-Control: private, no-cache` on documents, `no-store` on `/settings` and its data, signed-in root data, the auth routes and the proxies) is set per request by the app.
 
@@ -123,13 +136,13 @@ The API is a separate repository, deployed to the maintainer's dokku host. The f
    - `dokku letsencrypt:set <api-app> email <maintainer address>`
    - `dokku letsencrypt:enable <api-app>`
    - `dokku letsencrypt:cron-job --add` (renewal)
-3. **Check it.** `curl https://api.bardictorch.org/healthz` returns 200 `{"status":"ok"}`.
+3. **Check it.** `curl https://api.bardictorch.org/healthz` returns 200 `{"status":"ok"}` (the process is up), and `curl https://api.bardictorch.org/readyz` returns the same once the database answers (503 `unavailable` if it doesn't).
 
 **No CORS set-up is needed.** The browser never calls the API. Loaders and the `/api/*` proxy routes call it from the Pages Function, server to server, with the user's bearer token.
 
 ## 4. Auth0
 
-Create one **Regular Web Application** (Applications → Create Application → Regular Web Applications). The server keeps the client secret and does the code exchange. Production and the preview alias share the application.
+Create one **Regular Web Application** (Applications → Create Application → Regular Web Applications). The server keeps the client secret and does the code exchange. Production and the `preview` branch share the application, which is why only `preview` gets preview builds (§2).
 
 **Application settings:**
 
@@ -146,7 +159,8 @@ How these URLs are used:
 
 - **Callback URLs.** `/auth/login` sends Auth0 `redirect_uri = AUTH0_DEFAULT_REDIRECT_URI + "/auth/callback"`, so each environment's value must be listed.
 - **Logout URLs.** `POST /auth/logout` clears the session and redirects to `https://<AUTH0_DOMAIN>/v2/logout?client_id=…&returnTo=<the request's origin>`, so each origin must be listed. CSP `form-action` already allows the Auth0 domain.
-- **Preview deployments.** Sign-in and log-out work only on the `preview` alias. Other preview URLs (per-commit hashes, other branch aliases) can be browsed, but sign-in returns to the alias, where their host-only state cookie doesn't exist.
+- **Preview deployments.** Sign-in and log-out work only on the `preview` alias. A preview deployment's per-commit URL (`<hash>.bardic-torch-fe.pages.dev`) can be browsed, but sign-in returns to the alias, where its host-only state cookie doesn't exist.
+- **Local development.** Don't add `localhost` URLs to this application. For `npm run dev` against a real tenant, create a second Regular Web Application (e.g. "Bardic Torch (development)") with Allowed Callback URLs `http://localhost:5173/auth/callback`, Allowed Logout URLs `http://localhost:5173`, the same API and connections, and put its client ID and secret in `.dev.vars` (README).
 
 **API** (Applications → APIs → Create API):
 
@@ -165,9 +179,28 @@ How these URLs are used:
 
 **Connections** (Authentication → Social):
 
-- Enable **Google** (`google-oauth2`) and **Facebook** (`facebook`) with the project's own OAuth credentials, not Auth0's development keys. Turn both on for this application under its Connections tab.
+- Enable **Google** (`google-oauth2`) and **Facebook** (`facebook`) with the project's own OAuth credentials, not Auth0's development keys (set up as below). Turn both on for this application under its Connections tab.
 - Turn the username-password database connection **off** for the application. The site only offers social sign-in.
 - The backend sees user IDs such as `google-oauth2|<id>`.
+
+The identity providers send the reader back to **Auth0**, not to the site, so their redirect URI is always `https://<AUTH0_DOMAIN>/login/callback`.
+
+**Google** (Google Cloud console, a project for Bardic Torch):
+
+1. APIs & Services → OAuth consent screen: user type **External**, app name "Bardic Torch", support email, authorised domain `bardictorch.org` (and the Auth0 domain's, if it is a custom domain), scopes `email` and `profile` (and `openid`).
+2. Credentials → Create credentials → OAuth client ID: type **Web application**, Authorised redirect URI `https://<AUTH0_DOMAIN>/login/callback`.
+3. Publish the consent screen (**In production**). While it is in Testing, only listed test users can sign in.
+4. In Auth0's Google connection, enter the client ID and client secret, with the attributes `email` and `profile`.
+
+**Facebook** (Meta for Developers, an app of type Consumer, with the Facebook Login product):
+
+1. Facebook Login → Settings: **Valid OAuth Redirect URIs** `https://<AUTH0_DOMAIN>/login/callback`.
+2. App settings → Basic: app domain, a **Privacy Policy URL** and a **User Data Deletion** URL (instructions URL). Until FE4 adds the privacy and contact/opt-out pages, point both at a help page that explains how to ask (e.g. `https://bardictorch.org/help/faq-for-bards`, which covers opting out and how to contact us).
+3. Permissions: `email` and `public_profile`.
+4. Switch the app to **Live**. In Development mode, only the app's admins, developers and testers can sign in.
+5. In Auth0's Facebook connection, enter the App ID and App Secret, with the `email` permission.
+
+If §8's browser check 1 fails at the provider, the usual causes are a redirect URI that isn't exactly `https://<AUTH0_DOMAIN>/login/callback` (Google: `redirect_uri_mismatch`), a consent screen still in Testing, or a Facebook app still in Development mode.
 
 ## 5. Turnstile (for FE4; not used by FE1)
 
@@ -198,7 +231,7 @@ Nothing in FE1 reads either key.
 
 - **Production:** merge to `main`. The required checks run on the pull request; Pages builds `main` in production mode and serves it on `bardictorch.org`.
 - **Preview:** push to `preview`, e.g. `git push origin HEAD:preview`. It is served on `https://preview.bardic-torch-fe.pages.dev` in preview mode, with `/styleguide`. Sign-in works there against the same Auth0 application and API.
-- **Other branches** also get preview builds at their own `*.bardic-torch-fe.pages.dev` URLs, without working sign-in (see §4).
+- **Other branches** are not deployed (§2). CI still runs on their pull requests.
 
 Until production is signed off, deploy FE1 to the `preview` alias only.
 
@@ -218,7 +251,7 @@ curl -s "$SITE/" | grep -o '/assets/[^"]*\.css' | head -1 | xargs -I{} curl -sI 
 # 3. Sign-in goes to Auth0 with this origin's callback, and sets the state and returnTo cookies.
 curl -sI "$SITE/auth/login?returnTo=/settings" | grep -iE '^(HTTP|location|set-cookie)'
 #    → 302 to https://<AUTH0_DOMAIN>/authorize?…redirect_uri=<SITE>%2Fauth%2Fcallback…
-#      set-cookie: __Host-bt_auth0=…; set-cookie: __Host-bt_return_to=…
+#      set-cookie: __Host-bt_auth0:<state id>=…; set-cookie: __Host-bt_return_to=…
 
 # 4. Stub sign-in is absent: ?as is ignored, and it still goes to Auth0.
 curl -sI "$SITE/auth/login?as=contributor" | grep -i '^location'
@@ -234,8 +267,9 @@ curl -s -o /dev/null -w '%{http_code}\n' "$SITE/help/licence"    # 200
 curl -sI "https://www.bardictorch.org/help?x=1" | grep -iE '^(HTTP|location)'
 #    → 301, location: https://bardictorch.org/help?x=1
 
-# 8. The API is up.
+# 8. The API is up, and so is its database.
 curl -s https://api.bardictorch.org/healthz                      # {"status":"ok"}
+curl -s https://api.bardictorch.org/readyz                       # {"status":"ok"}
 ```
 
 Then, in a browser:
@@ -248,8 +282,8 @@ Then, in a browser:
 
 ## 9. Rollback
 
-- **Fastest:** Pages project → Deployments → find the last good **production** deployment → ⋯ → **Rollback to this deployment**. It is live within seconds, with the variables it was built with.
+- **Fastest:** Pages project → Deployments → find the last good **production** deployment → ⋯ → **Rollback to this deployment**. It is live within seconds. Use it for a bad commit, not for a bad variable.
 - **Then fix forward:** revert the bad commit on `main` (`git revert <sha>`, via a pull request so the checks run). The next build replaces the rollback.
-- **A bad variable or secret:** fix it, then retry the deployment. Variables apply only to new deployments. Rolling back to an older deployment doesn't undo a secret change.
+- **A bad variable or secret:** don't roll back. Correct the value (a commit for `wrangler.toml` variables, the dashboard for secrets), then retry the latest deployment: variables apply only to new deployments.
 - **An API change that breaks the frontend:** roll back the frontend as above. Afterwards, `npm run sync:api -- <the backend's openapi/api.yaml>`, fix what `validate` reports, and redeploy.
 - **Auth0 or DNS changes** are not versioned with the site. Undo them in their dashboards: §3 and §4 list every value.

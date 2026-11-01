@@ -1,6 +1,7 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, it, expect } from "vitest";
+import { filesUnder } from "./support/files";
 import { parse as parseToml } from "smol-toml";
 import { parse as parseYaml } from "yaml";
 import { ENV_NAMES, parseEnv } from "~/server/env.server";
@@ -54,17 +55,10 @@ const SCANNED_FILES = [
   ".github/workflows/ci.yml",
 ];
 
-function filesUnder(directory: string): string[] {
-  return readdirSync(join(root, directory)).flatMap(name => {
-    const path = join(directory, name);
-    return statSync(join(root, path)).isDirectory() ? filesUnder(path) : [path];
-  });
-}
-
 function scannedFiles(): string[] {
   return [...SCANNED_DIRECTORIES.flatMap(filesUnder), ...SCANNED_FILES]
     .map(path => relative(".", path))
-    .filter(path => path !== THIS_FILE && !path.startsWith("e2e/screenshots"));
+    .filter(path => path !== THIS_FILE);
 }
 
 describe("no feed-only dependencies", () => {
@@ -154,6 +148,10 @@ type WorkflowStep = {
   readonly with?: { readonly path?: string };
 };
 type Workflow = {
+  readonly on: {
+    readonly push?: { readonly branches?: readonly string[] };
+    readonly pull_request?: unknown;
+  };
   readonly jobs: Readonly<
     Record<string, { readonly steps: readonly WorkflowStep[] }>
   >;
@@ -176,6 +174,11 @@ function runsOf(job: string): string[] {
 describe("CI workflow", () => {
   it("has exactly the validate and e2e jobs", () => {
     expect(Object.keys(ciWorkflow.jobs).sort()).toEqual(["e2e", "validate"]);
+  });
+
+  it("runs pull requests once, and pushes only to the deployed branches", () => {
+    expect(Object.keys(ciWorkflow.on).sort()).toEqual(["pull_request", "push"]);
+    expect(ciWorkflow.on.push?.branches).toEqual(["main", "preview"]);
   });
 
   it("validate installs from the lockfile and runs npm run validate", () => {
@@ -321,6 +324,15 @@ describe("ops: wrangler.toml", () => {
     );
     expect(assigned.filter(name => SECRET_NAMES.includes(name!))).toEqual([]);
     expect(assigned).not.toContain("AUTH_MODE");
+  });
+
+  it("builds previews from the preview branch only, as DEPLOY.md says", () => {
+    expect(read("wrangler.toml")).toContain(
+      "PREVIEW environment (the `preview` branch only)"
+    );
+    expect(read("docs/DEPLOY.md")).toContain(
+      "**Preview branches:** **Custom branches**, include `preview` only."
+    );
   });
 
   it("returns production sign-ins to bardictorch.org and preview ones elsewhere", () => {
@@ -541,5 +553,35 @@ describe("docs", () => {
     for (const secret of SECRET_NAMES) {
       expect(deploy).toMatch(tableRow([`\`${secret}\``, "**secret**"]));
     }
+  });
+});
+
+describe("formatting coverage", () => {
+  /**
+   * Everything else in the repository is Prettier-formatted. The lockfile
+   * and generated output are not ours to format, and api/openapi.yaml is
+   * vendored byte for byte from the backend by `npm run sync:api`
+   * (AMENDMENTS A1): Prettier would rewrite its blank lines, so the copy
+   * would no longer match the backend's. Any new entry must be added here
+   * on purpose, so .prettierignore can't quietly hide our own code.
+   */
+  const EXPECTED_PRETTIER_IGNORES = [
+    "node_modules/",
+    "build*/",
+    ".cache/",
+    ".wrangler/",
+    "playwright-report/",
+    "test-results/",
+    "e2e/screenshots/",
+    "package-lock.json",
+    "api/openapi.yaml",
+  ];
+
+  it(".prettierignore lists exactly the expected entries", () => {
+    const entries = read(".prettierignore")
+      .split("\n")
+      .map(line => line.trim())
+      .filter(line => line !== "" && !line.startsWith("#"));
+    expect(entries).toEqual(EXPECTED_PRETTIER_IGNORES);
   });
 });

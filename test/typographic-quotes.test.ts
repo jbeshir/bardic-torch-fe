@@ -1,7 +1,8 @@
-import { readFileSync, readdirSync } from "node:fs";
-import { join, relative } from "node:path";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
+import { filesUnder } from "./support/files";
 
 /**
  * DESIGN §11.1: copy uses typographic punctuation, the apostrophe ’ and
@@ -11,16 +12,6 @@ import { describe, expect, it } from "vitest";
  */
 
 const root = process.cwd();
-
-function filesUnder(directory: string, accept: (path: string) => boolean) {
-  return readdirSync(join(root, directory), {
-    recursive: true,
-    withFileTypes: true,
-  })
-    .filter(entry => entry.isFile())
-    .map(entry => relative(root, join(entry.parentPath, entry.name)))
-    .filter(accept);
-}
 
 // A straight apostrophe inside a word, `&apos;`, or a straight-quoted phrase.
 // (CSP keywords such as 'self' are quoted by the CSP grammar itself.)
@@ -69,8 +60,7 @@ function straightQuotesInMarkdown(path: string): string[] {
 
 describe("typographic quotes in copy", () => {
   it("app strings and JSX text use ’ and ‘…’", () => {
-    const sources = filesUnder(
-      "app",
+    const sources = filesUnder("app").filter(
       path =>
         /\.tsx?$/.test(path) &&
         !/\.(test|gen)\.tsx?$|\.d\.ts$/.test(path) &&
@@ -83,7 +73,9 @@ describe("typographic quotes in copy", () => {
   });
 
   it("help pages use ’ and ‘…’ outside code", () => {
-    const pages = filesUnder("app/content/help", path => path.endsWith(".md"));
+    const pages = filesUnder("app/content/help").filter(path =>
+      path.endsWith(".md")
+    );
     expect(pages.length).toBeGreaterThan(5);
     expect(pages.flatMap(straightQuotesInMarkdown)).toEqual([]);
   });

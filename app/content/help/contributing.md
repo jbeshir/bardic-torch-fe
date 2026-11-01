@@ -82,7 +82,7 @@ Categories (here called **terms**) let people find pieces by what they need. Eac
 
 ## How review works
 
-Every edit from a contributor waits for a moderator before it goes live. The moderators are currently John and Fabian. This is a normal step: it keeps copyright problems and unsourced claims off the site.
+Every edit from a contributor waits for one of our moderators before it goes live. This is a normal step: it keeps copyright problems and unsourced claims off the site.
 
 - While your edit waits, you see your own version, with a banner saying it’s pending. Everyone else sees the last approved version.
 - Moderators’ own edits go live straight away, but they are recorded in the page history like everyone else’s.

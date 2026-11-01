@@ -5,7 +5,7 @@
 // the primary (accent) and destructive (danger) fills are at least 30° of hue
 // apart in both themes (DESIGN §2.4). Run through tsx.
 import { readFile } from "node:fs/promises";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { COLOURS, resolveColour } from "../app/styles/tokens.ts";
 
 const DESIGN_DOC = new URL("../docs/DESIGN.md", import.meta.url);
@@ -140,6 +140,6 @@ async function main() {
   );
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   await main();
 }

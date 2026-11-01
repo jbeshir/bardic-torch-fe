@@ -2,7 +2,7 @@ import { useLocation } from "@remix-run/react";
 import { IconX } from "@tabler/icons-react";
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { Button } from "./Button";
-import { useModalDialog } from "./useModalDialog";
+import { useModalDialog } from "~/hooks/useModalDialog";
 
 /** Tailwind's `lg`, where the persistent sidebar takes over from the drawer. */
 const LG_QUERY = "(min-width: 1024px)";

@@ -1,8 +1,20 @@
 /**
- * This is intended to be a basic starting point for linting in your app.
- * It relies on recommended configs out of the box for simplicity, but you can
- * and should modify this configuration to best suit your team's needs.
+ * Every exported binding must be imported somewhere, except the framework
+ * entry points that Remix, Vite, Wrangler and PostCSS load by name.
  */
+const noUnusedModules = [
+  "error",
+  {
+    unusedExports: true,
+    ignoreExports: [
+      "app/routes/**",
+      "app/root.tsx",
+      "app/entry.*.tsx",
+      "*.config.{js,ts}",
+      "functions/**",
+    ],
+  },
+];
 
 /** @type {import('eslint').Linter.Config} */
 module.exports = {
@@ -19,7 +31,6 @@ module.exports = {
     commonjs: true,
     es6: true,
   },
-  ignorePatterns: ["!**/.server", "!**/.client"],
 
   // Base config
   extends: ["eslint:recommended"],
@@ -88,27 +99,36 @@ module.exports = {
             varsIgnorePattern: "^_",
           },
         ],
-        "import/no-unused-modules": [
-          "error",
-          {
-            unusedExports: true,
-            ignoreExports: [
-              "app/routes/**",
-              "app/root.tsx",
-              "app/entry.*.tsx",
-              "*.config.ts",
-              "functions/**",
-            ],
-          },
-        ],
+        "import/no-unused-modules": noUnusedModules,
       },
     },
 
-    // Node
+    // Node: scripts and config files
     {
-      files: [".eslintrc.cjs"],
+      files: ["**/*.{js,mjs,cjs}"],
       env: {
         node: true,
+      },
+    },
+    {
+      files: ["**/*.{js,mjs,cjs}"],
+      plugins: ["import"],
+      // import/typescript lets the plugin parse the .ts modules that the
+      // scripts import and the tests that import the scripts.
+      extends: ["plugin:import/recommended", "plugin:import/typescript"],
+      // plugin:import/recommended pins ES2018; scripts use import.meta.
+      parserOptions: {
+        ecmaVersion: "latest",
+      },
+      settings: {
+        "import/extensions": [".js", ".mjs", ".ts", ".tsx"],
+        "import/resolver": {
+          typescript: {},
+          node: {},
+        },
+      },
+      rules: {
+        "import/no-unused-modules": noUnusedModules,
       },
     },
   ],

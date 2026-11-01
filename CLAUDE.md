@@ -49,7 +49,7 @@ CI (`.github/workflows/ci.yml`) runs both as the required jobs `validate` and `e
 
 After the automated checks pass, review the change for these:
 
-1. **Duplicate code.** Repeated constants, types or helpers that should be one definition, e.g. copy constants from `~/schemas/api` such as `DISPLAY_NAME_RULE`.
+1. **Duplicate code.** Repeated constants, types or helpers that should be one definition, e.g. copy constants from `~/schemas/rules` such as `DISPLAY_NAME_RULE`.
 2. **Incomplete or disconnected logic.**
    - Legacy mechanisms left in place.
    - Closures over stale data.

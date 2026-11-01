@@ -1,6 +1,7 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { extname, join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { filesUnder } from "./support/files";
 
 /**
  * DESIGN §8.3: reduced motion is handled by one mechanism, the `motion-safe:`
@@ -69,13 +70,6 @@ function movingIn(segment: string): string[] {
   return [...segment.matchAll(MOVING_DECLARATION)].map(([match]) =>
     match.trim()
   );
-}
-
-function filesUnder(directory: string): string[] {
-  return readdirSync(join(root, directory)).flatMap(name => {
-    const path = join(directory, name);
-    return statSync(join(root, path)).isDirectory() ? filesUnder(path) : [path];
-  });
 }
 
 const appFiles = filesUnder("app").filter(path => !/\.test\.tsx?$/.test(path));

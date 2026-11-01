@@ -1,7 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import openapiTS, { astToString, COMMENT_HEADER } from "openapi-typescript";
-import prettier from "prettier";
+import { format, resolveConfig } from "prettier";
 
 /**
  * Generate `app/api/schema.gen.ts` from `api/openapi.yaml` with
@@ -40,8 +40,8 @@ async function generateSchemaTypes() {
     return false;
   });
   const source = COMMENT_HEADER + astToString(kept);
-  const options = await prettier.resolveConfig(OUTPUT_PATH);
-  return prettier.format(source, { ...options, filepath: OUTPUT_PATH });
+  const options = await resolveConfig(OUTPUT_PATH);
+  return format(source, { ...options, filepath: OUTPUT_PATH });
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

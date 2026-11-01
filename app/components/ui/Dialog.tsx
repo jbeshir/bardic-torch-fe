@@ -1,7 +1,7 @@
 import { IconX, type Icon } from "@tabler/icons-react";
 import { useId, useRef, type ReactNode, type RefObject } from "react";
 import { Button } from "./Button";
-import { useModalDialog } from "./useModalDialog";
+import { useModalDialog } from "~/hooks/useModalDialog";
 
 type Confirm = {
   readonly label: string;

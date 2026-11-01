@@ -13,10 +13,14 @@ Tests come in three layers:
 - `repo-hygiene.test.ts`:
   - exact pins and no feed leftovers;
   - the original wiki's host only in the allowed files;
+  - `.prettierignore` holds exactly the expected entries;
   - the CI workflow, the ops files (`wrangler.toml`, `.dev.vars.example`, `worker-configuration.d.ts`, `public/_headers`, `public/_routes.json`) and these docs.
 - `no-raw-colours.test.ts`: colour only from the tokens.
 - `motion.test.ts`: movement only under `motion-safe:`.
+- `lint-coverage.test.ts`: ESLint lints every code file (`.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`: scripts and config files too) with `import/no-unused-modules`.
 - `component-usage.test.ts`: every export of an app module (components, server, schemas, constants, hooks, contexts, content; not the framework-read routes, root and entries, nor `app/test`) is imported by non-test code, not only by tests.
+
+The scans walk the tree with one helper, `filesUnder` (`test/support/files.ts`), which skips the gitignored e2e screenshots.
 
 It also runs the build checks `check:api`, `check:tokens`, `check:contrast` and `check:prod-build`. See CLAUDE.md for what each does.
 
@@ -30,7 +34,7 @@ Other FE1 differences from the plan's test list follow from the real API (no rev
 
 ## Unit tests
 
-- **Environment by file name.** `*.test.tsx` runs in jsdom; everything else runs in node, like the Workers runtime. A `.ts` test that needs a DOM says so with `// @vitest-environment jsdom`.
+- **Environment by file name only.** `*.test.tsx` runs in jsdom; everything else runs in node, like the Workers runtime. A test that needs a DOM is a `.test.tsx` file (e.g. `test/cut-off.test.tsx`), never a per-file pragma.
 - **Components** use testing-library and `@testing-library/user-event`.
   - Test every state, and the keyboard.
   - `expectSameMarkupInBothThemes` in `app/test/themes.ts` is a **guard, not theme coverage**: it fails only if a component starts branching on the theme. It says nothing about how either theme looks. The theme evidence is `check:contrast` (every token pair in both themes) and the e2e checkpoints (axe and screenshots in both themes, each asserting that the page paints that theme).

@@ -4,7 +4,7 @@
 // (in validate) fails if any of them differs from what would be written now.
 // Run through tsx, which loads the TypeScript token module.
 import { readFile, writeFile } from "node:fs/promises";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import * as prettier from "prettier";
 import {
   channelString,
@@ -183,6 +183,6 @@ async function main() {
   );
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   await main();
 }

@@ -1,12 +1,21 @@
-# Both jobs are required status checks on main (docs/DEPLOY.md, "Branch
-# protection"). Neither needs secrets: the e2e suite runs the built app
-# against the local fixture API with stub sign-in, and never leaves the
-# runner (see docs/TESTING.md).
+# Both jobs are required status checks on main (docs/DEPLOY.md, §1 "Before
+# the first deploy", step "Protect main"). Neither needs secrets: the e2e
+# suite runs the built app against the local fixture API with stub sign-in,
+# and never leaves the runner (see docs/TESTING.md).
+#
+# Actions are pinned to exact release tags. Full commit SHAs (with the tag
+# in a comment) would be stronger, but they were not resolvable when this
+# file was written; pin them with Dependabot or `gh api` when they can be
+# checked against the actions' repositories. These v4 majors run on Node 20,
+# which GitHub is retiring for actions: move to the Node 24 majors
+# (checkout v5, setup-node v5, upload-artifact v5 or later) together.
 name: CI
 
+# Pull requests run once, as pull_request; pushes only for the two deployed
+# branches, so a pull request's branch isn't tested twice.
 on:
   push:
-    branches: ["**"]
+    branches: [main, preview]
   pull_request:
 
 permissions:

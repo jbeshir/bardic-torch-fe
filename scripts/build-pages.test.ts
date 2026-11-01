@@ -6,12 +6,21 @@ describe("selectBuildMode", () => {
     expect(selectBuildMode({ CF_PAGES_BRANCH: "main" })).toBe("production");
   });
 
-  it.each(["milestone/fe1-foundation", "feature/x", "Main", "master"])(
-    "uses preview for branch %s",
-    branch => {
-      expect(selectBuildMode({ CF_PAGES_BRANCH: branch })).toBe("preview");
-    }
-  );
+  it("uses preview for the preview branch", () => {
+    expect(selectBuildMode({ CF_PAGES_BRANCH: "preview" })).toBe("preview");
+  });
+
+  it.each([
+    "milestone/fe1-foundation",
+    "feature/x",
+    "Main",
+    "master",
+    "Preview",
+  ])("refuses to build branch %s, naming it", branch => {
+    expect(() => selectBuildMode({ CF_PAGES_BRANCH: branch })).toThrow(
+      `Branch "${branch}" is not deployed`
+    );
+  });
 
   it("fails safe to production when the variable is missing", () => {
     expect(selectBuildMode({})).toBe("production");

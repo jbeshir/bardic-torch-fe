@@ -1246,7 +1246,7 @@ The shape is always a title, one or two sentences, and one action. See §11 for 
 
 **Tag: FE3** (editing). The wording is fixed here so the Banner component can be built and shown in the styleguide (SG).
 
-Every edit from a non-moderator waits for John or Fabian. This is a normal step and is written warmly. The banner is the `pending` variant, non-dismissible, placed directly under the tab row.
+Every edit from a non-moderator waits for one of the moderators. This is a normal step and is written warmly. The banner is the `pending` variant, non-dismissible, placed directly under the tab row.
 
 - **To the author, on the page they edited:**
   > **Your edit is waiting for approval.** You saved changes to _{Page title}_ on {d MMM yyyy}. Until a moderator reviews them, everyone else sees the last approved version. [View your version] · [Why do edits wait?]
