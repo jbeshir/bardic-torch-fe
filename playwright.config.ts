@@ -58,6 +58,12 @@ export default defineConfig({
   metadata: { phase },
   forbidOnly: true,
   timeout: 90_000,
+  /**
+   * One wrangler (workerd) process serves every worker, and each worker runs
+   * axe and full-page screenshots; with the CPU-count default (10 here) workerd
+   * drops requests and checkpoints time out. Four keeps runs stable.
+   */
+  workers: 4,
   use: {
     baseURL: BASE_URL,
     trace: "retain-on-failure",
