@@ -11,6 +11,10 @@ import {
 } from "../support/layout";
 import { test } from "../support/test";
 
+// Every test opens its own page and shares no state, so they spread over
+// the workers instead of queueing behind this file's checkpoints.
+test.describe.configure({ mode: "parallel" });
+
 /**
  * The styleguide (DESIGN §10.6, R21, R22): every block in both themes at
  * every viewport (axe + screenshots), the modal Dialog and Drawer with

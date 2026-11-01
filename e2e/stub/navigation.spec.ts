@@ -73,7 +73,14 @@ test.describe("below md", () => {
 
   test("the bar never covers the end of the page", async ({ page }) => {
     await openHydrated(page);
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    // Instantly: under no-preference the page scrolls smoothly, and the
+    // boxes would be measured part-way there.
+    const gap = await page.evaluate(() => {
+      const root = document.documentElement;
+      window.scrollTo({ top: root.scrollHeight, behavior: "instant" });
+      return root.scrollHeight - (window.scrollY + window.innerHeight);
+    });
+    expect(gap, "scrolled to the end of the page").toBeLessThanOrEqual(1);
     const footer = await page.getByRole("contentinfo").boundingBox();
     const bar = await appBar(page).boundingBox();
     expect(footer && bar).toBeTruthy();

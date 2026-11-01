@@ -113,10 +113,11 @@ export async function expectTargetSizesAtLeast24(page: Page): Promise<void> {
 }
 
 /**
- * Tabs through the page at the current width, measuring each focused
- * element only once the scroll that focusing started has finished: with
- * `scroll-behavior: smooth` the browser animates it into view, so an
- * element below the fold is still off-screen right after the Tab.
+ * Tabs through the page at the current width and measures each focused
+ * element where focusing scrolled it to. The caller emulates reduced
+ * motion, so that scroll is instant (`scroll-behavior: smooth` applies
+ * only under no-preference) and the element is in its final place as soon
+ * as the Tab returns: no waiting for an animation per Tab.
  */
 async function focusProblems(page: Page): Promise<string[]> {
   await page.evaluate(() => {
@@ -129,21 +130,10 @@ async function focusProblems(page: Page): Promise<string[]> {
 
   for (let tab = 0; tab < MAX_TABS; tab += 1) {
     await page.keyboard.press("Tab");
-    const result = await page.evaluate(async () => {
+    const result = await page.evaluate(() => {
       const element = document.activeElement;
       if (!(element instanceof HTMLElement) || element === document.body) {
         return null;
-      }
-      const STILL_FRAMES = 4;
-      const deadline = performance.now() + 2000;
-      let position = "";
-      let still = 0;
-      while (still < STILL_FRAMES && performance.now() < deadline) {
-        await new Promise(resolve => requestAnimationFrame(resolve));
-        const { top, left } = element.getBoundingClientRect();
-        const next = `${top},${left}`;
-        still = next === position ? still + 1 : 0;
-        position = next;
       }
       const rect = element.getBoundingClientRect();
       const inset = Math.min(2, rect.width / 2, rect.height / 2);
@@ -191,13 +181,20 @@ async function focusProblems(page: Page): Promise<string[]> {
  * Tab through the page; each focused element must be at least partly
  * visible, not hidden behind sticky or overlaid content (WCAG 2.4.11).
  * Checked at the current width and at 360 px, below md, where the bottom
- * app bar is fixed over the end of the viewport.
+ * app bar is fixed over the end of the viewport. Where focus lands does not
+ * depend on how the page scrolls there, so the sweep runs under reduced
+ * motion (see focusProblems) and then goes back to the device's setting.
  */
 export async function expectFocusNotObscured(page: Page): Promise<void> {
   const current = page.viewportSize()?.width;
-  for (const width of new Set([current ?? FOCUS_WIDTH, FOCUS_WIDTH])) {
-    const problems = await withWidth(page, width, () => focusProblems(page));
-    expect(problems, `focus obscured at ${width}px`).toEqual([]);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  try {
+    for (const width of new Set([current ?? FOCUS_WIDTH, FOCUS_WIDTH])) {
+      const problems = await withWidth(page, width, () => focusProblems(page));
+      expect(problems, `focus obscured at ${width}px`).toEqual([]);
+    }
+  } finally {
+    await page.emulateMedia({ reducedMotion: null });
   }
 }
 

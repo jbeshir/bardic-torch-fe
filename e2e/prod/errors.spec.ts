@@ -6,7 +6,12 @@ import {
   expectTargetSizesAtLeast24,
 } from "../support/layout";
 import { HOME_HEADLINE } from "../support/pages";
+import { hydrated } from "../support/shell";
 import { test } from "../support/test";
+
+// Every test opens its own page and shares no state, so they spread over
+// the workers instead of queueing behind this file's checkpoints.
+test.describe.configure({ mode: "parallel" });
 
 test("an unknown URL is a 404 page inside the shell", async ({ page }) => {
   const response = await page.goto("/wiki/Ballad_of_the_Bell");
@@ -32,6 +37,14 @@ test("an unknown URL is a 404 page inside the shell", async ({ page }) => {
   ).toBeVisible();
 
   await checkpoint(page, "not-found");
+});
+
+test("the 404 page reflows, its targets are big enough and focus is never hidden", async ({
+  page,
+}) => {
+  const response = await page.goto("/wiki/Ballad_of_the_Bell");
+  expect(response?.status()).toBe(404);
+  await hydrated(page);
   await expectNoHorizontalOverflow(page);
   await expectTargetSizesAtLeast24(page);
   await expectFocusNotObscured(page);

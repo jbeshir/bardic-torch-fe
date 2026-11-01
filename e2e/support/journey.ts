@@ -86,6 +86,11 @@ async function expectNoAxeViolations(
  * CSS selector, e.g. one styleguide block or an open dialog), axe and the
  * screenshot cover that element only. The name must be declared for this
  * journey in support/checkpoints.ts.
+ *
+ * It marks its test slow: four axe runs and six full-page screenshots of
+ * a long page take 60–90 s on a loaded runner (see the C6 e2e traces), the
+ * whole default timeout. Tests should keep other sweeps out of the test
+ * that takes the checkpoint.
  */
 export async function checkpoint(
   page: Page,
@@ -101,6 +106,7 @@ export async function checkpoint(
     );
   }
 
+  test.slow();
   const originalViewport = page.viewportSize();
   await test.step(`checkpoint ${journey}/${name}`, async () => {
     let original: ThemeState | undefined;

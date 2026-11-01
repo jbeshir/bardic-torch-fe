@@ -7,8 +7,12 @@ import {
   expectTargetSizesAtLeast24,
 } from "../support/layout";
 import { HOME_HEADLINE } from "../support/pages";
-import { appBar } from "../support/shell";
+import { appBar, hydrated } from "../support/shell";
 import { test } from "../support/test";
+
+// Every test opens its own page and shares no state, so they spread over
+// the workers instead of queueing behind this file's checkpoints.
+test.describe.configure({ mode: "parallel" });
 
 test("the home page renders from the production build", async ({ page }) => {
   const response = await page.goto("/");
@@ -25,6 +29,14 @@ test("the home page renders from the production build", async ({ page }) => {
     /^A community index of SCA bardic songs, stories and poems/
   );
   await checkpoint(page, "home");
+});
+
+test("the home page reflows, its targets are big enough and focus is never hidden", async ({
+  page,
+}) => {
+  const response = await page.goto("/");
+  expect(response?.status()).toBe(200);
+  await hydrated(page);
   await expectNoHorizontalOverflow(page);
   await expectTargetSizesAtLeast24(page);
   await expectFocusNotObscured(page);

@@ -8,6 +8,10 @@ import {
 import { hydrated } from "../support/shell";
 import { test } from "../support/test";
 
+// Every test opens its own page and shares no state, so they spread over
+// the workers instead of queueing behind this file's checkpoints.
+test.describe.configure({ mode: "parallel" });
+
 /**
  * The help pages from the production build (DESIGN §10.2, R24): each one's
  * checkpoint, reflow, target sizes and focus visibility, the infobox's
@@ -77,10 +81,7 @@ const PAGES: readonly HelpPageCase[] = [
 ];
 
 for (const help of PAGES) {
-  test(`${help.path} renders, passes its checkpoint and reflows`, async ({
-    page,
-  }) => {
-    test.slow();
+  test(`${help.path} renders and passes its checkpoint`, async ({ page }) => {
     const response = await page.goto(help.path);
     expect(response?.status()).toBe(200);
     await expect(page).toHaveTitle(`${help.title} · Bardic Torch`);
@@ -102,6 +103,14 @@ for (const help of PAGES) {
       ).toHaveText(["Help"]);
     }
     await checkpoint(page, help.checkpoint);
+  });
+
+  test(`${help.path} reflows, its targets are big enough and focus is never hidden`, async ({
+    page,
+  }) => {
+    const response = await page.goto(help.path);
+    expect(response?.status()).toBe(200);
+    await hydrated(page);
     await expectNoHorizontalOverflow(page);
     await expectTargetSizesAtLeast24(page);
     await expectFocusNotObscured(page);
