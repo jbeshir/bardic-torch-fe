@@ -6,7 +6,12 @@ import {
   expectPrimaryTargetsAtLeast44,
   settled,
 } from "../support/layout";
-import { accountPanel, accountTrigger, appBar } from "../support/shell";
+import {
+  accountPanel,
+  accountTrigger,
+  appBar,
+  hydrated,
+} from "../support/shell";
 import { test } from "../support/test";
 
 /**
@@ -22,9 +27,7 @@ const MOBILE = { width: 360, height: 800 };
 async function openHydrated(page: Page, path = "/"): Promise<void> {
   const response = await page.goto(path);
   expect(response?.status()).toBeLessThan(500);
-  await expect(
-    page.locator('header button[aria-haspopup="dialog"]')
-  ).toHaveCount(2);
+  await hydrated(page);
 }
 
 /** The accessible label of whatever has focus, and whether it is inside `selector`. */
