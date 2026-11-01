@@ -142,4 +142,20 @@ describe("CardList", () => {
     expect(screen.getByRole("list")).toHaveClass("md:grid-cols-2");
     expect(screen.getByRole("list")).not.toHaveClass("lg:grid-cols-3");
   });
+
+  it("lets an odd last card span the two columns, so no half row is left empty", () => {
+    render(
+      <CardList>
+        <Card title="One">A</Card>
+        <Card title="Two">B</Card>
+        <Card title="Three">C</Card>
+      </CardList>
+    );
+    for (const item of screen.getAllByRole("listitem")) {
+      expect(item).toHaveClass(
+        "md:last:odd:col-span-2",
+        "lg:last:odd:col-span-1"
+      );
+    }
+  });
 });

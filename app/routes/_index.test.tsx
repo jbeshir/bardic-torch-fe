@@ -14,9 +14,14 @@ describe("Index route", () => {
     expect(h1).toHaveTextContent(HEADLINE);
     expect(h1).toHaveClass("text-display");
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
-    expect(
-      screen.getByText(/We gather the bardic community’s scattered songbooks/)
-    ).toBeInTheDocument();
+    const lead = screen.getByText(
+      /We gather the bardic community’s scattered songbooks/
+    );
+    // Where things live, never "find lyrics": the site only links.
+    expect(lead).toHaveTextContent(
+      /^Bardic Torch helps bards find where a piece’s words, music, history, context and etiquette live,/
+    );
+    expect(lead).not.toHaveTextContent(/lyrics/);
     expect(h1.parentElement).toHaveClass("bg-hero", "rounded-xl");
   });
 

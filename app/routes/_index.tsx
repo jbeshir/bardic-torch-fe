@@ -49,11 +49,11 @@ export default function Index() {
           Find the songs, stories and poems of the bardic community.
         </h1>
         <p className="mt-4 max-w-prose text-body-lg text-fg-muted">
-          Bardic Torch helps bards find music, lyrics, history, context and
-          etiquette, and helps audiences find that song they loved around the
-          campfire but forgot the title of. We gather the bardic community’s
-          scattered songbooks, playlists and album pages into one index, so
-          works can be found, sung and passed on.
+          Bardic Torch helps bards find where a piece’s words, music, history,
+          context and etiquette live, and helps audiences find that song they
+          loved around the campfire but forgot the title of. We gather the
+          bardic community’s scattered songbooks, playlists and album pages into
+          one index, so works can be found, sung and passed on.
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <ButtonLink to={CONTRIBUTE_HREF} variant="primary" size="lg">

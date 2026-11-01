@@ -62,6 +62,13 @@ const COLUMNS = {
   3: "md:grid-cols-2 lg:grid-cols-3",
 } as const;
 
+// An odd last card spans the two columns, rather than leaving half a row
+// empty (until lg, where a three-column list has no half row to fill).
+const ITEM = {
+  2: "md:last:odd:col-span-2",
+  3: "md:last:odd:col-span-2 lg:last:odd:col-span-1",
+} as const;
+
 /**
  * Cards as a list (DESIGN §6.11): `ul role="list"`, each card in an `li`,
  * one column, two from md and (with `columns` 3) three from lg. It is
@@ -79,7 +86,7 @@ export function CardList({
   return (
     <ul role="list" className={`not-prose grid gap-4 ${COLUMNS[columns]}`}>
       {Children.map(children, card => (
-        <li>{card}</li>
+        <li className={ITEM[columns]}>{card}</li>
       ))}
     </ul>
   );
