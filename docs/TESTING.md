@@ -53,6 +53,7 @@ Other FE1 differences from the plan's test list follow from the real API (no rev
   - `runAction()` (`app/test/proxy.ts`) runs a proxy action.
   - `serveApp()` (`app/test/server-build.ts`) renders routes through the real `entry.server` for header and nonce tests.
 
+- **Sentry (R28):** `app/contexts/SentryContext.test.tsx` mocks `@sentry/remix`: no init without a DSN, one init with it across navigations, and an error page that is the first render starts Sentry before reporting. `app/entry.server.test.ts` mocks `@sentry/cloudflare`: loader and render errors are reported (abandoned requests are not), and `sentry.server.test.ts` checks the server gets no DSN when `SENTRY_DSN` is unset or empty. Delivery to a real Sentry is not part of any test run.
 - **Markdown help pages:** `compileMarkdown` and `FRONTMATTER` (`app/test/markdown.ts`) compile with the real pipeline.
 
 ## The fixture API
@@ -100,7 +101,7 @@ If `AUTH_MODE=stub` reaches a build without the flag, it is ignored with a logge
 
 Both phases always run. The command fails if either one does.
 
-**How each phase is served.** Playwright starts the fixture API on port 4010, then the phase's build under `wrangler pages dev build/client` on `127.0.0.1:8788`. It passes an explicit `--compatibility-date` (the same as `wrangler.toml`), `AUTH0_DOMAIN=auth0.invalid` and `AUTH_MODE=stub`. Specs use `http://localhost:8788`, because Playwright's request context only sends Secure cookies over plain HTTP to `localhost`.
+**How each phase is served.** Playwright starts the fixture API on port 4010, then the phase's build under `wrangler pages dev build/client` on `127.0.0.1:8788`. It passes an explicit `--compatibility-date` and `--compatibility-flags=nodejs_als` (the same as `wrangler.toml`, which a hygiene test checks), `AUTH0_DOMAIN=auth0.invalid` and `AUTH_MODE=stub`. No phase sets `SENTRY_DSN`. Specs use `http://localhost:8788`, because Playwright's request context only sends Secure cookies over plain HTTP to `localhost`.
 
 **Projects.** Each phase has two:
 

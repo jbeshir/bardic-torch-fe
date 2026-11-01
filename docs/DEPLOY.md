@@ -186,10 +186,12 @@ Nothing in FE1 reads either key.
 ## 6. Sentry (optional)
 
 - **Setting it up.** Create a project for the browser and Workers (JavaScript → Remix), then set its DSN as the `SENTRY_DSN` secret for Production and/or Preview, and redeploy. With a DSN set:
-  - the browser reports errors (`@sentry/remix`);
-  - the server initialises Sentry in `entry.server.tsx`;
+  - the browser reports errors (`@sentry/remix`, started by `SentryProvider` in the root `Layout`, and by an error page that is the first thing rendered);
+  - the server reports errors with `@sentry/cloudflare`: `functions/_middleware.ts` (the Pages plugin) gives every Function request its own Sentry scope and reports what the Function throws, and `entry.server.tsx` reports what Remix catches: loader and action errors (`handleError`, except abandoned requests) and render errors;
   - the CSP's `connect-src` gains the DSN's ingest origin;
   - error pages show the Sentry event ID as an error reference.
+- **Runtime flag.** `@sentry/cloudflare` needs AsyncLocalStorage, so `wrangler.toml` sets `compatibility_flags = ["nodejs_als"]` (only that, not `nodejs_compat`; Pages reads it from `wrangler.toml`). Without the flag the Worker doesn't start (`No such module "node:async_hooks"`). Wrangler's build warning that `node:async_hooks` "may throw errors unless you enable nodejs_compat" is expected: the flag provides it.
+- **Always:** every server error is also `console.error`'d, so it shows in the Pages Function's real-time logs (Workers & Pages → the project → Functions → Real-time logs) with or without Sentry.
 - **Without it,** nothing is initialised, nothing is sent and no reference is shown.
 
 ## 7. Deploying

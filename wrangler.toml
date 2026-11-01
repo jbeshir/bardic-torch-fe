@@ -3,6 +3,9 @@ name = "bardic-torch-fe"
 # wrangler 3.57.1's bundled workerd supports compatibility dates up to
 # 2024-05-12; playwright.config.ts passes the same date to wrangler pages dev.
 compatibility_date = "2024-05-12"
+# AsyncLocalStorage for @sentry/cloudflare (functions/_middleware.ts): the
+# narrow flag, not nodejs_compat. playwright.config.ts passes the same flags.
+compatibility_flags = ["nodejs_als"]
 pages_build_output_dir = "./build/client"
 
 # This file is the source of truth for the Pages project's plain-text

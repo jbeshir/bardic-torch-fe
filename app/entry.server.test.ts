@@ -1,7 +1,17 @@
 import { json } from "@remix-run/cloudflare";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { handleError } from "./entry.server";
 import * as indexModule from "./routes/_index";
+import { loadContext } from "./test/context";
 import { serveApp } from "./test/server-build";
+
+const captured = vi.hoisted(() => [] as unknown[]);
+vi.mock("@sentry/cloudflare", () => ({
+  captureException: (error: unknown) => {
+    captured.push(error);
+    return "event-id";
+  },
+}));
 
 /**
  * The real entry module, root and home route, plus a route that opts out of
@@ -13,6 +23,18 @@ const privateRoute = {
   default: () => null,
 };
 
+const broken = {
+  loader: () => {
+    throw new Error("The loader broke");
+  },
+  default: () => null,
+};
+const brokenRender = {
+  default: () => {
+    throw new Error("The page broke while rendering");
+  },
+};
+
 const get = serveApp([
   { id: "routes/_index", index: true, module: indexModule, hasLoader: false },
   {
@@ -20,6 +42,13 @@ const get = serveApp([
     path: "private",
     module: privateRoute,
     hasLoader: true,
+  },
+  { id: "routes/broken", path: "broken", module: broken, hasLoader: true },
+  {
+    id: "routes/render",
+    path: "render",
+    module: brokenRender,
+    hasLoader: false,
   },
 ]);
 
@@ -42,7 +71,46 @@ function scriptNonce(response: Response): string {
 }
 
 afterEach(() => {
+  captured.length = 0;
   vi.restoreAllMocks();
+});
+
+describe("server error reporting (R28)", () => {
+  it("logs and reports what a loader throws, through handleError", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const response = await get("/broken");
+    expect(response.status).toBe(500);
+    expect(captured).toEqual([
+      expect.objectContaining({ message: "The loader broke" }),
+    ]);
+    expect(consoleError).toHaveBeenCalledWith(captured[0]);
+  });
+
+  it("logs and reports an error thrown while rendering", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const response = await get("/render");
+    expect(response.status).toBe(500);
+    expect(captured).toContainEqual(
+      expect.objectContaining({ message: "The page broke while rendering" })
+    );
+  });
+
+  it("ignores a request the reader abandoned", () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const controller = new AbortController();
+    controller.abort();
+    handleError(new Error("aborted"), {
+      request: new Request("https://app.test/", { signal: controller.signal }),
+      params: {},
+      context: loadContext(),
+    });
+    expect(captured).toEqual([]);
+    expect(consoleError).not.toHaveBeenCalled();
+  });
 });
 
 describe("document responses", () => {

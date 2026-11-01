@@ -241,6 +241,7 @@ const PLAIN_TEXT_NAMES = ENV_NAMES.filter(
 
 type WranglerConfig = {
   readonly compatibility_date?: string;
+  readonly compatibility_flags?: readonly string[];
   readonly pages_build_output_dir?: string;
   readonly vars?: unknown;
   readonly env?: Readonly<
@@ -307,6 +308,13 @@ describe("ops: wrangler.toml", () => {
     )?.[1];
     expect(e2eDate).toBeDefined();
     expect(wrangler.compatibility_date).toBe(e2eDate);
+  });
+
+  it("enables only nodejs_als (for @sentry/cloudflare), as the e2e server does", () => {
+    expect(wrangler.compatibility_flags).toEqual(["nodejs_als"]);
+    expect(read("playwright.config.ts")).toContain(
+      'const COMPATIBILITY_FLAGS = "nodejs_als";'
+    );
   });
 });
 

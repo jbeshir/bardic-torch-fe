@@ -1467,7 +1467,7 @@ The head is the h1 "Settings" with no tab row. Sections are separated by h2 plus
 - **Body:** "That's on us, not you. Try again in a moment. If it keeps happening, let us know and include the reference below." (Without Sentry there is no reference, so the last clause is dropped.)
 - The reference is the Sentry `eventId` in mono (§6.16). Actions: [Try again] (reload, primary) and [Go to the home page]. "Let us know" is the HelpLinks Contact link, not a separate one.
 - **503 (API down, FE2+):** h1 "Bardic Torch is resting", body "We're doing some upkeep or the catalogue is briefly unreachable. Please try again in a few minutes."
-- **Built as (FE1):** `ServerError` in `app/components/ErrorPages.tsx`. The root `ErrorBoundary` reports the error with `captureRemixErrorBoundaryError` after mounting and shows the returned event id only when `Sentry.isInitialized()`; 404s are not reported.
+- **Built as (FE1):** `ServerError` in `app/components/ErrorPages.tsx`. The root `ErrorBoundary` reports the error with `captureRemixErrorBoundaryError` after mounting (starting Sentry first if the page failed on its first render, `useErrorReference`) and shows the returned event id only when `Sentry.isInitialized()`; 404s are not reported. The server reports the same error on its side (`handleError`, docs/DEPLOY.md §6).
 - It is rendered within the shell. If the shell itself can't render (the root boundary), it uses a minimal standalone page with the same tokens and stylesheet, the Wordmark, and the **same HelpLinks block** (Contact · Help · Licence & attribution) as every other page (WCAG 3.2.6).
 
 ### 10.6 Styleguide (`/styleguide`, not linked from nav, `noindex`)

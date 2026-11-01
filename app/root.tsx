@@ -107,11 +107,13 @@ function ThemeMeta({ theme }: { theme: Theme | null }) {
 }
 
 export function Layout({ children }: { children: ReactNode }) {
-  const loaded = useRouteLoaderData<typeof loader>("root")?.theme ?? "system";
+  const data = useRouteLoaderData<typeof loader>("root");
   return (
-    <ThemeChoiceProvider loaded={loaded}>
-      <Document>{children}</Document>
-    </ThemeChoiceProvider>
+    <SentryProvider dsn={data?.sentryDsn}>
+      <ThemeChoiceProvider loaded={data?.theme ?? "system"}>
+        <Document>{children}</Document>
+      </ThemeChoiceProvider>
+    </SentryProvider>
   );
 }
 
@@ -198,16 +200,14 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({
 };
 
 export default function App() {
-  const { sentryDsn, account } = useLoaderData<LoaderData>();
+  const { account } = useLoaderData<LoaderData>();
 
   return (
-    <SentryProvider dsn={sentryDsn}>
-      <ToastProvider>
-        <AppShell account={account}>
-          <Outlet />
-        </AppShell>
-      </ToastProvider>
-    </SentryProvider>
+    <ToastProvider>
+      <AppShell account={account}>
+        <Outlet />
+      </AppShell>
+    </ToastProvider>
   );
 }
 

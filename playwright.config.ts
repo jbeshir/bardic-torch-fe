@@ -25,6 +25,7 @@ const BIND_IP = "127.0.0.1";
 const HOST = "localhost";
 const BASE_URL = `http://${HOST}:${PORT}`;
 const COMPATIBILITY_DATE = "2024-05-12";
+const COMPATIBILITY_FLAGS = "nodejs_als";
 
 const requestedPhase = process.env.E2E_PHASE ?? "prod";
 if (!(requestedPhase in PHASES)) {
@@ -125,7 +126,8 @@ export default defineConfig({
       command:
         `${PHASES[phase]} && ` +
         `npx wrangler pages dev build/client --port ${PORT} --ip ${BIND_IP} ` +
-        `--compatibility-date=${COMPATIBILITY_DATE} ${bindingFlags}`,
+        `--compatibility-date=${COMPATIBILITY_DATE} ` +
+        `--compatibility-flags=${COMPATIBILITY_FLAGS} ${bindingFlags}`,
       url: `http://${BIND_IP}:${PORT}`,
       timeout: 300_000,
       reuseExistingServer: false,

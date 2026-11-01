@@ -1,8 +1,9 @@
-import * as Sentry from "@sentry/remix";
+import { captureException } from "@sentry/cloudflare";
 import type {
   AppLoadContext,
   EntryContext,
   HandleDataRequestFunction,
+  HandleErrorFunction,
 } from "@remix-run/cloudflare";
 import { RemixServer } from "@remix-run/react";
 import { isbot } from "isbot";
@@ -13,16 +14,23 @@ import {
   withSecurityHeaders,
 } from "~/server/security-headers.server";
 
-// Initialize Sentry for server-side error tracking
-// Note: In Cloudflare Workers, initialization happens per-request
-const initSentry = (context: AppLoadContext) => {
-  const dsn = context.cloudflare?.env?.SENTRY_DSN;
-  if (dsn && !Sentry.isInitialized()) {
-    Sentry.init({
-      dsn,
-      tracesSampleRate: 0.1,
-    });
-  }
+/**
+ * Errors are logged (Cloudflare's real-time logs) and reported to Sentry,
+ * which functions/_middleware.ts sets up per request; without SENTRY_DSN
+ * `captureException` does nothing.
+ */
+function report(error: unknown): void {
+  console.error(error);
+  captureException(error);
+}
+
+/**
+ * What a loader or action throws (Remix renders the error boundary). A
+ * request the reader abandoned is not an error.
+ */
+export const handleError: HandleErrorFunction = (error, { request }) => {
+  if (request.signal.aborted) return;
+  report(error);
 };
 
 export default async function handleRequest(
@@ -32,7 +40,6 @@ export default async function handleRequest(
   remixContext: EntryContext,
   loadContext: AppLoadContext
 ) {
-  initSentry(loadContext);
   const nonce = createNonce();
 
   const body = await renderToReadableStream(
@@ -43,8 +50,7 @@ export default async function handleRequest(
       nonce,
       signal: request.signal,
       onError(error: unknown) {
-        console.error(error);
-        Sentry.captureException(error);
+        report(error);
         responseStatusCode = 500;
       },
     }
