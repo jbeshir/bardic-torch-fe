@@ -14,6 +14,7 @@ import {
   LOGOUT_ACTION,
   ROLE_LABELS,
   loginHref,
+  SETTINGS_PATH,
   type Account,
 } from "~/constants/account";
 import { useDismiss } from "~/hooks/useDismiss";
@@ -71,7 +72,7 @@ function AccountPanel({
         <Alert tone="danger">{account.message}</Alert>
       ) : null}
       {account.state === "blocked" ? null : (
-        <RemixLink to="/settings" prefetch="intent" className={ROW}>
+        <RemixLink to={SETTINGS_PATH} prefetch="intent" className={ROW}>
           <IconSettings
             size={18}
             stroke={1.75}

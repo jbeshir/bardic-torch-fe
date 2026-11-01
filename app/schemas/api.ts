@@ -1,5 +1,13 @@
 import { z } from "zod";
 import type { components } from "~/api/schema.gen";
+import {
+  characterCount,
+  DISPLAY_NAME_MAX,
+  displayNameProblem,
+  normaliseDisplayName,
+  TOKEN_NAME_MAX,
+  tokenNameProblem,
+} from "./rules";
 
 /**
  * Runtime schemas for the Bardic Torch API, checked at compile time against
@@ -8,28 +16,6 @@ import type { components } from "~/api/schema.gen";
  */
 
 type Schemas = components["schemas"];
-
-/** Longest display name the API keeps, in characters, after normalising. */
-const DISPLAY_NAME_MAX = 64;
-/** Longest display name the API reads, in characters, before normalising. */
-const DISPLAY_NAME_INPUT_MAX = 256;
-/** Longest API token name the API keeps, in characters, after trimming. */
-const TOKEN_NAME_MAX = 128;
-/** How many active API tokens one user may have. */
-export const ACTIVE_TOKEN_LIMIT = 10;
-
-/** The display-name rule as UI copy, for hints and upstream rejections. */
-export const DISPLAY_NAME_RULE = `Use 1 to ${DISPLAY_NAME_MAX} characters, without control or invisible formatting characters.`;
-/** The token-name rule as UI copy. */
-export const TOKEN_NAME_RULE = `Use ${TOKEN_NAME_MAX} characters or fewer, or leave the name blank.`;
-
-/** Unicode control (Cc) and format (Cf) characters, such as U+202E. */
-const CONTROL_OR_FORMAT = /[\p{Cc}\p{Cf}]/u;
-
-/** Length in characters (code points), as the API counts it. */
-function characterCount(value: string): number {
-  return [...value].length;
-}
 
 /** A string of `min` to `max` characters, as JSON Schema counts them. */
 function characters(min: number, max: number) {
@@ -84,41 +70,36 @@ export const upstreamErrorSchema = z.object({
   message: z.string(),
 });
 
+/** A zod refinement that reports `problem(value)` as the issue. */
+function checkedBy<T>(problem: (value: T) => string | null) {
+  return (value: T, context: z.RefinementCtx) => {
+    const message = problem(value);
+    if (message !== null) context.addIssue({ code: "custom", message });
+  };
+}
+
 /**
- * Form body of `PATCH /api/me`. The name is NFC-normalised and trimmed, as
- * the API does, so the proxy rejects what the API would reject.
+ * Form body of `PATCH /api/me`. The name is checked with the shared rule,
+ * then NFC-normalised and trimmed, as the API does, so the proxy rejects
+ * what the API would reject.
  */
 export const updateMeFormSchema = z.object({
   display_name: z
-    .string({ required_error: "Enter a display name." })
-    .refine(value => characterCount(value) <= DISPLAY_NAME_INPUT_MAX, {
-      message: `Enter a display name of ${DISPLAY_NAME_MAX} characters or fewer.`,
-    })
-    .transform(value => value.normalize("NFC").trim())
-    .refine(value => value !== "", { message: "Enter a display name." })
-    .refine(value => characterCount(value) <= DISPLAY_NAME_MAX, {
-      message: `Enter a display name of ${DISPLAY_NAME_MAX} characters or fewer.`,
-    })
-    .refine(value => !CONTROL_OR_FORMAT.test(value), {
-      message:
-        "Remove control or invisible formatting characters from the display name.",
-    }),
+    .string()
+    .optional()
+    .superRefine(checkedBy(displayNameProblem))
+    .transform(value => normaliseDisplayName(value ?? "")),
 });
 
 /** Form body of `POST /api/tokens`; a blank name means no name. */
 export const createApiTokenFormSchema = z
   .object({
-    name: z
-      .string()
-      .trim()
-      .refine(value => characterCount(value) <= TOKEN_NAME_MAX, {
-        message: `Enter a token name of ${TOKEN_NAME_MAX} characters or fewer.`,
-      })
-      .optional(),
+    name: z.string().superRefine(checkedBy(tokenNameProblem)).optional(),
   })
-  .transform(({ name }): Schemas["CreateAPITokenRequest"] =>
-    name ? { name } : {}
-  );
+  .transform(({ name }): Schemas["CreateAPITokenRequest"] => {
+    const trimmed = name?.trim();
+    return trimmed ? { name: trimmed } : {};
+  });
 
 export type User = z.output<typeof userSchema>;
 export type UpstreamErrorCode = z.output<typeof errorCodeSchema>;

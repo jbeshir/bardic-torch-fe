@@ -18,7 +18,7 @@ import {
   sessionCookie,
   sessionUser,
 } from "~/test/context";
-import { DISPLAY_NAME_RULE, TOKEN_NAME_RULE } from "~/schemas/api";
+import { DISPLAY_NAME_RULE, TOKEN_NAME_RULE } from "~/schemas/rules";
 import {
   createApiToken,
   getMe,

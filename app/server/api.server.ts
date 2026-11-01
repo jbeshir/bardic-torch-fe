@@ -3,16 +3,19 @@ import { json } from "@remix-run/cloudflare";
 import { z } from "zod";
 import type { operations, paths } from "~/api/schema.gen";
 import {
-  ACTIVE_TOKEN_LIMIT,
   apiTokenListSchema,
   createdApiTokenSchema,
-  DISPLAY_NAME_RULE,
-  TOKEN_NAME_RULE,
   upstreamErrorSchema,
   userSchema,
   type UpstreamErrorCode,
   type User,
 } from "~/schemas/api";
+import {
+  ACTIVE_TOKEN_LIMIT,
+  DISPLAY_NAME_RULE,
+  TOKEN_NAME_RULE,
+} from "~/schemas/rules";
+import type { ProxyBody, ProxyError } from "~/schemas/proxy";
 import {
   createAuthenticatedFetch,
   getOrCreateSessionStorage,
@@ -34,14 +37,8 @@ type ErrorCode =
   | "bad_gateway"
   | "method_not_allowed";
 
-type FieldError = { readonly field: string; readonly message: string };
-
-type ApiError = {
-  readonly code: ErrorCode;
-  readonly message: string;
-  /** Per-field problems with a request body, shown next to the fields. */
-  readonly fields?: readonly FieldError[];
-};
+/** `fields` lists per-field problems with a request body, shown next to the fields. */
+type ApiError = ProxyError & { readonly code: ErrorCode };
 
 type ApiResult<T> = (
   | { readonly ok: true; readonly data: T }
@@ -311,7 +308,7 @@ export async function readFormBody<S extends z.ZodTypeAny>(
 export function proxyResponse(result: ApiResult<unknown>): Response {
   const headers = new Headers(result.headers);
   headers.set("Cache-Control", "no-store");
-  return json(
+  return json<ProxyBody<unknown>>(
     result.ok
       ? { ok: true, data: result.data }
       : { ok: false, error: result.error },

@@ -93,4 +93,9 @@
   .transform-box-fill {
     transform-box: fill-box;
   }
+
+  /* Break a long unspaced value (a token name, a secret) anywhere, even in a table cell. */
+  .wrap-anywhere {
+    overflow-wrap: anywhere;
+  }
 }

@@ -27,3 +27,14 @@ export const LOGOUT_ACTION = "/auth/logout";
 
 /** The proxy route that changes the display name. */
 export const ME_ACTION = "/api/me";
+
+/** The settings page, where "Log in" from a settings error comes back to. */
+export const SETTINGS_PATH = "/settings";
+
+/** The proxy route that creates API tokens. */
+export const TOKENS_ACTION = "/api/tokens";
+
+/** The proxy route that revokes the API token `tokenId`. */
+export function tokenAction(tokenId: string): string {
+  return `${TOKENS_ACTION}/${encodeURIComponent(tokenId)}`;
+}

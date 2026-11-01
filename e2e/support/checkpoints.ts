@@ -63,11 +63,13 @@ export const CHECKPOINTS: Readonly<
     ],
     theme: ["dark-choice"],
     errors: ["not-found"],
+    settings: ["signed-out"],
   },
   stub: {
     styleguide: [...STYLEGUIDE_BLOCKS, "dialog-open", "drawer-open"],
     navigation: ["account-open"],
-    errors: ["profile-unavailable"],
+    errors: ["profile-unavailable", "settings-error"],
+    account: ["settings", "token-revealed", "revoke-confirm"],
   },
 };
 

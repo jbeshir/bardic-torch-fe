@@ -162,116 +162,119 @@ The ratios were computed with the WCAG 2.x relative-luminance formula:
 - The minimum is 4.5:1 for text.
 - The minimum is 3:1 for non-text UI: control boundaries, focus rings, icons that carry meaning, and badge edges.
 
-| Pair (foreground on background)      | Min   | Light   | Dark    | Notes                                                |
-| ------------------------------------ | ----- | ------- | ------- | ---------------------------------------------------- |
-| `fg` on `canvas`                     | 4.5:1 | 14.11:1 | 13.34:1 | body text on page                                    |
-| `fg` on `surface`                    | 4.5:1 | 15.38:1 | 12.61:1 | body text on surface                                 |
-| `fg` on `surface-raised`             | 4.5:1 | 15.75:1 | 11.40:1 |                                                      |
-| `fg` on `surface-sunken`             | 4.5:1 | 12.82:1 | 13.78:1 |                                                      |
-| `fg-muted` on `canvas`               | 4.5:1 | 7.93:1  | 9.77:1  |                                                      |
-| `fg-muted` on `surface`              | 4.5:1 | 8.64:1  | 9.23:1  |                                                      |
-| `fg-muted` on `surface-raised`       | 4.5:1 | 8.84:1  | 8.34:1  |                                                      |
-| `fg-muted` on `surface-sunken`       | 4.5:1 | 7.20:1  | 10.09:1 |                                                      |
-| `fg-subtle` on `canvas`              | 4.5:1 | 5.39:1  | 6.61:1  |                                                      |
-| `fg-subtle` on `surface`             | 4.5:1 | 5.87:1  | 6.25:1  |                                                      |
-| `fg-subtle` on `surface-raised`      | 4.5:1 | 6.01:1  | 5.65:1  |                                                      |
-| `fg-subtle` on `surface-sunken`      | 4.5:1 | 4.89:1  | 6.83:1  |                                                      |
-| `link` on `canvas`                   | 4.5:1 | 7.31:1  | 9.17:1  |                                                      |
-| `link` on `surface`                  | 4.5:1 | 7.97:1  | 8.66:1  |                                                      |
-| `link` on `surface-raised`           | 4.5:1 | 8.16:1  | 7.83:1  |                                                      |
-| `link` on `surface-sunken`           | 4.5:1 | 6.64:1  | 9.47:1  | chips                                                |
-| `link-visited` on `surface`          | 4.5:1 | 8.04:1  | 8.39:1  |                                                      |
-| `link-visited` on `canvas`           | 4.5:1 | 7.38:1  | 8.89:1  |                                                      |
-| `link-hover` on `surface`            | 4.5:1 | 11.04:1 | 11.54:1 |                                                      |
-| `link-hover` on `surface-sunken`     | 4.5:1 | 9.20:1  | 12.61:1 |                                                      |
-| `accent-text` on `canvas`            | 4.5:1 | 6.00:1  | 9.86:1  | accent text / wordmark                               |
-| `accent-text` on `surface`           | 4.5:1 | 6.54:1  | 9.32:1  |                                                      |
-| `accent-text` on `accent-subtle`     | 4.5:1 | 5.73:1  | 7.94:1  | selected nav item                                    |
-| `accent-fg` on `accent`              | 4.5:1 | 5.74:1  | 8.48:1  | primary button                                       |
-| `accent-fg` on `accent-hover`        | 4.5:1 | 7.47:1  | 10.37:1 | primary hover                                        |
-| `danger-on` on `danger`              | 4.5:1 | 7.76:1  | 7.80:1  | danger button                                        |
-| `danger-on` on `danger-hover`        | 4.5:1 | 9.99:1  | 9.85:1  |                                                      |
-| `fg` on `selection`                  | 4.5:1 | 11.52:1 | 6.59:1  | selected text                                        |
-| `border-strong` on `surface`         | 3:1   | 4.06:1  | 3.57:1  | control edge (inputs, secondary buttons)             |
-| `border-strong` on `canvas`          | 3:1   | 3.73:1  | 3.78:1  |                                                      |
-| `border-strong` on `surface-raised`  | 3:1   | 4.16:1  | 3.23:1  |                                                      |
-| `border-strong` on `surface-sunken`  | 3:1   | 3.39:1  | 3.90:1  |                                                      |
-| `focus` on `canvas`                  | 3:1   | 5.39:1  | 9.11:1  | focus ring                                           |
-| `focus` on `surface`                 | 3:1   | 5.87:1  | 8.61:1  |                                                      |
-| `focus` on `surface-raised`          | 3:1   | 6.01:1  | 7.78:1  |                                                      |
-| `focus` on `surface-sunken`          | 3:1   | 4.89:1  | 9.41:1  |                                                      |
-| `accent` on `canvas`                 | 3:1   | 5.27:1  | 8.74:1  | primary button edge, current-tab bar                 |
-| `accent` on `surface`                | 3:1   | 5.74:1  | 8.26:1  |                                                      |
-| `danger` on `surface`                | 3:1   | 7.58:1  | 7.52:1  | danger button edge                                   |
-| `link-visited` on `surface-raised`   | 4.5:1 | 8.23:1  | 7.59:1  |                                                      |
-| `link-visited` on `surface-sunken`   | 4.5:1 | 6.70:1  | 9.18:1  |                                                      |
-| `link-hover` on `canvas`             | 4.5:1 | 10.13:1 | 12.21:1 |                                                      |
-| `link-hover` on `accent-subtle`      | 4.5:1 | 9.66:1  | 9.83:1  | chip hover                                           |
-| `link` on `accent-subtle`            | 4.5:1 | 6.98:1  | 7.38:1  | chip current                                         |
-| `fg` on `accent-subtle`              | 4.5:1 | 13.47:1 | 10.74:1 |                                                      |
-| `fg-muted` on `accent-subtle`        | 4.5:1 | 7.56:1  | 7.86:1  | chip facet prefix on hover and current               |
-| `danger-fg` on `canvas`              | 4.5:1 | 9.62:1  | 12.35:1 | field error text                                     |
-| `danger-fg` on `surface-raised`      | 4.5:1 | 10.73:1 | 10.55:1 |                                                      |
-| `success-fg` on `canvas`             | 4.5:1 | 9.16:1  | 13.20:1 |                                                      |
-| `danger-icon` on `surface-raised`    | 3:1   | 6.66:1  | 6.80:1  | error input border; secondary-danger trigger edge    |
-| `accent` on `surface-raised`         | 3:1   | 5.88:1  | 7.46:1  | logo outer flame                                     |
-| `accent` on `surface-sunken`         | 3:1   | 4.79:1  | 9.02:1  |                                                      |
-| `info-fg` on `info-bg`               | 4.5:1 | 9.48:1  | 10.94:1 | info alert text                                      |
-| `info-icon` on `info-bg`             | 3:1   | 6.02:1  | 7.53:1  | info alert icon                                      |
-| `info-fg` on `surface`               | 4.5:1 | 10.61:1 | 11.99:1 | info inline text on surface                          |
-| `info-icon` on `surface`             | 3:1   | 6.74:1  | 8.26:1  | inline icon                                          |
-| `success-fg` on `success-bg`         | 4.5:1 | 8.89:1  | 11.43:1 | success alert text                                   |
-| `success-icon` on `success-bg`       | 3:1   | 5.39:1  | 7.82:1  | success alert icon                                   |
-| `success-fg` on `surface`            | 4.5:1 | 9.98:1  | 12.47:1 | success inline text on surface                       |
-| `success-icon` on `surface`          | 3:1   | 6.05:1  | 8.53:1  | inline icon                                          |
-| `warning-fg` on `warning-bg`         | 4.5:1 | 8.91:1  | 11.61:1 | warning alert text                                   |
-| `warning-icon` on `warning-bg`       | 3:1   | 5.34:1  | 8.16:1  | warning alert icon                                   |
-| `warning-fg` on `surface`            | 4.5:1 | 9.84:1  | 12.89:1 | warning inline text on surface                       |
-| `warning-icon` on `surface`          | 3:1   | 5.90:1  | 9.06:1  | inline icon                                          |
-| `danger-fg` on `danger-bg`           | 4.5:1 | 9.13:1  | 11.16:1 | danger alert text                                    |
-| `danger-icon` on `danger-bg`         | 3:1   | 5.67:1  | 7.20:1  | danger alert icon                                    |
-| `danger-fg` on `surface`             | 4.5:1 | 10.48:1 | 11.67:1 | danger inline text on surface                        |
-| `danger-icon` on `surface`           | 3:1   | 6.51:1  | 7.52:1  | inline icon; secondary-danger trigger edge           |
-| `pending-fg` on `pending-bg`         | 4.5:1 | 9.57:1  | 11.04:1 | pending alert text                                   |
-| `pending-icon` on `pending-bg`       | 3:1   | 5.85:1  | 7.08:1  | pending alert icon                                   |
-| `pending-fg` on `surface`            | 4.5:1 | 10.83:1 | 11.84:1 | pending inline text on surface                       |
-| `pending-icon` on `surface`          | 3:1   | 6.62:1  | 7.59:1  | inline icon                                          |
-| `cons-low-fg` on `cons-low-bg`       | 4.5:1 | 8.31:1  | 10.71:1 | badge text                                           |
-| `cons-low-border` on `cons-low-bg`   | 3:1   | 4.24:1  | 5.70:1  | badge icon/border                                    |
-| `cons-low-border` on `surface`       | 3:1   | 4.88:1  | 6.65:1  | badge edge vs surface                                |
-| `cons-end-fg` on `cons-end-bg`       | 4.5:1 | 8.05:1  | 10.77:1 | badge text                                           |
-| `cons-end-border` on `cons-end-bg`   | 3:1   | 3.65:1  | 6.28:1  | badge icon/border                                    |
-| `cons-end-border` on `surface`       | 3:1   | 4.17:1  | 7.11:1  | badge edge vs surface                                |
-| `cons-crit-fg` on `cons-crit-bg`     | 4.5:1 | 8.39:1  | 10.53:1 | badge text                                           |
-| `cons-crit-border` on `cons-crit-bg` | 3:1   | 4.88:1  | 5.71:1  | badge icon/border                                    |
-| `cons-crit-border` on `surface`      | 3:1   | 5.84:1  | 6.14:1  | badge edge vs surface                                |
-| `cons-res-fg` on `cons-res-bg`       | 4.5:1 | 9.53:1  | 10.51:1 | badge text                                           |
-| `cons-res-border` on `cons-res-bg`   | 3:1   | 4.56:1  | 4.68:1  | badge icon/border                                    |
-| `cons-res-border` on `surface`       | 3:1   | 5.49:1  | 5.27:1  | badge edge vs surface                                |
-| `cons-un-fg` on `cons-un-bg`         | 4.5:1 | 7.52:1  | 8.76:1  | badge text                                           |
-| `cons-un-border` on `cons-un-bg`     | 3:1   | 3.54:1  | 3.39:1  | badge icon/border                                    |
-| `cons-un-border` on `surface`        | 3:1   | 4.06:1  | 3.57:1  | badge edge vs surface                                |
-| `danger` on `canvas`                 | 3:1   | 6.96:1  | 7.96:1  | danger button edge                                   |
-| `danger` on `surface-raised`         | 3:1   | 7.76:1  | 6.80:1  | danger button edge in a dialog                       |
-| `accent-text` on `surface-raised`    | 4.5:1 | 6.70:1  | 8.42:1  | wordmark in the drawer                               |
-| `accent` on `accent-subtle`          | 3:1   | 5.03:1  | 7.03:1  | current nav item inset bar; current chip edge        |
-| `border-strong` on `accent-subtle`   | 3:1   | 3.56:1  | 3.04:1  | chip hover edge                                      |
-| `focus` on `accent-subtle`           | 3:1   | 5.14:1  | 7.33:1  | inset focus ring (dense containers, links in alerts) |
-| `focus` on `info-bg`                 | 3:1   | 5.24:1  | 7.85:1  | inset focus ring (dense containers, links in alerts) |
-| `focus` on `success-bg`              | 3:1   | 5.23:1  | 7.89:1  | inset focus ring (dense containers, links in alerts) |
-| `focus` on `warning-bg`              | 3:1   | 5.31:1  | 7.75:1  | inset focus ring (dense containers, links in alerts) |
-| `focus` on `danger-bg`               | 3:1   | 5.11:1  | 8.24:1  | inset focus ring (dense containers, links in alerts) |
-| `focus` on `pending-bg`              | 3:1   | 5.19:1  | 8.03:1  | inset focus ring (dense containers, links in alerts) |
-| `focus` on `hero-glow`               | 3:1   | 5.17:1  | 7.52:1  | inset focus ring (dense containers, links in alerts) |
-| `fg` on `hero-glow`                  | 4.5:1 | 13.54:1 | 11.02:1 | home hero, strongest glow point                      |
-| `fg-muted` on `hero-glow`            | 4.5:1 | 7.61:1  | 8.06:1  | hero lead                                            |
-| `link` on `hero-glow`                | 4.5:1 | 7.02:1  | 7.57:1  |                                                      |
-| `border-strong` on `hero-glow`       | 3:1   | 3.58:1  | 3.12:1  | hero SearchBox edge                                  |
-| `accent` on `hero-glow`              | 3:1   | 5.06:1  | 7.21:1  | hero logo mark                                       |
-| `info-icon` on `surface-raised`      | 3:1   | 6.91:1  | 7.46:1  | toast icon and edge bar                              |
-| `success-icon` on `surface-raised`   | 3:1   | 6.19:1  | 7.71:1  | toast icon and edge bar                              |
-| `info-icon` on `surface-sunken`      | 3:1   | 5.62:1  | 9.02:1  | SidebarNote icon                                     |
-| `accent-text` on `surface-sunken`    | 3:1   | 5.45:1  | 10.18:1 | external nav arrow on hover                          |
+| Pair (foreground on background)      | Min   | Light   | Dark    | Notes                                                       |
+| ------------------------------------ | ----- | ------- | ------- | ----------------------------------------------------------- |
+| `fg` on `canvas`                     | 4.5:1 | 14.11:1 | 13.34:1 | body text on page                                           |
+| `fg` on `surface`                    | 4.5:1 | 15.38:1 | 12.61:1 | body text on surface                                        |
+| `fg` on `surface-raised`             | 4.5:1 | 15.75:1 | 11.40:1 |                                                             |
+| `fg` on `surface-sunken`             | 4.5:1 | 12.82:1 | 13.78:1 |                                                             |
+| `fg-muted` on `canvas`               | 4.5:1 | 7.93:1  | 9.77:1  |                                                             |
+| `fg-muted` on `surface`              | 4.5:1 | 8.64:1  | 9.23:1  |                                                             |
+| `fg-muted` on `surface-raised`       | 4.5:1 | 8.84:1  | 8.34:1  |                                                             |
+| `fg-muted` on `surface-sunken`       | 4.5:1 | 7.20:1  | 10.09:1 |                                                             |
+| `fg-subtle` on `canvas`              | 4.5:1 | 5.39:1  | 6.61:1  |                                                             |
+| `fg-subtle` on `surface`             | 4.5:1 | 5.87:1  | 6.25:1  |                                                             |
+| `fg-subtle` on `surface-raised`      | 4.5:1 | 6.01:1  | 5.65:1  |                                                             |
+| `fg-subtle` on `surface-sunken`      | 4.5:1 | 4.89:1  | 6.83:1  |                                                             |
+| `link` on `canvas`                   | 4.5:1 | 7.31:1  | 9.17:1  |                                                             |
+| `link` on `surface`                  | 4.5:1 | 7.97:1  | 8.66:1  |                                                             |
+| `link` on `surface-raised`           | 4.5:1 | 8.16:1  | 7.83:1  |                                                             |
+| `link` on `surface-sunken`           | 4.5:1 | 6.64:1  | 9.47:1  | chips                                                       |
+| `link-visited` on `surface`          | 4.5:1 | 8.04:1  | 8.39:1  |                                                             |
+| `link-visited` on `canvas`           | 4.5:1 | 7.38:1  | 8.89:1  |                                                             |
+| `link-hover` on `surface`            | 4.5:1 | 11.04:1 | 11.54:1 |                                                             |
+| `link-hover` on `surface-sunken`     | 4.5:1 | 9.20:1  | 12.61:1 |                                                             |
+| `accent-text` on `canvas`            | 4.5:1 | 6.00:1  | 9.86:1  | accent text / wordmark                                      |
+| `accent-text` on `surface`           | 4.5:1 | 6.54:1  | 9.32:1  |                                                             |
+| `accent-text` on `accent-subtle`     | 4.5:1 | 5.73:1  | 7.94:1  | selected nav item                                           |
+| `accent-fg` on `accent`              | 4.5:1 | 5.74:1  | 8.48:1  | primary button                                              |
+| `accent-fg` on `accent-hover`        | 4.5:1 | 7.47:1  | 10.37:1 | primary hover                                               |
+| `danger-on` on `danger`              | 4.5:1 | 7.76:1  | 7.80:1  | danger button                                               |
+| `danger-on` on `danger-hover`        | 4.5:1 | 9.99:1  | 9.85:1  |                                                             |
+| `fg` on `selection`                  | 4.5:1 | 11.52:1 | 6.59:1  | selected text                                               |
+| `border-strong` on `surface`         | 3:1   | 4.06:1  | 3.57:1  | control edge (inputs, secondary buttons)                    |
+| `border-strong` on `canvas`          | 3:1   | 3.73:1  | 3.78:1  |                                                             |
+| `border-strong` on `surface-raised`  | 3:1   | 4.16:1  | 3.23:1  |                                                             |
+| `border-strong` on `surface-sunken`  | 3:1   | 3.39:1  | 3.90:1  |                                                             |
+| `focus` on `canvas`                  | 3:1   | 5.39:1  | 9.11:1  | focus ring                                                  |
+| `focus` on `surface`                 | 3:1   | 5.87:1  | 8.61:1  |                                                             |
+| `focus` on `surface-raised`          | 3:1   | 6.01:1  | 7.78:1  |                                                             |
+| `focus` on `surface-sunken`          | 3:1   | 4.89:1  | 9.41:1  |                                                             |
+| `accent` on `canvas`                 | 3:1   | 5.27:1  | 8.74:1  | primary button edge, current-tab bar                        |
+| `accent` on `surface`                | 3:1   | 5.74:1  | 8.26:1  |                                                             |
+| `danger` on `surface`                | 3:1   | 7.58:1  | 7.52:1  | danger button edge                                          |
+| `link-visited` on `surface-raised`   | 4.5:1 | 8.23:1  | 7.59:1  |                                                             |
+| `link-visited` on `surface-sunken`   | 4.5:1 | 6.70:1  | 9.18:1  |                                                             |
+| `link-hover` on `canvas`             | 4.5:1 | 10.13:1 | 12.21:1 |                                                             |
+| `link-hover` on `accent-subtle`      | 4.5:1 | 9.66:1  | 9.83:1  | chip hover                                                  |
+| `link` on `accent-subtle`            | 4.5:1 | 6.98:1  | 7.38:1  | chip current                                                |
+| `fg` on `accent-subtle`              | 4.5:1 | 13.47:1 | 10.74:1 |                                                             |
+| `fg-muted` on `accent-subtle`        | 4.5:1 | 7.56:1  | 7.86:1  | chip facet prefix on hover and current                      |
+| `danger-fg` on `canvas`              | 4.5:1 | 9.62:1  | 12.35:1 | field error text                                            |
+| `danger-fg` on `surface-raised`      | 4.5:1 | 10.73:1 | 10.55:1 |                                                             |
+| `success-fg` on `canvas`             | 4.5:1 | 9.16:1  | 13.20:1 |                                                             |
+| `danger-icon` on `surface-raised`    | 3:1   | 6.66:1  | 6.80:1  | error input border; secondary-danger trigger edge           |
+| `accent` on `surface-raised`         | 3:1   | 5.88:1  | 7.46:1  | logo outer flame                                            |
+| `accent` on `surface-sunken`         | 3:1   | 4.79:1  | 9.02:1  |                                                             |
+| `info-fg` on `info-bg`               | 4.5:1 | 9.48:1  | 10.94:1 | info alert text                                             |
+| `info-icon` on `info-bg`             | 3:1   | 6.02:1  | 7.53:1  | info alert icon                                             |
+| `info-fg` on `surface`               | 4.5:1 | 10.61:1 | 11.99:1 | info inline text on surface                                 |
+| `info-icon` on `surface`             | 3:1   | 6.74:1  | 8.26:1  | inline icon                                                 |
+| `success-fg` on `success-bg`         | 4.5:1 | 8.89:1  | 11.43:1 | success alert text                                          |
+| `success-icon` on `success-bg`       | 3:1   | 5.39:1  | 7.82:1  | success alert icon                                          |
+| `success-fg` on `surface`            | 4.5:1 | 9.98:1  | 12.47:1 | success inline text on surface                              |
+| `success-icon` on `surface`          | 3:1   | 6.05:1  | 8.53:1  | inline icon                                                 |
+| `warning-fg` on `warning-bg`         | 4.5:1 | 8.91:1  | 11.61:1 | warning alert text                                          |
+| `warning-icon` on `warning-bg`       | 3:1   | 5.34:1  | 8.16:1  | warning alert icon                                          |
+| `warning-fg` on `surface`            | 4.5:1 | 9.84:1  | 12.89:1 | warning inline text on surface                              |
+| `warning-icon` on `surface`          | 3:1   | 5.90:1  | 9.06:1  | inline icon                                                 |
+| `danger-fg` on `danger-bg`           | 4.5:1 | 9.13:1  | 11.16:1 | danger alert text                                           |
+| `danger-icon` on `danger-bg`         | 3:1   | 5.67:1  | 7.20:1  | danger alert icon                                           |
+| `danger-fg` on `surface`             | 4.5:1 | 10.48:1 | 11.67:1 | danger inline text on surface                               |
+| `danger-icon` on `surface`           | 3:1   | 6.51:1  | 7.52:1  | inline icon; secondary-danger trigger edge                  |
+| `pending-fg` on `pending-bg`         | 4.5:1 | 9.57:1  | 11.04:1 | pending alert text                                          |
+| `pending-icon` on `pending-bg`       | 3:1   | 5.85:1  | 7.08:1  | pending alert icon                                          |
+| `pending-fg` on `surface`            | 4.5:1 | 10.83:1 | 11.84:1 | pending inline text on surface                              |
+| `pending-icon` on `surface`          | 3:1   | 6.62:1  | 7.59:1  | inline icon                                                 |
+| `cons-low-fg` on `cons-low-bg`       | 4.5:1 | 8.31:1  | 10.71:1 | badge text                                                  |
+| `cons-low-border` on `cons-low-bg`   | 3:1   | 4.24:1  | 5.70:1  | badge icon/border                                           |
+| `cons-low-border` on `surface`       | 3:1   | 4.88:1  | 6.65:1  | badge edge vs surface                                       |
+| `cons-end-fg` on `cons-end-bg`       | 4.5:1 | 8.05:1  | 10.77:1 | badge text                                                  |
+| `cons-end-border` on `cons-end-bg`   | 3:1   | 3.65:1  | 6.28:1  | badge icon/border                                           |
+| `cons-end-border` on `surface`       | 3:1   | 4.17:1  | 7.11:1  | badge edge vs surface                                       |
+| `cons-crit-fg` on `cons-crit-bg`     | 4.5:1 | 8.39:1  | 10.53:1 | badge text                                                  |
+| `cons-crit-border` on `cons-crit-bg` | 3:1   | 4.88:1  | 5.71:1  | badge icon/border                                           |
+| `cons-crit-border` on `surface`      | 3:1   | 5.84:1  | 6.14:1  | badge edge vs surface                                       |
+| `cons-res-fg` on `cons-res-bg`       | 4.5:1 | 9.53:1  | 10.51:1 | badge text                                                  |
+| `cons-res-border` on `cons-res-bg`   | 3:1   | 4.56:1  | 4.68:1  | badge icon/border                                           |
+| `cons-res-border` on `surface`       | 3:1   | 5.49:1  | 5.27:1  | badge edge vs surface                                       |
+| `cons-un-fg` on `cons-un-bg`         | 4.5:1 | 7.52:1  | 8.76:1  | badge text                                                  |
+| `cons-un-border` on `cons-un-bg`     | 3:1   | 3.54:1  | 3.39:1  | badge icon/border                                           |
+| `cons-un-border` on `surface`        | 3:1   | 4.06:1  | 3.57:1  | badge edge vs surface                                       |
+| `danger` on `canvas`                 | 3:1   | 6.96:1  | 7.96:1  | danger button edge                                          |
+| `danger` on `surface-raised`         | 3:1   | 7.76:1  | 6.80:1  | danger button edge in a dialog                              |
+| `accent-text` on `surface-raised`    | 4.5:1 | 6.70:1  | 8.42:1  | wordmark in the drawer                                      |
+| `accent` on `accent-subtle`          | 3:1   | 5.03:1  | 7.03:1  | current nav item inset bar; current chip edge               |
+| `border-strong` on `accent-subtle`   | 3:1   | 3.56:1  | 3.04:1  | chip hover edge                                             |
+| `focus` on `accent-subtle`           | 3:1   | 5.14:1  | 7.33:1  | inset focus ring (dense containers, links in alerts)        |
+| `focus` on `info-bg`                 | 3:1   | 5.24:1  | 7.85:1  | inset focus ring (dense containers, links in alerts)        |
+| `focus` on `success-bg`              | 3:1   | 5.23:1  | 7.89:1  | inset focus ring (dense containers, links in alerts)        |
+| `focus` on `warning-bg`              | 3:1   | 5.31:1  | 7.75:1  | inset focus ring (dense containers, links in alerts)        |
+| `focus` on `danger-bg`               | 3:1   | 5.11:1  | 8.24:1  | inset focus ring (dense containers, links in alerts)        |
+| `focus` on `pending-bg`              | 3:1   | 5.19:1  | 8.03:1  | inset focus ring (dense containers, links in alerts)        |
+| `focus` on `hero-glow`               | 3:1   | 5.17:1  | 7.52:1  | inset focus ring (dense containers, links in alerts)        |
+| `fg` on `hero-glow`                  | 4.5:1 | 13.54:1 | 11.02:1 | home hero, strongest glow point                             |
+| `fg-muted` on `hero-glow`            | 4.5:1 | 7.61:1  | 8.06:1  | hero lead                                                   |
+| `link` on `hero-glow`                | 4.5:1 | 7.02:1  | 7.57:1  |                                                             |
+| `border-strong` on `hero-glow`       | 3:1   | 3.58:1  | 3.12:1  | hero SearchBox edge                                         |
+| `accent` on `hero-glow`              | 3:1   | 5.06:1  | 7.21:1  | hero logo mark                                              |
+| `info-icon` on `surface-raised`      | 3:1   | 6.91:1  | 7.46:1  | toast icon and edge bar                                     |
+| `success-icon` on `surface-raised`   | 3:1   | 6.19:1  | 7.71:1  | toast icon and edge bar                                     |
+| `info-icon` on `surface-sunken`      | 3:1   | 5.62:1  | 9.02:1  | SidebarNote icon                                            |
+| `accent-text` on `surface-sunken`    | 3:1   | 5.45:1  | 10.18:1 | external nav arrow on hover                                 |
+| `fg-muted` on `success-bg`           | 4.5:1 | 7.69:1  | 8.46:1  | ghost button in the token reveal                            |
+| `border-strong` on `success-bg`      | 3:1   | 3.62:1  | 3.27:1  | token value box and Copy button edge in the reveal          |
+| `border-strong` on `danger-bg`       | 3:1   | 3.54:1  | 3.41:1  | secondary button edge in a danger alert (Settings "Log in") |
 
 **Other non-text checks:**
 
@@ -1405,12 +1408,12 @@ Every page uses the app shell (header, bottom bar or sidebar, drawer, sheet, foo
 
 ### 10.3 Settings (`/settings`, signed-in only)
 
-**Tag: FE1.** Its mutations need JS: without JS, a `<noscript>` warning Alert says "Changing your settings needs JavaScript. Everything else on Bardic Torch works without it." Signed out, the page shows a prompt with a "Log in" button to `/auth/login?returnTo=/settings`.
+**Tag: FE1.** Its mutations need JS: without JS, a `<noscript>` warning Alert says "Changing your settings needs JavaScript. Everything else on Bardic Torch works without it." Until the page has hydrated (and so always without JS) the buttons that submit or open the revoke dialog are disabled; the notice says why. Signed out, the page shows a prompt with a "Log in" button to `/auth/login?returnTo=/settings`. A blocked account sees only the blocked danger Alert. If the root's `/v1/me` failed, the Profile section is a SectionError ("We couldn't load your profile.", Try again) and the tokens still load. If `GET /v1/tokens` fails (500, unreachable, malformed), the route's own error boundary replaces the page content inside the shell ("We couldn't load your settings", Try again, home); a 403 from it is a danger Alert in the tokens section. A session the API ended mid-visit shows "You've been signed out. Log in again and we'll bring you back here." with a "Log in" button back to Settings. The document is `Cache-Control: no-store`.
 
 The head is the h1 "Settings" with no tab row. Sections are separated by h2 plus rule. The page is single column, `max-w-form` (42rem).
 
 1. **Profile**:
-   - Field "Display name". Help: "Shown on your edits and in page history. Use your SCA name if you like." The rule is the API's: the value is NFC-normalised and trimmed, then it must be **1–64 characters** (Unicode code points) with **no control or invisible formatting characters** (Unicode Cc/Cf); the server takes at most 256 characters before normalising. The limits and the hint copy (`DISPLAY_NAME_RULE`, "Use 1 to 64 characters, without control or invisible formatting characters.") come from `app/schemas/api.ts`, shared by the zod schema, the proxy route and this page.
+   - Field "Display name". Help: "Shown on your edits and in page history. Use your SCA name if you like." The rule is the API's: the value is NFC-normalised and trimmed, then it must be **1–64 characters** (Unicode code points) with **no control or invisible formatting characters** (Unicode Cc/Cf); the server takes at most 256 characters before normalising. The limits and the hint copy (`DISPLAY_NAME_RULE`, "Use 1 to 64 characters, without control or invisible formatting characters.") come from `app/schemas/rules.ts` (`displayNameProblem`), shared by the zod schema, the proxy route and this page; that module has no zod, so the browser checks with the same function without loading it.
    - [Save changes] (primary).
    - **Success:** a toast "Display name saved.", and the new name shows in the field and the account menu.
    - **Errors:** inline field errors "Enter a display name." / "Display names can be up to 64 characters." / "Display names can't contain control or invisible formatting characters." (checked in the browser and by the proxy). An upstream 400 `invalid_request` becomes the inline error with the `DISPLAY_NAME_RULE` copy; the API's own `message` is never shown (it is not meant for end users). A 403 `user_blocked` shows the danger Alert "Your account is blocked, so you can't make changes. Contact the Bardic Torch team if you think this is a mistake." Any other failure shows the danger Alert "We couldn't save your changes. Check your connection and try again."
@@ -1421,7 +1424,7 @@ The head is the h1 "Settings" with no tab row. Sections are separated by h2 plus
      - A token with no name is shown as **"Token {prefix}…"**, both visibly and in the `aria-label`.
      - The API lists **active tokens only, newest first**, and tokens have no expiry or revoked state, so there are no "Expired" or "Revoked" badges and nothing to hide.
      - A user has at most **10 active tokens** (`ACTIVE_TOKEN_LIMIT`).
-   - **Empty:** the EmptyState in §7.2.
+   - **Empty:** the EmptyState in §11.3, without its action button: the create form, with its own "Create token", is directly below it.
    - **Create:** the field "Token name" (optional; help: "So you can tell your tokens apart, e.g. 'Laptop MCP'.") plus [Create token] (secondary). Inline at ≥md, stacked at <md.
      - The name is trimmed and may be up to **128 characters**; a blank name means no name (`TOKEN_NAME_RULE`: "Use 128 characters or fewer, or leave the name blank."). An upstream 400 `invalid_request` becomes the inline error with that copy.
      - **409 `token_limit_reached`:** a danger Alert "You already have 10 API tokens, the most allowed. Revoke one before creating another."
@@ -1437,7 +1440,7 @@ The head is the h1 "Settings" with no tab row. Sections are separated by h2 plus
      │ [I've copied it] (ghost) — dismisses and clears from the DOM  │
      └──────────────────────────────────────────────────────────────┘
      ```
-     - The token is shown in a `readonly` input with `aria-label="New token value"`. Focus moves to it, with the value selected.
+     - The token is shown in a `readonly` two-row textarea (so the 73-character value wraps at 360 px; `.wrap-anywhere`) with `aria-label="New token value"`. Focus moves to it, with the value selected. If the clipboard refuses, a visible line says so and the value is selected again for copying by hand. "I've copied it" moves focus to the "API tokens" h2.
      - Copy uses `navigator.clipboard`. On success it swaps the icon to `IconCheck` with the text "Copied", and a polite status announces "Token copied".
      - The proxy response sets `Cache-Control: no-store`.
    - **Revoke:** the confirm Dialog (§6.22 copy). On success, the row is removed, a toast says "Token revoked.", and focus goes to the "API tokens" h2. A 404 `not_found` (already gone) shows "That token no longer exists. Reload the page to see your current tokens."
@@ -1575,7 +1578,7 @@ In this config, the colour named `border` gives `border-border`. That is intende
 - `app/styles/tokens.ts`: the token source (hand-written).
 - `app/styles/tokens.css`: generated custom properties (colours per theme, shadows, type sizes, motion, layout).
 - `app/styles/fonts.css`: the Fraunces `@font-face` rules and the metric-matched fallback faces.
-- `app/styles/base.css`: element defaults (`html`, `body`, `::selection`, headings), `scroll-padding`, the global `:focus-visible` ring, the `.opsz-32` utility (wordmark), the `.transform-box-fill` utility (logo flicker), `scroll-padding-bottom` below md (bottom app bar), forced-colours rules and the smooth-scroll rule (inside `prefers-reduced-motion: no-preference`).
+- `app/styles/base.css`: element defaults (`html`, `body`, `::selection`, headings), `scroll-padding`, the global `:focus-visible` ring, the `.opsz-32` utility (wordmark), the `.transform-box-fill` utility (logo flicker), the `.wrap-anywhere` utility (`overflow-wrap: anywhere`, for token names and secrets on Settings), `scroll-padding-bottom` below md (bottom app bar), forced-colours rules and the smooth-scroll rule (inside `prefers-reduced-motion: no-preference`).
 - `app/styles/prose.css`: the `.prose-bt` component class (§3.3).
 - `app/styles/app.css`: the entry. It `@import`s the files above, then the Tailwind layers. `root.tsx` links it with `links()` as a render-blocking stylesheet.
 

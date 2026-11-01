@@ -10,14 +10,19 @@ type TestRoute = {
   readonly id: string;
   readonly module: RouteModule;
   readonly hasLoader: boolean;
+  /** The route renders its own ErrorBoundary (the root always does). */
+  readonly hasErrorBoundary?: boolean;
 } & ({ readonly path: string } | { readonly index: true });
 
-function manifestEntry(
-  route: { id: string; parentId?: string; hasLoader: boolean } & (
-    | { path: string }
-    | { index: true }
-  )
-) {
+function manifestEntry({
+  hasErrorBoundary = false,
+  ...route
+}: {
+  id: string;
+  parentId?: string;
+  hasLoader: boolean;
+  hasErrorBoundary?: boolean;
+} & ({ path: string } | { index: true })) {
   return {
     ...route,
     module: `/assets/${route.id}.js`,
@@ -25,7 +30,7 @@ function manifestEntry(
     hasAction: false,
     hasClientAction: false,
     hasClientLoader: false,
-    hasErrorBoundary: route.id === "root",
+    hasErrorBoundary: route.id === "root" || hasErrorBoundary,
   };
 }
 
@@ -63,6 +68,7 @@ export function serveApp(routes: readonly TestRoute[]) {
               id: route.id,
               parentId: "root",
               hasLoader: route.hasLoader,
+              hasErrorBoundary: route.hasErrorBoundary ?? false,
               ...("index" in route
                 ? { index: true as const }
                 : { path: route.path }),

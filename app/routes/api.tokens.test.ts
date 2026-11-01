@@ -9,7 +9,7 @@ import {
   it,
   vi,
 } from "vitest";
-import { TOKEN_NAME_RULE } from "~/schemas/api";
+import { TOKEN_NAME_RULE } from "~/schemas/rules";
 import { API_BASE_URL, formRequest, sessionCookie } from "~/test/context";
 import { runAction } from "~/test/proxy";
 import { action } from "./api.tokens";
@@ -97,7 +97,7 @@ describe("POST /api/tokens", () => {
         fields: [
           {
             field: "name",
-            message: "Enter a token name of 128 characters or fewer.",
+            message: "Token names can be up to 128 characters.",
           },
         ],
       },

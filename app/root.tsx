@@ -13,11 +13,10 @@ import frauncesLatin from "@fontsource-variable/fraunces/files/fraunces-latin-op
 import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/cloudflare";
 import type { ShouldRevalidateFunction } from "@remix-run/react";
 import { json } from "@remix-run/cloudflare";
-import { useEffect, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { loadAccount } from "~/server/account.server";
 import { SentryProvider } from "~/contexts/SentryContext";
 import { useNonce } from "~/contexts/NonceContext";
-import * as Sentry from "@sentry/remix";
 import { NotFound, ServerError } from "~/components/ErrorPages";
 import { HelpLinks } from "~/components/HelpLinks";
 import { Wordmark } from "~/components/Wordmark";
@@ -26,6 +25,7 @@ import { THEME_COLOURS } from "~/styles/theme-colour.gen";
 import { readTheme } from "~/server/theme.server";
 import type { Theme } from "~/styles/tokens";
 import { useThemeChoice } from "~/hooks/useThemeChoice";
+import { useErrorReference } from "~/hooks/useErrorReference";
 import { ToastProvider } from "~/components/ui/Toast";
 import { AppShell } from "~/components/AppShell";
 import { LOGOUT_ACTION, ME_ACTION, type Account } from "~/constants/account";
@@ -170,14 +170,8 @@ export default function App() {
 export function ErrorBoundary() {
   const error = useRouteError();
   const { pathname } = useLocation();
-  const [reference, setReference] = useState<string>();
   const notFound = isRouteErrorResponse(error) && error.status === 404;
-
-  useEffect(() => {
-    if (notFound) return;
-    const eventId = Sentry.captureRemixErrorBoundaryError(error);
-    setReference(Sentry.isInitialized() ? eventId : undefined);
-  }, [error, notFound]);
+  const reference = useErrorReference(error, !notFound);
 
   return (
     <div className="flex min-h-dvh flex-col">

@@ -5,12 +5,11 @@ import {
   apiTokenListSchema,
   createApiTokenFormSchema,
   createdApiTokenSchema,
-  DISPLAY_NAME_RULE,
-  TOKEN_NAME_RULE,
   updateMeFormSchema,
   upstreamErrorSchema,
   userSchema,
 } from "./api";
+import { DISPLAY_NAME_RULE, TOKEN_NAME_RULE } from "./rules";
 
 // Type equality with the generated contract is asserted at compile time in
 // api.ts; these tests cover the runtime rules that types cannot express, with
@@ -90,23 +89,23 @@ describe("updateMeFormSchema", () => {
     [{ display_name: " \t " }, "Enter a display name."],
     [
       { display_name: "x".repeat(DISPLAY_NAME_MAX + 1) },
-      "Enter a display name of 64 characters or fewer.",
+      "Display names can be up to 64 characters.",
     ],
     [
       { display_name: ` ${"x".repeat(DISPLAY_NAME_INPUT_MAX)}` },
-      "Enter a display name of 64 characters or fewer.",
+      "Display names can be up to 64 characters.",
     ],
     [
       { display_name: "Morwen\u202e" },
-      "Remove control or invisible formatting characters from the display name.",
+      "Display names can't contain control or invisible formatting characters.",
     ],
     [
       { display_name: "Mor\u0000wen" },
-      "Remove control or invisible formatting characters from the display name.",
+      "Display names can't contain control or invisible formatting characters.",
     ],
     [
       { display_name: "Mor\u00adwen" },
-      "Remove control or invisible formatting characters from the display name.",
+      "Display names can't contain control or invisible formatting characters.",
     ],
   ])("rejects %j", (input, message) => {
     expect(messages(updateMeFormSchema.safeParse(input))).toEqual([message]);
@@ -134,7 +133,7 @@ describe("createApiTokenFormSchema", () => {
           name: "x".repeat(TOKEN_NAME_MAX + 1),
         })
       )
-    ).toEqual(["Enter a token name of 128 characters or fewer."]);
+    ).toEqual(["Token names can be up to 128 characters."]);
   });
 });
 

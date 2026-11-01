@@ -52,11 +52,18 @@ export function NotFound({ pathname }: { pathname: string }) {
  * The page body for anything unexpected (DESIGN §10.5). `reference` is the
  * Sentry event id, when Sentry is set up; without one the request to
  * quote it is left out. "Let us know" is the Contact link in HelpLinks.
+ * A route's own boundary may say what failed in `title`.
  */
-export function ServerError({ reference }: { reference: string | undefined }) {
+export function ServerError({
+  reference,
+  title = "Something went wrong",
+}: {
+  reference: string | undefined;
+  title?: string;
+}) {
   return (
     <ErrorState
-      title="Something went wrong"
+      title={title}
       reference={reference}
       actions={
         <>

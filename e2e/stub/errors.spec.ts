@@ -74,3 +74,52 @@ test("a blocked account is told so in the account panel", async ({ page }) => {
   await expect(panel.getByRole("link", { name: "Settings" })).toHaveCount(0);
   await expect(panel.getByRole("button", { name: "Log out" })).toBeVisible();
 });
+
+test("settings route boundary on GET /v1/tokens 500 while root degrades on /v1/me 500", async ({
+  page,
+}) => {
+  const id = await createFixtureUser(page.request);
+  await page.goto(`/auth/login?as=${id}&returnTo=/`);
+  for (const operationId of ["listAPITokens", "getMe"]) {
+    await failNext(page.request, {
+      userId: id,
+      operationId,
+      status: 500,
+      code: "internal",
+    });
+  }
+
+  const response = await page.goto("/settings");
+  expect(response?.status()).toBe(500);
+  expect(await response?.headerValue("cache-control")).toBe("no-store");
+  // The shell (root) still renders, with its own degraded account control.
+  await waitForHydration(page);
+  await expect(page.getByRole("banner")).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Site" })).toBeVisible();
+  await expect(headerAccount(page)).toHaveText("Account");
+  const main = page.getByRole("main");
+  await expect(
+    main.getByRole("heading", {
+      level: 1,
+      name: "We couldn't load your settings",
+    })
+  ).toBeVisible();
+  await expect(
+    main.getByRole("link", { name: "Go to the home page" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Settings" })
+  ).toHaveCount(0);
+  await checkpoint(page, "settings-error");
+
+  // Both failures were one-offs: Try again reloads the page's data and the
+  // root's in place.
+  await main.getByRole("button", { name: "Try again" }).click();
+  await expect(
+    main.getByRole("heading", { level: 1, name: "Settings" })
+  ).toBeVisible();
+  await expect(
+    main.getByRole("table", { name: "Your API tokens" })
+  ).toBeVisible();
+  await expect(headerAccount(page)).toHaveText(/Account: .+/);
+});

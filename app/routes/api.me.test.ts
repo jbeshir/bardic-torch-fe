@@ -9,7 +9,7 @@ import {
   it,
   vi,
 } from "vitest";
-import { DISPLAY_NAME_RULE } from "~/schemas/api";
+import { DISPLAY_NAME_RULE } from "~/schemas/rules";
 import { API_BASE_URL, formRequest, sessionCookie } from "~/test/context";
 import { runAction } from "~/test/proxy";
 import { action } from "./api.me";
@@ -90,27 +90,27 @@ describe("PATCH /api/me", () => {
     [
       "65 characters",
       "x".repeat(65),
-      "Enter a display name of 64 characters or fewer.",
+      "Display names can be up to 64 characters.",
     ],
     [
       "over 256 characters before trimming",
       `${" ".repeat(250)}Morwen${" ".repeat(10)}`,
-      "Enter a display name of 64 characters or fewer.",
+      "Display names can be up to 64 characters.",
     ],
     [
       "a right-to-left override (Cf)",
       "Morwen\u202e",
-      "Remove control or invisible formatting characters from the display name.",
+      "Display names can't contain control or invisible formatting characters.",
     ],
     [
       "a zero-width space (Cf)",
       "Mor\u200bwen",
-      "Remove control or invisible formatting characters from the display name.",
+      "Display names can't contain control or invisible formatting characters.",
     ],
     [
       "a control character (Cc)",
       "Mor\u0007wen",
-      "Remove control or invisible formatting characters from the display name.",
+      "Display names can't contain control or invisible formatting characters.",
     ],
   ])("rejects a %s name with a field error", async (_label, name, message) => {
     const response = await patch(
