@@ -149,6 +149,10 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
   // Resolving the session refreshes expiring tokens (and /v1/me can end
   // it); the updated session cookie must be forwarded on the response.
   const { account, headers } = await loadAccount(request, context);
+  // Who is reading is private: a signed-in `?_data=root` answer must not
+  // stay in the browser's cache after logout. (Documents get their
+  // Cache-Control from entry.server and the route `headers` exports.)
+  if (account.state !== "signed-out") headers.set("Cache-Control", "no-store");
 
   return json<LoaderData>(
     {

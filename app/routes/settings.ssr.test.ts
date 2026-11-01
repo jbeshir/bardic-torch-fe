@@ -170,9 +170,37 @@ describe("/settings route error boundary", () => {
       await signedIn()
     );
     expect(response.status).toBe(500);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
     expect(await response.json()).toEqual({
       message: "Bardic Torch couldn't do that just now. Try again shortly.",
     });
+  });
+
+  it.each([
+    ["signed in", () => signedIn()],
+    ["signed out", async () => undefined],
+  ])(
+    "a ?_data request for the route (%s) is never cached",
+    async (_case, cookie) => {
+      const response = await get(
+        "/settings?_data=routes%2Fsettings",
+        await cookie()
+      );
+      expect(response.status).toBe(200);
+      expect(response.headers.get("Cache-Control")).toBe("no-store");
+    }
+  );
+
+  it("the root's ?_data answer is never cached when signed in, and revalidated when not", async () => {
+    const signedInRoot = await get("/settings?_data=root", await signedIn());
+    expect(signedInRoot.headers.get("Cache-Control")).toBe("no-store");
+    expect(await signedInRoot.json()).toMatchObject({
+      account: { state: "signed-in" },
+    });
+    const signedOutRoot = await get("/settings?_data=root");
+    expect(signedOutRoot.headers.get("Cache-Control")).toBe(
+      "private, no-cache"
+    );
   });
 
   it("an API answer the app can't use is a 502, shown by the same boundary", async () => {

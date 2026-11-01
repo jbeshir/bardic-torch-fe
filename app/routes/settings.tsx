@@ -57,16 +57,23 @@ export const meta: MetaFunction = () => [
   { name: "robots", content: "noindex" },
 ];
 
-export const headers: HeadersFunction = () => ({ "Cache-Control": "no-store" });
+const NO_STORE = "no-store";
+
+/** The document; the loader's own responses say the same for `?_data`. */
+export const headers: HeadersFunction = () => ({ "Cache-Control": NO_STORE });
 
 /**
  * Signed out (no session, or the API ended it) is a page state, as is a
  * 403; anything else that stops the list loading (a 500, an unreachable or
- * malformed API) is thrown to this route's error boundary.
+ * malformed API) is thrown to this route's error boundary. Every answer is
+ * `no-store`: the `headers` export only covers the document, and a client
+ * navigation's `?_data` response would otherwise be cacheable, leaving the
+ * token list in the browser's cache after logout.
  */
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const result = await listApiTokens(request, context);
-  const { headers } = result;
+  const headers = new Headers(result.headers);
+  headers.set("Cache-Control", NO_STORE);
   if (result.ok) {
     return json<SettingsData>(
       { state: "ready", tokens: result.data.data },
