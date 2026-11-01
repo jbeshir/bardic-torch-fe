@@ -1,4 +1,4 @@
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { Auth0Strategy } from "remix-auth-auth0";
 import {
@@ -25,6 +25,7 @@ import {
   listApiTokens,
   revokeApiToken,
   updateMe,
+  UPSTREAM_TIMEOUT_MS,
 } from "./api.server";
 
 const server = setupServer();
@@ -373,6 +374,37 @@ describe("responses", () => {
       ok: false,
       status: 502,
       error: { code: "upstream_unavailable" },
+    });
+  });
+});
+
+describe("upstream timeout", () => {
+  it("gives up on a hung API with a 504, so the form can say so", async () => {
+    const timeout = AbortSignal.timeout.bind(AbortSignal);
+    const asked = vi
+      .spyOn(AbortSignal, "timeout")
+      .mockImplementation(() => timeout(20));
+    server.use(
+      http.post(`${API_BASE_URL}/v1/tokens`, async () => {
+        await delay("infinite");
+        return HttpResponse.json({});
+      })
+    );
+    const result = await createApiToken(
+      await signedInRequest(),
+      loadContext(),
+      {
+        name: "Laptop",
+      }
+    );
+    expect(asked).toHaveBeenCalledWith(UPSTREAM_TIMEOUT_MS);
+    expect(result).toMatchObject({
+      ok: false,
+      status: 504,
+      error: {
+        code: "upstream_unavailable",
+        message: "Bardic Torch took too long to answer. Try again shortly.",
+      },
     });
   });
 });

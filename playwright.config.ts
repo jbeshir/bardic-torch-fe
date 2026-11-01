@@ -67,6 +67,13 @@ export default defineConfig({
   forbidOnly: true,
   timeout: 90_000,
   /**
+   * With four workers running axe and full-page screenshots the browser is
+   * CPU-starved: in the gate a click took 3 s and creating a token (POST,
+   * then the settings revalidation) took 6 s before its reveal showed, past
+   * the 5 s default. Assertions still fail on a wrong state, just later.
+   */
+  expect: { timeout: 15_000 },
+  /**
    * One wrangler (workerd) process serves every worker, and each worker runs
    * axe and full-page screenshots; with the CPU-count default (10 here) workerd
    * drops requests and checkpoints time out. Four keeps runs stable.

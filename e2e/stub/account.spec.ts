@@ -47,6 +47,22 @@ const tokenNameField = (page: Page) =>
 const tokens = (page: Page) =>
   main(page).getByRole("table", { name: "Your API tokens" });
 
+/**
+ * Press "Create token" and wait for the proxy to answer 201. The reveal
+ * only shows after the settings loader has revalidated too, so a failure
+ * here says which half was slow or wrong.
+ */
+async function createToken(page: Page): Promise<void> {
+  const response = page.waitForResponse(
+    r =>
+      r.request().method() === "POST" &&
+      new URL(r.url()).pathname === "/api/tokens",
+    { timeout: 15_000 }
+  );
+  await main(page).getByRole("button", { name: "Create token" }).click();
+  expect((await response).status(), "POST /api/tokens").toBe(201);
+}
+
 test("Log in from settings, then rename: the toast, the account menu, and the API's 400 and 500", async ({
   page,
   baseURL,
@@ -134,7 +150,7 @@ test("create a token, see it once, copy it, then revoke it after confirming", as
   ).toBeVisible();
 
   await tokenNameField(page).fill("E2E laptop");
-  await main(page).getByRole("button", { name: "Create token" }).click();
+  await createToken(page);
   const secret = main(page).getByRole("textbox", { name: "New token value" });
   await expect(secret).toBeFocused();
   await expect(
@@ -194,7 +210,7 @@ test("an unnamed token is listed and confirmed by its prefix; one already gone s
   page,
 }) => {
   const id = await openSettings(page, { tokens: "none" });
-  await main(page).getByRole("button", { name: "Create token" }).click();
+  await createToken(page);
   await expect(
     main(page).getByRole("textbox", { name: "New token value" })
   ).toBeFocused();

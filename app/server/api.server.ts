@@ -70,6 +70,13 @@ type ApiRequest<T> = {
   readonly schema: z.ZodType<T>;
 };
 
+/**
+ * How long the proxy waits for the API before giving up with a 504, so a
+ * hung upstream still ends every form's request with a visible Alert
+ * instead of a button that stays busy.
+ */
+export const UPSTREAM_TIMEOUT_MS = 10_000;
+
 const TRY_AGAIN = "Bardic Torch couldn't do that just now. Try again shortly.";
 
 /** What the user is told for an upstream error, per operation. */
@@ -167,6 +174,15 @@ async function readJson(response: Response): Promise<unknown> {
   }
 }
 
+/** `AbortSignal.timeout` rejects with a DOMException named TimeoutError. */
+function isTimeout(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { name?: unknown }).name === "TimeoutError"
+  );
+}
+
 async function callApi<T>(
   request: Request,
   context: AppLoadContext,
@@ -201,10 +217,21 @@ async function callApi<T>(
           ? {}
           : { body: JSON.stringify(apiRequest.body) }),
         redirect: "manual",
+        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
       }
     );
   } catch (error) {
     console.error(`${apiRequest.operationId} failed:`, error);
+    if (isTimeout(error)) {
+      return failure(
+        504,
+        {
+          code: "upstream_unavailable",
+          message: "Bardic Torch took too long to answer. Try again shortly.",
+        },
+        headers
+      );
+    }
     return failure(
       502,
       {
