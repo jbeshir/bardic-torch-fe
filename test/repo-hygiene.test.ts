@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, it, expect } from "vitest";
+import { parse as parseYaml } from "yaml";
 
 const root = process.cwd();
 const THIS_FILE = "test/repo-hygiene.test.ts";
@@ -47,6 +48,8 @@ const SCANNED_FILES = [
   "load-context.ts",
   "worker-configuration.d.ts",
   "wrangler.toml",
+  ".nvmrc",
+  ".github/workflows/ci.yml",
 ];
 
 function filesUnder(directory: string): string[] {
@@ -140,5 +143,83 @@ describe("wiki host only in allowed files", () => {
     expect(allowed("app/styleguide/Content.tsx")).toBe(false);
     expect(allowed("app/constants/navigation.tsx")).toBe(false);
     expect(allowed("test/fixtures/wiki-categories.json")).toBe(false);
+  });
+});
+
+type WorkflowStep = {
+  readonly uses?: string;
+  readonly run?: string;
+  readonly with?: { readonly path?: string };
+};
+type Workflow = {
+  readonly jobs: Readonly<
+    Record<string, { readonly steps: readonly WorkflowStep[] }>
+  >;
+};
+
+const ciWorkflowSource = readFileSync(
+  join(root, ".github/workflows/ci.yml"),
+  "utf8"
+);
+const ciWorkflow = parseYaml(ciWorkflowSource) as Workflow;
+
+function stepsOf(job: string): readonly WorkflowStep[] {
+  return ciWorkflow.jobs[job]?.steps ?? [];
+}
+
+function runsOf(job: string): string[] {
+  return stepsOf(job).flatMap(step => (step.run ? [step.run] : []));
+}
+
+describe("CI workflow", () => {
+  it("has exactly the validate and e2e jobs", () => {
+    expect(Object.keys(ciWorkflow.jobs).sort()).toEqual(["e2e", "validate"]);
+  });
+
+  it("validate installs from the lockfile and runs npm run validate", () => {
+    expect(runsOf("validate")).toEqual(["npm ci", "npm run validate"]);
+  });
+
+  it("e2e installs Chromium for the locked Playwright, then runs test:e2e", () => {
+    expect(runsOf("e2e")).toEqual([
+      "npm ci",
+      "npx playwright install --with-deps chromium",
+      "npm run test:e2e",
+    ]);
+    expect(allDependencies["@playwright/test"]).toBe("1.61.1");
+  });
+
+  it("e2e uploads the report, the screenshots and the test results", () => {
+    const uploaded = stepsOf("e2e").flatMap(step =>
+      step.uses?.startsWith("actions/upload-artifact@") && step.with?.path
+        ? [step.with.path]
+        : []
+    );
+    expect(uploaded).toEqual([
+      "playwright-report/",
+      "e2e/screenshots/",
+      "test-results/",
+    ]);
+  });
+
+  it("pins every action to an exact release tag", () => {
+    const uses = Object.keys(ciWorkflow.jobs).flatMap(job =>
+      stepsOf(job).flatMap(step => (step.uses ? [step.uses] : []))
+    );
+    expect(uses.length).toBeGreaterThan(0);
+    expect(
+      uses.filter(use => !/^[\w-]+\/[\w-]+@v\d+\.\d+\.\d+$/.test(use))
+    ).toEqual([]);
+  });
+
+  it("needs no secrets", () => {
+    expect(ciWorkflowSource).not.toMatch(/secrets\./);
+  });
+
+  it("both jobs use the Node version in .nvmrc, which is 22", () => {
+    expect(readFileSync(join(root, ".nvmrc"), "utf8").trim()).toBe("22");
+    expect(
+      ciWorkflowSource.match(/node-version-file: \.nvmrc$/gm)
+    ).toHaveLength(2);
   });
 });
