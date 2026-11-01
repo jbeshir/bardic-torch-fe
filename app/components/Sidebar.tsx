@@ -4,8 +4,10 @@ import { ButtonLink } from "~/components/ui/Button";
 import { CONTRIBUTE_HREF, NAV_GROUPS } from "~/constants/navigation";
 import { LogoMark } from "./LogoMark";
 
+// 44 px rows below lg; 32 px at lg (pointer screens, WCAG 2.5.8), so the
+// Help group fits above the fold of an 800 px window.
 const ITEM =
-  "group flex min-h-11 items-center gap-2 rounded-md px-3 text-body-sm transition-colors focus-visible:-outline-offset-2 lg:min-h-9";
+  "group flex min-h-11 items-center gap-2 rounded-md px-3 text-body-sm transition-colors focus-visible:-outline-offset-2 lg:min-h-8";
 const ITEM_IDLE = "text-fg-muted hover:bg-surface-sunken hover:text-fg";
 const ITEM_CURRENT =
   "bg-accent-subtle font-semibold text-accent-text shadow-current-bar";
@@ -59,12 +61,12 @@ export function Sidebar() {
   return (
     <>
       {NAV_GROUPS.map(({ heading, note, items }) => (
-        <div key={heading} className="mt-6 first:mt-0">
-          <h3 className="mb-2 px-3 font-sans text-label-caps uppercase text-fg-subtle">
+        <div key={heading} className="mt-6 first:mt-0 lg:mt-5">
+          <h3 className="mb-2 px-3 font-sans text-label-caps uppercase text-fg-subtle lg:mb-1">
             {heading}
           </h3>
           {note ? (
-            <p className="mb-2 flex gap-2 rounded-lg bg-surface-sunken p-3 text-caption text-fg-muted">
+            <p className="mb-2 flex gap-2 rounded-lg bg-surface-sunken p-3 text-caption text-fg-muted lg:p-2.5">
               <IconInfoCircle
                 size={16}
                 stroke={1.75}

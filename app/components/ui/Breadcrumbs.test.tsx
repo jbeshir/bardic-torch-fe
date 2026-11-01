@@ -44,9 +44,15 @@ describe("Breadcrumbs", () => {
       "no-underline",
       "hover:underline"
     );
-    const chevron = link.parentElement?.querySelector("svg");
-    expect(chevron).toHaveAttribute("aria-hidden", "true");
-    expect(chevron).toHaveClass("text-fg-subtle");
+    // Each item, the current page's too, starts with its chevron, so a
+    // wrapped line never ends with one (the list hides a line's first).
+    const marks = [...document.querySelectorAll("li > .separated-list-mark")];
+    expect(marks).toHaveLength(2);
+    for (const mark of marks) {
+      expect(mark).toHaveAttribute("aria-hidden", "true");
+      expect(mark.querySelector("svg")).not.toBeNull();
+    }
+    expect(link.previousElementSibling).toBe(marks[0]);
   });
 
   it("follows a crumb from the keyboard", async () => {
@@ -60,7 +66,7 @@ describe("Breadcrumbs", () => {
 
   it("wraps rather than overflowing at narrow widths", async () => {
     await renderWithRouter(<HelpCrumbs />);
-    expect(screen.getByRole("list")).toHaveClass("flex-wrap", "gap-y-2");
+    expect(screen.getByRole("list")).toHaveClass("separated-list", "gap-y-2");
   });
 
   it("renders the same token classes in both themes", async () => {

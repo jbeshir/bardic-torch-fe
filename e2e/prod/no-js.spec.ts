@@ -95,13 +95,16 @@ test.describe("navigation below md", () => {
 test.describe("from md", () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
-  test("at lg the sidebar shows, without the site menu's heading", async ({
+  test("at lg the sidebar shows, its site menu heading kept for screen readers only", async ({
     page,
   }) => {
     await page.goto("/");
     const nav = page.getByRole("navigation", { name: "Site" });
     await expect(nav).toBeVisible();
-    await expect(nav.getByRole("heading", { name: "Site menu" })).toBeHidden();
+    // Visually hidden (sr-only), so the group h3s still sit under an h2.
+    const heading = nav.getByRole("heading", { level: 2, name: "Site menu" });
+    await expect(heading).toHaveCSS("position", "absolute");
+    await expect(heading).toHaveCSS("width", "1px");
   });
 
   test("the header's theme toggle posts the choice and comes back, rendered in that theme", async ({

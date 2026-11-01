@@ -18,7 +18,34 @@ describe("SearchBox", () => {
     expect(input).toHaveAttribute("name", WIKI_SEARCH.param);
     expect(input).toHaveAttribute("autocomplete", "off");
     expect(input).toHaveAttribute("enterkeyhint", "search");
-    expect(input).toHaveAttribute("placeholder", "Search the original wiki…");
+    expect(input).toHaveAttribute("placeholder", "Search the wiki…");
+  });
+
+  it("spells out the original wiki in the placeholder where the field is wide", async () => {
+    await renderWithRouter(<SearchBox size="lg" />);
+    expect(screen.getByRole("searchbox")).toHaveAttribute(
+      "placeholder",
+      "Search the original wiki…"
+    );
+  });
+
+  it.each([
+    ["md", ["h-8", "w-8", "before:-inset-1.5"]],
+    ["lg", ["h-11", "w-11"]],
+  ] as const)(
+    "at size %s the submit is a 44 px target below lg",
+    async (size, classes) => {
+      await renderWithRouter(<SearchBox size={size} />);
+      expect(screen.getByRole("button")).toHaveClass(...classes);
+    }
+  );
+
+  it("washes the submit on hover with a see-through tint, visible on either theme's field", async () => {
+    await renderWithRouter(<SearchBox size="lg" />);
+    expect(screen.getByRole("button")).toHaveClass("hover:bg-fg/10");
+    expect(screen.getByRole("button")).not.toHaveClass(
+      "hover:bg-surface-sunken"
+    );
   });
 
   it("has a submit button marked as going to the wiki, so it works without Enter", async () => {

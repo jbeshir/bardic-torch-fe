@@ -64,19 +64,69 @@ describe("AppShell", () => {
     const nav = screen.getByRole("navigation", { name: "Site" });
     expect(nav).toHaveAttribute("id", "site-nav");
     expect(nav).toHaveClass("lg:col-start-1", "lg:row-start-1", "lg:sticky");
+    // Kept for screen readers at lg, so the group headings (h3) have an h2.
     expect(
       within(nav).getByRole("heading", { level: 2, name: "Site menu" })
-        .parentElement
-    ).toHaveClass("lg:hidden");
+    ).toHaveClass("lg:sr-only");
     expect(screen.getAllByRole("navigation", { name: "Site" })).toHaveLength(1);
+  });
+
+  it("is at least the window's height, with the sheet only as tall as its content from lg", async () => {
+    await renderShell();
+    const main = screen.getByRole("main");
+    expect(main).toHaveClass("flex-1", "lg:self-start");
+    expect(main.parentElement).toHaveClass(
+      "flex-1",
+      "flex-col",
+      "lg:grid-rows-shell"
+    );
+    expect(main.parentElement?.parentElement).toHaveClass(
+      "min-h-dvh",
+      "flex",
+      "flex-col"
+    );
+  });
+
+  it("brings the current page into view in a sidebar taller than the window, scrolling only the sidebar", async () => {
+    const scrollTo = vi.spyOn(window, "scrollTo");
+    vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(
+      1100
+    );
+    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(736);
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(32);
+    const original = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
+      if (this.getAttribute("aria-current") === "page") {
+        return { top: 64 + 900 } as DOMRect;
+      }
+      if (this.id === "site-nav") return { top: 64 } as DOMRect;
+      return original.call(this);
+    };
+    try {
+      await renderShell("/help/licence");
+      const nav = screen.getByRole("navigation", { name: "Site" });
+      // 900 + 32 - 736 + 16: the item's foot, a margin above the fold.
+      expect(nav.scrollTop).toBe(212);
+      expect(scrollTo).not.toHaveBeenCalled();
+      // More below the fold: the fade shows (from lg).
+      expect(screen.getByTestId("sidebar-more")).toHaveClass("lg:block");
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = original;
+      vi.restoreAllMocks();
+    }
+  });
+
+  it("shows no fade when the whole sidebar fits", async () => {
+    await renderShell();
+    expect(screen.getByTestId("sidebar-more")).not.toHaveClass("lg:block");
   });
 
   it("offers the search and the theme in the site menu below md, where the header has neither", async () => {
     await renderShell();
     const nav = screen.getByRole("navigation", { name: "Site" });
-    expect(within(nav).getByRole("search").parentElement).toHaveClass(
-      "md:hidden"
-    );
+    expect(
+      within(nav).getByRole("search").closest(".md\\:hidden")
+    ).not.toBeNull();
     expect(
       within(nav).getByRole("group", { name: "Theme" }).closest(".md\\:hidden")
     ).not.toBeNull();
@@ -109,9 +159,13 @@ describe("AppShell", () => {
         .getByRole("navigation", { name: "Site" })
         .querySelector('[aria-current="page"]')
     ).toHaveTextContent("Licence & attribution");
+    // Its toggle is for below md only: from md the header has one, and a
+    // page never shows two (DESIGN §6.24).
     expect(
-      within(dialog).getByRole("group", { name: "Theme" })
-    ).toBeInTheDocument();
+      within(dialog)
+        .getByRole("group", { name: "Theme" })
+        .closest(".md\\:hidden")
+    ).not.toBeNull();
     expect(
       within(dialog).getAllByRole("button", { name: "Close menu" })[0]
     ).toHaveFocus();

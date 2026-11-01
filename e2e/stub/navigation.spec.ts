@@ -97,6 +97,36 @@ test.describe("below md", () => {
     await expectNoHorizontalOverflow(page);
   });
 
+  test("the footer's help links wrap without a separator starting a line", async ({
+    page,
+  }) => {
+    await openHydrated(page);
+    const list = page.getByRole("contentinfo").getByRole("list", {
+      name: "Help",
+    });
+    const marks = await list.evaluate(element => {
+      // The list clips its first 1rem: the marks that start a line.
+      const clip = element.getBoundingClientRect().left + 16;
+      return [...element.querySelectorAll(":scope > li")].map(item => {
+        const mark = item.firstElementChild?.getBoundingClientRect();
+        const box = item.getBoundingClientRect();
+        return {
+          startsLine:
+            Math.abs(box.left - element.getBoundingClientRect().left) < 1,
+          shown: mark ? mark.left >= clip - 0.5 : false,
+          top: box.top,
+        };
+      });
+    });
+    // It does wrap at 360, so this checks the wrapped case.
+    expect(
+      new Set(marks.map(({ top }) => Math.round(top))).size
+    ).toBeGreaterThan(1);
+    for (const { startsLine, shown } of marks) {
+      expect(shown).toBe(!startsLine);
+    }
+  });
+
   test("the bar never covers the end of the page", async ({ page }) => {
     await openHydrated(page);
     // Instantly: under no-preference the page scrolls smoothly, and the
@@ -264,8 +294,67 @@ test.describe("from md", () => {
     await settled(drawer);
     const box = await drawer.boundingBox();
     expect(Math.round(box?.x ?? -1)).toBe(0);
+    // One theme toggle per page: the header's, not a second in the drawer.
+    await expect(drawer.getByRole("group", { name: "Theme" })).toBeHidden();
     await drawer.getByRole("button", { name: "Close menu" }).first().click();
     await expect(menu).toBeFocused();
+  });
+
+  test("at md the header search shows its whole placeholder", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await openHydrated(page);
+    const field = page.getByRole("banner").getByRole("searchbox");
+    const room = await field.evaluate((input: HTMLInputElement) => {
+      const style = getComputedStyle(input);
+      const context = document.createElement("canvas").getContext("2d");
+      if (!context) return -1;
+      context.font = style.font;
+      const text = context.measureText(input.placeholder).width;
+      const inner =
+        input.clientWidth -
+        Number.parseFloat(style.paddingLeft) -
+        Number.parseFloat(style.paddingRight);
+      return inner - text;
+    });
+    expect(room).toBeGreaterThanOrEqual(0);
+  });
+
+  test("a short page fills the window: the footer at the bottom, nothing to scroll", async ({
+    page,
+  }) => {
+    for (const viewport of [
+      { width: 768, height: 1024 },
+      { width: 1280, height: 800 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await openHydrated(page, "/no-such-page");
+      const footer = await page.getByRole("contentinfo").boundingBox();
+      expect(footer).toBeTruthy();
+      if (footer) {
+        expect(
+          Math.abs(footer.y + footer.height - viewport.height),
+          `footer at the bottom at ${viewport.width}`
+        ).toBeLessThanOrEqual(1);
+      }
+      expect(
+        await page.evaluate(() => document.documentElement.scrollHeight)
+      ).toBe(viewport.height);
+    }
+    // From lg the sheet hugs its content, rather than stretching empty.
+    const main = page.getByRole("main");
+    const last = main.getByRole("link", { name: /Look on the original wiki/ });
+    const [mainBox, lastBox] = await Promise.all([
+      main.boundingBox(),
+      last.boundingBox(),
+    ]);
+    expect(mainBox && lastBox).toBeTruthy();
+    if (mainBox && lastBox) {
+      expect(
+        mainBox.y + mainBox.height - (lastBox.y + lastBox.height)
+      ).toBeLessThan(120);
+    }
   });
 
   test("at lg the sidebar is always there, with the catalogue links going to the wiki", async ({
@@ -289,6 +378,31 @@ test.describe("from md", () => {
     expect((navBox?.x ?? 0) + (navBox?.width ?? 0)).toBeLessThanOrEqual(
       mainBox?.x ?? 0
     );
+  });
+
+  test("at 1280 × 800 the sidebar shows the current page, and says when there is more below", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await openHydrated(page, "/help/licence");
+    const nav = page.getByRole("navigation", { name: "Site" });
+    const current = nav.getByRole("link", { name: "Licence & attribution" });
+    await expect(current).toHaveAttribute("aria-current", "page");
+    await expect(current).toBeInViewport({ ratio: 1 });
+    // The whole Help group fits above the fold on any page.
+    await openHydrated(page, "/");
+    await expect(
+      nav.getByRole("link", { name: "Licence & attribution" })
+    ).toBeInViewport({ ratio: 1 });
+    const fade = page.getByTestId("sidebar-more");
+    await expect(fade).toBeVisible();
+    await nav.evaluate(element => {
+      element.scrollTop = element.scrollHeight;
+    });
+    await expect(fade).toBeHidden();
+    await expect(
+      nav.getByRole("link", { name: "Start contributing" })
+    ).toBeInViewport();
   });
 
   test("Log in comes back to the page, then the account menu opens, closes on Escape and outside", async ({

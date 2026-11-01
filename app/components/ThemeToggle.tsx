@@ -33,6 +33,8 @@ const PLACEMENTS = {
     track: "inline-flex",
     button: "min-h-8 min-w-9 justify-center px-2 lg:px-3",
     label: "sr-only lg:not-sr-only",
+    // At md the header is tight: the group's name stays for screen readers.
+    groupLabel: "sr-only lg:not-sr-only",
     error:
       "absolute right-0 top-full z-header mt-2 w-max max-w-xs rounded-md border border-border bg-surface-raised px-3 py-2 shadow-2",
   },
@@ -42,6 +44,7 @@ const PLACEMENTS = {
     track: "flex w-full",
     button: "min-h-11 flex-1 justify-center px-3",
     label: "",
+    groupLabel: "",
     error: "mt-2",
   },
 } as const;
@@ -82,7 +85,10 @@ export function ThemeToggle({
     >
       <input type="hidden" name="returnTo" value={`${pathname}${search}`} />
       <div role="group" aria-labelledby={labelId} className={look.group}>
-        <span id={labelId} className="text-caption font-medium text-fg-muted">
+        <span
+          id={labelId}
+          className={`text-caption font-medium text-fg-muted ${look.groupLabel}`}
+        >
           Theme
         </span>
         <div

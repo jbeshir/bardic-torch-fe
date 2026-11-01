@@ -54,6 +54,14 @@ test("an unexpected error is the standalone error page, and Try again recovers",
   await expect(
     page.getByRole("contentinfo").getByRole("list", { name: "Help" })
   ).toBeVisible();
+  // At desktop widths the body is a centred sheet, not hugging the left edge.
+  const viewport = page.viewportSize();
+  const sheet = await main.locator(":scope > div").boundingBox();
+  if (viewport && viewport.width >= 1024 && sheet) {
+    const left = sheet.x;
+    const right = viewport.width - (sheet.x + sheet.width);
+    expect(Math.abs(left - right)).toBeLessThanOrEqual(16);
+  }
   await checkpoint(page, "server-error");
 
   await page.unrouteAll();

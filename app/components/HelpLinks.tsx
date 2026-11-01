@@ -9,7 +9,8 @@ const LINK =
  * Where to get help, the same on every page (DESIGN §5.7, WCAG 3.2.6):
  * Contact · Help · Licence & attribution, then the original wiki. Always
  * this order and these targets, in the footer of every template and on the
- * standalone error page.
+ * standalone error page. A `separated-list` (base.css): when it wraps, no
+ * line starts with a "·".
  */
 const HELP_LINKS = [
   { label: "Contact", href: CONTACT_FORM_URL, external: "web" },
@@ -23,15 +24,13 @@ export function HelpLinks() {
     <ul
       role="list"
       aria-label="Help"
-      className="flex flex-wrap items-center gap-x-2 gap-y-2 text-body-sm"
+      className="separated-list gap-y-2 text-body-sm"
     >
-      {HELP_LINKS.map((link, index) => (
-        <li key={link.href} className="flex items-center gap-x-2">
-          {index > 0 ? (
-            <span aria-hidden="true" className="text-fg-subtle">
-              ·
-            </span>
-          ) : null}
+      {HELP_LINKS.map(link => (
+        <li key={link.href}>
+          <span aria-hidden="true" className="separated-list-mark">
+            ·
+          </span>
           {"external" in link ? (
             <a href={link.href} rel="noopener" className={LINK}>
               {link.label}

@@ -52,9 +52,11 @@ export function Header({
         className="pointer-events-none absolute left-0 top-0 h-2 w-px"
       />
       <header
-        className={`sticky top-0 z-header border-b border-border bg-canvas transition-shadow ${scrolled ? "shadow-1" : "shadow-none"}`}
+        className={`sticky top-0 z-header h-header border-b border-border bg-canvas transition-shadow ${scrolled ? "shadow-1" : "shadow-none"}`}
       >
-        <div className="mx-auto flex h-header max-w-shell items-center gap-3 px-4 md:px-6 lg:gap-8 xl:gap-10 xl:px-8">
+        {/* The border is inside --header-h, which the sticky sidebar, the
+            scroll padding and the toasts all measure from. */}
+        <div className="mx-auto flex h-full max-w-shell items-center gap-3 px-4 md:px-6 lg:gap-8 xl:gap-10 xl:px-8">
           <div className="flex shrink-0 items-center gap-1 lg:w-60 xl:w-64">
             <div className="hidden md:block lg:hidden">{menu}</div>
             <RemixLink

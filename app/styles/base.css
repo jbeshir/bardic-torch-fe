@@ -74,6 +74,43 @@
   }
 }
 
+@layer components {
+  /*
+   * An inline list that wraps, with a separator before each item (footer
+   * help links, breadcrumbs). Each item starts with a `.separated-list-mark`
+   * (aria-hidden); the list is pulled left by one mark and clipped there, so
+   * the mark that starts a line, the first item's included, is never
+   * painted, and no line starts or ends with a separator. The clip is
+   * 0.5rem clear of the items on every other side, for their focus rings.
+   */
+  .separated-list {
+    --separator-space: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-inline-start: calc(-1rem - var(--separator-space));
+    clip-path: inset(-0.5rem -0.5rem -0.5rem 1rem);
+  }
+
+  .separated-list-tight {
+    --separator-space: 0.25rem;
+  }
+
+  .separated-list > li {
+    display: flex;
+    align-items: center;
+  }
+
+  .separated-list-mark {
+    display: inline-flex;
+    flex-shrink: 0;
+    justify-content: center;
+    width: 1rem;
+    margin-inline-end: var(--separator-space);
+    color: rgb(var(--fg-subtle));
+  }
+}
+
 @layer utilities {
   /* The wordmark's fixed optical size (DESIGN §3.2). */
   .opsz-32 {

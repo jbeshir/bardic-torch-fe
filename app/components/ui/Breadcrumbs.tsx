@@ -6,11 +6,21 @@ type Crumb = {
   readonly to: string;
 };
 
+function Chevron() {
+  return (
+    <span aria-hidden="true" className="separated-list-mark">
+      <IconChevronRight size={14} stroke={1.75} />
+    </span>
+  );
+}
+
 /**
  * Where a page sits (DESIGN §6.19): a "Breadcrumb" nav with an ordered list
  * of links to the ancestors, then the page itself as plain text with
  * `aria-current="page"`. The chevrons between are decorative. Each link has
- * a 24 px tall target (WCAG 2.5.8), and the trail wraps at narrow widths.
+ * a 24 px tall target (WCAG 2.5.8), and the trail wraps at narrow widths:
+ * each chevron leads its item in a `separated-list` (base.css), which hides
+ * the one at the start of a line, so none dangles at either end.
  */
 export function Breadcrumbs({
   trail,
@@ -25,10 +35,11 @@ export function Breadcrumbs({
     <nav aria-label="Breadcrumb">
       <ol
         role="list"
-        className="flex flex-wrap items-center gap-x-1 gap-y-2 text-caption"
+        className="separated-list separated-list-tight gap-y-2 text-caption"
       >
         {trail.map(({ label, to }) => (
-          <li key={to} className="flex items-center gap-x-1">
+          <li key={to}>
+            <Chevron />
             <RemixLink
               to={to}
               prefetch="intent"
@@ -36,15 +47,10 @@ export function Breadcrumbs({
             >
               {label}
             </RemixLink>
-            <IconChevronRight
-              size={14}
-              stroke={1.75}
-              aria-hidden="true"
-              className="shrink-0 text-fg-subtle"
-            />
           </li>
         ))}
-        <li className="flex items-center">
+        <li>
+          <Chevron />
           <span
             aria-current="page"
             className="inline-flex min-h-6 items-center text-fg-muted"

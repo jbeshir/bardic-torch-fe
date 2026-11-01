@@ -1,4 +1,13 @@
-import { useCallback, useId, useState, type ReactNode } from "react";
+import { useLocation } from "@remix-run/react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { Drawer } from "~/components/ui/Drawer";
 import type { Account } from "~/constants/account";
 import { useHydrated } from "~/hooks/useHydrated";
@@ -14,6 +23,54 @@ import { ThemeToggle } from "./ThemeToggle";
 const SITE_NAV_ID = "site-nav";
 
 /**
+ * The persistent sidebar scrolls on its own when it is taller than the
+ * window (a laptop's 800 px): on each page it brings the current item into
+ * view, scrolling only itself, and `more` says whether anything is still
+ * below its fold (shown as a fade at its foot).
+ */
+function useSidebarScroll(nav: RefObject<HTMLElement>, pathname: string) {
+  const [more, setMore] = useState(false);
+
+  useEffect(() => {
+    const element = nav.current;
+    if (!element) return;
+    const update = () =>
+      setMore(
+        element.scrollTop + element.clientHeight < element.scrollHeight - 1
+      );
+    update();
+    element.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      element.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [nav]);
+
+  useEffect(() => {
+    const element = nav.current;
+    const current = element?.querySelector<HTMLElement>(
+      '[aria-current="page"]'
+    );
+    if (!element || !current) return;
+    if (element.scrollHeight <= element.clientHeight) return;
+    const top =
+      current.getBoundingClientRect().top -
+      element.getBoundingClientRect().top +
+      element.scrollTop;
+    const bottom = top + current.offsetHeight;
+    const margin = 16;
+    if (top < element.scrollTop) {
+      element.scrollTop = top - margin;
+    } else if (bottom > element.scrollTop + element.clientHeight) {
+      element.scrollTop = bottom - element.clientHeight + margin;
+    }
+  }, [nav, pathname]);
+
+  return more;
+}
+
+/**
  * The layout every page shares (DESIGN §5): skip link, progress bar,
  * header (with the bottom app bar below md), the main sheet, the site
  * navigation, the footer and the navigation drawer.
@@ -23,6 +80,9 @@ const SITE_NAV_ID = "site-nav";
  * Below lg it is the site menu without JS, which the Menu and Search
  * controls jump to; once hydrated it is hidden there, and Menu opens the
  * same navigation in the drawer instead.
+ *
+ * The shell is at least the window's height, so a short page's footer sits
+ * at the bottom; from lg the main sheet is only as tall as its content.
  */
 export function AppShell({
   account,
@@ -33,13 +93,16 @@ export function AppShell({
 }) {
   const busy = useSlowNavigation();
   const hydrated = useHydrated();
+  const { pathname } = useLocation();
+  const siteNav = useRef<HTMLElement>(null);
+  const moreBelow = useSidebarScroll(siteNav, pathname);
   const drawerId = useId();
   const [menuOpen, setMenuOpen] = useState(false);
   const openMenu = useCallback(() => setMenuOpen(true), []);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
 
   return (
-    <div className="relative max-md:pb-app-bar">
+    <div className="relative flex min-h-dvh flex-col max-md:pb-app-bar">
       <a
         href="#content"
         className="sr-only z-progress rounded-md bg-accent text-body-sm font-medium text-accent-fg shadow-2 focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:px-3 focus:py-2"
@@ -68,30 +131,34 @@ export function AppShell({
           />
         }
       />
-      <div className="mx-auto max-w-shell lg:grid lg:grid-cols-shell lg:gap-x-8 lg:px-6 xl:grid-cols-shell-xl xl:gap-x-10 xl:px-8">
+      <div className="mx-auto flex w-full max-w-shell flex-1 flex-col lg:grid lg:grid-cols-shell lg:grid-rows-shell lg:gap-x-8 lg:px-6 xl:grid-cols-shell-xl xl:gap-x-10 xl:px-8">
         <main
           id="content"
           tabIndex={-1}
           aria-busy={busy || undefined}
-          className="min-w-0 bg-surface px-4 py-6 focus-visible:outline-none md:p-6 lg:col-start-2 lg:row-start-1 lg:mb-10 lg:mt-6 lg:rounded-xl lg:border lg:border-border lg:p-8 lg:shadow-1 xl:p-10"
+          className="min-w-0 flex-1 bg-surface px-4 py-6 focus-visible:outline-none md:p-6 lg:col-start-2 lg:row-start-1 lg:mb-10 lg:mt-6 lg:self-start lg:rounded-xl lg:border lg:border-border lg:p-8 lg:shadow-1 xl:p-10"
         >
           {children}
         </main>
         <nav
+          ref={siteNav}
           id={SITE_NAV_ID}
           aria-label="Site"
           className={`${hydrated ? "hidden lg:block" : ""} border-t border-border px-4 py-8 md:px-6 lg:sticky lg:top-header lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:max-h-below-header lg:self-start lg:overflow-y-auto lg:border-t-0 lg:px-0 lg:pb-8 lg:pr-4 lg:pt-6 xl:pr-6`}
         >
-          <div className="space-y-4 pb-6 lg:hidden">
-            <h2 className="text-h3 text-fg">Site menu</h2>
-            <div className="md:hidden">
-              <SearchBox size="lg" />
-            </div>
-            <div className="md:hidden">
-              <ThemeToggle placement="drawer" />
-            </div>
+          {/* The heading stays for screen readers at lg, so the sidebar's
+              group headings (h3) sit under an h2 there too. */}
+          <h2 className="pb-4 text-h3 text-fg lg:sr-only">Site menu</h2>
+          <div className="space-y-4 pb-6 md:hidden">
+            <SearchBox size="lg" />
+            <ThemeToggle placement="drawer" />
           </div>
           <Sidebar />
+          <div
+            aria-hidden="true"
+            data-testid="sidebar-more"
+            className={`pointer-events-none sticky bottom-0 -mt-10 hidden h-10 bg-gradient-to-t from-canvas ${moreBelow ? "lg:block" : ""}`}
+          />
         </nav>
         <div className="lg:col-start-2 lg:row-start-2">
           <Footer />
@@ -103,7 +170,12 @@ export function AppShell({
         onClose={closeMenu}
         title="Site menu"
         closeFrom="lg"
-        footer={<ThemeToggle placement="drawer" />}
+        footer={
+          // From md the header has the theme toggle: one per page (§6.24).
+          <div className="md:hidden">
+            <ThemeToggle placement="drawer" />
+          </div>
+        }
       >
         <div className="space-y-6">
           <SearchBox size="lg" />

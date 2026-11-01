@@ -135,6 +135,9 @@ export default {
         shell: "15rem minmax(0, 1fr)",
         "shell-xl": "16rem minmax(0, 1fr)",
       },
+      // The main sheet's row takes the spare height, so the footer row sits
+      // at the bottom of a short page.
+      gridTemplateRows: { shell: "1fr auto" },
       // The logo flicker scales the flame from near its base.
       transformOrigin: { flame: "50% 90%" },
       opacity: { shimmer: "var(--shimmer-alpha)", scrim: "var(--scrim-alpha)" },

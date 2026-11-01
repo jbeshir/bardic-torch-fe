@@ -30,8 +30,15 @@ describe("HelpLinks", () => {
     for (const link of screen.getAllByRole("link")) {
       expect(link).toHaveClass("inline-flex", "min-h-6");
     }
+    // A "·" leads every item; the list clips the one starting each line
+    // (the first item's included), so a wrapped line never starts with one.
+    expect(screen.getByRole("list")).toHaveClass("separated-list");
     const dots = [...document.querySelectorAll("li > span[aria-hidden]")];
-    expect(dots.map(dot => dot.textContent)).toEqual(["·", "·", "·"]);
+    expect(dots.map(dot => dot.textContent)).toEqual(["·", "·", "·", "·"]);
+    for (const dot of dots) {
+      expect(dot).toHaveClass("separated-list-mark");
+      expect(dot.nextElementSibling?.tagName).toBe("A");
+    }
   });
 
   it("looks the same in both themes", async () => {

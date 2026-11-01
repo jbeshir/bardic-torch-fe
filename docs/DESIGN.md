@@ -447,18 +447,18 @@ The app shell has `max-width: 90rem` (1440 px) and is centred. The canvas extend
 
 - The header is a `<header>` landmark, `bg-canvas`, with a bottom border `border-border`.
 - It is sticky (`top: 0`), and gets `shadow-1` once the page has scrolled more than 8 px (an IntersectionObserver sentinel). Without JS it simply has no shadow.
-- Height is `--header-h`: 56 px below `md` and 64 px from `md` up. `html` has `scroll-padding-top: calc(var(--header-h) + 0.5rem)`, so an element that receives focus by Tab or by an anchor jump is never hidden under the sticky header (WCAG 2.4.11).
+- Height is `--header-h`: 56 px below `md` and 64 px from `md` up, its bottom border included (the `header` element is `h-header`), so the sticky sidebar's `max-height: calc(100dvh - var(--header-h))` adds up to the window exactly and a short page doesn't overflow by 1 px. `html` has `scroll-padding-top: calc(var(--header-h) + 0.5rem)`, so an element that receives focus by Tab or by an anchor jump is never hidden under the sticky header (WCAG 2.4.11).
 - The first focusable element is a **skip link**, "Skip to content", which is visually hidden until focused and then appears as a primary `sm` button at top-left. Its padding is applied only on focus (`focus:px-3 focus:py-2`), so the hidden link stays a 1 px box rather than a padded 24 × 16 one.
 
 **Below `md`, the header's controls move to a bottom app bar** (one-handed use). The top header then holds only the logo and wordmark, so nothing in it can overflow at 360 px. An e2e check asserts no horizontal overflow at 360 (and 320) px, signed out and signed in.
 
-| Slot            | <md (360)                                                                                                                | md (768)                                                                                 | ≥lg (1280)                                                |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| Logo + wordmark | Top header, left. Mark 24 px + wordmark 20 px. A link to `/` whose accessible name is the wordmark text, "Bardic Torch". | Mark 28 px + wordmark 22 px, after the Menu button                                       | Same, left-aligned to the sidebar column                  |
-| Menu            | **Bottom bar**, left cell                                                                                                | Top header, left: ghost icon button 44 × 44 (`IconMenu2`, label "Menu")                  | Hidden (sidebar persistent)                               |
-| Search          | **Bottom bar**, middle cell                                                                                              | Inline SearchBox in the header, flexible, max 28rem                                      | Inline SearchBox, 28rem, starts at the main column        |
-| Theme toggle    | **In the drawer**                                                                                                        | Header: visible label "Theme" + icon-only segmented control (3 × 36 px, `sr-only` names) | Header: visible label "Theme" + icon **and text** buttons |
-| Account         | **Bottom bar**, right cell                                                                                               | Avatar 36 px in a 44 px hit area, or "Log in" secondary `sm`                             | Same                                                      |
+| Slot            | <md (360)                                                                                                                | md (768)                                                                                                                                       | ≥lg (1280)                                                |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Logo + wordmark | Top header, left. Mark 24 px + wordmark 20 px. A link to `/` whose accessible name is the wordmark text, "Bardic Torch". | Mark 28 px + wordmark 22 px, after the Menu button                                                                                             | Same, left-aligned to the sidebar column                  |
+| Menu            | **Bottom bar**, left cell                                                                                                | Top header, left: ghost icon button 44 × 44 (`IconMenu2`, label "Menu")                                                                        | Hidden (sidebar persistent)                               |
+| Search          | **Bottom bar**, middle cell                                                                                              | Inline SearchBox in the header, flexible, max 28rem                                                                                            | Inline SearchBox, 28rem, starts at the main column        |
+| Theme toggle    | **In the drawer**                                                                                                        | Header: icon-only segmented control (3 × 36 px); its "Theme" label and option names are `sr-only`, leaving the search room for its placeholder | Header: visible label "Theme" + icon **and text** buttons |
+| Account         | **Bottom bar**, right cell                                                                                               | Avatar 36 px in a 44 px hit area, or "Log in" secondary `sm`                                                                                   | Same                                                      |
 
 **Bottom app bar** (<md only):
 
@@ -478,7 +478,7 @@ The app shell has `max-width: 90rem` (1440 px) and is centred. The canvas extend
 - It sticks below the header (`top: 64px`) with `max-height: calc(100dvh - 64px)` and `overflow-y: auto` (scrollbar `thin`), and has `padding: 24px 16px 32px 0` (lg) / `24px 24px 32px 0` (xl).
 - Below lg, the same component renders inside the Drawer (§6.21).
 
-**Structure** (group heading `label-caps text-fg-subtle`, `mb-2`, `mt-6` except first; items `body-sm`):
+**Structure** (group heading `label-caps text-fg-subtle`, `mb-2`, `mt-6` except first; at ≥lg `mb-1` and `mt-5`; items `body-sm`). The "Site menu" `h2` heads the nav at every width (`lg:sr-only` in the persistent sidebar), so the group `h3`s always sit under an `h2`.
 
 ```
 BROWSE                                  ← group heading
@@ -507,11 +507,12 @@ CONTRIBUTE                               ← ContributeCard (see below)
 
 - The URL map lives in one typed, read-only module, `app/constants/navigation.ts`. Each entry has `{label, href, external: boolean}`, so the catalogue launch (FE2) only flips `external` and `href`. The same module holds the header search target (`https://bardictorch.miraheze.org/w/index.php`, query parameter `search`) and the contact form (`https://forms.gle/wUwWnMKtWZSUisWCA`, until FE4). `bardictorch.miraheze.org` appears only in this module, the help content and the docs (a repo-hygiene test checks this). Every wiki target title must exist in `test/fixtures/wiki-categories.json`, a snapshot taken from the wiki dump.
 - **Nav item:**
-  - Layout: `flex items-center gap-2 min-h-11 (44px) <lg / min-h-9 (36px) ≥lg`, `px-3`, `rounded-md`, `text-fg-muted`. Focus ring inset (`-outline-offset-2`).
+  - Layout: `flex items-center gap-2 min-h-11 (44px) <lg / min-h-8 (32px) ≥lg`, `px-3`, `rounded-md`, `text-fg-muted`. Focus ring inset (`-outline-offset-2`). The tighter ≥lg rhythm (and the note's `p-2.5`) lets Browse, Facets and the whole Help group fit in an 800 px tall window.
   - Hover: `bg-surface-sunken text-fg`.
   - Focus-visible: standard ring.
   - Current (`aria-current="page"`): `bg-accent-subtle text-accent-text font-semibold`, plus a 3 px `accent` bar on the left inset (`box-shadow: inset 3px 0 0 rgb(var(--accent))`).
-  - On desktop the 36 px height is above the 24 px minimum, and spacing gives each item a 44 px pitch.
+  - On desktop the 32 px height is above the 24 px minimum (WCAG 2.5.8; ≥lg is a pointer layout).
+- **Taller than the window:** the sidebar scrolls on its own. On each page it scrolls itself (never the page) so the current item is in view, and while anything is below its fold a 40 px `from-canvas` fade sits at its foot (sticky, `aria-hidden`), so the ContributeCard's existence is signalled.
 - **External nav item:**
   - Label, then `IconArrowUpRight` 14 px `text-fg-subtle`, pushed to the right with `ml-auto`, `aria-hidden`.
   - Then `<span class="sr-only"> (opens original wiki)</span>`.
@@ -529,6 +530,7 @@ CONTRIBUTE                               ← ContributeCard (see below)
 ### 5.4 Main column
 
 - `<main id="content" tabindex="-1">` is the skip-link target. It contains a **sheet**: `bg-surface border border-border rounded-xl shadow-1` at ≥lg. Below lg, the sheet is full-bleed with no border or radius, and `bg-surface` runs to the edges.
+- **Short pages:** the shell is a `min-h-dvh` flex column, so the footer sits at the bottom of the window. Below lg `main` takes the spare height (the full-bleed surface runs down to the footer); from lg the grid's rows are `1fr auto` (`grid-rows-shell`) and the sheet is `self-start`, as tall as its content, so a blocked or error page never shows an empty stretched card.
 - Sheet padding: 16 px <md, 24 px md, 32 px lg, 40 px xl. It sits `mt-6 mb-10` at ≥lg.
 - The **page head** has these parts, in order:
   1. Breadcrumbs (optional, caption).
@@ -557,7 +559,7 @@ CONTRIBUTE                               ← ContributeCard (see below)
   - The licence: "Text is available under the **Creative Commons Attribution-ShareAlike 4.0** licence." The link goes to `https://creativecommons.org/licenses/by-sa/4.0/` and is external, with an icon. Help pages credit the original wiki's contributors on the page itself (§10.2).
   - The disclaimer: "Bardic Torch is community-maintained and not affiliated with the Society for Creative Anachronism or any other organisation."
   - **HelpLinks** (FE1), the consistent help mechanism (WCAG 3.2.6): **Contact** (the contact form, external, from `navigation.ts`) · **Help** (`/help`) · **Licence & attribution** (`/help/licence`), always in this order, followed by "Original wiki ↗". HelpLinks is one component, and it renders in the same relative order with the same hrefs on every template: home, help pages, settings, the 404 page, and the standalone root error page (§10.5), which otherwise has no shell. A test renders all of these and compares the order and hrefs.
-- Links are separated by `·` (`aria-hidden`) inside a `ul` with inline items, and wrap freely at 360 px. Each link is `inline-flex min-h-6 items-center` (24 px), and the list has `gap-y-2` when it wraps, so the footer links meet WCAG 2.5.8 even though their text is `caption`.
+- Links are separated by `·` (`aria-hidden`) inside a `ul` with inline items, and wrap freely at 360 px. The list is a `separated-list` (`app/styles/base.css`): every item starts with its mark, the list is pulled left by one mark's width and `clip-path`-ed there, so the mark that starts each line is never painted and no line starts with a `·` (the clip stays 0.5rem clear of focus rings on the other sides). Each link is `inline-flex min-h-6 items-center` (24 px), and the list has `gap-y-2` when it wraps, so the footer links meet WCAG 2.5.8 even though their text is `caption`.
 
 ### 5.8 Wireframes
 
@@ -1025,8 +1027,8 @@ Read   Edit   History                         Last edited 3 Oct 2026
 
 **Tag: FE1.** The collapse is **FE2+** (FE1 crumbs are two deep).
 
-- `<nav aria-label="Breadcrumb"><ol>` containing links, with the last item `<span aria-current="page">` in `text-fg-muted`, not a link. The separator is `IconChevronRight` 14 `text-fg-subtle aria-hidden`, an inline SVG after each ancestor link (CSS `::before` can't draw a token-coloured Tabler icon without a data URI). Text is caption, links are `text-link` with no underline (underline on hover), and each link is `inline-flex min-h-6 items-center` (§6.1, WCAG 2.5.8).
-- Component: `Breadcrumbs` (`trail: [{label, to}, …]`, `current`), `ol role="list"` with `flex-wrap gap-y-2`.
+- `<nav aria-label="Breadcrumb"><ol>` containing links, with the last item `<span aria-current="page">` in `text-fg-muted`, not a link. The separator is `IconChevronRight` 14 `text-fg-subtle aria-hidden`, an inline SVG in a `separated-list-mark` that starts every item (CSS `::before` can't draw a token-coloured Tabler icon without a data URI). The `ol` is a `separated-list separated-list-tight` (§5.7): the chevron that would start a line is clipped, so when the trail wraps no chevron dangles at either end of a line. Text is caption, links are `text-link` with no underline (underline on hover), and each link is `inline-flex min-h-6 items-center` (§6.1, WCAG 2.5.8).
+- Component: `Breadcrumbs` (`trail: [{label, to}, …]`, `current`), `ol role="list"` with `gap-y-2`.
 - **At 360 px (FE2+):** collapse the middle items to "…" (a disclosure button, `aria-label="Show full path"`) when there are more than 3. Without JS, it wraps instead.
 - Shown on help pages ("Help › …") and later on term pages. Not shown on Home.
 
@@ -1054,7 +1056,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
 - **Contents:**
   - **Top:** the title and a close button (ghost icon 44, `IconX`, "Close menu").
   - **Then:** a full-width SearchBox, the nav (§5.3) and ContributeCard. This part scrolls.
-  - **Sticky bottom:** the ThemeToggle with its visible label "Theme", and a secondary full-width "Close menu" button, in the thumb zone. The scrolling part has `scroll-padding-bottom` equal to this bar's height, so a nav item reached by Tab is never hidden behind it (WCAG 2.4.11).
+  - **Sticky bottom:** below md the ThemeToggle with its visible label "Theme" (from md the header has the page's one toggle, §6.24, so the drawer doesn't repeat it), and a secondary full-width "Close menu" button, in the thumb zone. The scrolling part has `scroll-padding-bottom` equal to this bar's height, so a nav item reached by Tab is never hidden behind it (WCAG 2.4.11).
 - **Behaviour:**
   - The menu button has `aria-haspopup="dialog"` and `aria-controls`. It has no `aria-expanded`: once the modal is open, the trigger is inert and can't be read anyway.
   - **On open, focus goes to the close button**, which has `autoFocus`. That is predictable, and screen-reader users hear the dialog's name first. Native `showModal()` would otherwise focus the first focusable element, so the `autoFocus` is what makes this explicit.
@@ -1153,7 +1155,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
   - Header buttons are 36 × 32 px with icon 18. At md they are icon-only with `sr-only` names. At ≥lg they show their text too. There is **no tooltip**, so WCAG 1.4.13 doesn't apply.
   - Drawer buttons are 44 px tall, flexible width, and show visible text labels.
   - Pressed: `bg-surface-raised text-fg shadow-1 border border-border-strong`. Unpressed: `text-fg-muted` with a transparent border, hover `text-fg`. Focus-visible: the ring.
-- **One toggle per page.** It lives in the header at ≥md and in the drawer below md. Settings has **no** Appearance section, so two toggles never appear together.
+- **One toggle per page.** It lives in the header at ≥md and in the drawer below md (the drawer's is `md:hidden`, since the md drawer opens with the header still on screen). Settings has **no** Appearance section, so two toggles never appear together.
 - **Keyboard:** Tab moves between the three (they are plain buttons, which suits a submit form). Space and Enter activate.
 
 ### 6.25 AccountMenu
@@ -1178,8 +1180,8 @@ Read   Edit   History                         Last edited 3 Oct 2026
 
 **Tag: FE1.** In FE1 it searches **the original wiki**.
 
-- **Markup:** `<form role="search" method="get" action="https://bardictorch.miraheze.org/w/index.php">` (target and parameter name from `app/constants/navigation.ts`), with `<label for={inputId} class="sr-only">Search the original wiki</label>` and `<input type="search" id={inputId} name="search" autocomplete="off" enterkeyhint="search">`. The placeholder is "Search the original wiki…". The form is marked external like any wiki link: an `IconArrowUpRight` next to the submit button, with `sr-only` "(opens original wiki)" in its label.
-- **Visual:** Input styling at `h-10` (40 px, header md+) or `h-11` (drawer, search sheet and home hero), `rounded-full`, with a leading `IconSearch` 18 `fg-subtle`. The submit button is a trailing ghost icon button (`IconArrowRight`, "Search the original wiki"), always present so the form works without Enter.
+- **Markup:** `<form role="search" method="get" action="https://bardictorch.miraheze.org/w/index.php">` (target and parameter name from `app/constants/navigation.ts`), with `<label for={inputId} class="sr-only">Search the original wiki</label>` and `<input type="search" id={inputId} name="search" autocomplete="off" enterkeyhint="search">`. The placeholder is "Search the original wiki…" at `lg` size, and "Search the wiki…" in the narrow md header field (the label and the submit's name still say "original wiki"), so it is never cut mid-word. The form is marked external like any wiki link: the submit button's icon is the wiki mark `IconArrowUpRight`, with `sr-only` "(opens original wiki)" in its name.
+- **Visual:** Input styling at `h-10` (40 px, header md+) or `h-11` (drawer, search sheet and home hero), `rounded-full`, with a leading `IconSearch` 18 `fg-subtle`. The submit button is a trailing ghost icon button (`IconArrowUpRight`, "Search the original wiki"), always present so the form works without Enter: 44 × 44 px at `lg` size (the input is `pr-12`), and 32 px in the 40 px header field with its hit area padded to 44 px below lg (`before:-inset-1.5`, as Button `sm`). Its hover wash is `bg-fg/10`, a decorative see-through tint (§2.6), because a `surface-sunken` wash would vanish on the dark field, which is itself `surface-sunken`.
 - **Bottom-bar Search cell (<md):** see §5.2. It opens the search sheet above the bar.
 - **States:** focus shows the ring. There are no suggestions and no loading state; the wiki owns its results page.
 - **No keyboard shortcut.** A single-key `/` shortcut would break WCAG 2.1.4 (it fires for speech-input users too), and none is provided.
@@ -1469,6 +1471,7 @@ The head is the h1 "Settings" with no tab row. Sections are separated by h2 plus
 - **h1:** "Something went wrong".
 - **Body:** "That's on us, not you. Try again in a moment. If it keeps happening, let us know and include the reference below." (Without Sentry there is no reference, so the last clause is dropped.)
 - The reference is the Sentry `eventId` in mono (§6.16). Actions: [Try again] (reload, primary) and [Go to the home page]. "Let us know" is the HelpLinks Contact link, not a separate one.
+- **Layout:** the minimal header and footer around a `min-h-dvh` column. Below lg the body is full-bleed `bg-surface`, as in the shell; from lg it is a centred `max-w-form` sheet (`rounded-xl border shadow-1`, 40 px of canvas above and below), like every other page's sheet, rather than a slab hugging the left edge.
 - **503 (API down, FE2+):** h1 "Bardic Torch is resting", body "We're doing some upkeep or the catalogue is briefly unreachable. Please try again in a few minutes."
 - **Built as (FE1):** `ServerError` in `app/components/ErrorPages.tsx`. The root `ErrorBoundary` reports the error with `captureRemixErrorBoundaryError` after mounting (starting Sentry first if the page failed on its first render, `useErrorReference`) and shows the returned event id only when `Sentry.isInitialized()`; 404s are not reported. The server reports the same error on its side (`handleError`, docs/DEPLOY.md §6).
 - It is rendered within the shell. If the shell itself can't render (the root boundary), it uses a minimal standalone page with the same tokens and stylesheet, the Wordmark, and the **same HelpLinks block** (Contact · Help · Licence & attribution) as every other page (WCAG 3.2.6).

@@ -145,7 +145,12 @@ function DrawerDemo() {
         open={open}
         onClose={() => setOpen(false)}
         title="Site menu"
-        footer={<ThemeToggle placement="drawer" />}
+        footer={
+          // As in the real drawer: from md the header has the toggle.
+          <div className="md:hidden">
+            <ThemeToggle placement="drawer" />
+          </div>
+        }
       >
         <nav aria-label="Styleguide sections">
           <ul role="list">

@@ -239,13 +239,16 @@ export function ErrorBoundary() {
       </header>
       <main
         id="content"
-        className="mx-auto w-full max-w-shell flex-1 bg-surface px-4 md:px-6"
+        className="w-full flex-1 bg-surface px-4 md:px-6 lg:bg-transparent lg:py-10"
       >
-        {notFound ? (
-          <NotFound pathname={pathname} />
-        ) : (
-          <ServerError reference={reference} />
-        )}
+        {/* From lg, the sheet of every other page: centred and bordered. */}
+        <div className="mx-auto max-w-shell lg:max-w-form lg:rounded-xl lg:border lg:border-border lg:bg-surface lg:px-10 lg:shadow-1">
+          {notFound ? (
+            <NotFound pathname={pathname} />
+          ) : (
+            <ServerError reference={reference} />
+          )}
+        </div>
       </main>
       <footer className="border-t border-border bg-canvas py-8">
         <div className="mx-auto max-w-shell px-4 md:px-6">
