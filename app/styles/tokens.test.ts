@@ -58,6 +58,15 @@ describe("colour tokens", () => {
   });
 
   it.each(["light", "dark"] as const)(
+    "give %s read-only and disabled fields a fill unlike an editable field's",
+    theme => {
+      expect(resolveColour(theme, "input-bg-locked")).not.toBe(
+        resolveColour(theme, "input-bg")
+      );
+    }
+  );
+
+  it.each(["light", "dark"] as const)(
     "derive the %s hero glow as a faint accent-glow over surface",
     theme => {
       const channels = (name: ColourName) =>

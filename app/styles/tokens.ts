@@ -180,8 +180,18 @@ type Alias = { readonly alias: PlainName };
 
 /** Every colour token, per theme (DESIGN §2.3–2.5). */
 export const COLOURS = {
-  light: { ...light, "input-bg": { alias: "surface-raised" } },
-  dark: { ...dark, "input-bg": { alias: "surface-sunken" } },
+  light: {
+    ...light,
+    "input-bg": { alias: "surface-raised" },
+    // Read-only and disabled fields: a step away from `input-bg` in each
+    // theme (down into the well in light, up out of it in dark).
+    "input-bg-locked": { alias: "surface-sunken" },
+  },
+  dark: {
+    ...dark,
+    "input-bg": { alias: "surface-sunken" },
+    "input-bg-locked": { alias: "surface" },
+  },
 } as const satisfies Record<Theme, Readonly<Record<string, Hex | Alias>>>;
 
 export type ColourName = keyof typeof COLOURS.light;

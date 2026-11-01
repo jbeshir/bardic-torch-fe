@@ -36,7 +36,9 @@ function ViewLabel({ view: { label, icon: ViewIcon } }: { view: View }) {
  * Edit / History. With two or more views they are links in a "Page views"
  * nav, the current one `aria-current="page"`. With one view there is
  * nothing to choose, so it is the same shape as plain text: no nav, no
- * list, no link, no tab stop. `meta` sits at the right end of the rule.
+ * list, no link, no tab stop. `meta` sits at the right end of the rule
+ * from sm; below sm it goes under the rule, which is then drawn under the
+ * tabs alone, so the current tab's bar always sits on the rule.
  */
 export function ViewTabs({
   views,
@@ -50,29 +52,34 @@ export function ViewTabs({
 }) {
   const [only] = views;
   return (
-    <div className="flex flex-wrap items-end justify-between gap-x-4 border-b border-border">
-      {views.length === 1 ? (
-        <span aria-current="page" className={`${VIEW_TAB} ${VIEW_CURRENT}`}>
-          <ViewLabel view={only} />
-        </span>
-      ) : (
-        <nav aria-label="Page views">
-          <ul className="flex flex-wrap">
-            {views.map(view => (
-              <li key={view.to}>
-                <RemixLink
-                  to={view.to}
-                  prefetch="intent"
-                  aria-current={view.to === current ? "page" : undefined}
-                  className={`${VIEW_TAB} ${view.to === current ? VIEW_CURRENT : VIEW_OTHER}`}
-                >
-                  <ViewLabel view={view} />
-                </RemixLink>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      )}
+    <div className="border-border sm:flex sm:items-end sm:justify-between sm:gap-x-4 sm:border-b">
+      <div
+        data-testid="view-tabs"
+        className="shrink-0 border-b border-border sm:border-b-0"
+      >
+        {views.length === 1 ? (
+          <span aria-current="page" className={`${VIEW_TAB} ${VIEW_CURRENT}`}>
+            <ViewLabel view={only} />
+          </span>
+        ) : (
+          <nav aria-label="Page views">
+            <ul className="flex">
+              {views.map(view => (
+                <li key={view.to}>
+                  <RemixLink
+                    to={view.to}
+                    prefetch="intent"
+                    aria-current={view.to === current ? "page" : undefined}
+                    className={`${VIEW_TAB} ${view.to === current ? VIEW_CURRENT : VIEW_OTHER}`}
+                  >
+                    <ViewLabel view={view} />
+                  </RemixLink>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
+      </div>
       {meta ? (
         <div className="py-2.5 text-caption text-fg-subtle">{meta}</div>
       ) : null}
@@ -170,7 +177,7 @@ export function Tabs({
             tabIndex={index === selected ? 0 : -1}
             onClick={() => select(index)}
             onKeyDown={onKeyDown}
-            className="min-h-9 rounded-md border border-transparent px-3 text-body-sm font-medium text-fg-muted transition-colors hover:text-fg aria-selected:border-border aria-selected:bg-surface-raised aria-selected:text-fg aria-selected:shadow-1"
+            className="min-h-9 rounded-md border border-transparent px-3 text-body-sm font-medium text-fg-muted transition-colors hover:text-fg aria-selected:border-border-strong aria-selected:bg-surface-raised aria-selected:text-fg aria-selected:shadow-1"
           >
             {panel.label}
           </button>

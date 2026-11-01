@@ -47,7 +47,7 @@ describe("Input", () => {
     const input = screen.getByRole("textbox");
     expect(input).toBeDisabled();
     expect(input).toHaveClass(
-      "disabled:bg-surface-sunken",
+      "disabled:bg-input-bg-locked",
       "disabled:text-fg-subtle",
       "disabled:border-border"
     );
@@ -55,11 +55,15 @@ describe("Input", () => {
     expect(input).toHaveValue("Iolo");
   });
 
-  it("sits in a sunken well when read-only, border kept", () => {
+  it("is locked when read-only: its own fill in both themes, a dashed strong border", () => {
     render(<Input aria-label="New token value" readOnly value="bt_abc" />);
     const input = screen.getByRole("textbox");
     expect(input).toHaveAttribute("readonly");
-    expect(input).toHaveClass("bg-surface-sunken", "border-border-strong");
+    expect(input).toHaveClass(
+      "bg-input-bg-locked",
+      "border-dashed",
+      "border-border-strong"
+    );
     expect(input).not.toHaveClass("bg-input-bg");
   });
 

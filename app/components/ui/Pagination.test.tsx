@@ -68,7 +68,9 @@ describe("Pagination", () => {
     expect(screen.queryByRole("link", { name: "Previous" })).toBeNull();
     const previous = screen.getByText("Previous");
     expect(previous).toHaveAttribute("aria-disabled", "true");
-    expect(previous).toHaveClass("text-fg-subtle", "bg-surface-sunken");
+    expect(previous).toHaveClass("text-fg-subtle", "cursor-not-allowed");
+    // No fill: lighter than the live steps, unlike their hover.
+    expect(previous).not.toHaveClass("bg-surface-sunken");
     const next = screen.getByRole("link", { name: "Next" });
     expect(next).toHaveAttribute("href", "/pieces?page=2");
     expect(next).toHaveAttribute("rel", "next");

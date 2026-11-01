@@ -80,7 +80,24 @@ describe("ViewTabs", () => {
     );
     const meta = screen.getByText("Adapted from the original wiki");
     expect(meta).toHaveClass("text-caption", "text-fg-subtle");
-    expect(meta.parentElement).toHaveClass("border-b", "border-border");
+    expect(meta.parentElement).toHaveClass("sm:border-b", "border-border");
+  });
+
+  it("below sm puts the rule under the tabs and the meta under the rule, so the bar stays on it", async () => {
+    await renderWithRouter(
+      <ViewTabs
+        views={VIEWS}
+        current={READ.to}
+        meta="Adapted from the original wiki"
+      />
+    );
+    const tabs = screen.getByTestId("view-tabs");
+    expect(tabs).toHaveClass("border-b", "sm:border-b-0");
+    expect(tabs.nextElementSibling).toHaveTextContent(
+      "Adapted from the original wiki"
+    );
+    // The row of tabs never wraps.
+    expect(screen.getByRole("list")).not.toHaveClass("flex-wrap");
   });
 
   it("renders the same token classes in both themes", async () => {
@@ -240,7 +257,9 @@ describe("Tabs", () => {
     expect(screen.getByRole("tab", { name: "Light" })).toHaveClass(
       "aria-selected:bg-surface-raised",
       "aria-selected:shadow-1",
-      "min-h-9"
+      "min-h-9",
+      // A 3:1 edge on the track (WCAG 1.4.11), not the fill alone.
+      "aria-selected:border-border-strong"
     );
   });
 

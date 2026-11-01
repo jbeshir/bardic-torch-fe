@@ -5,8 +5,10 @@ import { useFieldControl } from "./Field";
 /**
  * The text-control look shared by Input, Textarea and Select (DESIGN §6.5).
  * The error state adds an inset 1 px ring inside the border, so the edge is
- * 2 px without the content moving. Read-only values sit in a sunken well
- * with the border kept.
+ * 2 px without the content moving. Read-only and disabled fields take the
+ * `input-bg-locked` fill, which differs from an editable field's in both
+ * themes; read-only keeps its strong border, dashed, and its text, while
+ * disabled has the hairline border and subtle text.
  */
 export function textControlClasses({
   invalid,
@@ -19,8 +21,8 @@ export function textControlClasses({
     ? "border-danger-icon ring-1 ring-inset ring-danger-icon"
     : "border-border-strong hover:border-fg-subtle";
   return (
-    `w-full rounded-md border ${readOnly ? "bg-surface-sunken" : "bg-input-bg"} px-3 text-body text-fg transition-colors placeholder:text-fg-subtle ${edge} ` +
-    "disabled:cursor-not-allowed disabled:border-border disabled:bg-surface-sunken disabled:text-fg-subtle"
+    `w-full rounded-md border ${readOnly ? "border-dashed bg-input-bg-locked" : "bg-input-bg"} px-3 text-body text-fg transition-colors placeholder:text-fg-subtle ${edge} ` +
+    "disabled:cursor-not-allowed disabled:border-solid disabled:border-border disabled:bg-input-bg-locked disabled:text-fg-subtle"
   );
 }
 

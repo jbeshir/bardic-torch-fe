@@ -64,6 +64,7 @@
   --cons-un-fg: 85 72 58; /* #55483A */
   --cons-un-border: 138 122 100; /* #8A7A64 */
   --input-bg: var(--surface-raised);
+  --input-bg-locked: var(--surface-sunken);
   --shadow-1: 0 1px 2px rgb(60 40 20 / 0.06), 0 1px 3px rgb(60 40 20 / 0.08);
   --shadow-2:
     0 4px 8px -2px rgb(60 40 20 / 0.1), 0 2px 4px -2px rgb(60 40 20 / 0.06);
@@ -137,6 +138,7 @@
   --cons-un-fg: 199 186 167; /* #C7BAA7 */
   --cons-un-border: 125 110 92; /* #7D6E5C */
   --input-bg: var(--surface-sunken);
+  --input-bg-locked: var(--surface);
   --shadow-1: inset 0 1px 0 rgb(255 236 210 / 0.04);
   --shadow-2:
     0 4px 12px rgb(0 0 0 / 0.45), inset 0 1px 0 rgb(255 236 210 / 0.05);
@@ -210,6 +212,7 @@
     --cons-un-fg: 199 186 167; /* #C7BAA7 */
     --cons-un-border: 125 110 92; /* #7D6E5C */
     --input-bg: var(--surface-sunken);
+    --input-bg-locked: var(--surface);
     --shadow-1: inset 0 1px 0 rgb(255 236 210 / 0.04);
     --shadow-2:
       0 4px 12px rgb(0 0 0 / 0.45), inset 0 1px 0 rgb(255 236 210 / 0.05);

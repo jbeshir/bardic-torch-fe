@@ -45,8 +45,8 @@ describe("Textarea", () => {
   });
 
   it.each([
-    ["disabled", { disabled: true }, "disabled:bg-surface-sunken"],
-    ["read-only", { readOnly: true }, "bg-surface-sunken"],
+    ["disabled", { disabled: true }, "disabled:bg-input-bg-locked"],
+    ["read-only", { readOnly: true }, "bg-input-bg-locked"],
   ] as const)("has a %s state", (_state, props, cls) => {
     render(<Textarea aria-label="Notes" {...props} />);
     expect(screen.getByRole("textbox")).toHaveClass(cls);

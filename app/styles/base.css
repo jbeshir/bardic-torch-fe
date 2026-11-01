@@ -20,10 +20,13 @@
     scroll-margin-top: calc(var(--header-h) + 0.5rem);
   }
 
-  /* Never fake bold or italic in Fraunces; let the size drive optical size. */
-  h1,
-  h2,
-  h3,
+  /*
+   * Never fake bold or italic in Fraunces; let the size drive optical size.
+   * Only where Fraunces is the face: a heading set in the sans (an alert
+   * title, the sidebar's group headings) keeps the browser's synthesis, so
+   * its weight doesn't depend on the installed system font having a 600.
+   */
+  :where(h1, h2, h3):not(.font-sans, .font-mono),
   .font-display {
     font-optical-sizing: auto;
     font-synthesis: none;
@@ -55,15 +58,24 @@
     }
   }
 
-  /* Windows High Contrast: keep control edges and state marks visible. */
+  /*
+   * Windows High Contrast: keep control edges and state marks visible. A
+   * pressed, current or selected control is marked with a Highlight
+   * outline; focus is a thicker CanvasText one, and the state mark gives
+   * way to it, so focus on a marked control still changes what is drawn.
+   */
   @media (forced-colors: active) {
     button {
       border: 1px solid ButtonText;
     }
 
-    [aria-current]:not([aria-current="false"]),
-    [aria-pressed="true"],
-    [aria-selected="true"] {
+    :focus-visible {
+      outline: 3px solid CanvasText;
+    }
+
+    [aria-current]:not([aria-current="false"]):not(:focus-visible),
+    [aria-pressed="true"]:not(:focus-visible),
+    [aria-selected="true"]:not(:focus-visible) {
       outline: 2px solid Highlight;
       outline-offset: -2px;
     }

@@ -56,11 +56,12 @@ function Step({
     </>
   );
   if (to === null) {
-    // The first or last page: nothing to go to, so not a link.
+    // The first or last page: nothing to go to, so not a link. No fill:
+    // it mustn't outweigh the live steps, or look like their hover.
     return (
       <span
         aria-disabled="true"
-        className={`${ITEM} gap-1 bg-surface-sunken font-medium text-fg-subtle`}
+        className={`${ITEM} cursor-not-allowed gap-1 font-medium text-fg-subtle`}
       >
         {content}
       </span>

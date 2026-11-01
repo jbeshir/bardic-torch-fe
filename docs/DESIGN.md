@@ -95,6 +95,7 @@ A component tagged FE1 can still have individual states or variants tagged SG or
 | `--focus` / `outline-focus`                | `#1F5FC4`          | `#8DB6FF`          | Focus ring. Blue, so it is distinct from amber selection and current-state marks.                                                                                                                                                                                      |
 | `--selection` / `bg-selection`             | `#F5D9A6`          | `#5C4322`          | `::selection` background. Text stays `fg`.                                                                                                                                                                                                                             |
 | `--scrim` / `bg-scrim`                     | `#2B2118`          | `#000000`          | Backdrop behind dialogs and the drawer, always used with an alpha (§4.4). The dark value is the only use of black, and it is never a surface.                                                                                                                          |
+| `--input-bg-locked` / `bg-input-bg-locked` | = `surface-sunken` | = `surface`        | Read-only and disabled fields (and the disabled checkbox box). An alias one step away from `input-bg` in each theme, so a locked field never looks like an editable one in dark, where `input-bg` is itself `surface-sunken`.                                          |
 | `--input-bg` / `bg-input-bg`               | = `surface-raised` | = `surface-sunken` | Text-control background at rest. An alias, so inputs sit in a well in dark mode without a `dark:` class.                                                                                                                                                               |
 | `--logo-core` / `fill-logo-core`           | `#E8A33D`          | `#F4BA62`          | **Decorative only.** Inner core of the logo flame (§5.9).                                                                                                                                                                                                              |
 
@@ -145,7 +146,7 @@ Status is never shown by colour alone: there is always an icon, the label, and a
 - Text goes only on `canvas`, `surface`, `surface-raised`, `surface-sunken`, `accent-subtle`, `hero-glow`, a status `-bg`, or its own fill (`accent`, `danger`). Each of those pairs is in §2.7. **If a pair isn't in the table, add it and run the test before you use it.**
 - In prose, links are distinguished by an underline as well as colour (WCAG 1.4.1). Outside prose, a link may drop the underline only inside a clearly navigational container: nav lists, tabs, chips, breadcrumbs, cards whose whole area is the link. It must still show an underline on hover or focus.
 - Use `link-visited` in prose and search results only, not in nav, tabs or chips.
-- Disabled controls use `text-fg-subtle` on `bg-surface-sunken` with `border-border`. WCAG exempts them from contrast, but they still pass.
+- Disabled controls use `text-fg-subtle` on `bg-input-bg-locked` with `border-border` (the checkbox box keeps `border-border-strong`, so an empty disabled box stays visible on dark `surface`). Disabled Pagination steps have no fill at all. WCAG exempts them from contrast, but they still pass.
 - Opacity modifiers (`bg-accent/10`) are allowed for decoration only: hover washes behind text that is already compliant, or glows. **Never** put text on an opacity-modified background unless that pair has been tested.
 - **The focus ring is never drawn inside an `accent` or `danger` fill.** Focus on `accent` is about 1.02:1 and on `danger` about 1.2:1, so an inset ring there would be invisible. Filled buttons always use the outset ring (§6.1). Anything inside a fill that must be focusable is redesigned instead, so that the current pagination item, for example, is a non-focusable `span`.
 
@@ -157,7 +158,7 @@ The ratios were computed with the WCAG 2.x relative-luminance formula:
 - L = 0.2126 R + 0.7152 G + 0.0722 B.
 - ratio = (L1+0.05)/(L2+0.05).
 
-`scripts/contrast.mjs` (`npm run check:contrast`, part of `validate`) reads **this table**. For each row it computes both ratios from `app/styles/tokens.ts`. It fails if a ratio is below the row's minimum, or if the printed ratio no longer matches the tokens, so the table can't go stale. It also checks the accent/danger hue gap (§2.4). **All 106 pairs pass in both themes.** Before you use a new pair, add a row (with any ratio) and run `npm run check:contrast`; it prints the real values to copy in.
+`scripts/contrast.mjs` (`npm run check:contrast`, part of `validate`) reads **this table**. For each row it computes both ratios from `app/styles/tokens.ts`. It fails if a ratio is below the row's minimum, or if the printed ratio no longer matches the tokens, so the table can't go stale. It also checks the accent/danger hue gap (§2.4). **All 114 pairs pass in both themes.** Before you use a new pair, add a row (with any ratio) and run `npm run check:contrast`; it prints the real values to copy in.
 
 - The minimum is 4.5:1 for text.
 - The minimum is 3:1 for non-text UI: control boundaries, focus rings, icons that carry meaning, and badge edges.
@@ -272,9 +273,12 @@ The ratios were computed with the WCAG 2.x relative-luminance formula:
 | `success-icon` on `surface-raised`   | 3:1   | 6.19:1  | 7.71:1  | toast icon and edge bar                                     |
 | `info-icon` on `surface-sunken`      | 3:1   | 5.62:1  | 9.02:1  | SidebarNote icon                                            |
 | `accent-text` on `surface-sunken`    | 3:1   | 5.45:1  | 10.18:1 | external nav arrow on hover                                 |
-| `fg-muted` on `success-bg`           | 4.5:1 | 7.69:1  | 8.46:1  | ghost button in the token reveal                            |
+| `fg-muted` on `success-bg`           | 4.5:1 | 7.69:1  | 8.46:1  | muted text in a success alert                               |
 | `border-strong` on `success-bg`      | 3:1   | 3.62:1  | 3.27:1  | token value box and Copy button edge in the reveal          |
 | `border-strong` on `danger-bg`       | 3:1   | 3.54:1  | 3.41:1  | secondary button edge in a danger alert (Settings "Log in") |
+| `fg` on `input-bg-locked`            | 4.5:1 | 12.82:1 | 12.61:1 | read-only field value                                       |
+| `fg-subtle` on `input-bg-locked`     | 4.5:1 | 4.89:1  | 6.25:1  | disabled field text (exempt, but passes)                    |
+| `border-strong` on `input-bg-locked` | 3:1   | 3.39:1  | 3.57:1  | read-only dashed edge; disabled checkbox box                |
 
 **Other non-text checks:**
 
@@ -732,7 +736,8 @@ Generic components live in `app/components/ui/`. App-specific ones (ThemeToggle,
   - `outline: 2px solid rgb(var(--focus)); outline-offset: 2px`, applied on `:focus-visible` only. `app/styles/base.css` applies it to **every** `:focus-visible` element, so components get it without a class; they only adjust the offset (`focus-visible:-outline-offset-2` in dense containers).
   - The ring encloses the whole control: at least a 2 px perimeter at ≥3:1 against the adjacent surface (WCAG 2.4.11 and 2.4.13 friendly). Never set `outline: none` without this replacement.
   - Inside dense containers (tabs, chip rows, nav), use `outline-offset: -2px` so the ring can't be clipped. The inset ring sits on the item's own fill; every such pair is in §2.7. It is never inset on an `accent` or `danger` fill (§2.6).
-  - In Windows forced-colours mode, outlines survive. `app/styles/base.css` also has `@media (forced-colors: active)` rules: buttons get `border: 1px solid ButtonText`, the current tab and current nav item (`[aria-current]`) get `outline: 2px solid Highlight`, `aria-pressed="true"` toggles get `outline: 2px solid Highlight`, and checkboxes go back to `appearance: auto` (§6.8). Decorative SVG fills (the logo) keep their colours with `forced-color-adjust: auto` defaults, because the mark is `aria-hidden` and the wordmark text carries the meaning.
+  - In Windows forced-colours mode, outlines survive. `app/styles/base.css` also has `@media (forced-colors: active)` rules: buttons get `border: 1px solid ButtonText`, the current tab and current nav item (`[aria-current]`) get `outline: 2px solid Highlight`, `aria-pressed="true"` toggles get `outline: 2px solid Highlight`, and checkboxes go back to `appearance: auto` (§6.8). Focus there is a 3 px `CanvasText` outline, and the state outline is `:not(:focus-visible)`, so focusing a pressed, current or selected control visibly changes it (WCAG 2.4.7); without that, the state rule (same specificity, later) drew the same outline focused or not.
+- **Faux bold:** `font-synthesis: none` applies only where Fraunces is the face (`h1`–`h3` not set in `font-sans`/`font-mono`, and `.font-display`). Sans text, including headings set in the sans (alert titles, sidebar group headings), keeps the browser's synthesis, so labels and titles at 600 stay bold even where the system sans has no 600 face. Decorative SVG fills (the logo) keep their colours with `forced-color-adjust: auto` defaults, because the mark is `aria-hidden` and the wordmark text carries the meaning.
 - **Ids:** every `id` used by `aria-labelledby`, `aria-describedby`, `aria-controls` or `htmlFor` comes from React `useId()`. Never hard-code an id in a component: the styleguide renders many instances on one page, and duplicate ids break the references.
 - **Focus not obscured (WCAG 2.4.11):** `html` has `scroll-padding-top: calc(var(--header-h) + 0.5rem)`, and below `md` also `scroll-padding-bottom` for the bottom app bar (§5.2). Scroll containers with a sticky footer (the drawer) set `scroll-padding-bottom` to that footer's height. Toasts never cover the control that triggered them (§6.23). The e2e helper `expectFocusNotObscured` tabs through every journey page and checks this.
 - **Tap targets:**
@@ -825,7 +830,7 @@ Help text that explains format.       ← caption text-fg-muted, id="{id}-help"
   - The background is `bg-input-bg`, an alias token: `surface-raised` in light and `surface-sunken` in dark (§2.3). No `dark:` class is needed.
 - **Hover:** `border-fg-subtle`.
 - **Focus-visible / focus:** the shared ring. The border stays put, so there is no shift.
-- **Disabled:** `bg-surface-sunken text-fg-subtle border-border`. **Read-only:** `bg-surface-sunken`, with the border kept.
+- **Disabled:** `bg-input-bg-locked text-fg-subtle border-border`. **Read-only:** `bg-input-bg-locked` with the strong border kept but **dashed**, and `text-fg`. All three states (rest, read-only, disabled) differ in both themes: in dark the locked fill is `surface`, a step up out of the `surface-sunken` well.
 - **Error:** a 2 px `danger-icon` edge, plus the message: the 1 px `border-danger-icon` plus an inset 1 px `ring-danger-icon` inside it, so neither the padding nor the content moves.
 - **Loading** (FE2+, async check, e.g. duplicate name): a 16 px trailing Spinner inside, `aria-busy` on the field wrapper.
 - Use `type` correctly (`email`, `url`, `search`) and set `autocomplete`. Never use placeholder as the label.
@@ -857,7 +862,7 @@ Help text that explains format.       ← caption text-fg-muted, id="{id}-help"
 - **States:**
   - Hover: border `fg-subtle`.
   - Focus-visible: the ring around the box only.
-  - Disabled: `bg-surface-sunken border-border`, check `fg-subtle`.
+  - Disabled: `bg-input-bg-locked border-border-strong`, check `fg-subtle`, label `fg-subtle`.
   - Error: border `danger-icon`, plus the field error message below the group.
 - **Groups:** `<fieldset>` with `<legend>` styled as a field label.
 - **Forced colours:** a token-drawn check is not reliable in Windows High Contrast, which would make checked and unchecked look the same. So the box carries `forced-colors:appearance-auto`, handing it back to the system control, and the overlaid marks carry `forced-colors:!hidden` (important, because `peer-checked:block` is more specific than a media-query utility). (A utility, not only the `base.css` rule: `appearance-none` is a utility, and the base layer can't override it.)
@@ -885,14 +890,14 @@ Read   Edit   History                         Last edited 3 Oct 2026
 
 **(a′) Single-view label: "Read"** (**FE1**, every FE1 page head). A `nav` landmark holding one self-link would add a landmark and a tab stop that do nothing. So pages with one view (every FE1 page) render the same visual shape without interaction: `<span aria-current="page">Read</span>` (with its icon) sitting on the title rule with the 3 px `accent` bar, and no `nav`, no list and no link. Screen readers read it as plain text.
 
-- The row never wraps. It is **not** a scroll container: a scroller would clip the tabs' `-mb-px` overlap onto the title rule, and the three views (Read, Edit, History, with icons) fit in 320 px. The page meta at the right of the rule wraps under the tabs instead.
+- The row never wraps. It is **not** a scroll container: a scroller would clip the tabs' `-mb-px` overlap onto the title rule, and the three views (Read, Edit, History, with icons) fit in 320 px. The page meta at the right of the rule goes under the tabs instead: below sm the rule is drawn under the tabs alone (the meta sits beneath it), and from sm under the whole row, so the current tab's bar is always on the rule.
 - Component: `ViewTabs` (`app/components/ui/Tabs.tsx`) renders the whole row, the rule included, with an optional `meta` slot; one view gives the a′ label, two or more the `nav`.
 
 **(b) In-page tablist** (**SG**: the styleguide's theme preview uses it; no FE1 page does):
 
 - `role="tablist"` with `aria-label`. Each `role="tab"` has `aria-selected`, `aria-controls` (ids from `useId()`), and roving `tabindex` (0 on the selected tab, −1 on the others). Each panel is `role="tabpanel"` with `tabindex="0"` and `aria-labelledby`.
 - **Keyboard:** Left and Right move _and activate_ (automatic activation, because panels are cheap). Home and End jump. Tab moves into the panel.
-- **Visual:** a segmented style to distinguish it from page tabs. The track is `bg-surface-sunken rounded-lg p-1`, each tab is `h-9 rounded-md body-sm`, and the selected tab is `bg-surface-raised text-fg shadow-1 border border-border`.
+- **Visual:** a segmented style to distinguish it from page tabs. The track is `bg-surface-sunken rounded-lg p-1`, each tab is `h-9 rounded-md body-sm`, and the selected tab is `bg-surface-raised text-fg shadow-1 border border-border-strong` (the strong edge gives it 3:1 against the track, WCAG 1.4.11; the fill and shadow alone did not).
 - **No-JS:** render all panels stacked, each in a `section` under its heading, and hide the tablist. The server renders it with `hidden` (attribute and class, since a display utility would beat the attribute) on the tablist until hydration flips `data-enhanced`; then the panels become `role="tabpanel"` and the headings go (the tab names the panel).
 - **Lazy panels** (`lazy`): for panels too heavy to keep in the page together (the styleguide preview). Only the selected panel has content; the others are empty hidden `tabpanel`s, so every `aria-controls` resolves. Without JS only the default panel is rendered, under its heading.
 - **Forced colours:** the selected tab (`aria-selected="true"`) gets the same `Highlight` outline as `aria-current` and `aria-pressed` (base.css).
@@ -1040,7 +1045,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
 - **Items:** `min-w-11 h-11 rounded-md body-sm` (44 px). The current page is `aria-current="page"`, `bg-accent text-accent-fg font-semibold`, and is a `span`, not a link, so it never takes focus (an inset ring on `accent` would be invisible, §2.6). Hover is `bg-surface-sunken`.
 - **Ellipsis:** `…` in `text-fg-subtle aria-hidden`, with a hidden "more pages".
 - **<sm:** only "Previous", "Page 3 of 12" (body-sm, fg-muted) and "Next". Prev and Next become 44 px icon buttons with visible text kept at ≥360 px.
-- **Disabled prev/next** (first or last page): render a `<span aria-disabled="true">` in the disabled style, not a link.
+- **Disabled prev/next** (first or last page): render a `<span aria-disabled="true">`, not a link: `text-fg-subtle cursor-not-allowed` with **no fill**, so it is lighter than the live steps and unlike their `surface-sunken` hover.
 - **Keyboard:** standard Tab order.
 - Component: `Pagination` (`page`, `pageCount`, `href(n)`). It shows the first page, the last, and the current page with its neighbours; a gap never stands for a single page (that page is shown instead). Number links read "Page 4" (a hidden "Page " prefix). Items are `min-h-11 min-w-11`, minimums so the text-spacing override can grow them. Previous and Next carry `rel="prev"`/`rel="next"`.
 

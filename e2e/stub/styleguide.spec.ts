@@ -469,6 +469,24 @@ test.describe("forced colours", () => {
     const input = block(page, "input").getByRole("textbox").first();
     expect((await styleOf(input)).border).toMatch(/^solid /);
 
+    // Focus on a pressed or selected control draws something other than
+    // its state mark (WCAG 2.4.7): the mark gives way to the focus outline.
+    const outlineOf = (locator: Locator) =>
+      locator.evaluate(element => {
+        const style = getComputedStyle(element);
+        return `${style.outlineWidth} ${style.outlineColor} ${style.outlineOffset}`;
+      });
+    const restingTab = await outlineOf(selected);
+    await selected.focus();
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("ArrowLeft");
+    await expect(selected).toBeFocused();
+    expect(await outlineOf(selected)).not.toBe(restingTab);
+    const restingPressed = await outlineOf(pressed);
+    await page.keyboard.press("Shift");
+    await pressed.focus();
+    expect(await outlineOf(pressed)).not.toBe(restingPressed);
+
     // The focus ring survives too.
     await buttons.getByRole("button", { name: "Cancel" }).first().focus();
     await page.keyboard.press("Shift+Tab");
@@ -479,6 +497,32 @@ test.describe("forced colours", () => {
     });
     expect(ring).toBe("solid");
   });
+});
+
+test("only Fraunces forbids faux bold: sans headings and labels may synthesise their weight", async ({
+  page,
+}) => {
+  await openStyleguide(page);
+  const synthesis = (locator: Locator) =>
+    locator.evaluate(element => ({
+      family: getComputedStyle(element).fontFamily,
+      weight: getComputedStyle(element).getPropertyValue(
+        "font-synthesis-weight"
+      ),
+    }));
+  // A Fraunces heading: no faux bold.
+  const display = await synthesis(
+    page.getByRole("heading", { level: 1 }).first()
+  );
+  expect(display.family).toMatch(/^"?Fraunces/);
+  expect(display.weight).toBe("none");
+  // A heading set in the sans (the sidebar card's h3): synthesis allowed.
+  const title = page
+    .getByRole("heading", { name: "Keep the torch lit", includeHidden: true })
+    .first();
+  const sans = await synthesis(title);
+  expect(sans.family).not.toMatch(/Fraunces/);
+  expect(sans.weight).toBe("auto");
 });
 
 test.describe("text spacing (WCAG 1.4.12)", () => {

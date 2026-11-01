@@ -20,6 +20,7 @@ const SWATCHES: Readonly<Record<ColourName, string>> = {
   "surface-raised": "bg-surface-raised",
   "surface-sunken": "bg-surface-sunken",
   "input-bg": "bg-input-bg",
+  "input-bg-locked": "bg-input-bg-locked",
   border: "bg-border",
   "border-strong": "bg-border-strong",
   fg: "bg-fg",
@@ -142,10 +143,7 @@ export function Colours() {
       title="Colour"
       summary="Every token, with its value in each theme and its contrast with the canvas (DESIGN §2). The swatch shows the theme being previewed."
     >
-      <ul
-        role="list"
-        className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-      >
+      <ul role="list" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {names.map(name => (
           <li
             key={name}
@@ -159,11 +157,11 @@ export function Colours() {
               <span className="block font-mono font-medium text-fg">
                 {name}
               </span>
-              <span className="block text-fg-muted">
+              <span className="block whitespace-nowrap text-fg-muted">
                 Light {resolveColour("light", name)} ·{" "}
                 {contrastRatio("light", name, "canvas")}
               </span>
-              <span className="block text-fg-muted">
+              <span className="block whitespace-nowrap text-fg-muted">
                 Dark {resolveColour("dark", name)} ·{" "}
                 {contrastRatio("dark", name, "canvas")}
               </span>

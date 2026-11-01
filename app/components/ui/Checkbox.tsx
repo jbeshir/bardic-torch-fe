@@ -66,7 +66,7 @@ export function Checkbox({
             aria-labelledby={`${id}-label`}
             aria-describedby={describedBy(id, { help, error })}
             aria-invalid={invalid || undefined}
-            className={`peer h-5 w-5 ${cursor} appearance-none rounded-sm border-2 ${edge} bg-surface-raised transition-colors hover:border-fg-subtle checked:border-accent checked:bg-accent checked:hover:border-accent-hover checked:hover:bg-accent-hover indeterminate:border-accent indeterminate:bg-accent disabled:border-border disabled:bg-surface-sunken forced-colors:appearance-auto`}
+            className={`peer h-5 w-5 ${cursor} appearance-none rounded-sm border-2 ${edge} bg-surface-raised transition-colors hover:border-fg-subtle checked:border-accent checked:bg-accent checked:hover:border-accent-hover checked:hover:bg-accent-hover indeterminate:border-accent indeterminate:bg-accent disabled:border-border-strong disabled:bg-input-bg-locked forced-colors:appearance-auto`}
           />
           <IconCheck
             size={16}

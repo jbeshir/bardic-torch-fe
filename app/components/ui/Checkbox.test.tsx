@@ -84,8 +84,9 @@ describe("Checkbox", () => {
     const box = screen.getByRole("checkbox");
     expect(box).toBeDisabled();
     expect(box).toHaveClass(
-      "disabled:bg-surface-sunken",
-      "disabled:border-border"
+      "disabled:bg-input-bg-locked",
+      // A strong edge, so the empty box stays visible in dark (on surface).
+      "disabled:border-border-strong"
     );
     expect(screen.getByText("Singalong")).toHaveClass("text-fg-subtle");
     await userEvent.click(screen.getByText("Singalong"));
