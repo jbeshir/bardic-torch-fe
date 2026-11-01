@@ -1,6 +1,6 @@
 import { renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { ProxyBody } from "~/schemas/proxy";
+import type { ProxyBody, ProxyError, ProxyErrorCode } from "~/schemas/proxy";
 import { fieldMessage, problemMessage, useFetcherResult } from "./results";
 
 type Body = ProxyBody<unknown>;
@@ -41,7 +41,7 @@ describe("useFetcherResult", () => {
 });
 
 describe("fieldMessage", () => {
-  const error = {
+  const error: ProxyError = {
     code: "invalid_request",
     message: "Check the highlighted fields.",
     fields: [
@@ -69,7 +69,7 @@ describe("problemMessage", () => {
     "upstream_unavailable",
     "unexpected_response",
     "offline",
-  ])("uses the form's own words when the service had trouble (%s)", code => {
+  ] satisfies ProxyErrorCode[])("uses the form's own words when the service had trouble (%s)", code => {
     expect(problemMessage({ code, message: "Proxy copy" }, "Form copy")).toBe(
       "Form copy"
     );
@@ -80,7 +80,7 @@ describe("problemMessage", () => {
     "user_blocked",
     "not_found",
     "unauthenticated",
-  ])("keeps the proxy's specific copy for %s", code => {
+  ] satisfies ProxyErrorCode[])("keeps the proxy's specific copy for %s", code => {
     expect(problemMessage({ code, message: "Proxy copy" }, "Form copy")).toBe(
       "Proxy copy"
     );

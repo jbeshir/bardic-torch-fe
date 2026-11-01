@@ -27,7 +27,7 @@ describe("ProblemAlert", () => {
       <ProblemAlert
         error={{
           code: "internal",
-          message: "Bardic Torch couldn’t do that just now.",
+          message: "We couldn’t do that just now.",
         }}
         fallback="We couldn’t create a token. Check your connection and try again."
       />

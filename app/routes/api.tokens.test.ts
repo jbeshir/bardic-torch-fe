@@ -145,7 +145,7 @@ describe("POST /api/tokens", () => {
       ok: false,
       error: {
         code: "internal",
-        message: "Bardic Torch couldn’t do that just now. Try again shortly.",
+        message: "We couldn’t do that just now. Try again shortly.",
       },
     });
   });

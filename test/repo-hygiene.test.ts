@@ -585,3 +585,26 @@ describe("formatting coverage", () => {
     expect(entries).toEqual(EXPECTED_PRETTIER_IGNORES);
   });
 });
+
+describe("error copy", () => {
+  /**
+   * The app speaks as "we" in every error ("We couldn’t save your
+   * changes."), never in the third person about itself (review CQ-10).
+   */
+  const THIRD_PERSON = /Bardic Torch (?:couldn’t|could not|sent|took|failed)/;
+
+  it("uses one voice: “We couldn’t…”, not “Bardic Torch couldn’t…”", () => {
+    const offenders = filesUnder("app").filter(
+      path =>
+        /\.tsx?$/.test(path) &&
+        !/\.test\.tsx?$/.test(path) &&
+        THIRD_PERSON.test(read(path))
+    );
+    expect(offenders).toEqual([]);
+  });
+
+  it("recognises the third-person voice", () => {
+    expect(THIRD_PERSON.test("Bardic Torch couldn’t do that.")).toBe(true);
+    expect(THIRD_PERSON.test("We couldn’t do that.")).toBe(false);
+  });
+});

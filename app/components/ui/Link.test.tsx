@@ -58,8 +58,8 @@ describe("Link", () => {
     ["/help", null],
     ["#contents", null],
     [WIKI, "wiki"],
-    ["https://bardictorch.miraheze.org", "wiki"],
-    ["https://bardictorch.miraheze.org.example.com/", "web"],
+    [new URL(WIKI).origin, "wiki"],
+    [`${new URL(WIKI).origin}.example.com/`, "web"],
     ["https://creativecommons.org/", "web"],
     ["http://example.org", "web"],
   ] as const)("classifies %s as %s from the address alone", (to, kind) => {

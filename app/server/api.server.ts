@@ -15,7 +15,12 @@ import {
   DISPLAY_NAME_RULE,
   TOKEN_NAME_RULE,
 } from "~/schemas/rules";
-import type { ProxyBody, ProxyError } from "~/schemas/proxy";
+import {
+  UNEXPECTED_ANSWER,
+  type ProxyBody,
+  type ProxyError,
+  type ProxyErrorCode,
+} from "~/schemas/proxy";
 import {
   createAuthenticatedFetch,
   getOrCreateSessionStorage,
@@ -32,11 +37,11 @@ import {
  * app sees carries copy written here, chosen by the upstream `code`.
  */
 
-type ErrorCode =
-  | UpstreamErrorCode
-  | "upstream_unavailable"
-  | "bad_gateway"
-  | "method_not_allowed";
+/** The codes this module answers with: not the CSRF check's or the browser's. */
+type ErrorCode = Exclude<
+  ProxyErrorCode,
+  "forbidden" | "offline" | "unexpected_response"
+>;
 
 /** An error the app reports, with its own copy (see `upstreamError`). */
 type ApiError = ProxyError & { readonly code: ErrorCode };
@@ -97,7 +102,7 @@ type ApiRequest<T> = {
  */
 const UPSTREAM_TIMEOUT_MS = 10_000;
 
-const TRY_AGAIN = "Bardic Torch couldn’t do that just now. Try again shortly.";
+const TRY_AGAIN = "We couldn’t do that just now. Try again shortly.";
 
 const SIGNED_OUT: ApiError = {
   code: "unauthenticated",
@@ -143,7 +148,7 @@ function upstreamError(
         message:
           operationId === "revokeAPIToken"
             ? "That token no longer exists. Reload the page to see your current tokens."
-            : "Bardic Torch couldn’t find what you asked for. Reload the page and try again.",
+            : "We couldn’t find what you asked for. Reload the page and try again.",
       };
     case "conflict":
       return {
@@ -262,7 +267,7 @@ async function callApi<T>(
         504,
         {
           code: "upstream_unavailable",
-          message: "Bardic Torch took too long to answer. Try again shortly.",
+          message: "Our servers took too long to answer. Try again shortly.",
         },
         headers
       );
@@ -271,7 +276,7 @@ async function callApi<T>(
       502,
       {
         code: "upstream_unavailable",
-        message: "We couldn’t reach Bardic Torch. Try again shortly.",
+        message: "We couldn’t reach our servers. Try again shortly.",
       },
       headers
     );
@@ -314,7 +319,7 @@ async function callApi<T>(
     502,
     {
       code: "bad_gateway",
-      message: "Bardic Torch sent an unexpected response. Try again shortly.",
+      message: UNEXPECTED_ANSWER,
     },
     headers
   );

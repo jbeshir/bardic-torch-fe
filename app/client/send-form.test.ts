@@ -5,7 +5,7 @@ const UNEXPECTED = {
   ok: false,
   error: {
     code: "unexpected_response",
-    message: "Bardic Torch sent an unexpected response. Try again shortly.",
+    message: "We got an unexpected answer from our servers. Try again shortly.",
   },
 };
 

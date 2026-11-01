@@ -179,7 +179,7 @@ describe("/settings route error boundary", () => {
     expect(response.status).toBe(500);
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     expect(await response.json()).toEqual({
-      message: "Bardic Torch couldn’t do that just now. Try again shortly.",
+      message: "We couldn’t do that just now. Try again shortly.",
     });
   });
 

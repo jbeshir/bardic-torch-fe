@@ -1,4 +1,8 @@
-import type { ProxyBody, ProxyError } from "~/schemas/proxy";
+import {
+  UNEXPECTED_ANSWER,
+  type ProxyBody,
+  type ProxyError,
+} from "~/schemas/proxy";
 
 /**
  * How the browser sends a mutation (the settings forms through the
@@ -22,7 +26,7 @@ export const OFFLINE: ProxyError = {
  */
 const UNEXPECTED_RESPONSE: ProxyError = {
   code: "unexpected_response",
-  message: "Bardic Torch sent an unexpected response. Try again shortly.",
+  message: UNEXPECTED_ANSWER,
 };
 
 function isProxyBody(value: unknown): value is ProxyBody<unknown> {

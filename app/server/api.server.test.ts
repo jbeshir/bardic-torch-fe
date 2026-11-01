@@ -19,7 +19,7 @@ import { contractResponse, offContractResponse } from "~/test/contract";
 import { serveMocks } from "~/test/msw";
 
 const { server } = serveMocks();
-const TRY_AGAIN = "Bardic Torch couldn’t do that just now. Try again shortly.";
+const TRY_AGAIN = "We couldn’t do that just now. Try again shortly.";
 
 /** How to call each FE1 operation, for table-driven error mapping. */
 const OPERATIONS = {
@@ -297,7 +297,7 @@ describe("responses", () => {
       "not_found",
       {
         message:
-          "Bardic Torch couldn’t find what you asked for. Reload the page and try again.",
+          "We couldn’t find what you asked for. Reload the page and try again.",
       },
       "undeclared",
     ],
@@ -501,7 +501,7 @@ describe("upstream timeout", () => {
       status: 504,
       error: {
         code: "upstream_unavailable",
-        message: "Bardic Torch took too long to answer. Try again shortly.",
+        message: "Our servers took too long to answer. Try again shortly.",
       },
     });
   });

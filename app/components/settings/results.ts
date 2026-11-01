@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { OFFLINE } from "~/client/send-form";
-import type { ProxyBody, ProxyError } from "~/schemas/proxy";
+import type { ProxyBody, ProxyError, ProxyErrorCode } from "~/schemas/proxy";
 
 /**
  * Calls `onResult` once for each result a fetcher gets back, after any
@@ -34,7 +34,7 @@ export function fieldMessage(error: ProxyError, field: string): string | null {
 }
 
 /** Failures that are the service's, not the request's. */
-const SERVICE_TROUBLE = new Set([
+const SERVICE_TROUBLE: ReadonlySet<ProxyErrorCode> = new Set<ProxyErrorCode>([
   "internal",
   "unavailable",
   "bad_gateway",
