@@ -4,6 +4,7 @@ import * as logoutModule from "~/routes/auth.logout";
 import * as indexModule from "~/routes/_index";
 import * as themeModule from "~/routes/resources.theme";
 import { APP_ORIGIN, loadContext } from "~/test/context";
+import { callPagesFunction } from "~/test/pages-context";
 import { testBuild } from "~/test/server-build";
 import { createPagesHandler } from "./pages-function.server";
 
@@ -34,21 +35,7 @@ function call(
   request: Request,
   env: Readonly<Record<string, unknown>> = ENV
 ) {
-  const context = {
-    request,
-    env: {
-      ...env,
-      // No static file matches, so every request reaches Remix.
-      ASSETS: { fetch: async () => new Response(null, { status: 404 }) },
-    },
-    data: {},
-    params: {},
-    functionPath: "/[[path]]",
-    waitUntil: () => undefined,
-    passThroughOnException: () => undefined,
-    next: async () => new Response(null, { status: 404 }),
-  };
-  return onRequest(context as unknown as Parameters<typeof onRequest>[0]);
+  return callPagesFunction(onRequest, request, env);
 }
 
 function expectSecurityHeaders(response: Response) {

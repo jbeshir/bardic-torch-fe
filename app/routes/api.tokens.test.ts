@@ -1,9 +1,10 @@
-import { http, HttpResponse } from "msw";
+import { http } from "msw";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TOKEN_NAME_RULE } from "~/schemas/rules";
 import { API_BASE_URL, formRequest, sessionCookie } from "~/test/context";
 import { runAction } from "~/test/proxy";
 import { action } from "./api.tokens";
+import { contractResponse, offContractResponse } from "~/test/contract";
 import { serveMocks } from "~/test/msw";
 
 const { server } = serveMocks();
@@ -44,12 +45,13 @@ async function post(form: Record<string, string>) {
 }
 
 function upstreamError(status: number, code: string) {
-  return () => HttpResponse.json({ code, message: "detail" }, { status });
+  return () =>
+    contractResponse("createAPIToken", status, { code, message: "detail" });
 }
 
 describe("POST /api/tokens", () => {
   it("creates a named token and returns the secret with 201", async () => {
-    upstream(() => HttpResponse.json(created, { status: 201 }));
+    upstream(() => contractResponse("createAPIToken", 201, created));
     const response = await post({ name: " Laptop " });
     expect(response.status).toBe(201);
     expect(response.headers.get("Cache-Control")).toBe("no-store");
@@ -62,7 +64,7 @@ describe("POST /api/tokens", () => {
     ["a blank name", { name: "   " }],
   ])("sends {} for %s", async (_label, form) => {
     upstream(() =>
-      HttpResponse.json({ ...created, name: null }, { status: 201 })
+      contractResponse("createAPIToken", 201, { ...created, name: null })
     );
     const response = await post(form);
     expect(response.status).toBe(201);
@@ -70,7 +72,7 @@ describe("POST /api/tokens", () => {
   });
 
   it("accepts a name of exactly 128 characters", async () => {
-    upstream(() => HttpResponse.json(created, { status: 201 }));
+    upstream(() => contractResponse("createAPIToken", 201, created));
     const response = await post({ name: "x".repeat(128) });
     expect(response.status).toBe(201);
   });
@@ -151,7 +153,9 @@ describe("POST /api/tokens", () => {
   it("maps a created token without its secret to 502", async () => {
     vi.spyOn(console, "error").mockReturnValue();
     const { token: _token, ...withoutSecret } = created;
-    upstream(() => HttpResponse.json(withoutSecret, { status: 201 }));
+    upstream(() =>
+      offContractResponse("createAPIToken", 201, withoutSecret, "no secret")
+    );
     const response = await post({});
     expect(response.status).toBe(502);
     expect(await response.json()).toMatchObject({
@@ -159,6 +163,28 @@ describe("POST /api/tokens", () => {
       error: { code: "bad_gateway" },
     });
     expect(sent).toEqual([{}]);
+  });
+
+  it("clears the session on its own response when the API answers 401", async () => {
+    upstream(() =>
+      contractResponse("createAPIToken", 401, {
+        code: "unauthenticated",
+        message: "token revoked",
+      })
+    );
+    const response = await post({ name: "Laptop" });
+    expect(response.status).toBe(401);
+    expect(response.headers.get("Set-Cookie")).toMatch(
+      /^__Host-bt_session=;.*Expires=Thu, 01 Jan 1970/
+    );
+    expect(await response.json()).toEqual({
+      ok: false,
+      error: {
+        code: "unauthenticated",
+        message:
+          "You’ve been signed out. Log in again and we’ll bring you back here.",
+      },
+    });
   });
 
   it("rejects multipart bodies with 415", async () => {

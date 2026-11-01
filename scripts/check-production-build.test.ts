@@ -5,9 +5,11 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
+import { execFile } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { promisify } from "node:util";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { inspectBuild, readStubMarker } from "./check-production-build.mjs";
 
 const MARKER = "bardic-torch-stub-auth";
@@ -123,5 +125,62 @@ describe("inspectBuild", () => {
       "production: no server build",
       "production: expected one client manifest",
     ]);
+  });
+});
+
+// The positive control: a real `vite build --mode e2e`, which has stub auth
+// compiled in, must be caught. The fake directories above can't show that
+// the marker survives bundling and minification as the scan expects. One
+// build (about 10-15 s) for the whole file.
+describe("inspectBuild on a real e2e build", () => {
+  const BUILD_TIMEOUT = 180_000;
+  let buildDir = "";
+
+  beforeAll(async () => {
+    buildDir = mkdtempSync(path.join(tmpdir(), "bt-e2e-build-"));
+    // vite.config.ts leaves Remix out when it sees VITEST, and vitest's
+    // NODE_ENV=test would change what Vite builds: the child gets the
+    // environment `npm run build:e2e` would have.
+    const {
+      VITEST: _vitest,
+      VITEST_MODE: _mode,
+      VITEST_POOL_ID: _pool,
+      VITEST_WORKER_ID: _worker,
+      ...env
+    } = process.env;
+    await promisify(execFile)(
+      path.resolve("node_modules/.bin/remix"),
+      ["vite:build", "--mode", "e2e"],
+      {
+        env: {
+          ...env,
+          NODE_ENV: "production",
+          REMIX_BUILD_DIRECTORY: buildDir,
+        },
+      }
+    );
+  }, BUILD_TIMEOUT);
+
+  afterAll(() => {
+    rmSync(buildDir, { recursive: true, force: true });
+  });
+
+  it("finds the stub auth marker, and only stub auth", () => {
+    // e2e builds keep the styleguide, as preview builds do.
+    const problems = inspectBuild({
+      buildDir,
+      mode: "preview",
+      marker: readStubMarker(
+        readFileSync("app/server/stub-auth.server.ts", "utf8")
+      ),
+    });
+    expect(problems).toContainEqual(
+      expect.stringMatching(/^preview: stub auth marker in server[\\/]/)
+    );
+    expect(
+      problems.filter(
+        problem => !/: stub auth (marker in|chunk) /.test(problem)
+      )
+    ).toEqual([]);
   });
 });

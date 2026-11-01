@@ -15,6 +15,7 @@ import {
   TOKEN_REFRESH_THRESHOLD_MS,
 } from "~/constants/auth";
 import { loadContext, sessionCookie, sessionTokens } from "~/test/context";
+import { contractResponse } from "~/test/contract";
 import { serveMocks } from "~/test/msw";
 import {
   createAuthenticatedFetch,
@@ -329,12 +330,18 @@ describe("getServerAuthContext", () => {
 });
 
 describe("createAuthenticatedFetch", () => {
+  const ME = {
+    id: "google-oauth2|1",
+    display_name: "Morwen",
+    role: "contributor",
+  };
+
   it("sends the session's token with the auth0| prefix", async () => {
     const seen: Array<string | null> = [];
     server.use(
       http.get("https://api.test/v1/me", ({ request }) => {
         seen.push(request.headers.get("Authorization"));
-        return HttpResponse.json({});
+        return contractResponse("getMe", 200, ME);
       })
     );
     const auth = await createAuthenticatedFetch(
@@ -352,7 +359,7 @@ describe("createAuthenticatedFetch", () => {
     server.use(
       http.get("https://api.test/v1/me", ({ request }) => {
         seen.push(request.headers.get("Authorization"));
-        return HttpResponse.json({});
+        return contractResponse("getMe", 200, ME);
       })
     );
     const auth = await createAuthenticatedFetch(

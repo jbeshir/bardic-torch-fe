@@ -15,6 +15,7 @@ import {
   revokeApiToken,
   updateMe,
 } from "./api.server";
+import { contractResponse, offContractResponse } from "~/test/contract";
 import { serveMocks } from "~/test/msw";
 
 const { server } = serveMocks();
@@ -109,7 +110,9 @@ describe("authentication", () => {
   });
 
   it("sends the session's bearer token and nothing from the client", async () => {
-    const seen = captureUpstream("get", "/v1/me", () => HttpResponse.json(me));
+    const seen = captureUpstream("get", "/v1/me", () =>
+      contractResponse("getMe", 200, me)
+    );
     await getMe(
       await signedInRequest({
         Authorization: "Bearer client-supplied",
@@ -128,10 +131,10 @@ describe("authentication", () => {
 
   it("clears the session when the API answers 401", async () => {
     captureUpstream("get", "/v1/me", () =>
-      HttpResponse.json(
-        { code: "unauthenticated", message: "token expired" },
-        { status: 401 }
-      )
+      contractResponse("getMe", 401, {
+        code: "unauthenticated",
+        message: "token expired",
+      })
     );
     const result = await getMe(await signedInRequest(), loadContext());
     expect(result).toMatchObject({
@@ -159,7 +162,9 @@ describe("authentication", () => {
         })
       )
     );
-    const seen = captureUpstream("get", "/v1/me", () => HttpResponse.json(me));
+    const seen = captureUpstream("get", "/v1/me", () =>
+      contractResponse("getMe", 200, me)
+    );
     const request = new Request(`${APP_ORIGIN}/settings`, {
       headers: {
         Cookie: await sessionCookie(sessionTokens({ expiresAt: Date.now() })),
@@ -176,24 +181,44 @@ describe("authentication", () => {
 
 describe("responses", () => {
   it("returns validated data", async () => {
-    captureUpstream("get", "/v1/me", () => HttpResponse.json(me));
+    captureUpstream("get", "/v1/me", () => contractResponse("getMe", 200, me));
     const result = await getMe(await signedInRequest(), loadContext());
     expect(result).toMatchObject({ ok: true, status: 200, data: me });
   });
 
   it("drops fields the contract does not know", async () => {
     captureUpstream("get", "/v1/me", () =>
-      HttpResponse.json({ ...me, email: "private@example.test" })
+      offContractResponse(
+        "getMe",
+        200,
+        { ...me, email: "private@example.test" },
+        "a field the contract does not have, as a newer API might send"
+      )
     );
     const result = await getMe(await signedInRequest(), loadContext());
     expect(result.ok && result.data).toEqual(me);
   });
 
   it.each([
-    ["a body missing fields", () => HttpResponse.json({ id: "u1" })],
-    ["a wrong role", () => HttpResponse.json({ ...me, role: "admin" })],
+    [
+      "a body missing fields",
+      () => offContractResponse("getMe", 200, { id: "u1" }, "missing fields"),
+    ],
+    [
+      "a wrong role",
+      () =>
+        offContractResponse(
+          "getMe",
+          200,
+          { ...me, role: "admin" },
+          "no such role"
+        ),
+    ],
     ["non-JSON", () => new HttpResponse("<html>", { status: 200 })],
-    ["an empty body", () => new HttpResponse(null, { status: 200 })],
+    [
+      "an empty body",
+      () => offContractResponse("getMe", 200, undefined, "no body"),
+    ],
   ])("maps a success with %s to 502", async (_label, respond) => {
     captureUpstream("get", "/v1/me", respond);
     const result = await getMe(await signedInRequest(), loadContext());
@@ -214,6 +239,7 @@ describe("responses", () => {
         message: "Check the display name.",
         fields: [{ field: "display_name", message: DISPLAY_NAME_RULE }],
       },
+      "declared",
     ],
     [
       "createAPIToken",
@@ -223,6 +249,7 @@ describe("responses", () => {
         message: "Check the token name.",
         fields: [{ field: "name", message: TOKEN_NAME_RULE }],
       },
+      "declared",
     ],
     [
       "getMe",
@@ -232,6 +259,7 @@ describe("responses", () => {
         message:
           "Your account is blocked, so you can’t make changes. Contact the Bardic Torch team if you think this is a mistake.",
       },
+      "declared",
     ],
     [
       "createAPIToken",
@@ -241,6 +269,7 @@ describe("responses", () => {
         message:
           "API tokens can’t manage API tokens. Log in on the website to do this.",
       },
+      "declared",
     ],
     [
       "createAPIToken",
@@ -250,6 +279,7 @@ describe("responses", () => {
         message:
           "You already have 10 API tokens, the most allowed. Revoke one before creating another.",
       },
+      "declared",
     ],
     [
       "revokeAPIToken",
@@ -259,6 +289,7 @@ describe("responses", () => {
         message:
           "That token no longer exists. Reload the page to see your current tokens.",
       },
+      "declared",
     ],
     [
       "getMe",
@@ -268,6 +299,7 @@ describe("responses", () => {
         message:
           "Bardic Torch couldn’t find what you asked for. Reload the page and try again.",
       },
+      "undeclared",
     ],
     [
       "updateMe",
@@ -277,32 +309,52 @@ describe("responses", () => {
         message:
           "Something changed while you were editing. Reload the page and try again.",
       },
+      "undeclared",
     ],
     [
       "updateMe",
       413,
       "request_too_large",
       { message: "The form is too large to send." },
+      "declared",
     ],
     [
       "getMe",
       403,
       "moderator_required",
       { message: "Only moderators can do that." },
+      "declared",
     ],
-    ["listAPITokens", 400, "invalid_request", { message: TRY_AGAIN }],
-    ["updateMe", 415, "unsupported_media_type", { message: TRY_AGAIN }],
-    ["getMe", 500, "internal", { message: TRY_AGAIN }],
-    ["listAPITokens", 503, "unavailable", { message: TRY_AGAIN }],
+    [
+      "listAPITokens",
+      400,
+      "invalid_request",
+      { message: TRY_AGAIN },
+      "undeclared",
+    ],
+    [
+      "updateMe",
+      415,
+      "unsupported_media_type",
+      { message: TRY_AGAIN },
+      "declared",
+    ],
+    ["getMe", 500, "internal", { message: TRY_AGAIN }, "declared"],
+    ["listAPITokens", 503, "unavailable", { message: TRY_AGAIN }, "undeclared"],
   ] as const)(
     "%s: an upstream %i %s gets the app's own copy and keeps its status",
-    async (operationId, status, code, expected) => {
+    async (operationId, status, code, expected, contract) => {
       const route = OPERATIONS[operationId];
+      const body = { code, message: "upstream detail not meant for users" };
       captureUpstream(route.method, route.path, () =>
-        HttpResponse.json(
-          { code, message: "upstream detail not meant for users" },
-          { status }
-        )
+        contract === "declared"
+          ? contractResponse(operationId, status, body)
+          : offContractResponse(
+              operationId,
+              status,
+              body,
+              "a status the contract does not declare for this operation"
+            )
       );
       const result = await route.call(await signedInRequest());
       expect(result).toEqual({
@@ -319,7 +371,7 @@ describe("responses", () => {
     ["the old nested shape", { error: { code: "internal", message: "?" } }],
   ])("maps an error body with %s to 502", async (_label, body) => {
     captureUpstream("get", "/v1/me", () =>
-      HttpResponse.json(body, { status: 500 })
+      offContractResponse("getMe", 500, body, "not an Error body")
     );
     const result = await getMe(await signedInRequest(), loadContext());
     expect(result).toMatchObject({
@@ -433,7 +485,7 @@ describe("upstream timeout", () => {
     server.use(
       http.post(`${API_BASE_URL}/v1/tokens`, async () => {
         await delay("infinite");
-        return HttpResponse.json({});
+        return offContractResponse("createAPIToken", 200, {}, "never sent");
       })
     );
     const result = await createApiToken(
@@ -458,7 +510,10 @@ describe("upstream timeout", () => {
 describe("operations", () => {
   it("updateMe sends the JSON body", async () => {
     const seen = captureUpstream("patch", "/v1/me", () =>
-      HttpResponse.json({ ...me, display_name: "Master Tobias Fiddler" })
+      contractResponse("updateMe", 200, {
+        ...me,
+        display_name: "Master Tobias Fiddler",
+      })
     );
     const result = await updateMe(await signedInRequest(), loadContext(), {
       display_name: "Master Tobias Fiddler",
@@ -472,7 +527,7 @@ describe("operations", () => {
 
   it("listApiTokens validates every token", async () => {
     captureUpstream("get", "/v1/tokens", () =>
-      HttpResponse.json({ data: [token] })
+      contractResponse("listAPITokens", 200, { data: [token] })
     );
     const result = await listApiTokens(await signedInRequest(), loadContext());
     expect(result).toMatchObject({ ok: true, data: { data: [token] } });
@@ -484,7 +539,12 @@ describe("operations", () => {
     ["an empty name", { name: "" }],
   ])("listApiTokens rejects a token with %s", async (_label, change) => {
     captureUpstream("get", "/v1/tokens", () =>
-      HttpResponse.json({ data: [{ ...token, ...change }] })
+      offContractResponse(
+        "listAPITokens",
+        200,
+        { data: [{ ...token, ...change }] },
+        "an invalid token"
+      )
     );
     const result = await listApiTokens(await signedInRequest(), loadContext());
     expect(result).toMatchObject({ ok: false, status: 502 });
@@ -498,7 +558,7 @@ describe("operations", () => {
       token: secret,
     };
     const seen = captureUpstream("post", "/v1/tokens", () =>
-      HttpResponse.json(created, { status: 201 })
+      contractResponse("createAPIToken", 201, created)
     );
     const result = await createApiToken(
       await signedInRequest(),
@@ -511,9 +571,11 @@ describe("operations", () => {
 
   it("createApiToken rejects a secret without the user_api| prefix", async () => {
     captureUpstream("post", "/v1/tokens", () =>
-      HttpResponse.json(
+      offContractResponse(
+        "createAPIToken",
+        201,
         { ...token, token: "0123abcd".repeat(8) },
-        { status: 201 }
+        "a secret without its prefix"
       )
     );
     const result = await createApiToken(
@@ -525,10 +587,8 @@ describe("operations", () => {
   });
 
   it("revokeApiToken encodes the id and accepts 204", async () => {
-    const seen = captureUpstream(
-      "delete",
-      "/v1/tokens/:tokenId",
-      () => new HttpResponse(null, { status: 204 })
+    const seen = captureUpstream("delete", "/v1/tokens/:tokenId", () =>
+      contractResponse("revokeAPIToken", 204)
     );
     const result = await revokeApiToken(
       await signedInRequest(),
@@ -542,7 +602,12 @@ describe("operations", () => {
 
   it("revokeApiToken rejects a success that has a body", async () => {
     captureUpstream("delete", "/v1/tokens/:tokenId", () =>
-      HttpResponse.json({ unexpected: true })
+      offContractResponse(
+        "revokeAPIToken",
+        200,
+        { unexpected: true },
+        "a body on a success the contract declares as an empty 204"
+      )
     );
     const result = await revokeApiToken(
       await signedInRequest(),

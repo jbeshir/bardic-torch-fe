@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { API_BASE_URL, formRequest, sessionCookie } from "~/test/context";
 import { runAction } from "~/test/proxy";
 import { action } from "./api.tokens.$tokenId";
+import { contractResponse } from "~/test/contract";
 import { serveMocks } from "~/test/msw";
 
 const { server } = serveMocks();
@@ -36,7 +37,7 @@ async function remove(tokenId: string) {
 
 describe("DELETE /api/tokens/:tokenId", () => {
   it("revokes the token and answers 200 so fetchers can read the result", async () => {
-    upstream(() => new HttpResponse(null, { status: 204 }));
+    upstream(() => contractResponse("revokeAPIToken", 204));
     const response = await remove("t1");
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("no-store");
@@ -45,17 +46,17 @@ describe("DELETE /api/tokens/:tokenId", () => {
   });
 
   it("encodes the token id in the upstream path", async () => {
-    upstream(() => new HttpResponse(null, { status: 204 }));
+    upstream(() => contractResponse("revokeAPIToken", 204));
     await remove("../me");
     expect(revoked).toEqual(["/v1/tokens/..%2Fme"]);
   });
 
   it("explains an upstream 404 not_found with the app's copy", async () => {
     upstream(() =>
-      HttpResponse.json(
-        { code: "not_found", message: "API token not found" },
-        { status: 404 }
-      )
+      contractResponse("revokeAPIToken", 404, {
+        code: "not_found",
+        message: "API token not found",
+      })
     );
     const response = await remove("missing");
     expect(response.status).toBe(404);
@@ -71,10 +72,10 @@ describe("DELETE /api/tokens/:tokenId", () => {
 
   it("passes on 403 api_token_not_allowed", async () => {
     upstream(() =>
-      HttpResponse.json(
-        { code: "api_token_not_allowed", message: "no" },
-        { status: 403 }
-      )
+      contractResponse("revokeAPIToken", 403, {
+        code: "api_token_not_allowed",
+        message: "no",
+      })
     );
     const response = await remove("t1");
     expect(response.status).toBe(403);
@@ -91,6 +92,28 @@ describe("DELETE /api/tokens/:tokenId", () => {
     );
     expect(response.status).toBe(401);
     expect(revoked).toEqual([]);
+  });
+
+  it("clears the session on its own response when the API answers 401", async () => {
+    upstream(() =>
+      contractResponse("revokeAPIToken", 401, {
+        code: "unauthenticated",
+        message: "token revoked",
+      })
+    );
+    const response = await remove("t1");
+    expect(response.status).toBe(401);
+    expect(response.headers.get("Set-Cookie")).toMatch(
+      /^__Host-bt_session=;.*Expires=Thu, 01 Jan 1970/
+    );
+    expect(await response.json()).toEqual({
+      ok: false,
+      error: {
+        code: "unauthenticated",
+        message:
+          "You’ve been signed out. Log in again and we’ll bring you back here.",
+      },
+    });
   });
 
   it("maps a malformed upstream response to 502", async () => {
