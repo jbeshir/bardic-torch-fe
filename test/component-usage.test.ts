@@ -3,12 +3,14 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Every export of the component library is used by app code, not only by
- * tests (the brief's "no unused exports"). ESLint's no-unused-modules counts
- * test imports as uses, so this check reads the sources itself: each name a
- * component module exports must be imported by another non-test module
- * under app/. Components that no FE1 page uses yet are used by the
- * styleguide route, which is app code.
+ * Every export of an app module is used by app code, not only by tests
+ * (the brief's "no unused exports"). ESLint's no-unused-modules counts
+ * test imports as uses, so this check reads the sources itself: each name
+ * a module under app/ exports must be imported by another non-test module
+ * (app/, functions/, scripts/ or a root config file). Modules whose exports
+ * the framework reads (routes, root, the entries) and the test helpers in
+ * app/test are not checked. Components no FE1 page uses yet are used by
+ * the styleguide route, which is app code.
  */
 
 const root = process.cwd();
@@ -20,61 +22,91 @@ function filesUnder(directory: string): string[] {
   });
 }
 
-const appModules = filesUnder("app").filter(
-  path => /\.tsx?$/.test(path) && !/\.test\.tsx?$/.test(path)
-);
-const componentModules = appModules.filter(path =>
-  path.startsWith(join("app", "components"))
+const isTest = (path: string) =>
+  /\.test\.tsx?$/.test(path) || path.startsWith(join("app", "test"));
+
+/** Every non-test source file that can use an app module. */
+const sourceFiles = [
+  ...filesUnder("app"),
+  ...filesUnder("functions"),
+  ...filesUnder("scripts"),
+  "vite.config.ts",
+  "tailwind.config.ts",
+  "load-context.ts",
+].filter(
+  path => /\.(tsx?|mjs)$/.test(path) && !path.endsWith(".d.ts") && !isTest(path)
 );
 
-/** The names a module exports (functions, constants, types). */
+const FRAMEWORK_MODULES = [
+  join("app", "root.tsx"),
+  join("app", "entry.server.tsx"),
+  join("app", "entry.client.tsx"),
+];
+
+const checkedModules = sourceFiles.filter(
+  path =>
+    path.startsWith("app") &&
+    !path.startsWith(join("app", "routes")) &&
+    !FRAMEWORK_MODULES.includes(path)
+);
+
+/** The names a module exports (functions, constants, types, classes). */
 function exportedNames(source: string): string[] {
   return [
     ...source.matchAll(
-      /^export (?:const|function|type|interface|class) ([A-Za-z_$][\w$]*)/gm
+      /^export (?:async )?(?:const|function|type|interface|class|enum) ([A-Za-z_$][\w$]*)/gm
     ),
   ].map(([, name]) => name as string);
 }
 
-/** Whether `source` imports `name` from somewhere. */
+/**
+ * Whether `source` imports `name`: a named or type import, aliased or not,
+ * or a name destructured from a dynamic `await import(...)`.
+ */
 function importsName(source: string, name: string): boolean {
-  return [...source.matchAll(/import\s+(?:type\s+)?\{([^}]*)\}\s+from/g)].some(
-    ([, names]) =>
-      (names ?? "")
-        .split(",")
-        .map(
-          part =>
-            part
-              .trim()
-              .replace(/^type\s+/, "")
-              .split(/\s+as\s+/)[0]
-        )
-        .includes(name)
+  return [
+    ...source.matchAll(
+      /import\s+(?:type\s+)?\{([^}]*)\}\s+from|const\s+\{([^}]*)\}\s*=\s*await\s+import\(/g
+    ),
+  ].some(([, named, destructured]) =>
+    (named ?? destructured ?? "")
+      .split(",")
+      .map(
+        part =>
+          part
+            .trim()
+            .replace(/^type\s+/, "")
+            .split(/\s+as\s+|\s*:\s*/)[0]
+      )
+      .includes(name)
   );
 }
 
-describe("component export scan", () => {
+describe("export scan", () => {
   it("reads exported names", () => {
     expect(
       exportedNames(
-        "export function Button() {}\nexport const TONES = {};\nexport type Tone = 1;\nconst hidden = 2;"
+        "export function Button() {}\nexport async function load() {}\nexport const TONES = {};\nexport type Tone = 1;\nconst hidden = 2;"
       )
-    ).toEqual(["Button", "TONES", "Tone"]);
+    ).toEqual(["Button", "load", "TONES", "Tone"]);
   });
 
-  it("finds named and type imports, aliased or not", () => {
+  it("finds named, type and dynamic imports, aliased or not", () => {
     expect(importsName('import { A, type B } from "./x";', "B")).toBe(true);
     expect(importsName('import type { C as D } from "./x";', "C")).toBe(true);
     expect(importsName('import { AB } from "./x";', "A")).toBe(false);
+    expect(
+      importsName('const { stubLogin } = await import("./stub");', "stubLogin")
+    ).toBe(true);
   });
 });
 
-describe("component library", () => {
-  it("has no export that only tests use", () => {
+describe("app modules", () => {
+  it("have no export that only tests use", () => {
     const sources = new Map(
-      appModules.map(path => [path, readFileSync(join(root, path), "utf8")])
+      sourceFiles.map(path => [path, readFileSync(join(root, path), "utf8")])
     );
-    const unused = componentModules.flatMap(path =>
+    const unused = checkedModules.flatMap(path =>
       exportedNames(sources.get(path) ?? "")
         .filter(
           name =>
@@ -84,7 +116,14 @@ describe("component library", () => {
         )
         .map(name => `${relative("app", path)}: ${name}`)
     );
-    expect(componentModules.length).toBeGreaterThan(20);
+    // The scan covers the server, schemas, constants, hooks, contexts and
+    // content as well as the components.
+    for (const directory of ["components", "server", "schemas", "hooks"]) {
+      expect(
+        checkedModules.some(path => path.startsWith(join("app", directory)))
+      ).toBe(true);
+    }
+    expect(checkedModules.length).toBeGreaterThan(60);
     expect(unused).toEqual([]);
   });
 });

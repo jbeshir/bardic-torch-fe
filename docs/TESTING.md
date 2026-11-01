@@ -16,7 +16,7 @@ Tests come in three layers:
   - the CI workflow, the ops files (`wrangler.toml`, `.dev.vars.example`, `worker-configuration.d.ts`, `public/_headers`, `public/_routes.json`) and these docs.
 - `no-raw-colours.test.ts`: colour only from the tokens.
 - `motion.test.ts`: movement only under `motion-safe:`.
-- `component-usage.test.ts`: every component export is used by app code.
+- `component-usage.test.ts`: every export of an app module (components, server, schemas, constants, hooks, contexts, content; not the framework-read routes, root and entries, nor `app/test`) is imported by non-test code, not only by tests.
 
 It also runs the build checks `check:api`, `check:tokens`, `check:contrast` and `check:prod-build`. See CLAUDE.md for what each does.
 
