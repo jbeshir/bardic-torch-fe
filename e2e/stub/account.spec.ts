@@ -316,23 +316,32 @@ test("an unnamed token is listed and confirmed by its prefix; one already gone s
   ).toBeVisible();
 });
 
-test("at 10 tokens, creating another says to revoke one first; checkpoint: form-errors", async ({
+test("the count shows the 10-token limit; a stale list still gets the 409; checkpoint: form-errors", async ({
   page,
   baseURL,
 }) => {
-  // The sample user starts with 3; make it 10 through the proxy.
-  await openSettings(page);
-  for (let index = 0; index < 7; index += 1) {
+  const createThroughProxy = async (name: string) => {
     const created = await page.request.post("/api/tokens", {
-      form: { name: `Bulk ${index + 1}` },
+      form: { name },
       headers: { Origin: baseURL ?? "" },
     });
     expect(created.status()).toBe(201);
+  };
+  // The sample user starts with 3; make it 9 through the proxy.
+  await openSettings(page);
+  for (let index = 0; index < 6; index += 1) {
+    await createThroughProxy(`Bulk ${index + 1}`);
   }
   await page.reload();
   await waitForHydration(page);
-  await expect(tokens(page).getByRole("rowheader")).toHaveCount(10);
+  await expect(tokens(page).getByRole("rowheader")).toHaveCount(9);
+  await expect(
+    main(page).getByText("You have 9 of 10 API tokens.")
+  ).toBeVisible();
 
+  // Another tab takes the tenth: this page's form is out of date, and the
+  // API's 409 is the backstop.
+  await createThroughProxy("From another tab");
   await tokenNameField(page).fill("One too many");
   await main(page).getByRole("button", { name: "Create token" }).click();
   await expect(
@@ -355,6 +364,38 @@ test("at 10 tokens, creating another says to revoke one first; checkpoint: form-
     /Error: Enter a display name\.$/
   );
   await checkpoint(page, "form-errors");
+
+  // Up to date, at the limit the form gives way to the note.
+  await page.reload();
+  await waitForHydration(page);
+  await expect(
+    main(page).getByText("You have 10 of 10 API tokens.")
+  ).toBeVisible();
+  await expect(
+    main(page).getByText(
+      "That’s the most allowed. Revoke one to create another."
+    )
+  ).toBeVisible();
+  await expect(
+    main(page).getByRole("button", { name: "Create token" })
+  ).toHaveCount(0);
+});
+
+test("at 320 and 360 the one-time token is shown whole, nothing cut off", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await openSettings(page);
+  await main(page).getByRole("button", { name: "Create token" }).click();
+  const secret = main(page).getByRole("textbox", { name: "New token value" });
+  await expect(secret).toBeFocused();
+  for (const width of [360, 320]) {
+    await page.setViewportSize({ width, height: 800 });
+    const fits = await secret.evaluate(
+      (box: HTMLTextAreaElement) => box.scrollHeight <= box.clientHeight
+    );
+    expect(fits, `at ${width}`).toBe(true);
+  }
 });
 
 test("checkpoint: settings", async ({ page }) => {
@@ -397,10 +438,17 @@ test("checkpoint: blocked: settings says the account is blocked, and offers noth
   page,
 }) => {
   await openSettings(page, { blocked: true });
-  // The danger Alert reads its tone first.
+  // The danger Alert's title is a heading that reads its tone first, and
+  // the way forward is a link to the contact form.
   await expect(
-    main(page).getByText(/^Error: Your account is blocked/)
+    main(page).getByRole("heading", {
+      level: 2,
+      name: "Error: Your account is blocked",
+    })
   ).toBeVisible();
+  await expect(
+    main(page).getByRole("link", { name: /^contact the Bardic Torch team/ })
+  ).toHaveAttribute("href", /^https:\/\/forms\.gle\//);
   await expect(nameField(page)).toHaveCount(0);
   await expect(tokens(page)).toHaveCount(0);
   await checkpoint(page, "blocked");

@@ -4,7 +4,8 @@ import {
   IconLogin,
   IconLogout,
   IconSettings,
-  IconUser,
+  IconUserOff,
+  IconUserQuestion,
 } from "@tabler/icons-react";
 import { useId, useRef, useState } from "react";
 import { Alert } from "~/components/ui/Alert";
@@ -28,13 +29,34 @@ function initialsOf(name: string): string {
   return picked.map(word => [...word][0] ?? "").join("");
 }
 
-function Avatar({ name, size }: { name: string | null; size: 24 | 32 }) {
+/**
+ * The trigger's disc: the initials when the name is known; otherwise a
+ * glyph that tells the two other states apart (DESIGN §6.25): a person with
+ * a question mark when the profile couldn't load, a struck-out person when
+ * the account is blocked. A `border-strong` edge keeps the disc visible on
+ * the light canvas and the bar's sunken cell.
+ */
+function Avatar({
+  account,
+  size,
+}: {
+  account: Exclude<Account, { state: "signed-out" }>;
+  size: 24 | 32;
+}) {
+  const glyph = size === 32 ? 18 : 14;
   return (
     <span
       aria-hidden="true"
-      className={`inline-flex shrink-0 items-center justify-center rounded-full bg-accent-subtle font-display font-semibold text-accent-text ${size === 32 ? "h-8 w-8 text-body-sm" : "h-6 w-6 text-caption"}`}
+      data-state={account.state}
+      className={`inline-flex shrink-0 items-center justify-center rounded-full border border-border-strong bg-accent-subtle font-display font-semibold text-accent-text ${size === 32 ? "h-8 w-8 text-body-sm" : "h-6 w-6 text-caption"}`}
     >
-      {name ? initialsOf(name) : <IconUser size={size === 32 ? 18 : 14} />}
+      {account.state === "signed-in" ? (
+        initialsOf(account.user.display_name)
+      ) : account.state === "blocked" ? (
+        <IconUserOff size={glyph} stroke={1.75} />
+      ) : (
+        <IconUserQuestion size={glyph} stroke={1.75} />
+      )}
     </span>
   );
 }
@@ -168,13 +190,13 @@ export function AccountMenu({
       >
         {placement === "header" ? (
           <>
-            <Avatar name={name} size={32} />
+            <Avatar account={account} size={32} />
             <IconChevronDown size={14} stroke={1.75} aria-hidden="true" />
             <span className="sr-only">Account{accessibleName}</span>
           </>
         ) : (
           <>
-            <Avatar name={name} size={24} />
+            <Avatar account={account} size={24} />
             <span>
               Account<span className="sr-only">{accessibleName}</span>
             </span>

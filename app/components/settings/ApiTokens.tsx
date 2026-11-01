@@ -2,13 +2,14 @@ import { useFetcher } from "@remix-run/react";
 import { IconTrash } from "@tabler/icons-react";
 import { useRef, useState } from "react";
 import type { components } from "~/api/schema.gen";
-import { AlertRegion } from "~/components/ui/Alert";
+import { Alert, AlertRegion } from "~/components/ui/Alert";
 import { Dialog } from "~/components/ui/Dialog";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { useToast } from "~/components/ui/Toast";
 import { SETTINGS_INTENT, SETTINGS_PATH } from "~/constants/account";
 import { useOfflineToast } from "~/hooks/useOfflineToast";
 import type { ProxyBody, ProxyError } from "~/schemas/proxy";
+import { ACTIVE_TOKEN_LIMIT } from "~/schemas/rules";
 import { CreateTokenForm } from "./CreateTokenForm";
 import { ProblemAlert } from "./ProblemAlert";
 import { fieldMessage, useFetcherResult } from "./results";
@@ -40,7 +41,9 @@ type Problem = { readonly error: ProxyError; readonly fallback: string };
  * after they succeed, so the list is always the API's. Every failure shows
  * a danger Alert next to the form (the token limit, blocked, a token
  * already gone, signed out, the service's trouble or no network), and a
- * typed token name stays.
+ * typed token name stays. The limit is shown before it is reached ("3 of
+ * 10"), and at the limit the form gives way to a note saying to revoke one;
+ * the API's 409 stays the backstop for a list that is out of date.
  */
 export function ApiTokens({ tokens }: { tokens: readonly APIToken[] }) {
   const show = useToast();
@@ -112,17 +115,28 @@ export function ApiTokens({ tokens }: { tokens: readonly APIToken[] }) {
           for you.
         </EmptyState>
       )}
+      {tokens.length > 0 ? (
+        <p className="mt-4 text-body-sm text-fg-muted">
+          You have {tokens.length} of {ACTIVE_TOKEN_LIMIT} API tokens.
+        </p>
+      ) : null}
       <div className="mt-6">
-        <CreateTokenForm
-          key={created?.id}
-          fetcher={create}
-          inputRef={nameInput}
-          fieldError={nameError}
-          onInvalid={message => {
-            setNameError(message);
-            setProblem(null);
-          }}
-        />
+        {tokens.length >= ACTIVE_TOKEN_LIMIT ? (
+          <Alert tone="info">
+            That’s the most allowed. Revoke one to create another.
+          </Alert>
+        ) : (
+          <CreateTokenForm
+            key={created?.id}
+            fetcher={create}
+            inputRef={nameInput}
+            fieldError={nameError}
+            onInvalid={message => {
+              setNameError(message);
+              setProblem(null);
+            }}
+          />
+        )}
       </div>
       <AlertRegion urgent>
         {problem ? (

@@ -11,7 +11,7 @@ import { useHydrated } from "~/hooks/useHydrated";
 import { useOfflineToast } from "~/hooks/useOfflineToast";
 import type { User } from "~/schemas/api";
 import type { ProxyBody, ProxyError } from "~/schemas/proxy";
-import { DISPLAY_NAME_RULE, displayNameProblem } from "~/schemas/rules";
+import { DISPLAY_NAME_HINT, displayNameProblem } from "~/schemas/rules";
 import { ProblemAlert } from "./ProblemAlert";
 import { fieldMessage, useFetcherResult } from "./results";
 
@@ -85,7 +85,7 @@ export function ProfileForm({ user }: { readonly user: User }) {
       />
       <Field
         label="Display name"
-        help={`Shown on your edits and in page history. Use your SCA name if you like. ${DISPLAY_NAME_RULE}`}
+        help={`Shown on your edits and in page history. Use your SCA name if you like. ${DISPLAY_NAME_HINT}`}
         error={fieldError ?? undefined}
       >
         <Input

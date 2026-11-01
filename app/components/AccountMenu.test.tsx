@@ -165,6 +165,22 @@ describe("AccountMenu when the profile didn't load", () => {
   });
 });
 
+describe("AccountMenu trigger glyphs", () => {
+  it.each([
+    [{ state: "profile-unavailable" } as const, "tabler-icon-user-question"],
+    [BLOCKED, "tabler-icon-user-off"],
+  ])(
+    "tells %o apart by its glyph, on a disc with a visible edge",
+    async (account, glyph) => {
+      await renderMenu(account);
+      const disc = document.querySelector("summary [data-state]");
+      expect(disc).toHaveAttribute("data-state", account.state);
+      expect(disc).toHaveClass("border", "border-border-strong");
+      expect(disc?.querySelector("svg")).toHaveClass(glyph);
+    }
+  );
+});
+
 describe("AccountMenu for a blocked account", () => {
   it("says the account is blocked and offers Log out, not Settings", async () => {
     await renderMenu(BLOCKED);

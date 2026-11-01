@@ -16,6 +16,10 @@ describe("TokenReveal", () => {
     expect(value).toHaveValue(SECRET);
     expect(value).toHaveAttribute("readonly");
     expect(value).toHaveClass("font-mono", "wrap-anywhere", "select-all");
+    // Never cut off: it grows to the secret, or has rows for all of it at
+    // 320 px where field-sizing isn't supported.
+    expect(value).toHaveClass("field-sizing-content");
+    expect(value).toHaveAttribute("rows", "4");
     expect(value).toHaveFocus();
     const box = value as HTMLTextAreaElement;
     expect([box.selectionStart, box.selectionEnd]).toEqual([0, SECRET.length]);

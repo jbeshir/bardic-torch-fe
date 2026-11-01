@@ -8,7 +8,12 @@ import {
   loader as rootLoader,
   shouldRevalidate as rootRevalidate,
 } from "~/root";
-import { DISPLAY_NAME_RULE, TOKEN_NAME_RULE } from "~/schemas/rules";
+import {
+  ACTIVE_TOKEN_LIMIT,
+  DISPLAY_NAME_HINT,
+  DISPLAY_NAME_RULE,
+  TOKEN_NAME_RULE,
+} from "~/schemas/rules";
 import {
   APP_ORIGIN,
   loadContext,
@@ -197,7 +202,7 @@ describe("settings page", () => {
     await openPage();
     expect(nameField()).toHaveValue("Morwen of the Marches");
     expect(nameField()).toHaveAccessibleDescription(
-      `Shown on your edits and in page history. Use your SCA name if you like. ${DISPLAY_NAME_RULE}`
+      `Shown on your edits and in page history. Use your SCA name if you like. ${DISPLAY_NAME_HINT}`
     );
     expect(
       screen.getByRole("heading", { level: 2, name: "Profile" })
@@ -500,15 +505,39 @@ describe("creating a token", () => {
     expect(tokenNameField()).toHaveFocus();
   });
 
-  it("at the limit of 10 says to revoke one first", async () => {
-    const user = userEvent.setup();
+  function tokensFor(count: number) {
     const [sample] = contributor().tokens;
     if (!sample) throw new Error("no sample token");
-    contributor().tokens = Array.from({ length: 10 }, (_, index) => ({
+    return Array.from({ length: count }, (_, index) => ({
       ...sample,
       id: `00000000-0000-4000-8000-0000000001${String(index).padStart(2, "0")}`,
     }));
+  }
+
+  it("says how many of the 10 allowed tokens there are", async () => {
     await openPage();
+    expect(
+      screen.getByText(`You have 3 of ${ACTIVE_TOKEN_LIMIT} API tokens.`)
+    ).toBeVisible();
+  });
+
+  it("at the limit of 10 says to revoke one, instead of offering the form", async () => {
+    contributor().tokens = tokensFor(10);
+    await openPage();
+    expect(screen.getByText("You have 10 of 10 API tokens.")).toBeVisible();
+    expect(
+      screen.getByText("That’s the most allowed. Revoke one to create another.")
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Create token" })).toBeNull();
+    expect(screen.queryByRole("textbox", { name: /Token name/ })).toBeNull();
+  });
+
+  it("if the list is out of date at the limit, the API's 409 still says to revoke one first", async () => {
+    const user = userEvent.setup();
+    contributor().tokens = tokensFor(9);
+    await openPage();
+    // Another tab created the tenth meanwhile.
+    contributor().tokens = tokensFor(10);
     await user.click(screen.getByRole("button", { name: "Create token" }));
 
     const message = await screen.findByText(

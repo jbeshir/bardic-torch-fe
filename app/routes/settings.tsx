@@ -21,6 +21,7 @@ import { SettingsSection } from "~/components/settings/SettingsSection";
 import { Alert } from "~/components/ui/Alert";
 import { ButtonLink } from "~/components/ui/Button";
 import { SectionError } from "~/components/ui/ErrorState";
+import { Link } from "~/components/ui/Link";
 import { sendForm } from "~/client/send-form";
 import {
   loginHref,
@@ -30,6 +31,7 @@ import {
   tokenAction,
   TOKENS_ACTION,
 } from "~/constants/account";
+import { CONTACT_FORM_URL } from "~/constants/navigation";
 import { useErrorReference } from "~/hooks/useErrorReference";
 import type { loader as rootLoader } from "~/root";
 import type { ProxyBody } from "~/schemas/proxy";
@@ -211,7 +213,14 @@ export default function Settings() {
     return (
       <Page>
         <div className="mt-6">
-          <Alert tone="danger">{account.message}</Alert>
+          <Alert tone="danger" title="Your account is blocked" headingLevel={2}>
+            You can’t change your settings or suggest edits. If you think this
+            is a mistake,{" "}
+            <Link to={CONTACT_FORM_URL} appearance="inherit" external="web">
+              contact the Bardic Torch team
+            </Link>
+            .
+          </Alert>
         </div>
       </Page>
     );

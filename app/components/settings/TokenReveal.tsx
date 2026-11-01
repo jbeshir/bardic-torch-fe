@@ -9,7 +9,9 @@ type CopyState = "idle" | "copied" | "failed";
 /**
  * The one-time reveal of a new token's secret (DESIGN §10.3). It comes
  * from the create response and can never be fetched again, so it says so.
- * The value sits in a read-only box that wraps, with focus moved to it and
+ * The value sits in a read-only box that wraps and grows to fit it (four
+ * rows where `field-sizing` isn't supported: enough for the whole secret
+ * at 320 px), so none of it is ever cut off, with focus moved to it and
  * the value selected; Copy uses the clipboard and reports how that went;
  * "I've copied it" removes the secret from the page.
  */
@@ -45,7 +47,7 @@ export function TokenReveal({
       tone="success"
       title="Token created. Copy it now — you won’t see it again."
       actions={
-        <Button variant="ghost" onClick={onDismiss}>
+        <Button variant="secondary" size="sm" onClick={onDismiss}>
           I’ve copied it
         </Button>
       }
@@ -54,11 +56,11 @@ export function TokenReveal({
         <textarea
           ref={value}
           readOnly
-          rows={2}
+          rows={4}
           value={secret}
           aria-label="New token value"
           spellCheck={false}
-          className={`${textControlClasses({ invalid: false, readOnly: true })} wrap-anywhere min-h-11 resize-none select-all py-2 font-mono text-code`}
+          className={`${textControlClasses({ invalid: false, readOnly: true })} field-sizing-content wrap-anywhere min-h-11 resize-none select-all py-2 font-mono text-code`}
         />
         <Button
           icon={copy === "copied" ? IconCheck : IconCopy}

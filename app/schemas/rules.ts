@@ -15,8 +15,10 @@ export const TOKEN_NAME_MAX = 128;
 /** How many active API tokens one user may have. */
 export const ACTIVE_TOKEN_LIMIT = 10;
 
-/** The display-name rule as UI copy, for hints and upstream rejections. */
+/** The display-name rule in full, for an upstream rejection of the name. */
 export const DISPLAY_NAME_RULE = `Use 1 to ${DISPLAY_NAME_MAX} characters, without control or invisible formatting characters.`;
+/** The display-name field's standing hint: the rule in plain words. */
+export const DISPLAY_NAME_HINT = `Up to ${DISPLAY_NAME_MAX} characters.`;
 /** The token-name rule as UI copy. */
 export const TOKEN_NAME_RULE = `Use ${TOKEN_NAME_MAX} characters or fewer, or leave the name blank.`;
 

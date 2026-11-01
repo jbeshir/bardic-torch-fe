@@ -131,6 +131,11 @@
     transform-box: fill-box;
   }
 
+  /* A text area as tall as its content (where supported; `rows` otherwise). */
+  .field-sizing-content {
+    field-sizing: content;
+  }
+
   /* Break a long unspaced value (a token name, a secret) anywhere, even in a table cell. */
   .wrap-anywhere {
     overflow-wrap: anywhere;

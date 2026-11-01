@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { CONTACT_FORM_URL } from "~/constants/navigation";
 import { sessionCookie, sessionTokens } from "~/test/context";
 import type { UpstreamErrorCode } from "~/schemas/api";
 import { serveFixtureApi } from "~/test/msw";
@@ -98,8 +99,14 @@ describe("/settings document", () => {
     if (!blocked) throw new Error("no seeded contributor");
     blocked.blocked = true;
     const html = await (await get("/settings", await signedIn())).text();
+    expect(html).toMatch(/<h2[^>]*>.*Your account is blocked<\/h2>/);
     expect(html).toContain(
-      "Your account is blocked, so you can’t make changes."
+      "You can’t change your settings or suggest edits. If you think this is a mistake,"
+    );
+    expect(html).toMatch(
+      new RegExp(
+        `<a [^>]*href="${CONTACT_FORM_URL}"[^>]*>contact the Bardic Torch `
+      )
     );
     expect(html).not.toContain('name="display_name"');
     expect(html).not.toContain('name="name"');
