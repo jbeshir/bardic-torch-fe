@@ -170,3 +170,35 @@ test.describe("theme toggle with JS", () => {
     await expectRenderedTheme(page, "light");
   });
 });
+
+test.describe("theme toggle when the save fails", () => {
+  test("a 503 the app didn't make reverts the choice and says so under the control, the page stays", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.goto("/");
+    await waitForHydration(page);
+    await page.route("**/resources/theme**", route =>
+      route.fulfill({ status: 503, contentType: "text/html", body: "" })
+    );
+
+    const saved = page.waitForResponse("**/resources/theme**");
+    await page.getByRole("button", { name: "Dark" }).click();
+    expect((await saved).status()).toBe(503);
+
+    const banner = page.getByRole("banner");
+    await expect(
+      banner.getByText("Couldn't save your theme. Try again.")
+    ).toBeVisible();
+    await expect(page.locator("html")).not.toHaveAttribute("data-theme");
+    await expect(page.getByRole("button", { name: "System" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    // Still the app's page in its shell, not the standalone error page.
+    await expect(page.getByRole("main")).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Site" })).toBeAttached();
+    await expectRenderedTheme(page, "light");
+    expect(await themeCookie(page)).toBeUndefined();
+  });
+});

@@ -6,7 +6,8 @@ import { AlertRegion } from "~/components/ui/Alert";
 import { Dialog } from "~/components/ui/Dialog";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { useToast } from "~/components/ui/Toast";
-import { tokenAction } from "~/constants/account";
+import { SETTINGS_INTENT, SETTINGS_PATH } from "~/constants/account";
+import { useOfflineToast } from "~/hooks/useOfflineToast";
 import type { ProxyBody, ProxyError } from "~/schemas/proxy";
 import { CreateTokenForm } from "./CreateTokenForm";
 import { ProblemAlert } from "./ProblemAlert";
@@ -34,13 +35,16 @@ type Problem = { readonly error: ProxyError; readonly fallback: string };
 /**
  * The API tokens section (DESIGN §10.3): the list (or its empty state), the
  * create form, the one-time reveal of a new token, and the revoke confirm.
- * Both mutations go through fetchers to the `/api/tokens` proxy routes; the
- * settings loader revalidates after them, so the list is always the API's.
- * Every failure shows a danger Alert next to the form (the token limit,
- * blocked, a token already gone, signed out, or the service's trouble).
+ * Both mutations go through fetchers to the settings route's `clientAction`
+ * and on to the `/api/tokens` proxy routes; the settings loader revalidates
+ * after they succeed, so the list is always the API's. Every failure shows
+ * a danger Alert next to the form (the token limit, blocked, a token
+ * already gone, signed out, the service's trouble or no network), and a
+ * typed token name stays.
  */
 export function ApiTokens({ tokens }: { tokens: readonly APIToken[] }) {
   const show = useToast();
+  const reportOffline = useOfflineToast();
   const heading = useRef<HTMLHeadingElement>(null);
   const nameInput = useRef<HTMLInputElement>(null);
 
@@ -70,6 +74,7 @@ export function ApiTokens({ tokens }: { tokens: readonly APIToken[] }) {
     } else {
       setNameError(null);
       setProblem({ error: result.error, fallback: CREATE_FAILED });
+      reportOffline(result.error);
     }
   });
 
@@ -80,12 +85,16 @@ export function ApiTokens({ tokens }: { tokens: readonly APIToken[] }) {
       show({ tone: "success", message: "Token revoked." });
     } else {
       setProblem({ error: result.error, fallback: REVOKE_FAILED });
+      reportOffline(result.error);
     }
   });
 
   function confirmRevoke() {
     if (revoking) {
-      revoke.submit({}, { method: "delete", action: tokenAction(revoking.id) });
+      revoke.submit(
+        { intent: SETTINGS_INTENT.revokeToken, tokenId: revoking.id },
+        { method: "post", action: SETTINGS_PATH }
+      );
     }
   }
 

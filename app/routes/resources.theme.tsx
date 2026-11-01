@@ -8,8 +8,8 @@ import { themeCookie } from "~/server/theme.server";
 
 /**
  * Saves the reader's theme choice (DESIGN §6.24). The no-JS form sends a
- * `returnTo` and gets a 303 back to that page; the ThemeToggle's fetcher
- * sends none and gets JSON, so it doesn't trigger a navigation.
+ * `returnTo` and gets a 303 back to that page; the ThemeToggle's script
+ * sends none and gets a proxy body (`{ok, data | error}`) as JSON.
  */
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -55,5 +55,5 @@ export async function action({ request }: ActionFunctionArgs) {
       headers,
     });
   }
-  return json({ ok: true as const, theme }, { headers });
+  return json({ ok: true as const, data: { theme } }, { headers });
 }

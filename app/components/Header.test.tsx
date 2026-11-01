@@ -1,16 +1,20 @@
 import { act, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { ToastProvider } from "~/components/ui/Toast";
 import { renderWithRouter } from "~/test/router";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { Header } from "./Header";
 
 function renderHeader() {
+  // The theme toggle in the header reports offline saves in a toast.
   return renderWithRouter(
-    <Header
-      menu={<button type="button">Menu</button>}
-      account={<a href="/auth/login">Log in</a>}
-      bottomBar={<div data-bar>Bottom bar</div>}
-    />
+    <ToastProvider>
+      <Header
+        menu={<button type="button">Menu</button>}
+        account={<a href="/auth/login">Log in</a>}
+        bottomBar={<div data-bar>Bottom bar</div>}
+      />
+    </ToastProvider>
   );
 }
 

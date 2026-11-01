@@ -1,15 +1,19 @@
 import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { ToastProvider } from "~/components/ui/Toast";
 import { renderWithRouter } from "~/test/router";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { AppShell } from "./AppShell";
 
 function renderShell(url = "/") {
+  // As in root.tsx: the shell's theme toggles report offline saves in a toast.
   return renderWithRouter(
-    <AppShell account={{ state: "signed-out" }}>
-      <h1>Page title</h1>
-    </AppShell>,
+    <ToastProvider>
+      <AppShell account={{ state: "signed-out" }}>
+        <h1>Page title</h1>
+      </AppShell>
+    </ToastProvider>,
     url
   );
 }

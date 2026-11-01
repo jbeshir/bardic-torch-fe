@@ -1,35 +1,13 @@
 import { useEffect, useRef } from "react";
+import { OFFLINE } from "~/client/send-form";
 import type { ProxyBody, ProxyError } from "~/schemas/proxy";
 
 /**
- * What a form is told when the response isn't a proxy body at all (say, a
- * 2xx page from something between us and the worker): the service's
- * trouble, so it shows its "we couldn't … try again" Alert.
- */
-const MALFORMED_RESPONSE: ProxyError = {
-  code: "bad_gateway",
-  message: "Bardic Torch sent an unexpected response. Try again shortly.",
-};
-
-function isProxyBody(value: unknown): value is ProxyBody<unknown> {
-  if (typeof value !== "object" || value === null) return false;
-  const body = value as { ok?: unknown; data?: unknown; error?: unknown };
-  if (body.ok === true) return "data" in body;
-  if (body.ok !== false) return false;
-  const error = body.error as { code?: unknown; message?: unknown } | null;
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    typeof error.code === "string" &&
-    typeof error.message === "string"
-  );
-}
-
-/**
- * Calls `onResult` once for each response a fetcher gets back, after any
+ * Calls `onResult` once for each result a fetcher gets back, after any
  * revalidation it triggered has finished (so the page already shows the
- * new data when, say, focus moves). A response that isn't a proxy body is
- * reported as a failure, so every request ends in feedback on the page.
+ * new data when, say, focus moves). The settings route's `clientAction`
+ * (`sendForm`) turns every outcome into a proxy body, so every request
+ * ends here.
  */
 export function useFetcherResult<Result extends ProxyBody<unknown>>(
   fetcher: { readonly state: string; readonly data: Result | undefined },
@@ -44,11 +22,7 @@ export function useFetcherResult<Result extends ProxyBody<unknown>>(
       return;
     }
     handled.current = data;
-    latest.current(
-      isProxyBody(data)
-        ? data
-        : ({ ok: false, error: MALFORMED_RESPONSE } as Result)
-    );
+    latest.current(data);
   }, [state, data]);
 }
 
@@ -65,6 +39,8 @@ const SERVICE_TROUBLE = new Set([
   "unavailable",
   "bad_gateway",
   "upstream_unavailable",
+  "unexpected_response",
+  OFFLINE.code,
 ]);
 
 /**

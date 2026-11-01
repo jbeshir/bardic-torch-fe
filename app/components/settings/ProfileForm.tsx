@@ -6,8 +6,9 @@ import { Button } from "~/components/ui/Button";
 import { Field } from "~/components/ui/Field";
 import { Input } from "~/components/ui/Input";
 import { useToast } from "~/components/ui/Toast";
-import { ME_ACTION } from "~/constants/account";
+import { SETTINGS_INTENT, SETTINGS_PATH } from "~/constants/account";
 import { useHydrated } from "~/hooks/useHydrated";
+import { useOfflineToast } from "~/hooks/useOfflineToast";
 import type { User } from "~/schemas/api";
 import type { ProxyBody, ProxyError } from "~/schemas/proxy";
 import { DISPLAY_NAME_RULE, displayNameProblem } from "~/schemas/rules";
@@ -19,15 +20,18 @@ const SAVE_FAILED =
 
 /**
  * The display name form (DESIGN §10.3). It checks the name with the API's
- * rule before sending; `PATCH /api/me` goes through a fetcher, and the
- * root loader revalidates after it, so the account menu shows the new
- * name too. A rejected name is an inline error (focus goes back to the
- * field); anything else is a danger Alert under the button. It needs JS,
- * so Save stays disabled until the page has hydrated.
+ * rule before sending; the fetcher submits to the settings route, whose
+ * `clientAction` sends `PATCH /api/me`, and the root loader revalidates
+ * after a save, so the account menu shows the new name too. A rejected
+ * name is an inline error (focus goes back to the field); anything else,
+ * including no network or a response the app didn't make, is a danger
+ * Alert under the button, and the typed name stays. It needs JS, so Save
+ * stays disabled until the page has hydrated.
  */
-export function ProfileForm({ user }: { user: User }) {
+export function ProfileForm({ user }: { readonly user: User }) {
   const fetcher = useFetcher<ProxyBody<User>>();
   const show = useToast();
+  const reportOffline = useOfflineToast();
   const hydrated = useHydrated();
   const input = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(user.display_name);
@@ -55,6 +59,7 @@ export function ProfileForm({ user }: { user: User }) {
     } else {
       setFieldError(null);
       setFailure(result.error);
+      reportOffline(result.error);
     }
   });
 
@@ -68,11 +73,16 @@ export function ProfileForm({ user }: { user: User }) {
 
   return (
     <fetcher.Form
-      method="patch"
-      action={ME_ACTION}
+      method="post"
+      action={SETTINGS_PATH}
       noValidate
       onSubmit={checkBeforeSending}
     >
+      <input
+        type="hidden"
+        name="intent"
+        value={SETTINGS_INTENT.updateProfile}
+      />
       <Field
         label="Display name"
         help={`Shown on your edits and in page history. Use your SCA name if you like. ${DISPLAY_NAME_RULE}`}

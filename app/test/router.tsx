@@ -2,6 +2,7 @@ import { UNSAFE_RemixContext } from "@remix-run/react";
 import { act, render } from "@testing-library/react";
 import type { ComponentProps, ReactElement } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
+import { ThemeChoiceProvider } from "~/contexts/ThemeChoiceContext";
 
 type RemixContextValue = NonNullable<
   ComponentProps<typeof UNSAFE_RemixContext.Provider>["value"]
@@ -43,7 +44,8 @@ const REMIX_CONTEXT: RemixContextValue = {
 /**
  * Renders `ui` as the page at `url` under a memory router and Remix's
  * context, so components using Remix `Link`, `useLocation` or
- * `useRevalidator` work. Returns the router, e.g. to read the location
+ * `useRevalidator` work, inside the theme choice the root layout provides
+ * (following the device). Returns the router, e.g. to read the location
  * after a click.
  */
 export async function renderWithRouter(ui: ReactElement, url = "/") {
@@ -59,7 +61,9 @@ export async function renderRoutes(
   await act(async () => {
     render(
       <UNSAFE_RemixContext.Provider value={REMIX_CONTEXT}>
-        <RouterProvider router={router} />
+        <ThemeChoiceProvider loaded="system">
+          <RouterProvider router={router} />
+        </ThemeChoiceProvider>
       </UNSAFE_RemixContext.Provider>
     );
   });

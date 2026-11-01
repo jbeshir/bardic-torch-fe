@@ -5,6 +5,7 @@ import {
   Scripts,
   ScrollRestoration,
   useLoaderData,
+  useRouteLoaderData,
   useLocation,
   useRouteError,
   isRouteErrorResponse,
@@ -22,6 +23,10 @@ import { loadAccount } from "~/server/account.server";
 import { SentryProvider } from "~/contexts/SentryContext";
 import { useNonce } from "~/contexts/NonceContext";
 import {
+  ThemeChoiceProvider,
+  useThemeChoice,
+} from "~/contexts/ThemeChoiceContext";
+import {
   NOT_FOUND_META,
   NotFound,
   ServerError,
@@ -33,11 +38,16 @@ import stylesheet from "~/styles/app.css?url";
 import { THEME_COLOURS } from "~/styles/theme-colour.gen";
 import { readTheme } from "~/server/theme.server";
 import type { Theme } from "~/styles/tokens";
-import { useThemeChoice } from "~/hooks/useThemeChoice";
 import { useErrorReference } from "~/hooks/useErrorReference";
 import { ToastProvider } from "~/components/ui/Toast";
 import { AppShell } from "~/components/AppShell";
-import { LOGOUT_ACTION, ME_ACTION, type Account } from "~/constants/account";
+import {
+  LOGOUT_ACTION,
+  SETTINGS_INTENT,
+  SETTINGS_PATH,
+  type Account,
+} from "~/constants/account";
+import type { ProxyBody } from "~/schemas/proxy";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
@@ -97,8 +107,17 @@ function ThemeMeta({ theme }: { theme: Theme | null }) {
 }
 
 export function Layout({ children }: { children: ReactNode }) {
+  const loaded = useRouteLoaderData<typeof loader>("root")?.theme ?? "system";
+  return (
+    <ThemeChoiceProvider loaded={loaded}>
+      <Document>{children}</Document>
+    </ThemeChoiceProvider>
+  );
+}
+
+function Document({ children }: { children: ReactNode }) {
   const nonce = useNonce();
-  const choice = useThemeChoice();
+  const { choice } = useThemeChoice();
   const theme = choice === "system" ? null : choice;
   return (
     <html lang="en" data-theme={theme ?? undefined}>
@@ -143,23 +162,30 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
 
 /**
  * The root loader calls /v1/me, so it runs again only when the answer can
- * have changed (plan §0.7): after a display-name change, on the way into or
- * out of /auth (login, logout), and when asked to (Try again revalidates
- * the page it is on). Plain navigations and other submissions, including a
- * theme change (its fetcher result is used directly), keep the data.
+ * have changed (plan §0.7): after a display-name change was saved, after a
+ * settings call found the session ended (so the header shows "Log in"), on
+ * the way into or out of /auth (login, logout), and when asked to (Try
+ * again revalidates the page it is on). Plain navigations and other
+ * submissions keep the data; a theme change doesn't go through the router.
  */
 export const shouldRevalidate: ShouldRevalidateFunction = ({
   currentUrl,
   nextUrl,
   formMethod,
   formAction,
+  formData,
+  actionResult,
   defaultShouldRevalidate,
 }) => {
   if (formMethod) {
     const action = formAction ? new URL(formAction, currentUrl).pathname : "";
+    if (action === LOGOUT_ACTION) return true;
+    if (action !== SETTINGS_PATH) return false;
+    const result = actionResult as ProxyBody<unknown> | undefined;
+    if (result?.ok === false) return result.error.code === "unauthenticated";
     return (
-      (action === ME_ACTION && formMethod.toUpperCase() === "PATCH") ||
-      action === LOGOUT_ACTION
+      result?.ok === true &&
+      formData?.get("intent") === SETTINGS_INTENT.updateProfile
     );
   }
   const isAuth = (url: URL) => url.pathname.startsWith("/auth/");

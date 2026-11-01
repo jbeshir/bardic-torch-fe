@@ -8,6 +8,7 @@ import {
   useLoaderData,
   useRouteError,
   useRouteLoaderData,
+  type ClientActionFunctionArgs,
   type ShouldRevalidateFunction,
 } from "@remix-run/react";
 import { IconLogin } from "@tabler/icons-react";
@@ -20,16 +21,26 @@ import { SettingsSection } from "~/components/settings/SettingsSection";
 import { Alert } from "~/components/ui/Alert";
 import { ButtonLink } from "~/components/ui/Button";
 import { SectionError } from "~/components/ui/ErrorState";
-import { loginHref, SETTINGS_PATH, TOKENS_ACTION } from "~/constants/account";
+import { sendForm } from "~/client/send-form";
+import {
+  loginHref,
+  ME_ACTION,
+  SETTINGS_INTENT,
+  SETTINGS_PATH,
+  tokenAction,
+  TOKENS_ACTION,
+} from "~/constants/account";
 import { useErrorReference } from "~/hooks/useErrorReference";
 import type { loader as rootLoader } from "~/root";
+import type { ProxyBody } from "~/schemas/proxy";
 import { listApiTokens } from "~/server/api.server";
 
 /**
  * /settings (DESIGN §10.3, plan §0.7): the display name and the API
  * tokens. The tokens are loaded here, server-side; who is reading comes
- * from the root loader, so /v1/me is not fetched twice. Changes go through
- * fetchers to the /api proxy routes and need JS. Nothing here is cached.
+ * from the root loader, so /v1/me is not fetched twice. Changes need JS:
+ * the forms' fetchers submit to this route's `clientAction`, which sends
+ * them on to the /api proxy routes. Nothing here is cached.
  */
 
 type SettingsData =
@@ -78,14 +89,72 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 }
 
 /**
- * The list only changes when a token is created or revoked; a display-name
- * change or a theme choice leaves it alone.
+ * A settings form's submission, sent on to its proxy route (`sendForm`).
+ * Whatever happens on the way (the proxy's own error, a platform 503, a
+ * network failure) comes back as a proxy body for the form to show inline,
+ * never as a thrown error that would replace the page and the reader's
+ * input with this route's error boundary.
+ */
+export async function clientAction({
+  request,
+}: ClientActionFunctionArgs): Promise<ProxyBody<unknown>> {
+  const form = await request.formData();
+  const field = (name: string) => String(form.get(name) ?? "");
+  switch (form.get("intent")) {
+    case SETTINGS_INTENT.updateProfile:
+      return sendForm(
+        ME_ACTION,
+        "PATCH",
+        { display_name: field("display_name") },
+        request.signal
+      );
+    case SETTINGS_INTENT.createToken:
+      return sendForm(
+        TOKENS_ACTION,
+        "POST",
+        { name: field("name") },
+        request.signal
+      );
+    case SETTINGS_INTENT.revokeToken:
+      return sendForm(
+        tokenAction(field("tokenId")),
+        "DELETE",
+        {},
+        request.signal
+      );
+    default:
+      return {
+        ok: false,
+        error: { code: "invalid_request", message: "Unknown settings form." },
+      };
+  }
+}
+
+const TOKEN_INTENTS: ReadonlySet<unknown> = new Set([
+  SETTINGS_INTENT.createToken,
+  SETTINGS_INTENT.revokeToken,
+]);
+
+/**
+ * The list only changes when a token is created or revoked: it is
+ * reloaded after a token form succeeds, or finds the token already gone.
+ * After any other outcome nothing changed, and reloading could only fail
+ * the same way (into the error boundary). A display-name change or a theme
+ * choice leaves it alone.
  */
 export const shouldRevalidate: ShouldRevalidateFunction = ({
-  formAction,
+  formMethod,
+  formData,
+  actionResult,
   defaultShouldRevalidate,
 }) => {
-  if (formAction) return formAction.startsWith(TOKENS_ACTION);
+  if (formMethod) {
+    const result = actionResult as ProxyBody<unknown> | undefined;
+    return (
+      TOKEN_INTENTS.has(formData?.get("intent")) &&
+      (result?.ok === true || result?.error.code === "not_found")
+    );
+  }
   return defaultShouldRevalidate;
 };
 

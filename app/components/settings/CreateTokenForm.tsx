@@ -4,14 +4,15 @@ import { useState, type FormEvent, type RefObject } from "react";
 import { Button } from "~/components/ui/Button";
 import { Field } from "~/components/ui/Field";
 import { Input } from "~/components/ui/Input";
-import { TOKENS_ACTION } from "~/constants/account";
+import { SETTINGS_INTENT, SETTINGS_PATH } from "~/constants/account";
 import { useHydrated } from "~/hooks/useHydrated";
 import { TOKEN_NAME_RULE, tokenNameProblem } from "~/schemas/rules";
 
 /**
  * "Create token" with its optional name (DESIGN §10.3): the name is checked
- * with the API's rule before `POST /api/tokens` is sent through `fetcher`,
- * which the tokens section owns (it shows the result). Inline from md,
+ * with the API's rule before `fetcher`, which the tokens section owns (it
+ * shows the result), submits it to the settings route, whose
+ * `clientAction` sends `POST /api/tokens`. Inline from md,
  * stacked below; the button sits in the field's row, so a field error
  * lines up under both. Needs JS, so the button is disabled until hydration.
  */
@@ -44,10 +45,11 @@ export function CreateTokenForm({
   return (
     <fetcher.Form
       method="post"
-      action={TOKENS_ACTION}
+      action={SETTINGS_PATH}
       noValidate
       onSubmit={checkBeforeSending}
     >
+      <input type="hidden" name="intent" value={SETTINGS_INTENT.createToken} />
       <Field
         label="Token name"
         optional

@@ -76,7 +76,10 @@ describe("POST /resources/theme from the fetcher (no returnTo)", () => {
   it("answers JSON with the cookie instead of redirecting", async () => {
     const response = await runAction(action, post({ theme: "dark" }));
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ ok: true, theme: "dark" });
+    expect(await response.json()).toEqual({
+      ok: true,
+      data: { theme: "dark" },
+    });
     expect(setCookie(response)).toMatch(/^theme=dark;/);
   });
 });

@@ -1,66 +1,68 @@
-import { json } from "@remix-run/cloudflare";
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
-import { URLSearchParams as NodeURLSearchParams } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ToastProvider } from "~/components/ui/Toast";
 import type { ThemeChoice } from "~/constants/theme";
-import { useThemeChoice } from "~/hooks/useThemeChoice";
+import {
+  ThemeChoiceProvider,
+  useThemeChoice,
+} from "~/contexts/ThemeChoiceContext";
 import { ThemeToggle } from "./ThemeToggle";
 
-type Saved = "light" | "dark" | null;
-type ActionResult = { ok: true; theme: ThemeChoice } | { ok: false };
-
-/** What the document root would render: the shared optimistic choice. */
+/** What the document root renders from: the shared optimistic choice. */
 function RootProbe() {
-  const choice = useThemeChoice();
+  const { choice } = useThemeChoice();
   return <output aria-label="Root theme">{choice}</output>;
 }
 
+type Sent = { url: string; method: string; body: string };
+
+const OFFLINE_TOAST =
+  "You seem to be offline. Your changes haven't been saved yet.";
+const SAVE_FAILED = "Couldn't save your theme. Try again.";
+
+/** The theme route's answer to a save. */
+const saved = (theme: ThemeChoice) =>
+  Response.json({ ok: true, data: { theme } });
+
 /**
- * Renders the toggle under a stand-in root route (id "root", loader giving
- * the saved theme) and a /resources/theme action the test controls.
+ * Renders the toggle the way the app does (inside the theme provider and
+ * the toasts, under a router with an error boundary that must never show)
+ * with `fetch` answered by `respond`.
  */
 async function renderToggle({
-  saved = null,
-  respond = async () => ({ ok: true, theme: "dark" }),
+  loaded = "system",
+  respond = async () => saved("dark"),
   placement = "drawer",
 }: {
-  saved?: Saved;
-  respond?: (choice: string | null) => Promise<ActionResult>;
+  loaded?: ThemeChoice;
+  respond?: (sent: Sent) => Promise<Response>;
   placement?: "header" | "drawer";
 } = {}) {
-  let theme: Saved = saved;
-  const submissions: Array<Record<string, string>> = [];
+  const sent: Sent[] = [];
+  vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+    const request = {
+      url,
+      method: init.method ?? "GET",
+      body: String(init.body),
+    };
+    sent.push(request);
+    return respond(request);
+  });
   const router = createMemoryRouter(
     [
       {
-        id: "root",
-        path: "/",
-        loader: () => json({ theme }),
+        path: "/help/licence",
         element: (
-          <>
-            <ThemeToggle placement={placement} />
-            <RootProbe />
-          </>
+          <ThemeChoiceProvider loaded={loaded}>
+            <ToastProvider>
+              <ThemeToggle placement={placement} />
+              <RootProbe />
+            </ToastProvider>
+          </ThemeChoiceProvider>
         ),
-        children: [{ path: "help/licence", element: null }],
-      },
-      {
-        path: "/resources/theme",
-        action: async ({ request }) => {
-          const form = Object.fromEntries(
-            [...(await request.formData())].map(([key, value]) => [
-              key,
-              String(value),
-            ])
-          );
-          submissions.push(form);
-          const result = await respond(form.theme ?? null);
-          if (result.ok)
-            theme = result.theme === "system" ? null : result.theme;
-          return json(result, { status: result.ok ? 200 : 400 });
-        },
+        errorElement: <p>Error boundary</p>,
       },
     ],
     { initialEntries: ["/help/licence?x=1"] }
@@ -68,13 +70,7 @@ async function renderToggle({
   await act(async () => {
     render(<RouterProvider router={router} />);
   });
-  /** Resolves once the save and the root revalidation after it are done. */
-  const settled = () =>
-    waitFor(() => {
-      expect(router.state.fetchers.get("theme")?.state ?? "idle").toBe("idle");
-      expect(router.state.revalidation).toBe("idle");
-    });
-  return { submissions, settled };
+  return { sent };
 }
 
 function deferred<T>() {
@@ -96,13 +92,20 @@ function pressed() {
     .map(button => button.textContent);
 }
 
+function rootTheme() {
+  return screen.getByRole("status", { name: "Root theme" });
+}
+
+async function choose(name: string) {
+  await act(() => userEvent.click(screen.getByRole("button", { name })));
+}
+
 beforeEach(() => {
-  // The router builds a Node `Request` from a `URLSearchParams` body, and
-  // Node's Request only accepts its own URLSearchParams, not jsdom's.
-  vi.stubGlobal("URLSearchParams", NodeURLSearchParams);
+  vi.spyOn(console, "error").mockImplementation(() => undefined);
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   document.documentElement.removeAttribute("data-theme");
 });
 
@@ -124,7 +127,7 @@ describe("ThemeToggle", () => {
   it("in the header: icon-only at md with hidden names, text from lg, the error floating below", async () => {
     await renderToggle({
       placement: "header",
-      respond: async () => ({ ok: false }),
+      respond: async () => new Response("", { status: 503 }),
     });
     const buttons = within(await group()).getAllByRole("button");
     expect(buttons.map(button => button.textContent)).toEqual([
@@ -139,10 +142,8 @@ describe("ThemeToggle", () => {
         "lg:not-sr-only"
       );
     }
-    await act(() =>
-      userEvent.click(screen.getByRole("button", { name: "Dark" }))
-    );
-    expect(await screen.findByRole("alert")).toHaveClass(
+    await choose("Dark");
+    expect(await screen.findByText(SAVE_FAILED)).toHaveClass(
       "absolute",
       "top-full"
     );
@@ -156,57 +157,14 @@ describe("ThemeToggle", () => {
     }
   });
 
-  it("keeps the saved choice once the server agrees, without the root loader running again", async () => {
-    let loads = 0;
-    const router = createMemoryRouter(
-      [
-        {
-          id: "root",
-          path: "/",
-          loader: () => {
-            loads += 1;
-            return json({ theme: null });
-          },
-          shouldRevalidate: () => false,
-          element: (
-            <>
-              <ThemeToggle placement="drawer" />
-              <RootProbe />
-            </>
-          ),
-        },
-        {
-          path: "/resources/theme",
-          action: () => json({ ok: true, theme: "dark" }),
-        },
-      ],
-      { initialEntries: ["/"] }
-    );
-    await act(async () => {
-      render(<RouterProvider router={router} />);
-    });
-    await group();
-    await act(() =>
-      userEvent.click(screen.getByRole("button", { name: "Dark" }))
-    );
-    await waitFor(() =>
-      expect(router.state.fetchers.get("theme")?.state ?? "idle").toBe("idle")
-    );
-    expect(loads).toBe(1);
-    expect(pressed()).toEqual(["Dark"]);
-    expect(
-      screen.getByRole("status", { name: "Root theme" })
-    ).toHaveTextContent("dark");
-  });
-
   it.each([
-    [null, "System"],
+    ["system", "System"],
     ["light", "Light"],
     ["dark", "Dark"],
   ] as const)(
     "presses only the saved choice (%s → %s)",
-    async (saved, label) => {
-      await renderToggle({ saved });
+    async (loaded, label) => {
+      await renderToggle({ loaded });
       await group();
       expect(pressed()).toEqual([label]);
       for (const button of screen.getAllByRole("button")) {
@@ -235,58 +193,125 @@ describe("ThemeToggle", () => {
     ).toEqual(["system", "light", "dark"]);
   });
 
-  it("shows the new choice immediately, before the server answers", async () => {
-    const answer = deferred<ActionResult>();
-    const { submissions, settled } = await renderToggle({
-      respond: () => answer.promise,
-    });
+  it("shows the new choice immediately and keeps it once the server agrees", async () => {
+    const answer = deferred<Response>();
+    const { sent } = await renderToggle({ respond: () => answer.promise });
     await group();
-    await act(() =>
-      userEvent.click(screen.getByRole("button", { name: "Dark" }))
-    );
+    await choose("Dark");
 
     expect(pressed()).toEqual(["Dark"]);
-    expect(
-      screen.getByRole("status", { name: "Root theme" })
-    ).toHaveTextContent("dark");
-    // The fetcher sends no returnTo, so the action answers without a redirect.
-    expect(submissions).toEqual([{ theme: "dark" }]);
+    expect(rootTheme()).toHaveTextContent("dark");
+    // No returnTo, so the theme route answers JSON instead of a redirect.
+    expect(sent).toEqual([
+      { url: "/resources/theme", method: "POST", body: "theme=dark" },
+    ]);
 
-    await act(async () => answer.resolve({ ok: true, theme: "dark" }));
-    await settled();
+    await act(async () => answer.resolve(saved("dark")));
+    await waitFor(() => expect(rootTheme()).toHaveTextContent("dark"));
     expect(pressed()).toEqual(["Dark"]);
-    expect(
-      screen.getByRole("status", { name: "Root theme" })
-    ).toHaveTextContent("dark");
+    expect(screen.queryByText(SAVE_FAILED)).toBeNull();
   });
 
-  it("goes back to the saved choice and says so when saving fails", async () => {
-    const { settled } = await renderToggle({
-      saved: "light",
-      respond: async () => ({ ok: false }),
+  it.each([
+    [
+      "the theme route's own failure",
+      async () =>
+        Response.json(
+          {
+            ok: false,
+            error: { code: "invalid_theme", message: "Choose System…" },
+          },
+          { status: 400 }
+        ),
+    ],
+    [
+      "a 503 the app didn't make",
+      async () => new Response("", { status: 503 }),
+    ],
+    [
+      "an HTML error page from a gateway",
+      async () =>
+        new Response("<!doctype html><title>Bad gateway</title>", {
+          status: 502,
+          headers: { "Content-Type": "text/html" },
+        }),
+    ],
+    ["a 200 that isn't the route's JSON", async () => new Response("ok")],
+  ])(
+    "on %s goes back to the saved choice and says so inline",
+    async (_case, respond) => {
+      await renderToggle({ loaded: "light", respond });
+      await group();
+      await choose("Dark");
+
+      expect(await screen.findByText(SAVE_FAILED)).toHaveAttribute(
+        "role",
+        "alert"
+      );
+      expect(pressed()).toEqual(["Light"]);
+      expect(rootTheme()).toHaveTextContent("light");
+      expect(screen.queryByText("Error boundary")).toBeNull();
+      expect(screen.queryByText(OFFLINE_TOAST)).toBeNull();
+    }
+  );
+
+  it("offline: goes back, says so inline and in a danger toast", async () => {
+    await renderToggle({
+      loaded: "light",
+      respond: () => Promise.reject(new TypeError("Failed to fetch")),
     });
     await group();
-    await act(() =>
-      userEvent.click(screen.getByRole("button", { name: "Dark" }))
+    await choose("Dark");
+
+    expect(await screen.findByText(SAVE_FAILED)).toBeVisible();
+    expect(await screen.findByText(OFFLINE_TOAST)).toBeInTheDocument();
+    expect(pressed()).toEqual(["Light"]);
+    expect(screen.queryByText("Error boundary")).toBeNull();
+  });
+
+  it("clears the error with the next successful save", async () => {
+    let fail = true;
+    await renderToggle({
+      respond: async () =>
+        fail ? new Response("", { status: 503 }) : saved("light"),
+    });
+    await group();
+    await choose("Dark");
+    expect(await screen.findByText(SAVE_FAILED)).toHaveAttribute(
+      "role",
+      "alert"
     );
 
-    await settled();
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Couldn't save your theme. Try again."
-    );
+    fail = false;
+    await choose("Light");
+    await waitFor(() => expect(screen.queryByText(SAVE_FAILED)).toBeNull());
     expect(pressed()).toEqual(["Light"]);
-    expect(
-      screen.getByRole("status", { name: "Root theme" })
-    ).toHaveTextContent("light");
+  });
+
+  it("lets a later choice win over an earlier answer that arrives last", async () => {
+    const first = deferred<Response>();
+    let calls = 0;
+    await renderToggle({
+      respond: () => {
+        calls += 1;
+        return calls === 1 ? first.promise : Promise.resolve(saved("light"));
+      },
+    });
+    await group();
+    await choose("Dark");
+    await choose("Light");
+    await waitFor(() => expect(pressed()).toEqual(["Light"]));
+
+    await act(async () => first.resolve(new Response("", { status: 503 })));
+    expect(pressed()).toEqual(["Light"]);
+    expect(screen.queryByText(SAVE_FAILED)).toBeNull();
   });
 
   it("works from the keyboard: Tab to an option, Enter or Space to choose", async () => {
     const user = userEvent.setup();
-    const { submissions, settled } = await renderToggle({
-      respond: async choice => ({
-        ok: true,
-        theme: choice === "light" ? "light" : "system",
-      }),
+    const { sent } = await renderToggle({
+      respond: async ({ body }) =>
+        saved(body === "theme=light" ? "light" : "system"),
     });
     await group();
 
@@ -296,13 +321,15 @@ describe("ThemeToggle", () => {
     expect(screen.getByRole("button", { name: "Light" })).toHaveFocus();
     await act(() => user.keyboard("{Enter}"));
     expect(pressed()).toEqual(["Light"]);
-    await settled();
 
     await user.tab({ shift: true });
     expect(screen.getByRole("button", { name: "System" })).toHaveFocus();
     await act(() => user.keyboard(" "));
     expect(pressed()).toEqual(["System"]);
-    await settled();
-    expect(submissions.map(form => form.theme)).toEqual(["light", "system"]);
+    await waitFor(() => expect(sent).toHaveLength(2));
+    expect(sent.map(request => request.body)).toEqual([
+      "theme=light",
+      "theme=system",
+    ]);
   });
 });

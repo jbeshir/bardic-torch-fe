@@ -16,6 +16,8 @@ import { test } from "../support/test";
 test.describe.configure({ mode: "parallel" });
 test.use({ viewport: { width: 1280, height: 800 } });
 
+const OFFLINE = "You seem to be offline. Your changes haven't been saved yet.";
+
 const DISPLAY_NAME_RULE =
   "Use 1 to 64 characters, without control or invisible formatting characters.";
 
@@ -128,6 +130,81 @@ test("Log in from settings, then rename: the toast, the account menu, and the AP
   await page.reload();
   await waitForHydration(page);
   await expect(nameField(page)).toHaveValue("Wynn of the Long Road");
+});
+
+test("a 503 from the platform or no network ends inline in the form, keeping what was typed, never on an error page", async ({
+  page,
+}) => {
+  await openSettings(page, { display_name: "Wynn the Watchful" });
+
+  // Something in front of the app (wrangler, Cloudflare) answers the PATCH
+  // with a 503 of its own: not a proxy body, no X-Remix-Response.
+  await page.route(
+    url => url.pathname === "/api/me",
+    route =>
+      route.request().method() === "PATCH"
+        ? route.fulfill({
+            status: 503,
+            contentType: "text/html",
+            body: "<!doctype html><title>Service unavailable</title>",
+          })
+        : route.continue()
+  );
+  await nameField(page).fill("Wynn of the Long Road");
+  const patched = page.waitForResponse(
+    r =>
+      r.request().method() === "PATCH" &&
+      new URL(r.url()).pathname === "/api/me"
+  );
+  await main(page).getByRole("button", { name: "Save changes" }).click();
+  expect((await patched).status(), "PATCH /api/me").toBe(503);
+
+  await expect(
+    main(page).getByRole("alert").filter({
+      hasText:
+        "We couldn't save your changes. Check your connection and try again.",
+    })
+  ).toBeVisible();
+  await expect(nameField(page)).toHaveValue("Wynn of the Long Road");
+  await expect(
+    main(page).getByRole("heading", { level: 1, name: "Settings", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "We couldn't load your settings" })
+  ).toHaveCount(0);
+  await expect(notifications(page).getByText(OFFLINE)).toHaveCount(0);
+  // The shell is still the app's: the header kept the saved name.
+  await expect(accountTrigger(page.getByRole("banner"))).toHaveText(
+    /Account: Wynn the Watchful$/
+  );
+
+  // No network at all for the token form: the offline toast as well.
+  await page.route(
+    url => url.pathname === "/api/tokens",
+    route => route.abort("internetdisconnected")
+  );
+  await tokenNameField(page).fill("Laptop MCP");
+  await main(page).getByRole("button", { name: "Create token" }).click();
+  await expect(
+    main(page).getByText(
+      "We couldn't create a token. Check your connection and try again."
+    )
+  ).toBeVisible();
+  await expect(notifications(page).getByText(OFFLINE)).toBeVisible();
+  await expect(tokenNameField(page)).toHaveValue("Laptop MCP");
+  await expect(
+    main(page).getByRole("textbox", { name: "New token value" })
+  ).toHaveCount(0);
+
+  // Back to normal, the same typed name saves.
+  await page.unrouteAll();
+  await main(page).getByRole("button", { name: "Save changes" }).click();
+  await expect(
+    notifications(page).getByText("Display name saved.")
+  ).toBeVisible();
+  await expect(accountTrigger(page.getByRole("banner"))).toHaveText(
+    /Account: Wynn of the Long Road$/
+  );
 });
 
 test("create a token, see it once, copy it, then revoke it after confirming", async ({

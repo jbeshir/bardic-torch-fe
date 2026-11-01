@@ -23,15 +23,20 @@ import { action as meAction } from "./api.me";
 import { action as revokeAction } from "./api.tokens.$tokenId";
 import { action as tokensAction } from "./api.tokens";
 import Settings, {
+  clientAction,
   ErrorBoundary,
   loader as settingsLoader,
   shouldRevalidate,
 } from "./settings";
 
 // The settings page in the browser (R25): the real root and settings
-// loaders and the real /api proxy actions, run by a memory router, against
-// the fixture API through msw. Requests are re-made as same-origin app
-// requests carrying the test's session cookie, as the browser would send.
+// loaders, the settings route's clientAction and the real /api proxy
+// actions, run by a memory router, against the fixture API through msw.
+// The browser's fetch to the app is stubbed: each request is re-made as a
+// same-origin app request carrying the test's session cookie, and a
+// Set-Cookie on the answer updates that cookie, as the browser would.
+// `platform` can answer instead of the app (a 503 from Cloudflare, or no
+// network at all).
 
 vi.mock("@sentry/remix", () => ({
   isInitialized: () => false,
@@ -40,6 +45,19 @@ vi.mock("@sentry/remix", () => ({
 
 const fixtures = serveFixtureApi();
 let cookie: string | undefined;
+let platform: ((request: Request) => Promise<Response>) | undefined;
+
+const PROXY_ACTIONS: ReadonlyArray<
+  readonly [RegExp, Handler, (match: RegExpExecArray) => Params]
+> = [
+  [/^\/api\/me$/, meAction, () => ({})],
+  [/^\/api\/tokens$/, tokensAction, () => ({})],
+  [
+    /^\/api\/tokens\/([^/]+)$/,
+    revokeAction,
+    match => ({ tokenId: decodeURIComponent(match[1] ?? "") }),
+  ],
+];
 
 beforeEach(async () => {
   // The router builds a Node `Request` from a `URLSearchParams` body, and
@@ -48,11 +66,39 @@ beforeEach(async () => {
   cookie = await sessionCookie(
     sessionTokens({ accessToken: "fixture:contributor" })
   );
+  platform = undefined;
+  const upstreamFetch = globalThis.fetch;
+  vi.stubGlobal("fetch", async (input: string, init?: RequestInit) => {
+    const url = new URL(input, APP_ORIGIN);
+    if (url.origin !== APP_ORIGIN) return upstreamFetch(input, init);
+    const request = new Request(url, init);
+    if (platform) return platform(request);
+    for (const [pattern, action, params] of PROXY_ACTIONS) {
+      const match = pattern.exec(url.pathname);
+      if (match)
+        return keepCookie(
+          await run(action)({ request, params: params(match) })
+        );
+    }
+    throw new Error(`No app route for ${url.pathname}`);
+  });
 });
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
+
+/** What the browser's cookie jar does with the session's Set-Cookie. */
+function keepCookie(response: Response): Response {
+  const session = response.headers
+    .getSetCookie()
+    .find(value => value.startsWith("__Host-bt_session="));
+  if (session) {
+    const pair = session.split(";")[0] ?? "";
+    cookie = pair.endsWith("=") ? undefined : pair;
+  }
+  return response;
+}
 
 async function asApp(request: Request): Promise<Request> {
   const url = new URL(request.url);
@@ -67,10 +113,11 @@ async function asApp(request: Request): Promise<Request> {
   });
 }
 
-type Args = { request: Request; params: Record<string, string | undefined> };
+type Params = Record<string, string | undefined>;
+type Args = { request: Request; params: Params };
 type Handler = (args: {
   request: Request;
-  params: Record<string, string | undefined>;
+  params: Params;
   context: ReturnType<typeof loadContext>;
 }) => Promise<Response>;
 
@@ -97,13 +144,20 @@ function renderSettings() {
             id: "routes/settings",
             path: "settings",
             loader: run(settingsLoader),
+            // What Remix runs for a route with a clientAction and no
+            // server action.
+            action: ({ request, params }) =>
+              clientAction({
+                request,
+                params,
+                serverAction: () => {
+                  throw new Error("/settings has no server action");
+                },
+              }),
             shouldRevalidate,
             element: <Settings />,
             errorElement: <ErrorBoundary />,
           },
-          { path: "api/me", action: run(meAction) },
-          { path: "api/tokens", action: run(tokensAction) },
-          { path: "api/tokens/:tokenId", action: run(revokeAction) },
         ],
       },
     ],
@@ -296,22 +350,27 @@ describe("display name", () => {
     ).toBeNull();
   });
 
-  it("a session the API ended offers Log in back to settings", async () => {
+  it("a session the API ended signs the whole page out, offering Log in back to settings", async () => {
     const user = userEvent.setup();
-    await openPage();
+    const router = await openPage();
     fail("updateMe", 401, "unauthenticated");
     await user.click(screen.getByRole("button", { name: "Save changes" }));
 
+    // The proxy cleared the session and the root loader ran again, so the
+    // shell (the account control) is signed out too, not only this form.
     expect(
       await screen.findByText(
-        "You've been signed out. Log in again and we'll bring you back here."
+        "Log in to change your display name and manage your API tokens."
       )
     ).toBeInTheDocument();
-    expect(
-      within(screen.getAllByRole("alert")[0] as HTMLElement).getByRole("link", {
-        name: "Log in",
-      })
-    ).toHaveAttribute("href", "/auth/login?returnTo=%2Fsettings");
+    expect(cookie).toBeUndefined();
+    expect(router.state.loaderData.root).toMatchObject({
+      account: { state: "signed-out" },
+    });
+    expect(screen.getByRole("link", { name: "Log in" })).toHaveAttribute(
+      "href",
+      "/auth/login?returnTo=%2Fsettings"
+    );
   });
 
   it("saves with Enter in the field", async () => {
@@ -596,6 +655,130 @@ describe("revoking a token", () => {
   });
 });
 
+describe("when the app can't be reached", () => {
+  // SEC-2: a response the app didn't make (a platform 503) or no network
+  // ends inline in the form, with the typed input kept; never in the
+  // settings or root error boundary.
+  const OFFLINE =
+    "You seem to be offline. Your changes haven't been saved yet.";
+  const PLATFORM = {
+    "a 503 from the platform": async () =>
+      new Response("<!doctype html><title>Service unavailable</title>", {
+        status: 503,
+        headers: { "Content-Type": "text/html" },
+      }),
+    "a network failure": async () => {
+      throw new TypeError("Failed to fetch");
+    },
+  } as const;
+  const cases = Object.entries(PLATFORM).map(
+    ([name, respond]) => [name, respond, name === "a network failure"] as const
+  );
+
+  function expectNoBoundary() {
+    expect(
+      screen.queryByRole("heading", { name: "We couldn't load your settings" })
+    ).toBeNull();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Settings" })
+    ).toBeInTheDocument();
+  }
+
+  async function expectOfflineToast(offline: boolean) {
+    if (offline) {
+      expect(
+        await within(notifications()).findByText(OFFLINE)
+      ).toBeInTheDocument();
+    } else {
+      expect(within(notifications()).queryByText(OFFLINE)).toBeNull();
+    }
+  }
+
+  it.each(cases)(
+    "saving the display name on %s keeps the typed name and says so inline",
+    async (_case, respond, offline) => {
+      const user = userEvent.setup();
+      await openPage();
+      await user.clear(nameField());
+      await user.type(nameField(), "Wynn of the Long Road");
+      platform = respond;
+      await user.click(screen.getByRole("button", { name: "Save changes" }));
+
+      const alert = await screen.findByText(
+        "We couldn't save your changes. Check your connection and try again."
+      );
+      expect(alert.closest('[role="alert"]')).not.toBeNull();
+      expect(nameField()).toHaveValue("Wynn of the Long Road");
+      expect(nameField()).not.toHaveAttribute("aria-invalid");
+      expectNoBoundary();
+      await expectOfflineToast(offline);
+      expect(contributor().me.display_name).toBe("Morwen of the Marches");
+
+      // Once the app answers again, the same form saves.
+      platform = undefined;
+      await user.click(screen.getByRole("button", { name: "Save changes" }));
+      expect(
+        await within(notifications()).findByText("Display name saved.")
+      ).toBeInTheDocument();
+      expect(contributor().me.display_name).toBe("Wynn of the Long Road");
+    }
+  );
+
+  it.each(cases)(
+    "creating a token on %s keeps the typed name and says so inline",
+    async (_case, respond, offline) => {
+      const user = userEvent.setup();
+      await openPage();
+      await user.type(tokenNameField(), "Laptop MCP");
+      platform = respond;
+      await user.click(screen.getByRole("button", { name: "Create token" }));
+
+      const alert = await screen.findByText(
+        "We couldn't create a token. Check your connection and try again."
+      );
+      expect(alert.closest('[role="alert"]')).not.toBeNull();
+      expect(tokenNameField()).toHaveValue("Laptop MCP");
+      expect(
+        screen.queryByRole("textbox", { name: "New token value" })
+      ).toBeNull();
+      expectNoBoundary();
+      await expectOfflineToast(offline);
+      expect(contributor().tokens).toHaveLength(3);
+    }
+  );
+
+  it.each(cases)(
+    "revoking a token on %s keeps it and says so inline",
+    async (_case, respond, offline) => {
+      const user = userEvent.setup();
+      await openPage();
+      const trigger = within(tokenTable()).getByRole("button", {
+        name: "Revoke token Laptop scripts",
+      });
+      await user.click(trigger);
+      platform = respond;
+      await user.click(
+        within(
+          screen.getByRole("dialog", { name: "Revoke this token?" })
+        ).getByRole("button", { name: "Revoke token" })
+      );
+
+      expect(
+        await screen.findByText(
+          "We couldn't revoke that token. Check your connection and try again."
+        )
+      ).toBeInTheDocument();
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(
+        within(tokenTable()).getByRole("rowheader", { name: "Laptop scripts" })
+      ).toBeInTheDocument();
+      expectNoBoundary();
+      await expectOfflineToast(offline);
+      await waitFor(() => expect(trigger).toHaveFocus());
+    }
+  );
+});
+
 describe("settings error boundary", () => {
   it("a token list that fails to load shows the boundary, and Try again recovers", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -626,15 +809,33 @@ describe("settings shouldRevalidate", () => {
     defaultShouldRevalidate: true,
   };
 
+  const submitted = (intent: string, actionResult: unknown) => {
+    const formData = new FormData();
+    formData.set("intent", intent);
+    return {
+      ...base,
+      formMethod: "POST" as const,
+      formAction: "/settings",
+      formData,
+      actionResult,
+    };
+  };
+  const failure = (code: string) => ({
+    ok: false,
+    error: { code, message: "" },
+  });
+
   it.each([
-    ["/api/tokens", true],
-    ["/api/tokens/00000000-0000-4000-8000-000000000001", true],
-    ["/api/me", false],
-    ["/resources/theme", false],
-  ])("after a submission to %s: %s", (formAction, expected) => {
-    expect(shouldRevalidate({ ...base, formMethod: "POST", formAction })).toBe(
-      expected
-    );
+    ["create-token", { ok: true, data: {} }, true],
+    ["revoke-token", { ok: true, data: null }, true],
+    ["revoke-token", failure("not_found"), true],
+    ["create-token", failure("token_limit_reached"), false],
+    ["create-token", failure("offline"), false],
+    ["revoke-token", failure("unexpected_response"), false],
+    ["revoke-token", failure("upstream_unavailable"), false],
+    ["update-profile", { ok: true, data: {} }, false],
+  ])("after %s answered %j: %s", (intent, result, expected) => {
+    expect(shouldRevalidate(submitted(intent, result))).toBe(expected);
   });
 
   it("follows the default otherwise (Try again revalidates)", () => {

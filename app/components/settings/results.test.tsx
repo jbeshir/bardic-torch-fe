@@ -5,10 +5,6 @@ import { fieldMessage, problemMessage, useFetcherResult } from "./results";
 
 type Body = ProxyBody<unknown>;
 
-const MALFORMED_RESPONSE = {
-  code: "bad_gateway",
-  message: "Bardic Torch sent an unexpected response. Try again shortly.",
-};
 type Props = { state: string; data: Body | undefined };
 
 function renderResult(onResult: (result: Body) => void) {
@@ -42,26 +38,6 @@ describe("useFetcherResult", () => {
     expect(onResult).toHaveBeenCalledTimes(2);
     expect(onResult).toHaveBeenLastCalledWith(second);
   });
-
-  it.each([
-    ["an HTML page", "<!doctype html><title>Oops</title>"],
-    ["a body without ok", { data: 1 }],
-    ["a failure without a message", { ok: false, error: { code: "x" } }],
-    ["a success without data", { ok: true }],
-  ])("reports %s as the service's trouble", (_label, body) => {
-    const onResult = vi.fn();
-    const { rerender } = renderResult(onResult);
-    rerender({ state: "submitting", data: undefined });
-    rerender({ state: "idle", data: body as unknown as Body });
-    expect(onResult).toHaveBeenCalledTimes(1);
-    expect(onResult).toHaveBeenLastCalledWith({
-      ok: false,
-      error: MALFORMED_RESPONSE,
-    });
-    expect(problemMessage(MALFORMED_RESPONSE, "We couldn't.")).toBe(
-      "We couldn't."
-    );
-  });
 });
 
 describe("fieldMessage", () => {
@@ -86,14 +62,18 @@ describe("fieldMessage", () => {
 });
 
 describe("problemMessage", () => {
-  it.each(["internal", "unavailable", "bad_gateway", "upstream_unavailable"])(
-    "uses the form's own words when the service had trouble (%s)",
-    code => {
-      expect(problemMessage({ code, message: "Proxy copy" }, "Form copy")).toBe(
-        "Form copy"
-      );
-    }
-  );
+  it.each([
+    "internal",
+    "unavailable",
+    "bad_gateway",
+    "upstream_unavailable",
+    "unexpected_response",
+    "offline",
+  ])("uses the form's own words when the service had trouble (%s)", code => {
+    expect(problemMessage({ code, message: "Proxy copy" }, "Form copy")).toBe(
+      "Form copy"
+    );
+  });
 
   it.each([
     "token_limit_reached",

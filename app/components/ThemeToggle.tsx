@@ -1,4 +1,4 @@
-import { Form, useFetcher, useLocation } from "@remix-run/react";
+import { Form, useLocation } from "@remix-run/react";
 import {
   IconDeviceDesktop,
   IconMoon,
@@ -7,12 +7,12 @@ import {
 } from "@tabler/icons-react";
 import { useId, type FormEvent } from "react";
 import {
+  isThemeChoice,
   THEME_ACTION,
-  THEME_FETCHER_KEY,
   type ThemeChoice,
 } from "~/constants/theme";
-import { useThemeChoice } from "~/hooks/useThemeChoice";
-import type { action as themeAction } from "~/routes/resources.theme";
+import { useThemeChoice } from "~/contexts/ThemeChoiceContext";
+import { useOfflineToast } from "~/hooks/useOfflineToast";
 
 const OPTIONS: readonly {
   readonly value: ThemeChoice;
@@ -49,8 +49,9 @@ const PLACEMENTS = {
 /**
  * System / Light / Dark (DESIGN §6.24): in the header from md, in the
  * drawer below. Without JS it is a plain form that posts the choice and
- * comes back to this page. With JS the submit goes through a fetcher
- * instead, and the page switches before the answer.
+ * comes back to this page. With JS the choice is saved in the background
+ * (ThemeChoiceContext) and the page switches before the answer; a failed
+ * save reverts it and says so under the control (and, offline, in a toast).
  */
 export function ThemeToggle({
   placement,
@@ -58,27 +59,25 @@ export function ThemeToggle({
   placement: keyof typeof PLACEMENTS;
 }) {
   const look = PLACEMENTS[placement];
-  const choice = useThemeChoice();
-  const fetcher = useFetcher<typeof themeAction>({ key: THEME_FETCHER_KEY });
+  const { choice, failure, save } = useThemeChoice();
+  const reportOffline = useOfflineToast();
   const { pathname, search } = useLocation();
   const labelId = useId();
-  const failed = fetcher.state === "idle" && fetcher.data?.ok === false;
 
-  function submitWithFetcher(event: FormEvent<HTMLFormElement>) {
+  async function saveInBackground(event: FormEvent<HTMLFormElement>) {
     const { submitter } = event.nativeEvent as SubmitEvent;
     if (!(submitter instanceof HTMLButtonElement)) return;
+    if (!isThemeChoice(submitter.value)) return;
     event.preventDefault();
-    fetcher.submit(
-      { theme: submitter.value },
-      { method: "post", action: THEME_ACTION }
-    );
+    const result = await save(submitter.value);
+    if (!result.ok) reportOffline(result.error);
   }
 
   return (
     <Form
       method="post"
       action={THEME_ACTION}
-      onSubmit={submitWithFetcher}
+      onSubmit={saveInBackground}
       className="relative"
     >
       <input type="hidden" name="returnTo" value={`${pathname}${search}`} />
@@ -104,7 +103,7 @@ export function ThemeToggle({
           ))}
         </div>
       </div>
-      {failed ? (
+      {failure ? (
         <p role="alert" className={`text-caption text-danger-fg ${look.error}`}>
           Couldn&apos;t save your theme. Try again.
         </p>

@@ -117,17 +117,52 @@ describe("root shouldRevalidate", () => {
     expect(shouldRevalidate(args({}))).toBe(false);
   });
 
-  it("reloads after a display-name change", () => {
+  /** A settings form submission (to the settings route's clientAction). */
+  const settingsForm = (
+    intent: string,
+    actionResult: unknown
+  ): Partial<Parameters<typeof shouldRevalidate>[0]> => ({
+    formMethod: "POST",
+    formAction: "/settings",
+    formData: (() => {
+      const form = new FormData();
+      form.set("intent", intent);
+      return form;
+    })(),
+    actionResult,
+    currentUrl: url("/settings"),
+    nextUrl: url("/settings"),
+  });
+  const failure = (code: string) => ({
+    ok: false,
+    error: { code, message: "" },
+  });
+
+  it("reloads after a display-name change was saved", () => {
     expect(
       shouldRevalidate(
-        args({
-          formMethod: "PATCH",
-          formAction: "/api/me",
-          nextUrl: url("/help"),
-        })
+        args(settingsForm("update-profile", { ok: true, data: {} }))
       )
     ).toBe(true);
   });
+
+  it.each(["invalid_request", "offline", "unexpected_response", "internal"])(
+    "keeps the data when a display-name change failed (%s)",
+    code => {
+      expect(
+        shouldRevalidate(args(settingsForm("update-profile", failure(code))))
+      ).toBe(false);
+    }
+  );
+
+  it.each(["update-profile", "create-token", "revoke-token"])(
+    "reloads when a settings call (%s) found the session ended, so the header shows Log in",
+    intent => {
+      expect(
+        shouldRevalidate(args(settingsForm(intent, failure("unauthenticated"))))
+      ).toBe(true);
+    }
+  );
 
   it("reloads after logging out", () => {
     expect(
@@ -142,14 +177,15 @@ describe("root shouldRevalidate", () => {
     ).toBe(true);
   });
 
-  it("keeps the data for other submissions, the theme and tokens included", () => {
-    for (const [formMethod, formAction] of [
-      ["POST", "/resources/theme"],
-      ["POST", "/api/tokens"],
-      ["DELETE", "/api/tokens/abc"],
-    ] as const) {
-      expect(shouldRevalidate(args({ formMethod, formAction }))).toBe(false);
+  it("keeps the data for other submissions, tokens included", () => {
+    for (const intent of ["create-token", "revoke-token"]) {
+      expect(
+        shouldRevalidate(args(settingsForm(intent, { ok: true, data: null })))
+      ).toBe(false);
     }
+    expect(
+      shouldRevalidate(args({ formMethod: "POST", formAction: "/elsewhere" }))
+    ).toBe(false);
   });
 
   it("reloads when asked to on the same page (Try again)", () => {
