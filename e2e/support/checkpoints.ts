@@ -53,7 +53,14 @@ export const CHECKPOINTS: Readonly<
 > = {
   prod: {
     landing: ["home"],
-    help: ["index", "contributing", "faq-for-bards"],
+    help: [
+      "index",
+      "contributing",
+      "faq-for-bards",
+      "bard-preference-checklist",
+      "conservation-status",
+      "licence",
+    ],
     theme: ["dark-choice"],
     errors: ["not-found"],
   },

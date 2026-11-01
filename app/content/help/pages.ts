@@ -1,8 +1,11 @@
 import type { TocEntry } from "~/components/TableOfContents";
+import * as checklist from "./bard-preference-checklist.md";
+import * as conservation from "./conservation-status.md";
 import * as contributing from "./contributing.md";
 import * as faq from "./faq-for-bards.md";
 import type { HelpFrontmatter } from "./frontmatter";
 import * as index from "./index.md";
+import * as licence from "./licence.md";
 
 /** A compiled help page and what its front matter says about it. */
 export type HelpContent = {
@@ -31,6 +34,9 @@ export const HELP_INDEX = helpContent(null, index);
 const HELP_PAGES: readonly HelpContent[] = [
   helpContent("contributing", contributing),
   helpContent("faq-for-bards", faq),
+  helpContent("bard-preference-checklist", checklist),
+  helpContent("conservation-status", conservation),
+  helpContent("licence", licence),
 ];
 
 export function findHelpPage(slug: string | undefined): HelpContent | null {

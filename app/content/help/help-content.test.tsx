@@ -14,12 +14,12 @@ import { findHelpPage, HELP_INDEX, type HelpContent } from "./pages";
  * order and credit, and the statements the new site's rules depend on.
  */
 
-const SLUGS = ["contributing", "faq-for-bards"] as const;
-
 /** The help pages the site navigation lists. */
 const NAV_HELP_PATHS = NAV_GROUPS.flatMap(({ items }) => items)
   .map(({ href }) => href)
   .filter(href => href.startsWith("/help/"));
+
+const SLUGS = NAV_HELP_PATHS.map(path => path.replace("/help/", ""));
 
 /** The original wiki's help and policy pages the help is adapted from. */
 const WIKI_META_PAGES = [
@@ -169,14 +169,27 @@ describe.each(ALL)("help page %s", (slug, content) => {
   });
 });
 
+describe("the help pages", () => {
+  it("are every page the navigation lists, and no unknown slug", () => {
+    expect(SLUGS).toEqual([
+      "contributing",
+      "faq-for-bards",
+      "bard-preference-checklist",
+      "conservation-status",
+      "licence",
+    ]);
+    expect(findHelpPage("lyrics")).toBeNull();
+    expect(findHelpPage(undefined)).toBeNull();
+  });
+});
+
 describe("the help index", () => {
-  it("has a card for every help page, by its title", async () => {
+  it("has a card for every help page, by its title, in the navigation's order", async () => {
     const main = await renderHelp(HELP_INDEX);
-    const cards = within(main).getAllByRole("heading", { level: 3 });
-    const found = SLUGS.map(slug => page(slug).frontmatter.title);
-    for (const title of found) {
-      expect(cards.map(card => card.textContent)).toContain(title);
-    }
+    const cards = within(main)
+      .getAllByRole("heading", { level: 3 })
+      .map(card => card.textContent);
+    expect(cards).toEqual(SLUGS.map(slug => page(slug).frontmatter.title));
   });
 });
 
@@ -307,6 +320,187 @@ describe("FAQ for bards", () => {
     const main = await renderHelp(page("faq-for-bards"));
     expect(section(main, "Can I edit my own page?")).toContain(
       "Like everyone's, your edits are checked by a moderator before they go live."
+    );
+  });
+});
+
+describe("bard preference checklist", () => {
+  it("covers the checklist's eight sections, in order", async () => {
+    const main = await renderHelp(page("bard-preference-checklist"));
+    const covers = within(main).getByRole("heading", {
+      level: 2,
+      name: "What the checklist covers",
+    });
+    const sections = within(main)
+      .getAllByRole("heading", { level: 3 })
+      .filter(
+        heading =>
+          covers.compareDocumentPosition(heading) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      )
+      .map(heading => heading.textContent);
+    expect(sections).toEqual([
+      "1. Licensing and copyright",
+      "2. Performance permission",
+      "3. Adaptations",
+      "4. Attribution",
+      "5. Commercial use",
+      "6. Recording and writing down",
+      "7. Performance etiquette",
+      "8. Objectionable use",
+    ]);
+  });
+
+  it("asks bards to publish their preferences themselves, linking the full list on the wiki", async () => {
+    const main = await renderHelp(page("bard-preference-checklist"));
+    expect(section(main, "What it is")).toContain(
+      "publish it on your own website, blog or album page and send us the link"
+    );
+    expect(section(main, "What it is")).toContain(
+      "We can't host your preferences as original text, because we can't check who wrote them."
+    );
+    expect(
+      within(main).getByRole("link", {
+        name: "full checklist from the original wiki (opens original wiki)",
+      })
+    ).toHaveAttribute("href", wikiPageUrl("Bard Preference Checklist"));
+  });
+
+  it("says the etiquette card comes with the catalogue, every point sourced", async () => {
+    const main = await renderHelp(page("bard-preference-checklist"));
+    const showing = section(
+      main,
+      "How Bardic Torch will show your preferences"
+    );
+    expect(showing).toContain("Coming with the catalogue.");
+    expect(showing).toContain("Every point links to its source");
+    expect(showing).toContain("Piece-level rules win.");
+  });
+});
+
+describe("conservation status", () => {
+  it("makes exactly three places Endangered, and four Low Risk", async () => {
+    const main = await renderHelp(page("conservation-status"));
+    const rows = within(within(main).getByRole("table")).getAllByRole("row");
+    const meaning = (status: string) =>
+      rows.find(row => row.firstElementChild?.textContent === status)
+        ?.lastElementChild?.textContent;
+    expect(meaning("Low Risk")).toBe(
+      "The work exists in at least 4 known places."
+    );
+    expect(meaning("Endangered")).toBe(
+      "The work exists in 3 or fewer known places, and isn't Restricted."
+    );
+    expect(meaning("Restricted")).toContain(
+      "This overrides every other status."
+    );
+    expect(
+      within(main).getByText(/^Information:/).parentElement
+    ).toHaveTextContent(
+      "Exactly 3 places now counts as Endangered. The original wiki defined Low Risk as at least 4 places and Endangered as fewer than 3, which left exactly 3 undecided."
+    );
+    expect(textOf(main)).not.toMatch(/Endangered: found in fewer than 3/);
+  });
+
+  it("lists the five statuses at a glance, each linking to its section", async () => {
+    const main = await renderHelp(page("conservation-status"));
+    const glance = within(main).getByRole("complementary", {
+      name: "At a glance",
+    });
+    const links = within(glance).getAllByRole("link");
+    expect(links.map(link => link.textContent)).toEqual([
+      "Low Risk",
+      "Endangered",
+      "Critically Endangered",
+      "Restricted",
+      "Unassessed",
+    ]);
+    expect(links[1]).toHaveAttribute(
+      "href",
+      "/help/conservation-status#the-statuses"
+    );
+    expect(links[3]).toHaveAttribute(
+      "href",
+      "/help/conservation-status#how-restricted-works"
+    );
+    expect(within(glance).getAllByRole("definition")[1]).toHaveTextContent(
+      "found in 3 places or fewer."
+    );
+  });
+
+  it("has moderators confirm statuses the site suggests from live places", async () => {
+    const main = await renderHelp(page("conservation-status"));
+    const setting = section(main, "How a status is set");
+    expect(setting).toContain(
+      "counting the distinct places among a piece's links that are still working"
+    );
+    expect(setting).toContain("A moderator confirms it.");
+  });
+
+  it("puts Restricted above everything, with no preservation prompts", async () => {
+    const main = await renderHelp(page("conservation-status"));
+    const restricted = section(main, "How Restricted works");
+    expect(restricted).toContain(
+      "A Restricted piece is never marked Endangered or Critically Endangered"
+    );
+    expect(restricted).toContain('No "help preserve" prompts.');
+    expect(restricted).toContain("It needs a source.");
+    expect(section(main, "How you can help")).toContain(
+      "and the creator's wishes allow it"
+    );
+  });
+});
+
+describe("licence & attribution", () => {
+  it("licenses the site's text under CC BY-SA 4.0, and not the linked works", async () => {
+    const main = await renderHelp(page("licence"));
+    const licence = section(main, "Our licence");
+    expect(licence).toContain(
+      "The text on Bardic Torch is available under the Creative Commons Attribution-ShareAlike 4.0 International licence"
+    );
+    expect(
+      within(main).getByRole("link", {
+        name: "Creative Commons Attribution-ShareAlike 4.0 International licence (external link)",
+      })
+    ).toHaveAttribute(
+      "href",
+      "https://creativecommons.org/licenses/by-sa/4.0/"
+    );
+    expect(section(main, "What the licence doesn't cover")).toContain(
+      "Our CC BY-SA licence gives you no rights in the works themselves."
+    );
+  });
+
+  it("credits the original wiki's contributors and links to the old wiki", async () => {
+    const main = await renderHelp(page("licence"));
+    expect(section(main, "Thank you")).toContain(
+      "Thank you to every editor who added a bard, a piece, a link or a category."
+    );
+    expect(
+      within(main).getByRole("link", {
+        name: "original wiki's list of users (opens original wiki)",
+      })
+    ).toHaveAttribute("href", wikiPageUrl("Special:ListUsers"));
+    expect(
+      within(main).getByRole("link", {
+        name: "bardictorch.miraheze.org (opens original wiki)",
+      })
+    ).toHaveAttribute("href", "https://bardictorch.miraheze.org");
+    expect(section(main, "Where our text came from")).toContain(
+      "The original wiki stays online where it is, with its full page histories."
+    );
+  });
+
+  it("carries the fixed non-affiliation statement and the link takedown route", async () => {
+    const main = await renderHelp(page("licence"));
+    expect(section(main, "Not an official site")).toContain(
+      "Bardic Torch is community-maintained and not affiliated with the Society for Creative Anachronism or any other organisation."
+    );
+    expect(section(main, "Questions and takedowns")).toContain(
+      "We can remove or hide a link, but the content will stay online wherever it is hosted."
+    );
+    expect(section(main, "Your contributions")).toContain(
+      "Never paste in lyrics, the text of a work, or someone else's writing."
     );
   });
 });

@@ -50,6 +50,30 @@ const PAGES: readonly HelpPageCase[] = [
     infobox: false,
     contents: true,
   },
+  {
+    path: "/help/bard-preference-checklist",
+    title: "Bard preference checklist",
+    checkpoint: "bard-preference-checklist",
+    source: "Bard_Preference_Checklist",
+    infobox: true,
+    contents: true,
+  },
+  {
+    path: "/help/conservation-status",
+    title: "Conservation status",
+    checkpoint: "conservation-status",
+    source: "Conservation_Status",
+    infobox: true,
+    contents: true,
+  },
+  {
+    path: "/help/licence",
+    title: "Licence & attribution",
+    checkpoint: "licence",
+    source: "Main_Page",
+    infobox: true,
+    contents: true,
+  },
 ];
 
 for (const help of PAGES) {
@@ -116,8 +140,10 @@ for (const help of PAGES.filter(({ infobox }) => infobox)) {
     ]);
     expect(wideBox && wideIntro).toBeTruthy();
     if (wideBox && wideIntro) {
-      // Beside the intro, on its right, starting level with it.
-      expect(wideBox.x).toBeGreaterThan(wideIntro.x + wideIntro.width - 1);
+      // Floated right at its own width, starting level with the intro,
+      // whose lines wrap beside it.
+      expect(wideBox.width).toBeLessThanOrEqual(289);
+      expect(wideBox.x).toBeGreaterThan(wideIntro.x + wideIntro.width / 2);
       expect(Math.abs(wideBox.y - wideIntro.y)).toBeLessThanOrEqual(24);
     }
   });
@@ -194,6 +220,51 @@ test("an in-page link goes to its section, and the breadcrumb back to Help", asy
     .getByRole("link", { name: "Help" })
     .click();
   await expect(page).toHaveURL(/\/help$/);
+});
+
+test("the conservation infobox jumps to its statuses, and the table fits at 320", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto("/help/conservation-status");
+  const main = page.getByRole("main");
+  const table = main.getByRole("table");
+  const tableBox = await table.boundingBox();
+  const proseBox = await main.locator(".prose-bt").boundingBox();
+  expect(tableBox && proseBox).toBeTruthy();
+  if (tableBox && proseBox) {
+    expect(tableBox.x + tableBox.width).toBeLessThanOrEqual(
+      proseBox.x + proseBox.width + 1
+    );
+  }
+  await main
+    .getByRole("complementary", { name: "At a glance" })
+    .getByRole("link", { name: "Restricted" })
+    .click();
+  await expect(page).toHaveURL(/#how-restricted-works$/);
+  await expect(
+    main.getByRole("heading", { level: 2, name: "How Restricted works" })
+  ).toBeInViewport();
+});
+
+test("the licence page links the licence, the original wiki and its contributors", async ({
+  page,
+}) => {
+  await page.goto("/help/licence");
+  const main = page.getByRole("main");
+  await expect(
+    main.getByRole("link", {
+      name: "Creative Commons Attribution-ShareAlike 4.0 International licence (external link)",
+    })
+  ).toHaveAttribute("href", "https://creativecommons.org/licenses/by-sa/4.0/");
+  await expect(
+    main.getByRole("link", {
+      name: "original wiki's list of users (opens original wiki)",
+    })
+  ).toHaveAttribute("href", /\/wiki\/Special:ListUsers$/);
+  await expect(main).toContainText(
+    "Thank you to every editor who added a bard, a piece, a link or a category."
+  );
 });
 
 test("an unknown help page is the 404 page", async ({ page }) => {
