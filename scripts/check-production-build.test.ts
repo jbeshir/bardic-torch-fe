@@ -32,15 +32,9 @@ function fakeBuild(files: Record<string, string>): string {
 
 function inspect(
   files: Record<string, string>,
-  mode: "production" | "preview" = "production",
-  styleguideExists = true
+  mode: "production" | "preview" = "production"
 ) {
-  return inspectBuild({
-    buildDir: fakeBuild(files),
-    mode,
-    marker: MARKER,
-    styleguideExists,
-  });
+  return inspectBuild({ buildDir: fakeBuild(files), mode, marker: MARKER });
 }
 
 const STYLEGUIDE = {
@@ -109,8 +103,11 @@ describe("inspectBuild", () => {
     ]);
   });
 
-  it("does not expect the styleguide before the route exists", () => {
-    expect(inspect({}, "preview", false)).toEqual([]);
+  it("always expects the styleguide in preview, so a renamed route can't switch the check off", () => {
+    expect(inspect({}, "preview")).toEqual([
+      "preview: routes/styleguide missing from the server build",
+      "preview: routes/styleguide missing from the client manifest",
+    ]);
   });
 
   it("flags an empty or unrecognisable build", () => {
@@ -121,7 +118,6 @@ describe("inspectBuild", () => {
         buildDir: dir,
         mode: "production",
         marker: MARKER,
-        styleguideExists: false,
       })
     ).toEqual([
       "production: no server build",
