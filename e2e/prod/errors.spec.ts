@@ -6,7 +6,7 @@ import {
   expectTargetSizesAtLeast24,
 } from "../support/layout";
 import { HOME_HEADLINE } from "../support/pages";
-import { hydrated } from "../support/shell";
+import { waitForHydration } from "../support/hydration";
 import { test } from "../support/test";
 
 // Every test opens its own page and shares no state, so they spread over
@@ -44,7 +44,7 @@ test("the 404 page reflows, its targets are big enough and focus is never hidden
 }) => {
   const response = await page.goto("/wiki/Ballad_of_the_Bell");
   expect(response?.status()).toBe(404);
-  await hydrated(page);
+  await waitForHydration(page);
   await expectNoHorizontalOverflow(page);
   await expectTargetSizesAtLeast24(page);
   await expectFocusNotObscured(page);

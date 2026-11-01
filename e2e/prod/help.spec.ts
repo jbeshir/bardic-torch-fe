@@ -5,7 +5,7 @@ import {
   expectNoHorizontalOverflow,
   expectTargetSizesAtLeast24,
 } from "../support/layout";
-import { hydrated } from "../support/shell";
+import { waitForHydration } from "../support/hydration";
 import { test } from "../support/test";
 
 // Every test opens its own page and shares no state, so they spread over
@@ -110,7 +110,7 @@ for (const help of PAGES) {
   }) => {
     const response = await page.goto(help.path);
     expect(response?.status()).toBe(200);
-    await hydrated(page);
+    await waitForHydration(page);
     await expectNoHorizontalOverflow(page);
     await expectTargetSizesAtLeast24(page);
     await expectFocusNotObscured(page);
@@ -163,7 +163,7 @@ test("the contents fold below md and jump to their section", async ({
 }) => {
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto("/help/contributing");
-  await hydrated(page);
+  await waitForHydration(page);
   const contents = page
     .getByRole("main")
     .getByRole("navigation", { name: "Contents" });

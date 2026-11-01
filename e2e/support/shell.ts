@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 /**
  * Locators for the shell's controls. Several exist twice in the DOM: the
@@ -28,14 +28,4 @@ export async function accountPanel(trigger: Locator): Promise<Locator> {
   const id = await trigger.getAttribute("aria-controls");
   if (!id) throw new Error("the account trigger has no aria-controls");
   return trigger.page().locator(`[id="${id}"]`);
-}
-
-/**
- * Resolves once the page has hydrated: the header's Menu buttons (the
- * header's and the app bar's) only exist with JS.
- */
-export async function hydrated(page: Page): Promise<void> {
-  await expect(
-    page.locator('header button[aria-haspopup="dialog"]')
-  ).toHaveCount(2);
 }

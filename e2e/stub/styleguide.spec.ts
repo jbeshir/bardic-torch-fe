@@ -2,6 +2,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import { channelString, resolveColour } from "../../app/styles/tokens";
 import { STYLEGUIDE_BLOCKS } from "../support/checkpoints";
 import { findCutOffControls } from "../support/cut-off";
+import { waitForHydration } from "../support/hydration";
 import { checkpoint } from "../support/journey";
 import {
   expectFocusNotObscured,
@@ -23,12 +24,22 @@ test.describe.configure({ mode: "parallel" });
  * build only; prod/errors.spec.ts checks it is a 404 in production.
  */
 
-/** Opens the styleguide and waits for hydration (the Preview tablist). */
+/**
+ * Opens the styleguide and waits for hydration. The Preview tablist only
+ * exists with JS (without it the Current panel is shown under its heading).
+ */
 async function openStyleguide(page: Page, hash = ""): Promise<void> {
   const response = await page.goto(`/styleguide${hash}`);
   expect(response?.status()).toBe(200);
+  await waitForHydration(page);
   await expect(page.getByRole("tablist", { name: "Preview" })).toBeVisible();
 }
+
+/** How long the styleguide's demo revoke stays pending (Overlays.tsx). */
+const DEMO_PENDING_MS = 2000;
+/** The page clock's start, and where it is held (well past hydration). */
+const CLOCK_START = Date.UTC(2026, 0, 1);
+const CLOCK_PAUSE_OFFSET_MS = 60 * 60 * 1000;
 
 function block(page: Page, id: string): Locator {
   return page.locator(`section#${id}`);
@@ -194,6 +205,10 @@ test.describe("Dialog", () => {
   test("while the revoke is pending, Escape is ignored; then it closes with a toast", async ({
     page,
   }) => {
+    // The demo's revoke is pending for 2 s of page time (Overlays.tsx); under
+    // load one click can take longer than that, so the page's clock is held
+    // while the pending state is checked, then moved on by exactly 2 s.
+    await page.clock.install({ time: CLOCK_START });
     await openStyleguide(page, "#dialog");
     const trigger = block(page, "dialog").getByRole("button", {
       name: "Revoke",
@@ -201,13 +216,17 @@ test.describe("Dialog", () => {
     });
     await trigger.click();
     const dialog = page.getByRole("dialog", { name: "Revoke this token?" });
+    await expect(dialog).toBeVisible();
+    await page.clock.pauseAt(CLOCK_START + CLOCK_PAUSE_OFFSET_MS);
     const confirm = dialog.getByRole("button", { name: "Revoke token" });
     await confirm.click();
     await expect(confirm).toHaveAttribute("aria-busy", "true");
     await expect(dialog.getByRole("button", { name: "Cancel" })).toBeDisabled();
     await page.keyboard.press("Escape");
     await expect(dialog).toBeVisible();
-    await expect(dialog).toBeHidden({ timeout: 5000 });
+    await expect(confirm).toHaveAttribute("aria-busy", "true");
+    await page.clock.runFor(DEMO_PENDING_MS);
+    await expect(dialog).toBeHidden();
     await expect(trigger).toBeFocused();
     await expect(
       page.getByRole("region", { name: "Notifications" }).getByRole("status")

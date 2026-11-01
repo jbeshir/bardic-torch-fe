@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import { waitForHydration } from "../support/hydration";
 import { checkpoint } from "../support/journey";
 import {
   expectFocusNotObscured,
@@ -6,12 +7,7 @@ import {
   expectPrimaryTargetsAtLeast44,
   settled,
 } from "../support/layout";
-import {
-  accountPanel,
-  accountTrigger,
-  appBar,
-  hydrated,
-} from "../support/shell";
+import { accountPanel, accountTrigger, appBar } from "../support/shell";
 import { test } from "../support/test";
 
 /**
@@ -27,7 +23,7 @@ const MOBILE = { width: 360, height: 800 };
 async function openHydrated(page: Page, path = "/"): Promise<void> {
   const response = await page.goto(path);
   expect(response?.status()).toBeLessThan(500);
-  await hydrated(page);
+  await waitForHydration(page);
 }
 
 /** The accessible label of whatever has focus, and whether it is inside `selector`. */
@@ -270,6 +266,8 @@ test.describe("from md", () => {
     );
     await login.click();
     await expect(page).toHaveURL(/\/help\/faq-for-bards$/);
+    // Stub sign-in is a full document load: the Escape handler needs JS.
+    await waitForHydration(page);
 
     const trigger = accountTrigger(page.getByRole("banner"));
     await expect(trigger).toHaveText(/Account: Morwen of the Marches$/);

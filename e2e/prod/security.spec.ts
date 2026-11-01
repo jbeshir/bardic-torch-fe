@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import { waitForHydration } from "../support/hydration";
 import { appBar } from "../support/shell";
 import { test } from "../support/test";
 
@@ -32,9 +33,7 @@ test("/ has a nonce CSP that every script carries, and hydrates without violatio
   expect(scriptNonces.length).toBeGreaterThan(0);
   expect(new Set(scriptNonces)).toEqual(new Set([nonce]));
 
-  await expect
-    .poll(() => page.evaluate(() => "__remixRouter" in window))
-    .toBe(true);
+  await waitForHydration(page);
   expect(violations).toEqual([]);
 });
 
@@ -60,9 +59,7 @@ test("the 404 page in the shell carries the nonce CSP and hydrates without viola
   expect(await response?.headerValue("content-security-policy")).toMatch(
     /'nonce-([^']+)'/
   );
-  await expect
-    .poll(() => page.evaluate(() => "__remixRouter" in window))
-    .toBe(true);
+  await waitForHydration(page);
   // Opening the drawer and the search sheet adds no inline styles either.
   await page.setViewportSize({ width: 360, height: 800 });
   const bar = appBar(page);

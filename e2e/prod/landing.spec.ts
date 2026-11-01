@@ -7,7 +7,8 @@ import {
   expectTargetSizesAtLeast24,
 } from "../support/layout";
 import { HOME_HEADLINE } from "../support/pages";
-import { appBar, hydrated } from "../support/shell";
+import { waitForHydration } from "../support/hydration";
+import { appBar } from "../support/shell";
 import { test } from "../support/test";
 
 // Every test opens its own page and shares no state, so they spread over
@@ -36,7 +37,7 @@ test("the home page reflows, its targets are big enough and focus is never hidde
 }) => {
   const response = await page.goto("/");
   expect(response?.status()).toBe(200);
-  await hydrated(page);
+  await waitForHydration(page);
   await expectNoHorizontalOverflow(page);
   await expectTargetSizesAtLeast24(page);
   await expectFocusNotObscured(page);
@@ -97,6 +98,8 @@ test("the shell has one of each landmark and a skip link to the content", async 
   page,
 }) => {
   await page.goto("/");
+  // Hydration hides the sidebar below lg, which changes the Tab order.
+  await waitForHydration(page);
   await expect(page.getByRole("banner")).toHaveCount(1);
   await expect(page.getByRole("main")).toHaveCount(1);
   await expect(page.getByRole("contentinfo")).toHaveCount(1);

@@ -4,6 +4,7 @@ import {
   resolveColour,
   type Theme,
 } from "../../app/styles/tokens";
+import { waitForHydration } from "../support/hydration";
 import { checkpoint } from "../support/journey";
 import { test } from "../support/test";
 
@@ -149,7 +150,7 @@ test.describe("theme toggle with JS", () => {
   }) => {
     await page.emulateMedia({ colorScheme: "light" });
     await page.goto("/");
-    await page.waitForFunction(() => "__remixRouter" in window);
+    await waitForHydration(page);
 
     // Hold the save so the optimistic switch can be seen on its own.
     let release: () => void = () => undefined;
@@ -184,6 +185,7 @@ test.describe("theme toggle with JS", () => {
     await checkpoint(page, "dark-choice");
 
     await page.reload();
+    await waitForHydration(page);
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await expect(page.getByRole("button", { name: "Dark" })).toHaveAttribute(
       "aria-pressed",

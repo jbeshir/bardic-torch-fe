@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 import { createFixtureUser, failNext } from "../support/fixture-api";
+import { waitForHydration } from "../support/hydration";
 import { checkpoint } from "../support/journey";
 import { accountPanel, accountTrigger } from "../support/shell";
 import { HOME_HEADLINE } from "../support/pages";
@@ -31,6 +32,7 @@ test("a /v1/me 500 leaves the page working, with the profile warning and Try aga
 
   const response = await page.goto("/");
   expect(response?.status()).toBe(200);
+  await waitForHydration(page);
   await expect(
     page.getByRole("heading", { level: 1, name: HOME_HEADLINE })
   ).toBeVisible();
@@ -57,6 +59,7 @@ test("a /v1/me 500 leaves the page working, with the profile warning and Try aga
 test("a blocked account is told so in the account panel", async ({ page }) => {
   const id = await createFixtureUser(page.request, { blocked: true });
   await page.goto(`/auth/login?as=${id}&returnTo=/`);
+  await waitForHydration(page);
 
   await expect(
     page.getByRole("heading", { level: 1, name: HOME_HEADLINE })
