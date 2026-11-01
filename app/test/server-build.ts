@@ -5,10 +5,18 @@ import { loadContext } from "./context";
 
 type RouteModule = ServerBuild["routes"][string]["module"];
 
+/**
+ * A route module as the server sees it: resource routes (actions and
+ * loaders only) have no `default`, though ServerRouteModule's type requires
+ * one.
+ */
+type TestRouteModule = Omit<RouteModule, "default"> &
+  Partial<Pick<RouteModule, "default">>;
+
 /** A route of the test build, under root. */
 type TestRoute = {
   readonly id: string;
-  readonly module: RouteModule;
+  readonly module: TestRouteModule;
   readonly hasLoader: boolean;
   /** The route renders its own ErrorBoundary (the root always does). */
   readonly hasErrorBoundary?: boolean;
@@ -34,13 +42,9 @@ function manifestEntry({
   };
 }
 
-/**
- * A server build made of the real entry module and root plus `routes`,
- * served the way the Pages function serves it. `get` requests a path with
- * an optional Cookie header.
- */
-export function serveApp(routes: readonly TestRoute[]) {
-  const build: ServerBuild = {
+/** A server build made of the real entry module and root plus `routes`. */
+export function testBuild(routes: readonly TestRoute[]): ServerBuild {
+  return {
     mode: "production",
     entry: { module: entryServer },
     routes: {
@@ -51,7 +55,7 @@ export function serveApp(routes: readonly TestRoute[]) {
           {
             id: route.id,
             parentId: "root",
-            module: route.module,
+            module: route.module as RouteModule,
             ...("index" in route ? { index: true } : { path: route.path }),
           },
         ])
@@ -90,7 +94,14 @@ export function serveApp(routes: readonly TestRoute[]) {
     },
     isSpaMode: false,
   };
-  const handler = createRequestHandler(build, "production");
+}
+
+/**
+ * `testBuild(routes)` served the way the Pages function serves it. `get`
+ * requests a path with an optional Cookie header.
+ */
+export function serveApp(routes: readonly TestRoute[]) {
+  const handler = createRequestHandler(testBuild(routes), "production");
 
   return function get(path: string, cookie?: string) {
     return handler(

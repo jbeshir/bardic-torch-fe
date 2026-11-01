@@ -52,7 +52,7 @@ Then set the branch controls under Settings → Builds & deployments → Branch 
 - `main`, or no branch at all → the **production** build: no styleguide, no stub sign-in.
 - Any other branch → the **preview** build: includes `/styleguide`, still no stub sign-in.
 
-The Pages Function is `functions/[[path]].ts`. `public/_routes.json` keeps `/assets/*`, `/favicon.svg` and `/site.webmanifest` away from it, so static files never cost a Function invocation. `public/_headers` gives `/assets/*` a one-year immutable cache. Everything else (security headers, the nonce CSP, `Cache-Control: private, no-cache` on documents, `no-store` on `/settings` and its data, signed-in root data, the auth routes and the proxies) is set per request by the app.
+The Pages Function is `functions/[[path]].ts` (`app/server/pages-function.server.ts`: one Remix handler per isolate; the environment is validated on every request), behind `functions/_middleware.ts` (Sentry, §6). `public/_routes.json` keeps `/assets/*`, `/favicon.svg` and `/site.webmanifest` away from it, so static files never cost a Function invocation. `public/_headers` gives `/assets/*` a one-year immutable cache. Everything else (security headers and the nonce CSP on every response the Function makes, resource routes and redirects included, `Cache-Control: private, no-cache` on documents, `no-store` on `/settings` and its data, signed-in root data, the auth routes and the proxies) is set per request by the app.
 
 ### Environment variables
 
