@@ -39,6 +39,8 @@ describe("safeReturnTo", () => {
     ["the sign-in route", "/auth/login"],
     ["the callback route", "/auth/callback?code=x"],
     ["a dot path into the sign-in route", "/help/../auth/login"],
+    ["a percent-encoded sign-in route", "/%61uth/login"],
+    ["an upper-case sign-in route", "/AUTH/Login"],
   ])("rejects %s", (_name, value) => {
     expect(safeReturnTo(value)).toBe("/");
   });

@@ -42,7 +42,10 @@ export function safeReturnTo(value: unknown): string {
   if (!looksLocal(decoded)) return FALLBACK;
 
   const url = new URL(value, BASE);
-  if (url.origin !== BASE || url.pathname.startsWith(EXCLUDED_PREFIX)) {
+  // The router matches the decoded path, case-insensitively, so
+  // `/%61uth/login` and `/AUTH/login` are /auth/ routes too.
+  const routed = new URL(decoded, BASE).pathname.toLowerCase();
+  if (url.origin !== BASE || routed.startsWith(EXCLUDED_PREFIX)) {
     return FALLBACK;
   }
   return `${url.pathname}${url.search}${url.hash}`;
