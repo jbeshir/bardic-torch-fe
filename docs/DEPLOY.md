@@ -26,6 +26,8 @@ Names used below:
    - require a pull request;
    - require the status checks **`validate`** and **`e2e`** (the two jobs in `.github/workflows/ci.yml`) to pass.
 
+   Add a rule for `preview` too that restricts who can push to it: a push to `preview` deploys with the Preview environment's secrets (§2).
+
    CI needs no secrets.
 
 ## 2. Cloudflare Pages project
