@@ -64,6 +64,18 @@ const page = (label: string, href: string): NavItem => ({
   external: false,
 });
 
+/** The ways to browse pieces: the sidebar's Facets, the home page's chips. */
+export const FACETS: readonly NavItem[] = [
+  wiki("Genre / kind", "Category:Genres"),
+  wiki("Mood", "Category:Moods"),
+  wiki("Topic", "Category:Topics"),
+  wiki("Culture", "Category:Cultures"),
+  wiki("Language", "Category:Languages"),
+  wiki("Legendaria", "Category:Legendaria"),
+  wiki("Origin", "Category:Source_Category"),
+  wiki("Conservation", "Category:Conservation_Status"),
+];
+
 /** The sidebar and drawer navigation, in order. */
 export const NAV_GROUPS: readonly NavGroup[] = [
   {
@@ -75,19 +87,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       wiki("Collections", "Collections"),
     ],
   },
-  {
-    heading: "Facets",
-    items: [
-      wiki("Genre / kind", "Category:Genres"),
-      wiki("Mood", "Category:Moods"),
-      wiki("Topic", "Category:Topics"),
-      wiki("Culture", "Category:Cultures"),
-      wiki("Language", "Category:Languages"),
-      wiki("Legendaria", "Category:Legendaria"),
-      wiki("Origin", "Category:Source_Category"),
-      wiki("Conservation", "Category:Conservation_Status"),
-    ],
-  },
+  { heading: "Facets", items: FACETS },
   {
     heading: "Help",
     items: [

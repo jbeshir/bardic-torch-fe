@@ -5,6 +5,7 @@ import {
   expectNoHorizontalOverflow,
   expectTargetSizesAtLeast24,
 } from "../support/layout";
+import { HOME_HEADLINE } from "../support/pages";
 import { test } from "../support/test";
 
 test("an unknown URL is a 404 page inside the shell", async ({ page }) => {
@@ -44,7 +45,7 @@ test("going home from the 404 page works", async ({ page }) => {
     .click();
   await expect(page).toHaveURL(/\/$/);
   await expect(
-    page.getByRole("heading", { level: 1, name: "Bardic Torch" })
+    page.getByRole("heading", { level: 1, name: HOME_HEADLINE })
   ).toBeVisible();
 });
 

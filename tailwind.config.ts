@@ -152,6 +152,11 @@ export default {
         "infobox-xl": "18rem",
       },
       textUnderlineOffset: { prose: "0.2em" },
+      // The home hero's glow (DESIGN §10.1): strongest at the top left, on
+      // `surface` only, so its text pairs are checked against `hero-glow`.
+      backgroundImage: {
+        hero: "radial-gradient(ellipse at top left, rgb(var(--hero-glow)), rgb(var(--hero-glow) / 0) 70%)",
+      },
       zIndex: { header: "30", progress: "40", toast: "50" },
     },
   },

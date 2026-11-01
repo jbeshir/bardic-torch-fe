@@ -2,6 +2,7 @@ import { expect, type Page } from "@playwright/test";
 import { createFixtureUser, failNext } from "../support/fixture-api";
 import { checkpoint } from "../support/journey";
 import { accountPanel, accountTrigger } from "../support/shell";
+import { HOME_HEADLINE } from "../support/pages";
 import { test } from "../support/test";
 
 /**
@@ -31,7 +32,7 @@ test("a /v1/me 500 leaves the page working, with the profile warning and Try aga
   const response = await page.goto("/");
   expect(response?.status()).toBe(200);
   await expect(
-    page.getByRole("heading", { level: 1, name: "Bardic Torch" })
+    page.getByRole("heading", { level: 1, name: HOME_HEADLINE })
   ).toBeVisible();
   const trigger = headerAccount(page);
   await expect(trigger).toHaveText("Account");
@@ -58,7 +59,7 @@ test("a blocked account is told so in the account panel", async ({ page }) => {
   await page.goto(`/auth/login?as=${id}&returnTo=/`);
 
   await expect(
-    page.getByRole("heading", { level: 1, name: "Bardic Torch" })
+    page.getByRole("heading", { level: 1, name: HOME_HEADLINE })
   ).toBeVisible();
   const trigger = headerAccount(page);
   await trigger.click();
