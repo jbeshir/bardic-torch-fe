@@ -1,4 +1,6 @@
 import { expect } from "@playwright/test";
+import { collectCspViolations } from "../support/csp";
+import { waitForHydration } from "../support/hydration";
 import { checkpoint } from "../support/journey";
 import { test } from "../support/test";
 
@@ -8,12 +10,25 @@ import { test } from "../support/test";
  * sign-in, so it is stub/account.spec.ts.
  */
 
-test("signed out, settings offers Log in back to it and is never cached", async ({
+test("signed out, settings offers Log in back to it, is never cached and has the nonce CSP", async ({
   page,
 }) => {
+  const violations = collectCspViolations(page);
   const response = await page.goto("/settings");
   expect(response?.status()).toBe(200);
   expect(await response?.headerValue("cache-control")).toBe("no-store");
+  const csp = (await response?.headerValue("content-security-policy")) ?? "";
+  const nonce = /'nonce-([^']+)'/.exec(csp)?.[1];
+  expect(nonce).toBeTruthy();
+  expect(csp).not.toContain("'unsafe-inline'");
+  expect(csp).toContain("form-action 'self' https://auth0.invalid");
+  expect(csp).toContain("frame-ancestors 'none'");
+  const scriptNonces = await page
+    .locator("script")
+    .evaluateAll(scripts =>
+      scripts.map(script => (script as HTMLScriptElement).nonce)
+    );
+  expect(new Set(scriptNonces)).toEqual(new Set([nonce]));
   await expect(page).toHaveTitle("Settings · Bardic Torch");
   const main = page.getByRole("main");
   await expect(
@@ -29,5 +44,7 @@ test("signed out, settings offers Log in back to it and is never cached", async 
     "/auth/login?returnTo=%2Fsettings"
   );
   await expect(main.getByRole("textbox")).toHaveCount(0);
+  await waitForHydration(page);
+  expect(violations).toEqual([]);
   await checkpoint(page, "signed-out");
 });

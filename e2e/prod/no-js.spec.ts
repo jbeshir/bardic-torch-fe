@@ -116,10 +116,26 @@ test.describe("from md", () => {
       .getByRole("banner")
       .getByRole("group", { name: "Theme" });
 
+    const posted = page.waitForResponse(
+      r =>
+        r.request().method() === "POST" &&
+        new URL(r.url()).pathname === "/resources/theme"
+    );
     await Promise.all([
       page.waitForURL("/"),
       theme.getByRole("button", { name: "Dark" }).click(),
     ]);
+    // The 303 back is a resource-route answer: it carries the security
+    // headers too (R7).
+    const redirect = await posted;
+    expect(redirect.status()).toBe(303);
+    expect(await redirect.headerValue("cache-control")).toBe("no-store");
+    expect(await redirect.headerValue("content-security-policy")).toContain(
+      "frame-ancestors 'none'"
+    );
+    expect(await redirect.headerValue("x-content-type-options")).toBe(
+      "nosniff"
+    );
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await expect(theme.getByRole("button", { name: "Dark" })).toHaveAttribute(
       "aria-pressed",
