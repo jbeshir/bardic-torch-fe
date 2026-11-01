@@ -1,4 +1,4 @@
-import type { Locator, Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 /**
  * Locators for the shell's controls. Several exist twice in the DOM: the
@@ -28,4 +28,16 @@ export async function accountPanel(trigger: Locator): Promise<Locator> {
   const id = await trigger.getAttribute("aria-controls");
   if (!id) throw new Error("the account trigger has no aria-controls");
   return trigger.page().locator(`[id="${id}"]`);
+}
+
+/**
+ * Opens the account panel of the trigger showing at this width, unless it
+ * is open already: a checkpoint's `atEachViewport` for the account states,
+ * whose header and app bar copies are separate disclosures.
+ */
+export async function openShownAccountPanel(page: Page): Promise<void> {
+  const trigger = accountTrigger(page.getByRole("banner"));
+  const panel = await accountPanel(trigger);
+  if (!(await panel.isVisible())) await trigger.click();
+  await expect(panel).toBeVisible();
 }

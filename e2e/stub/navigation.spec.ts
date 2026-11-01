@@ -6,7 +6,12 @@ import {
   expectPrimaryTargetsAtLeast44,
   settled,
 } from "../support/layout";
-import { accountPanel, accountTrigger, appBar } from "../support/shell";
+import {
+  accountPanel,
+  accountTrigger,
+  appBar,
+  openShownAccountPanel,
+} from "../support/shell";
 import { test } from "../support/test";
 
 /**
@@ -18,12 +23,37 @@ import { test } from "../support/test";
  */
 
 const MOBILE = { width: 360, height: 800 };
+/** Where the sidebar takes over from the drawer (Tailwind `lg`). */
+const LG = 1024;
 
 /** Waits for hydration: the Menu link has become a button. */
 async function openHydrated(page: Page, path = "/"): Promise<void> {
   const response = await page.goto(path);
   expect(response?.status()).toBeLessThan(500);
   await waitForHydration(page);
+}
+
+/**
+ * The site menu as this width shows it, for the drawer-open checkpoint:
+ * below lg the drawer, opened from the Menu button showing here (the app
+ * bar's, then the header's from md); from lg the drawer has closed itself
+ * and the menu is the persistent sidebar.
+ */
+async function showSiteMenu(page: Page): Promise<void> {
+  const drawer = page.getByRole("dialog", { name: "Site menu" });
+  if ((page.viewportSize()?.width ?? 0) >= LG) {
+    await expect(drawer).toBeHidden();
+    await expect(page.getByRole("navigation", { name: "Site" })).toBeVisible();
+    return;
+  }
+  if (!(await drawer.isVisible())) {
+    await page
+      .getByRole("banner")
+      .getByRole("button", { name: "Menu", exact: true })
+      .click();
+  }
+  await expect(drawer).toBeVisible();
+  await settled(drawer);
 }
 
 /** The accessible label of whatever has focus, and whether it is inside `selector`. */
@@ -180,6 +210,15 @@ test.describe("below md", () => {
     await expect(search).toBeFocused();
   });
 
+  test("checkpoint: drawer-open", async ({ page }) => {
+    await openHydrated(page, "/help/licence");
+    await showSiteMenu(page);
+    await checkpoint(page, "drawer-open", {
+      atEachViewport: showSiteMenu,
+      viewportOnly: true,
+    });
+  });
+
   test("signed in, Account opens its panel upwards, above the bar", async ({
     page,
   }) => {
@@ -298,6 +337,9 @@ test.describe("from md", () => {
     await trigger.click();
     const panel = await accountPanel(trigger);
     await expect(panel.getByText("Contributor", { exact: true })).toBeVisible();
-    await checkpoint(page, "account-open");
+    await checkpoint(page, "account-open", {
+      atEachViewport: openShownAccountPanel,
+      viewportOnly: true,
+    });
   });
 });

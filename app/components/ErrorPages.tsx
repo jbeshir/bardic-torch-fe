@@ -20,6 +20,15 @@ export const NOT_FOUND_META = [
 ] as const;
 
 /**
+ * The title of the page for anything unexpected (WCAG 2.4.2): a route that
+ * failed has no data to title itself with.
+ */
+export const SERVER_ERROR_META = [
+  { title: "Something went wrong · Bardic Torch" },
+  { name: "robots", content: "noindex" },
+] as const;
+
+/**
  * The 404 page body (DESIGN §10.4): the unlit torch, what happened, the way
  * home and a search of the original wiki for the address's last part,
  * since its old pages don't redirect here yet.

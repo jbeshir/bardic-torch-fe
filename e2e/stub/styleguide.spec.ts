@@ -30,6 +30,8 @@ async function openStyleguide(page: Page, hash = ""): Promise<void> {
   await expect(page.getByRole("tablist", { name: "Preview" })).toBeVisible();
 }
 
+/** How long a success toast stays (AUTO_DISMISS_MS in ui/Toast.tsx). */
+const TOAST_AUTO_DISMISS_MS = 6000;
 /** How long the styleguide's demo revoke stays pending (Overlays.tsx). */
 const DEMO_PENDING_MS = 2000;
 /** The page clock's start, and where it is held (well past hydration). */
@@ -362,7 +364,11 @@ test.describe("Toast", () => {
   test("appears bottom right from sm, leaves after 6 s, and never takes focus", async ({
     page,
   }) => {
+    // Time flows through hydration, then holds, so the toast's 6 s are
+    // counted on the page clock, not the loaded runner's.
+    await page.clock.install({ time: CLOCK_START });
     await openStyleguide(page, "#toast");
+    await page.clock.pauseAt(CLOCK_START + CLOCK_PAUSE_OFFSET_MS);
     const trigger = block(page, "toast").getByRole("button", {
       name: "Show a success toast",
     });
@@ -377,14 +383,20 @@ test.describe("Toast", () => {
     if (!box || !viewport) return;
     expect(Math.round(viewport.width - (box.x + box.width))).toBe(24);
     expect(Math.round(viewport.height - (box.y + box.height))).toBe(24);
-    await expect(toast).toBeHidden({ timeout: 8000 });
+    await page.clock.runFor(TOAST_AUTO_DISMISS_MS - 1000);
+    await expect(toast).toBeVisible();
+    // Past the auto-dismiss and its exit fade.
+    await page.clock.runFor(2000);
+    await expect(toast).toBeHidden();
   });
 
   test("below sm sits at the top; an error stays until dismissed", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 360, height: 800 });
+    await page.clock.install({ time: CLOCK_START });
     await openStyleguide(page, "#toast");
+    await page.clock.pauseAt(CLOCK_START + CLOCK_PAUSE_OFFSET_MS);
     await block(page, "toast")
       .getByRole("button", { name: "Show an error toast" })
       .click();
@@ -393,9 +405,12 @@ test.describe("Toast", () => {
     await expect(toast).toBeVisible();
     const box = await region.boundingBox();
     expect(box?.y ?? 999).toBeLessThan(100);
-    await page.waitForTimeout(7000);
+    // Well past the time a success toast leaves.
+    await page.clock.runFor(TOAST_AUTO_DISMISS_MS * 2);
     await expect(toast).toBeVisible();
     await region.getByRole("button", { name: "Dismiss notification" }).click();
+    // The held clock also holds the exit fade's timer.
+    await page.clock.runFor(1000);
     await expect(toast).toBeHidden();
   });
 });

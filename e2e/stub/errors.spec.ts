@@ -2,7 +2,11 @@ import { expect, type Page } from "@playwright/test";
 import { createFixtureUser, failNext } from "../support/fixture-api";
 import { waitForHydration } from "../support/hydration";
 import { checkpoint } from "../support/journey";
-import { accountPanel, accountTrigger } from "../support/shell";
+import {
+  accountPanel,
+  accountTrigger,
+  openShownAccountPanel,
+} from "../support/shell";
 import { HOME_HEADLINE } from "../support/pages";
 import { test } from "../support/test";
 
@@ -45,7 +49,10 @@ test("a /v1/me 500 leaves the page working, with the profile warning and Try aga
   await expect(warning).toBeVisible();
   await expect(panel.getByRole("link", { name: "Settings" })).toBeVisible();
   await expect(panel.getByRole("button", { name: "Log out" })).toBeVisible();
-  await checkpoint(page, "profile-unavailable");
+  await checkpoint(page, "profile-unavailable", {
+    atEachViewport: openShownAccountPanel,
+    viewportOnly: true,
+  });
 
   // The failure was a one-off: Try again reloads the profile in place.
   await trigger.click();

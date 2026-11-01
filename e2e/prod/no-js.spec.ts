@@ -10,7 +10,8 @@ import { expectRenderedTheme, themeCookie } from "../support/theme";
  * site menu that stands in for the drawer, the theme by a plain form post,
  * and the help pages' contents and links. The signed-in no-JS journeys
  * (the account disclosure, the settings notice) need stub sign-in, so they
- * are stub/no-js.spec.ts.
+ * are stub/no-js.spec.ts. axe can't run with scripting off, so the
+ * no-JS markup's checkpoint is landing.spec.ts "server-html".
  */
 
 const MOBILE = { width: 360, height: 800 };

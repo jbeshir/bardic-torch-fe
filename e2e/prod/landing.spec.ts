@@ -3,6 +3,7 @@ import { checkpoint } from "../support/journey";
 import { expectNoLayoutShift } from "../support/layout";
 import { HOME_HEADLINE } from "../support/pages";
 import { waitForHydration } from "../support/hydration";
+import { appBar } from "../support/shell";
 import { test } from "../support/test";
 
 // Every test opens its own page and shares no state, so they spread over
@@ -24,6 +25,30 @@ test("the home page renders from the production build", async ({ page }) => {
     /^A community index of SCA bardic songs, stories and poems/
   );
   await checkpoint(page, "home");
+});
+
+test("checkpoint: server-html, the home page as served, before or without JS", async ({
+  page,
+}) => {
+  // axe needs scripting, so instead of turning it off, no script of the
+  // app's loads: the page stays exactly as the server sent it, the markup
+  // a reader without JS gets (bar Menu and Search are links to the site
+  // menu after the content), less <noscript>, which the home page hasn't.
+  await page.route(
+    url => url.pathname.endsWith(".js"),
+    route => route.abort()
+  );
+  await page.setViewportSize({ width: 360, height: 800 });
+  const response = await page.goto("/");
+  expect(response?.status()).toBe(200);
+  const bar = appBar(page);
+  await expect(bar.getByRole("link", { name: "Menu" })).toHaveAttribute(
+    "href",
+    "#site-nav"
+  );
+  expect(await page.evaluate(() => "__remixRouter" in window)).toBe(false);
+  await expect(page.locator("noscript")).toHaveCount(0);
+  await checkpoint(page, "server-html");
 });
 
 test("the home page says what the site is and leads to contributing here, then to the wiki", async ({

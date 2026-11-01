@@ -239,7 +239,7 @@ test("an unnamed token is listed and confirmed by its prefix; one already gone s
   ).toBeVisible();
 });
 
-test("at 10 tokens, creating another says to revoke one first", async ({
+test("at 10 tokens, creating another says to revoke one first; checkpoint: form-errors", async ({
   page,
   baseURL,
 }) => {
@@ -269,6 +269,15 @@ test("at 10 tokens, creating another says to revoke one first", async ({
     main(page).getByRole("textbox", { name: "New token value" })
   ).toHaveCount(0);
   await expect(tokens(page).getByRole("rowheader")).toHaveCount(10);
+
+  // Both forms' errors at once, for the record: the name's inline error
+  // (checked in the browser) above the token form's alert.
+  await nameField(page).fill("   ");
+  await main(page).getByRole("button", { name: "Save changes" }).click();
+  await expect(nameField(page)).toHaveAccessibleDescription(
+    /Error: Enter a display name\.$/
+  );
+  await checkpoint(page, "form-errors");
 });
 
 test("checkpoint: settings", async ({ page }) => {
@@ -285,6 +294,39 @@ test("checkpoint: token-revealed", async ({ page }) => {
     main(page).getByRole("textbox", { name: "New token value" })
   ).toBeFocused();
   await checkpoint(page, "token-revealed");
+});
+
+test("checkpoint: profile-unavailable: /v1/me fails, so the profile says so and the tokens still load", async ({
+  page,
+}) => {
+  const id = await openSettings(page);
+  await failNext(page.request, {
+    userId: id,
+    operationId: "getMe",
+    status: 500,
+    code: "internal",
+  });
+  await page.reload();
+  await waitForHydration(page);
+  await expect(
+    main(page).getByText(/We couldn't load your profile\./)
+  ).toBeVisible();
+  await expect(nameField(page)).toHaveCount(0);
+  await expect(tokens(page).getByRole("rowheader")).toHaveCount(3);
+  await checkpoint(page, "profile-unavailable");
+});
+
+test("checkpoint: blocked: settings says the account is blocked, and offers nothing to change", async ({
+  page,
+}) => {
+  await openSettings(page, { blocked: true });
+  // The danger Alert reads its tone first.
+  await expect(
+    main(page).getByText(/^Error: Your account is blocked/)
+  ).toBeVisible();
+  await expect(nameField(page)).toHaveCount(0);
+  await expect(tokens(page)).toHaveCount(0);
+  await checkpoint(page, "blocked");
 });
 
 test("checkpoint: revoke-confirm", async ({ page }) => {

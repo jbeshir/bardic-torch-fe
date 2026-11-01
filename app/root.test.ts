@@ -174,6 +174,10 @@ describe("root error boundary", () => {
     expect(html).not.toContain('id="site-nav"');
     expect(html).toContain('<main id="content"');
     expect(html).toMatch(/<a href="\/"[^>]*>.*Bardic/);
+    expect(html).toContain(
+      "<title>Something went wrong · Bardic Torch</title>"
+    );
+    expect(html).toMatch(/<meta name="robots" content="noindex"\/?>/);
   });
 
   it("shows the 404 body for a 404 thrown by a loader", async () => {
@@ -183,6 +187,7 @@ describe("root error boundary", () => {
     const html = await response.text();
     expect(html).toContain("We couldn&#x27;t find that page");
     expect(html).toContain("index.php?search=old+page");
+    expect(html).toContain("<title>Page not found · Bardic Torch</title>");
   });
 
   it("has the same help links, in the same order, as every other page (WCAG 3.2.6)", async () => {

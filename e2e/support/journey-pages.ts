@@ -59,7 +59,7 @@ const main = (page: Page) => page.getByRole("main");
  * `X-Remix-Error`. The route is the page's own, so it overrides the
  * network guard's only for that request.
  */
-async function openServerError(page: Page): Promise<void> {
+export async function openServerError(page: Page): Promise<void> {
   await visit("/")(page);
   await page.route(
     url => url.pathname === "/help/licence" && url.searchParams.has("_data"),

@@ -10,14 +10,23 @@ import {
   isRouteErrorResponse,
 } from "@remix-run/react";
 import frauncesLatin from "@fontsource-variable/fraunces/files/fraunces-latin-opsz-normal.woff2?url";
-import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/cloudflare";
+import type {
+  LinksFunction,
+  LoaderFunctionArgs,
+  MetaFunction,
+} from "@remix-run/cloudflare";
 import type { ShouldRevalidateFunction } from "@remix-run/react";
 import { json } from "@remix-run/cloudflare";
 import type { ReactNode } from "react";
 import { loadAccount } from "~/server/account.server";
 import { SentryProvider } from "~/contexts/SentryContext";
 import { useNonce } from "~/contexts/NonceContext";
-import { NotFound, ServerError } from "~/components/ErrorPages";
+import {
+  NOT_FOUND_META,
+  NotFound,
+  ServerError,
+  SERVER_ERROR_META,
+} from "~/components/ErrorPages";
 import { HelpLinks } from "~/components/HelpLinks";
 import { Wordmark } from "~/components/Wordmark";
 import stylesheet from "~/styles/app.css?url";
@@ -42,6 +51,19 @@ export const links: LinksFunction = () => [
   { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
   { rel: "manifest", href: "/site.webmanifest" },
 ];
+
+/**
+ * Every page titles itself. When the root's error boundary shows instead,
+ * Remix renders only the root's meta, so it titles the error page (a
+ * thrown 404 or anything else), on the server and after a client
+ * navigation alike.
+ */
+export const meta: MetaFunction = ({ error }) => {
+  if (!error) return [];
+  return isRouteErrorResponse(error) && error.status === 404
+    ? [...NOT_FOUND_META]
+    : [...SERVER_ERROR_META];
+};
 
 /**
  * The theme is server-rendered from the cookie (and switched optimistically

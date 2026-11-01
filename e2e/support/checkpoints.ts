@@ -52,7 +52,7 @@ export const CHECKPOINTS: Readonly<
   Record<Phase, Readonly<Record<string, readonly string[]>>>
 > = {
   prod: {
-    landing: ["home"],
+    landing: ["home", "server-html"],
     help: [
       "index",
       "contributing",
@@ -62,14 +62,21 @@ export const CHECKPOINTS: Readonly<
       "licence",
     ],
     theme: ["dark-choice"],
-    errors: ["not-found"],
+    errors: ["not-found", "server-error"],
     settings: ["signed-out"],
   },
   stub: {
     styleguide: [...STYLEGUIDE_BLOCKS, "dialog-open", "drawer-open"],
-    navigation: ["account-open"],
+    navigation: ["account-open", "drawer-open"],
     errors: ["profile-unavailable", "settings-error"],
-    account: ["settings", "token-revealed", "revoke-confirm"],
+    account: [
+      "settings",
+      "token-revealed",
+      "revoke-confirm",
+      "form-errors",
+      "profile-unavailable",
+      "blocked",
+    ],
   },
 };
 

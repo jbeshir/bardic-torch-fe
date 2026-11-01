@@ -87,6 +87,13 @@ async function expectNoAxeViolations(
  * screenshot cover that element only. The name must be declared for this
  * journey in support/checkpoints.ts.
  *
+ * A state that lives in a width-specific control (the account panel is the
+ * header's from md and the app bar's below; the drawer becomes the sidebar
+ * at lg) passes `atEachViewport`, which brings the state back at each
+ * width before axe and the screenshot, and usually `viewportOnly`: a
+ * full-page capture stretches the viewport to the page, which drops fixed
+ * sheets and panels to the bottom of a tall image.
+ *
  * It marks its test slow: four axe runs and six full-page screenshots of
  * a long page take 60–90 s on a loaded runner (see the C6 e2e traces), the
  * whole default timeout. Tests should keep other sweeps out of the test
@@ -95,7 +102,15 @@ async function expectNoAxeViolations(
 export async function checkpoint(
   page: Page,
   name: string,
-  { target }: { readonly target?: string } = {}
+  {
+    target,
+    atEachViewport,
+    viewportOnly = false,
+  }: {
+    readonly target?: string;
+    readonly atEachViewport?: (page: Page) => Promise<void>;
+    readonly viewportOnly?: boolean;
+  } = {}
 ): Promise<void> {
   const info = test.info();
   // The phase, not the project: a phase's no-JS project shares its list.
@@ -116,6 +131,7 @@ export async function checkpoint(
       original ??= before;
       for (const viewport of VIEWPORTS) {
         await page.setViewportSize(viewport);
+        if (atEachViewport) await atEachViewport(page);
         if (AXE_WIDTHS.includes(viewport.width)) {
           await expectNoAxeViolations(
             page,
@@ -133,7 +149,7 @@ export async function checkpoint(
               .screenshot({ path: file, animations: "disabled" })
           : page.screenshot({
               path: file,
-              fullPage: true,
+              fullPage: !viewportOnly,
               animations: "disabled",
             }));
       }

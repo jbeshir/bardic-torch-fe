@@ -1,5 +1,6 @@
 import { expect } from "@playwright/test";
 import { checkpoint } from "../support/journey";
+import { openServerError } from "../support/journey-pages";
 import { HOME_HEADLINE } from "../support/pages";
 import { test } from "../support/test";
 
@@ -31,6 +32,36 @@ test("an unknown URL is a 404 page inside the shell", async ({ page }) => {
   ).toBeVisible();
 
   await checkpoint(page, "not-found");
+});
+
+test("an unexpected error is the standalone error page, and Try again recovers", async ({
+  page,
+}) => {
+  await openServerError(page);
+  await expect(page).toHaveTitle("Something went wrong · Bardic Torch");
+  const main = page.getByRole("main");
+  // Not the shell: the root failed, so the page is its own.
+  await expect(page.getByRole("navigation", { name: "Site" })).toHaveCount(0);
+  await expect(
+    page.getByRole("banner").getByRole("link", { name: "Bardic Torch" })
+  ).toHaveAttribute("href", "/");
+  await expect(main).toContainText("That's on us, not you.");
+  // Without Sentry there is no reference to quote.
+  await expect(main).not.toContainText("reference");
+  await expect(
+    main.getByRole("link", { name: "Go to the home page" })
+  ).toHaveAttribute("href", "/");
+  await expect(
+    page.getByRole("contentinfo").getByRole("list", { name: "Help" })
+  ).toBeVisible();
+  await checkpoint(page, "server-error");
+
+  await page.unrouteAll();
+  await main.getByRole("button", { name: "Try again" }).click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Licence & attribution" })
+  ).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Site" })).toBeVisible();
 });
 
 test("going home from the 404 page works", async ({ page }) => {
