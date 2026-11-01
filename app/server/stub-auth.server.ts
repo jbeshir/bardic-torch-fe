@@ -115,9 +115,7 @@ export async function stubLogin(
 
   const sessionStorage = getOrCreateSessionStorage(env);
   const session = await sessionStorage.getSession();
-  session.set("user", {
-    id: `fixture|${userId}`,
-    email: `${userId}@fixture.invalid`,
+  session.set("tokens", {
     accessToken: `fixture:${userId}`,
     expiresAt: Date.now() + SESSION_MAX_AGE_SECONDS * 1000,
   });

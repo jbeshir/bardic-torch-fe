@@ -1,32 +1,24 @@
 import { http, HttpResponse } from "msw";
-import { setupServer } from "msw/node";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Auth0Strategy } from "remix-auth-auth0";
 import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+  AUTH0_TIMEOUT_MS,
+  DEFAULT_TOKEN_EXPIRY_SECONDS,
+} from "~/constants/auth";
 import { getOrCreateSessionStorage } from "~/server/auth.server";
 import { createReturnToCookie } from "~/server/return-to.server";
 import { loadContext } from "~/test/context";
 import { loader as callback } from "./auth.callback";
 import { loader as login } from "./auth.login";
+import { serveMocks } from "~/test/msw";
 
 const SECRET = loadContext().cloudflare.env.AUTH_SESSION_SECRET;
 
-const ID_TOKEN = [
-  "header",
-  btoa(JSON.stringify({ sub: "auth0|42", email: "bard@example.test" })),
-  "signature",
-].join(".");
+const ID_TOKEN = "header.payload.signature";
 
 /** Codes the fake Auth0 token endpoint received. */
 const exchangedCodes: string[] = [];
-const server = setupServer();
+const { server } = serveMocks();
 
 function auth0TokenEndpoint(respond: () => Response) {
   server.use(
@@ -38,7 +30,6 @@ function auth0TokenEndpoint(respond: () => Response) {
   );
 }
 
-beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 beforeEach(() => {
   auth0TokenEndpoint(() =>
     HttpResponse.json({
@@ -51,11 +42,9 @@ beforeEach(() => {
   );
 });
 afterEach(() => {
-  server.resetHandlers();
   exchangedCodes.length = 0;
   vi.restoreAllMocks();
 });
-afterAll(() => server.close());
 
 function cookiePairs(response: Response): string[] {
   return response.headers
@@ -87,13 +76,13 @@ function runCallback(query: string, cookies: readonly string[]) {
   });
 }
 
-async function sessionUserFrom(response: Response) {
+async function sessionTokensFrom(response: Response) {
   const session = await getOrCreateSessionStorage({
     AUTH_SESSION_SECRET: SECRET,
   }).getSession(
     cookiePairs(response).find(pair => pair.startsWith("__Host-bt_session="))
   );
-  return session.get("user");
+  return session.get("tokens");
 }
 
 function expectReturnToCleared(response: Response) {
@@ -112,14 +101,53 @@ describe("/auth/callback", () => {
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe("/help/licence");
     expect(exchangedCodes).toEqual(["abc"]);
-    expect(await sessionUserFrom(response)).toMatchObject({
-      id: "auth0|42",
-      email: "bard@example.test",
+    expect(await sessionTokensFrom(response)).toEqual({
       accessToken: "access-42",
       refreshToken: "refresh-42",
+      expiresAt: expect.any(Number),
     });
     expectReturnToCleared(response);
     expect(response.headers.get("Cache-Control")).toBe("no-store");
+  });
+
+  it("signs in when Auth0 issues no refresh token or expiry (no offline access)", async () => {
+    auth0TokenEndpoint(() =>
+      HttpResponse.json({ access_token: "access-42", token_type: "Bearer" })
+    );
+    const before = Date.now();
+    const { state, cookies } = await startLogin("/settings");
+    const response = await runCallback(`code=abc&state=${state}`, cookies);
+
+    expect(response.headers.get("Location")).toBe("/settings");
+    const tokens = await sessionTokensFrom(response);
+    expect(tokens).toEqual({
+      accessToken: "access-42",
+      expiresAt: expect.any(Number),
+    });
+    expect(tokens?.expiresAt).toBeGreaterThanOrEqual(
+      before + DEFAULT_TOKEN_EXPIRY_SECONDS * 1000
+    );
+  });
+
+  it("goes back to the page signed out when the code exchange hangs", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { state, cookies } = await startLogin("/help");
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      const authenticate = vi
+        .spyOn(Auth0Strategy.prototype, "authenticate")
+        .mockReturnValue(new Promise(() => undefined));
+      const pending = runCallback(`code=abc&state=${state}`, cookies);
+      while (authenticate.mock.calls.length === 0) {
+        await new Promise(resolve => setImmediate(resolve));
+      }
+      await vi.advanceTimersByTimeAsync(AUTH0_TIMEOUT_MS);
+      const response = await pending;
+      expect(response.headers.get("Location")).toBe("/help");
+      expect(await sessionTokensFrom(response)).toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("ignores a returnTo in the callback's query string", async () => {
@@ -129,7 +157,7 @@ describe("/auth/callback", () => {
       cookies
     );
     expect(response.headers.get("Location")).toBe("/help");
-    expect(await sessionUserFrom(response)).toBeDefined();
+    expect(await sessionTokensFrom(response)).toBeDefined();
   });
 
   it("validates the stored returnTo again", async () => {
@@ -140,7 +168,7 @@ describe("/auth/callback", () => {
       forged.split(";")[0] ?? "",
     ]);
     expect(response.headers.get("Location")).toBe("/");
-    expect(await sessionUserFrom(response)).toBeDefined();
+    expect(await sessionTokensFrom(response)).toBeDefined();
   });
 
   it("ignores a returnTo cookie signed with another secret", async () => {
@@ -153,7 +181,7 @@ describe("/auth/callback", () => {
       foreign.split(";")[0] ?? "",
     ]);
     expect(response.headers.get("Location")).toBe("/");
-    expect(await sessionUserFrom(response)).toBeDefined();
+    expect(await sessionTokensFrom(response)).toBeDefined();
   });
 
   it.each([
@@ -173,7 +201,7 @@ describe("/auth/callback", () => {
 
       expect(response.status).toBe(302);
       expect(response.headers.get("Location")).toBe("/help");
-      expect(await sessionUserFrom(response)).toBeUndefined();
+      expect(await sessionTokensFrom(response)).toBeUndefined();
       expectReturnToCleared(response);
       expect(exchangedCodes).toEqual([]);
       expect(error).toHaveBeenCalled();
@@ -194,7 +222,7 @@ describe("/auth/callback", () => {
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe("/settings");
     expect(response.headers.get("Cache-Control")).toBe("no-store");
-    expect(await sessionUserFrom(response)).toBeUndefined();
+    expect(await sessionTokensFrom(response)).toBeUndefined();
     expectReturnToCleared(response);
     expect(exchangedCodes).toEqual([]);
     expect(warn).toHaveBeenCalledWith("Sign-in cancelled or refused at Auth0");
@@ -212,7 +240,7 @@ describe("/auth/callback", () => {
     const response = await runCallback(`code=abc&state=${state}`, cookies);
 
     expect(response.headers.get("Location")).toBe("/help");
-    expect(await sessionUserFrom(response)).toBeUndefined();
+    expect(await sessionTokensFrom(response)).toBeUndefined();
     expect(error).toHaveBeenCalled();
   });
 });

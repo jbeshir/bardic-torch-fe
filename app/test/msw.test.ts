@@ -13,7 +13,7 @@ import {
   API_BASE_URL,
   formRequest,
   sessionCookie,
-  sessionUser,
+  sessionTokens,
 } from "./context";
 import { serveFixtureApi } from "./msw";
 import { runAction } from "./proxy";
@@ -61,7 +61,7 @@ describe("msw fixture handlers", () => {
         form: { display_name: "Morwen the Bold" },
         headers: {
           Cookie: await sessionCookie(
-            sessionUser({ accessToken: "fixture:contributor" })
+            sessionTokens({ accessToken: "fixture:contributor" })
           ),
         },
       })
@@ -96,10 +96,11 @@ describe("msw fixture handlers", () => {
     );
   });
 
-  it("fails the test on requests outside the API", async () => {
+  it("refuses requests outside the API and records them, to fail the test", async () => {
     const consoleError = vi.spyOn(console, "error").mockReturnValue();
     await expect(fetch("https://elsewhere.test/")).rejects.toThrow();
     expect(consoleError).toHaveBeenCalled();
     consoleError.mockRestore();
+    expect(fixtureApi.takeUnhandled()).toEqual(["GET https://elsewhere.test/"]);
   });
 });

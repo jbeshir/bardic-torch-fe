@@ -1,6 +1,6 @@
-import { http, HttpResponse } from "msw";
+import { http, HttpResponse, type RequestHandler } from "msw";
 import { setupServer } from "msw/node";
-import { afterAll, afterEach, beforeAll } from "vitest";
+import { afterAll, afterEach, beforeAll, expect } from "vitest";
 import {
   createFixtureState,
   handleFixtureRequest,
@@ -9,14 +9,50 @@ import {
 import { API_BASE_URL } from "./context";
 
 /**
+ * An msw server for the current test file, listening for the whole file.
+ * A request no handler answers is refused (its fetch rejects) **and** fails
+ * the test that made it: the code under test usually turns a rejected fetch
+ * into a 502, which would otherwise let a test pass for the wrong reason.
+ * Handlers added with `server.use()` last for one test.
+ */
+export function serveMocks(...handlers: RequestHandler[]) {
+  const server = setupServer(...handlers);
+  const unhandled: string[] = [];
+
+  beforeAll(() =>
+    server.listen({
+      onUnhandledRequest(request, print) {
+        unhandled.push(`${request.method} ${request.url}`);
+        print.error();
+      },
+    })
+  );
+  afterEach(() => {
+    const seen = unhandled.splice(0);
+    server.resetHandlers();
+    expect(seen, "requests no msw handler answered").toEqual([]);
+  });
+  afterAll(() => server.close());
+
+  return {
+    server,
+    /**
+     * The unhandled requests so far, which then no longer fail the test:
+     * for a test that makes one on purpose.
+     */
+    takeUnhandled: () => unhandled.splice(0),
+  };
+}
+
+/**
  * msw handlers that answer every request to `baseUrl` from the fixture API's
  * operation table, so loader and action tests see the same behaviour as the
  * e2e fixture server.
  */
-function fixtureHandlers(state: FixtureState, baseUrl = API_BASE_URL) {
+function fixtureHandlers(state: () => FixtureState, baseUrl = API_BASE_URL) {
   return [
     http.all(`${baseUrl}/*`, async ({ request }) => {
-      const result = handleFixtureRequest(state, {
+      const result = handleFixtureRequest(state(), {
         method: request.method,
         pathname: new URL(request.url).pathname,
         authorization: request.headers.get("Authorization"),
@@ -36,17 +72,15 @@ function fixtureHandlers(state: FixtureState, baseUrl = API_BASE_URL) {
  */
 export function serveFixtureApi() {
   let state = createFixtureState();
-  const server = setupServer(...fixtureHandlers(state));
+  const mocks = serveMocks(...fixtureHandlers(() => state));
 
-  beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
   afterEach(() => {
     state = createFixtureState();
-    server.resetHandlers(...fixtureHandlers(state));
   });
-  afterAll(() => server.close());
 
   return {
     /** The current test's fixture state. */
     state: () => state,
+    ...mocks,
   };
 }

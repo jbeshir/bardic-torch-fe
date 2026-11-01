@@ -1,20 +1,12 @@
 import { http, HttpResponse } from "msw";
-import { setupServer } from "msw/node";
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { DISPLAY_NAME_RULE } from "~/schemas/rules";
 import { API_BASE_URL, formRequest, sessionCookie } from "~/test/context";
 import { runAction } from "~/test/proxy";
 import { action } from "./api.me";
+import { serveMocks } from "~/test/msw";
 
-const server = setupServer();
+const { server } = serveMocks();
 const me = {
   id: "google-oauth2|1",
   display_name: "Morwen of the Marches",
@@ -22,13 +14,10 @@ const me = {
 };
 const sent: unknown[] = [];
 
-beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
-  server.resetHandlers();
   sent.length = 0;
   vi.restoreAllMocks();
 });
-afterAll(() => server.close());
 
 function upstream(respond: (body: unknown) => Response) {
   server.use(

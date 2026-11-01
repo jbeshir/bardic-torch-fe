@@ -3,7 +3,7 @@ import {
   APP_ORIGIN,
   loadContext,
   sessionCookie,
-  sessionUser,
+  sessionTokens,
 } from "~/test/context";
 import { serveFixtureApi } from "~/test/msw";
 import { loadAccount } from "./account.server";
@@ -20,7 +20,7 @@ async function load(cookie?: string) {
 }
 
 const contributor = () =>
-  sessionCookie(sessionUser({ accessToken: "fixture:contributor" }));
+  sessionCookie(sessionTokens({ accessToken: "fixture:contributor" }));
 
 describe("loadAccount", () => {
   it("is signed out without a session, and calls nothing", async () => {
@@ -64,7 +64,7 @@ describe("loadAccount", () => {
 
   it("reads as signed out when the API rejects the session, and clears it", async () => {
     const { account, headers } = await load(
-      await sessionCookie(sessionUser({ accessToken: "not-a-fixture-token" }))
+      await sessionCookie(sessionTokens({ accessToken: "not-a-fixture-token" }))
     );
     expect(account).toEqual({ state: "signed-out" });
     expect(headers.get("Set-Cookie")).toMatch(
@@ -73,16 +73,15 @@ describe("loadAccount", () => {
   });
 
   it("clears an expired session it can't refresh, without calling the API", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
     const { account, headers } = await load(
       await sessionCookie({
-        id: "auth0|1",
-        email: "bard@example.test",
         accessToken: "access-token",
         expiresAt: Date.now() - 1000,
       })
     );
     expect(account).toEqual({ state: "signed-out" });
-    expect(headers.get("Set-Cookie")).toMatch(/__Host-bt_session=/);
+    expect(headers.get("Set-Cookie")).toMatch(
+      /^__Host-bt_session=;.*Expires=Thu, 01 Jan 1970/
+    );
   });
 });

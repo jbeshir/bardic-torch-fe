@@ -13,7 +13,7 @@ import {
   APP_ORIGIN,
   loadContext,
   sessionCookie,
-  sessionUser,
+  sessionTokens,
 } from "~/test/context";
 import type { UpstreamErrorCode } from "~/schemas/api";
 import { serveFixtureApi } from "~/test/msw";
@@ -46,7 +46,7 @@ beforeEach(async () => {
   // Node's Request only accepts its own URLSearchParams, not jsdom's.
   vi.stubGlobal("URLSearchParams", NodeURLSearchParams);
   cookie = await sessionCookie(
-    sessionUser({ accessToken: "fixture:contributor" })
+    sessionTokens({ accessToken: "fixture:contributor" })
   );
 });
 afterEach(() => {

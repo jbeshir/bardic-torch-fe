@@ -151,12 +151,14 @@ How these URLs are used:
 **API** (Applications → APIs → Create API):
 
 - **Identifier (audience):** `https://api.bardictorch.org`. This is `AUTH0_AUDIENCE`, and must be what the backend expects as its audience. Signing algorithm RS256.
-- **Allow Offline Access: on.** The app asks for `openid profile email offline_access` (`app/server/auth.server.ts`). Without offline access, Auth0 issues no refresh token. The app then signs the reader out when the access token expires, instead of refreshing it.
+- **Allow Offline Access: on.** The app asks for `openid offline_access` (`app/server/auth.server.ts`); it reads no profile claims and stores only the tokens. Without offline access, Auth0 issues no refresh token: sign-in still works, but the reader is signed out when the access token expires instead of it being refreshed.
 - **Access token lifetime:** the app refreshes the token 5 minutes before it expires, so any lifetime well above that works (the default is 24 hours). The session cookie itself lasts 7 days.
 
 **Refresh tokens** (in the application's settings):
 
-- **Rotation** can be on. The app stores the new refresh token whenever Auth0 returns one, and keeps the old one otherwise.
+- **Rotation** can be on or off. The app stores the new refresh token whenever Auth0 returns one, and keeps the old one when Auth0 doesn't rotate it. A response without `expires_in` gets a 24-hour lifetime.
+- **Failures.** Only a refused refresh token (Auth0 answers `invalid_grant` or another 4xx) ends the session. When Auth0 is down, slow or answers 5xx, the session is kept: the current access token is used while it is still valid, and once it has expired that request is treated as signed out and the next one retries. Every Auth0 call (code exchange, refresh, revocation) gives up after 5 seconds.
+- **Logout** revokes the session's refresh token at Auth0 (`/oauth/revoke`, best effort) before deleting the cookie, so a copied cookie can't be renewed.
 - All the loaders of one request share a single refresh, so a single-use token is never spent twice within a request.
 - Two _separate_ requests that arrive together near expiry can each try to refresh. With rotation on, give it a **reuse interval** (e.g. 60 seconds) so the second one doesn't fail and sign the reader out.
 - Set the refresh token's **absolute lifetime** to at least 7 days (the session's), so sessions don't end early.

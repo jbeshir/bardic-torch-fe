@@ -5,12 +5,12 @@ import { stubLogin } from "./stub-auth.server";
 
 const stubEnv = loadContext({ AUTH_MODE: "stub" }).cloudflare.env;
 
-async function sessionUserFrom(response: Response) {
+async function sessionTokensFrom(response: Response) {
   const setCookie = response.headers.get("Set-Cookie") ?? "";
   const session = await getOrCreateSessionStorage(stubEnv).getSession(
     setCookie.split(";")[0]
   );
-  return session.get("user");
+  return session.get("tokens");
 }
 
 afterEach(() => {
@@ -85,9 +85,13 @@ describe("stubLogin", () => {
     );
 
     expect(response?.headers.get("Location")).toBe("/help");
-    const user = await sessionUserFrom(response as Response);
-    expect(user?.accessToken).toBe("fixture:user-7");
-    expect(user?.expiresAt).toBeGreaterThan(Date.now() + 60 * 60 * 1000);
+    const tokens = await sessionTokensFrom(response as Response);
+    expect(tokens).toEqual({
+      accessToken: "fixture:user-7",
+      expiresAt: expect.any(Number),
+    });
+    expect(tokens?.accessToken).toBe("fixture:user-7");
+    expect(tokens?.expiresAt).toBeGreaterThan(Date.now() + 60 * 60 * 1000);
   });
 
   it("sends an unsafe returnTo home", async () => {

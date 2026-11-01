@@ -110,7 +110,7 @@ describe("/auth/login stub auth", () => {
     const session = await getOrCreateSessionStorage({
       AUTH_SESSION_SECRET: SECRET,
     }).getSession(response.headers.get("Set-Cookie")?.split(";")[0]);
-    expect(session.get("user")?.accessToken).toBe("fixture:moderator");
+    expect(session.get("tokens")?.accessToken).toBe("fixture:moderator");
   });
 
   it("shows the fixture-user chooser without ?as", async () => {

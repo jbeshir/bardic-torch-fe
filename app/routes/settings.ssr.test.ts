@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { sessionCookie, sessionUser } from "~/test/context";
+import { sessionCookie, sessionTokens } from "~/test/context";
 import type { UpstreamErrorCode } from "~/schemas/api";
 import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
@@ -20,7 +20,7 @@ const get = serveApp([
 ]);
 
 const signedIn = (id = "contributor") =>
-  sessionCookie(sessionUser({ accessToken: `fixture:${id}` }));
+  sessionCookie(sessionTokens({ accessToken: `fixture:${id}` }));
 
 function fail(
   operationId: string,

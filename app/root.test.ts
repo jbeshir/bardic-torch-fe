@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { sessionCookie, sessionUser } from "~/test/context";
+import { sessionCookie, sessionTokens } from "~/test/context";
 import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
 import { shouldRevalidate } from "./root";
@@ -36,7 +36,7 @@ function helpLinks(html: string): string {
 }
 
 const contributor = () =>
-  sessionCookie(sessionUser({ accessToken: "fixture:contributor" }));
+  sessionCookie(sessionTokens({ accessToken: "fixture:contributor" }));
 
 async function rootData(cookie?: string) {
   const response = await get("/?_data=root", cookie);
@@ -86,7 +86,7 @@ describe("root loader", () => {
 
   it("forwards the cleared session when the API rejects it", async () => {
     const { response, data } = await rootData(
-      await sessionCookie(sessionUser({ accessToken: "stale" }))
+      await sessionCookie(sessionTokens({ accessToken: "stale" }))
     );
     expect(data.account).toEqual({ state: "signed-out" });
     expect(response.headers.get("Set-Cookie")).toMatch(/^__Host-bt_session=;/);

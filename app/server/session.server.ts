@@ -2,35 +2,28 @@ import { createCookieSessionStorage } from "@remix-run/cloudflare";
 import { SESSION_MAX_AGE_SECONDS } from "~/constants/auth";
 
 /**
- * Server-side session management using remix-auth compatible session storage.
- *
- * Flow:
- * 1. User visits /auth/login, redirects to Auth0
- * 2. Auth0 redirects back to /auth/callback with authorization code
- * 3. Server exchanges code for tokens, stores user data in session cookie
- * 4. All loaders read auth state from session
+ * The session cookie. /auth/callback stores the reader's Auth0 tokens in it
+ * and every loader reads them from there. It holds nothing else: who is
+ * reading comes from /v1/me, not from the cookie, which is signed but not
+ * encrypted.
  */
 
-export type SessionData = {
-  user: {
-    id: string;
-    email: string;
-    accessToken: string;
-    refreshToken?: string;
-    expiresAt: number;
-  };
+/** What the session holds: the API access token and how to renew it. */
+export type SessionTokens = {
+  readonly accessToken: string;
+  /** Absent when Auth0 issued none; the session then ends at `expiresAt`. */
+  readonly refreshToken?: string;
+  /** When the access token expires, in epoch milliseconds. */
+  readonly expiresAt: number;
 };
 
-type SessionFlashData = {
-  error: string;
+type SessionData = {
+  readonly tokens: SessionTokens;
 };
 
-/**
- * Create a session storage instance.
- * Must be called with the session secret from environment.
- */
+/** The session storage signed with `secret` (AUTH_SESSION_SECRET). */
 export function createSessionStorage(secret: string) {
-  return createCookieSessionStorage<SessionData, SessionFlashData>({
+  return createCookieSessionStorage<SessionData>({
     cookie: {
       // `__Host-` makes browsers insist on Secure, Path=/ and no Domain, so
       // no other subdomain can set or shadow it. Browsers treat localhost and
@@ -41,7 +34,8 @@ export function createSessionStorage(secret: string) {
       sameSite: "lax",
       secrets: [secret],
       secure: true,
-      // Session cookie duration - token expiry is checked separately
+      // The cookie's lifetime; the access token's expiry is checked
+      // separately on every request.
       maxAge: SESSION_MAX_AGE_SECONDS,
     },
   });

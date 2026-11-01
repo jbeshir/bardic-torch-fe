@@ -1,28 +1,17 @@
 import { http, HttpResponse } from "msw";
-import { setupServer } from "msw/node";
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { API_BASE_URL, formRequest, sessionCookie } from "~/test/context";
 import { runAction } from "~/test/proxy";
 import { action } from "./api.tokens.$tokenId";
+import { serveMocks } from "~/test/msw";
 
-const server = setupServer();
+const { server } = serveMocks();
 const revoked: string[] = [];
 
-beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
-  server.resetHandlers();
   revoked.length = 0;
   vi.restoreAllMocks();
 });
-afterAll(() => server.close());
 
 function upstream(respond: () => Response) {
   server.use(

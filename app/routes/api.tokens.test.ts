@@ -1,20 +1,12 @@
 import { http, HttpResponse } from "msw";
-import { setupServer } from "msw/node";
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { TOKEN_NAME_RULE } from "~/schemas/rules";
 import { API_BASE_URL, formRequest, sessionCookie } from "~/test/context";
 import { runAction } from "~/test/proxy";
 import { action } from "./api.tokens";
+import { serveMocks } from "~/test/msw";
 
-const server = setupServer();
+const { server } = serveMocks();
 const created = {
   id: "6f1c1f0e-8a4b-4f43-9a5e-2d7c0b1e3a55",
   prefix: "0123abcd",
@@ -25,13 +17,10 @@ const created = {
 };
 const sent: unknown[] = [];
 
-beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
-  server.resetHandlers();
   sent.length = 0;
   vi.restoreAllMocks();
 });
-afterAll(() => server.close());
 
 function upstream(respond: () => Response) {
   server.use(

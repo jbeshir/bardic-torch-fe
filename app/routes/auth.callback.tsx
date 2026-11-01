@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs } from "@remix-run/cloudflare";
 import {
-  getOrCreateAuthenticator,
+  completeAuth0Login,
   getOrCreateSessionStorage,
 } from "~/server/auth.server";
 import { createReturnToCookie, safeReturnTo } from "~/server/return-to.server";
@@ -39,13 +39,10 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   }
 
   try {
-    const user = await getOrCreateAuthenticator(env).authenticate(
-      "auth0",
-      request
-    );
+    const tokens = await completeAuth0Login(request, env);
     const sessionStorage = getOrCreateSessionStorage(env);
     const session = await sessionStorage.getSession(cookieHeader);
-    session.set("user", user);
+    session.set("tokens", tokens);
     headers.append("Set-Cookie", await sessionStorage.commitSession(session));
   } catch (error) {
     console.error("Authentication callback error:", error);

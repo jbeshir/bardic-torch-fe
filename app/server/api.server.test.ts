@@ -1,22 +1,11 @@
 import { delay, http, HttpResponse } from "msw";
-import { setupServer } from "msw/node";
-import { Auth0Strategy } from "remix-auth-auth0";
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   API_BASE_URL,
   APP_ORIGIN,
   loadContext,
   sessionCookie,
-  sessionUser,
+  sessionTokens,
 } from "~/test/context";
 import { DISPLAY_NAME_RULE, TOKEN_NAME_RULE } from "~/schemas/rules";
 import {
@@ -27,8 +16,9 @@ import {
   updateMe,
   UPSTREAM_TIMEOUT_MS,
 } from "./api.server";
+import { serveMocks } from "~/test/msw";
 
-const server = setupServer();
+const { server } = serveMocks();
 const TRY_AGAIN = "Bardic Torch couldn't do that just now. Try again shortly.";
 
 /** How to call each FE1 operation, for table-driven error mapping. */
@@ -73,10 +63,6 @@ const token = {
   last_used_at: "2026-02-01T00:00:00+01:00",
 };
 const secret = `user_api|${"0123abcd".repeat(8)}`;
-
-beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
 
 beforeEach(() => {
   vi.spyOn(console, "error").mockReturnValue();
@@ -164,15 +150,20 @@ describe("authentication", () => {
   });
 
   it("carries a refreshed session cookie on the result", async () => {
-    vi.spyOn(Auth0Strategy.prototype, "refreshToken").mockResolvedValue({
-      accessToken: () => "refreshed-access",
-      refreshToken: () => "refreshed-refresh",
-      accessTokenExpiresInSeconds: () => 3600,
-    } as never);
+    server.use(
+      http.post("https://auth0.test/oauth/token", () =>
+        HttpResponse.json({
+          access_token: "refreshed-access",
+          refresh_token: "refreshed-refresh",
+          expires_in: 3600,
+          token_type: "Bearer",
+        })
+      )
+    );
     const seen = captureUpstream("get", "/v1/me", () => HttpResponse.json(me));
     const request = new Request(`${APP_ORIGIN}/settings`, {
       headers: {
-        Cookie: await sessionCookie(sessionUser({ expiresAt: Date.now() })),
+        Cookie: await sessionCookie(sessionTokens({ expiresAt: Date.now() })),
       },
     });
     const result = await getMe(request, loadContext());

@@ -2,7 +2,7 @@ import type { AppLoadContext } from "@remix-run/cloudflare";
 import { parseEnv, type AppEnv } from "~/server/env.server";
 import {
   createSessionStorage,
-  type SessionData,
+  type SessionTokens,
 } from "~/server/session.server";
 
 /** Shared fixtures for loader, action and server-module tests. */
@@ -27,12 +27,10 @@ export function loadContext(env: Partial<AppEnv> = {}): AppLoadContext {
   return { cloudflare: { env: { ...TEST_ENV, ...env } }, authCache: {} };
 }
 
-export function sessionUser(
-  overrides: Partial<SessionData["user"]> = {}
-): SessionData["user"] {
+export function sessionTokens(
+  overrides: Partial<SessionTokens> = {}
+): SessionTokens {
   return {
-    id: "auth0|1",
-    email: "bard@example.test",
     accessToken: "access-token",
     refreshToken: "refresh-token",
     expiresAt: Date.now() + 60 * 60 * 1000,
@@ -40,13 +38,13 @@ export function sessionUser(
   };
 }
 
-/** A `Cookie` header value carrying a session for `user`. */
+/** A `Cookie` header value carrying a session with `tokens`. */
 export async function sessionCookie(
-  user: SessionData["user"] = sessionUser()
+  tokens: SessionTokens = sessionTokens()
 ): Promise<string> {
   const storage = createSessionStorage(TEST_ENV.AUTH_SESSION_SECRET);
   const session = await storage.getSession();
-  session.set("user", user);
+  session.set("tokens", tokens);
   return (await storage.commitSession(session)).split(";")[0] ?? "";
 }
 
