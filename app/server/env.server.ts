@@ -8,6 +8,21 @@ import { z } from "zod";
 
 const MIN_SECRET_LENGTH = 32;
 
+/**
+ * How wrangler.toml and .dev.vars.example mark a value still to be filled
+ * in. A deploy that forgot one gets the configuration error page, not a
+ * site whose sign-in fails at Auth0.
+ */
+const PLACEHOLDER_PREFIX = "replace-with";
+
+/** A string that isn't one of the repository's placeholders. */
+const filledIn = z
+  .string()
+  .refine(
+    value => !value.startsWith(PLACEHOLDER_PREFIX),
+    "Still a placeholder: set the real value"
+  );
+
 const emptyAsMissing = (value: unknown) => (value === "" ? undefined : value);
 
 function isHttpUrl(value: string): boolean {
@@ -18,24 +33,22 @@ function isHttpUrl(value: string): boolean {
   }
 }
 
-const httpUrl = z
-  .string()
+const httpUrl = filledIn
   .refine(isHttpUrl, "Must be an http(s) URL")
   .transform(value => value.replace(/\/+$/, ""));
 
-const required = z.string().min(1, "Required");
+const required = filledIn.refine(value => value.length > 0, "Required");
 
 const envSchema = z.object({
   BARDIC_TORCH_API_BASE_URL: httpUrl,
-  AUTH_SESSION_SECRET: z
-    .string()
-    .min(
-      MIN_SECRET_LENGTH,
-      `Must be at least ${MIN_SECRET_LENGTH} characters long`
-    ),
-  AUTH0_DOMAIN: z
-    .string()
-    .regex(/^[a-z0-9-]+(\.[a-z0-9-]+)+$/i, "Must be a host name"),
+  AUTH_SESSION_SECRET: filledIn.refine(
+    value => value.length >= MIN_SECRET_LENGTH,
+    `Must be at least ${MIN_SECRET_LENGTH} characters long`
+  ),
+  AUTH0_DOMAIN: filledIn.refine(
+    value => /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(value),
+    "Must be a host name"
+  ),
   AUTH0_CLIENT_ID: required,
   AUTH0_CLIENT_SECRET: required,
   AUTH0_DEFAULT_REDIRECT_URI: httpUrl,

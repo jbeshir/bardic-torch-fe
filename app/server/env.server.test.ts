@@ -79,6 +79,28 @@ describe("parseEnv", () => {
     ]);
   });
 
+  it.each([
+    ["AUTH0_CLIENT_ID", "replace-with-the-auth0-client-id"],
+    ["AUTH0_CLIENT_SECRET", "replace-with-client-secret"],
+    ["AUTH0_AUDIENCE", "replace-with-api-audience"],
+    ["AUTH0_DOMAIN", "replace-with.auth0.com"],
+    [
+      "AUTH_SESSION_SECRET",
+      "replace-with-a-random-string-of-at-least-32-characters",
+    ],
+    ["BARDIC_TORCH_API_BASE_URL", "replace-with-https://api.example"],
+  ])("rejects the repository's placeholder in %s", (name, placeholder) => {
+    expect(problemsFor({ ...valid, [name]: placeholder })).toContain(
+      `${name}: Still a placeholder: set the real value`
+    );
+  });
+
+  it("keeps saying Required for an empty value", () => {
+    expect(problemsFor({ ...valid, AUTH0_CLIENT_ID: "" })).toEqual([
+      "AUTH0_CLIENT_ID: Required",
+    ]);
+  });
+
   it("never echoes a value in its problems", () => {
     const secret = "short-secret-value";
     const problems = problemsFor({ ...valid, AUTH_SESSION_SECRET: secret });

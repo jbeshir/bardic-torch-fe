@@ -21,7 +21,7 @@ Names used below:
 
 ## 1. Before the first deploy
 
-1. **Set the two Auth0 values in `wrangler.toml`.** Replace `AUTH0_DOMAIN` and the placeholder `AUTH0_CLIENT_ID`, in both `[env.preview.vars]` and `[env.production.vars]`, with the real tenant domain and client ID (from §4). Both are public values, so they belong in the repository. Commit and push.
+1. **Set the two Auth0 values in `wrangler.toml`.** Replace `AUTH0_DOMAIN` and the placeholder `AUTH0_CLIENT_ID`, in both `[env.preview.vars]` and `[env.production.vars]`, with the real tenant domain and client ID (from §4). Both are public values, so they belong in the repository. Commit and push. Until the placeholder is replaced, a deploy serves only the "Site configuration error" page (§2), not a site whose sign-in fails at Auth0.
 2. **Protect `main`.** In GitHub → Settings → Branches, add a branch protection rule (or ruleset) for `main`:
    - require a pull request;
    - require the status checks **`validate`** and **`e2e`** (the two jobs in `.github/workflows/ci.yml`) to pass.
@@ -79,7 +79,7 @@ Notes on the variables:
 - **`SENTRY_DSN`** is not sensitive (the browser receives it too), but it is kept out of the repository as a secret. Without it, nothing is sent to Sentry.
 - **`AUTH_MODE`** must never be set. Production and preview builds don't contain stub sign-in, and they ignore `AUTH_MODE=stub` with a logged error.
 
-Every request validates these variables (`app/server/env.server.ts`). If one is missing or malformed, every page is a plain **"Site configuration error"** page with status 500. The variable's name, never its value, is logged ("Invalid environment: …"), and shows in the Function's real-time logs (Deployments → the deployment → Functions → Real-time logs).
+Every request validates these variables (`app/server/env.server.ts`). If one is missing or malformed, or is still a placeholder starting `replace-with` (as `AUTH0_CLIENT_ID` is in `wrangler.toml` until step 1 of §1 is done), every page is a plain **"Site configuration error"** page with status 500. The variable's name, never its value, is logged ("Invalid environment: …"), and shows in the Function's real-time logs (Deployments → the deployment → Functions → Real-time logs).
 
 Variable changes apply only to **new** deployments. Retry the latest deployment after changing one.
 

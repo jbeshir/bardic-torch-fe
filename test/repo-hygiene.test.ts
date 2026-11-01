@@ -270,15 +270,47 @@ describe("ops: wrangler.toml", () => {
     }
   );
 
+  const withSecrets = (vars: Readonly<Record<string, string>>) =>
+    parseEnv({
+      ...vars,
+      AUTH_SESSION_SECRET: "a-dashboard-secret-of-at-least-32-characters",
+      AUTH0_CLIENT_SECRET: "a-dashboard-secret",
+    });
+  const placeholders = (environment: string) =>
+    Object.entries(varsOf(environment))
+      .filter(([, value]) => value.startsWith("replace-with"))
+      .map(([name]) => name);
+
   it.each(["preview", "production"])(
-    "%s vars pass env validation once the secrets are added",
+    "%s vars pass env validation once the secrets are added and every placeholder is replaced",
     environment => {
-      const parsed = parseEnv({
-        ...varsOf(environment),
-        AUTH_SESSION_SECRET: "a-dashboard-secret-of-at-least-32-characters",
-        AUTH0_CLIENT_SECRET: "a-dashboard-secret",
+      const filled = Object.fromEntries(
+        Object.entries(varsOf(environment)).map(([name, value]) => [
+          name,
+          value.startsWith("replace-with")
+            ? `real-${name.toLowerCase()}`
+            : value,
+        ])
+      );
+      expect(withSecrets(filled).ok).toBe(true);
+    }
+  );
+
+  it.each(["preview", "production"])(
+    "%s vars with a placeholder left fail env validation, naming it (the configuration error page)",
+    environment => {
+      const parsed = withSecrets(varsOf(environment));
+      const left = placeholders(environment);
+      if (left.length === 0) {
+        expect(parsed.ok).toBe(true);
+        return;
+      }
+      expect(parsed).toEqual({
+        ok: false,
+        problems: left.map(
+          name => `${name}: Still a placeholder: set the real value`
+        ),
       });
-      expect(parsed.ok).toBe(true);
     }
   );
 
