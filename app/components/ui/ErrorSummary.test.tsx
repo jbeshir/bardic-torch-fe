@@ -8,12 +8,14 @@ import { Input } from "./Input";
 
 function Form({
   problems,
+  attempt = 1,
 }: {
   problems: Parameters<typeof ErrorSummary>[0]["problems"];
+  attempt?: number;
 }) {
   return (
     <form>
-      <ErrorSummary problems={problems} />
+      <ErrorSummary problems={problems} attempt={attempt} />
       <Field id="name" label="Display name" error="Enter a display name.">
         <Input name="name" />
       </Field>
@@ -59,13 +61,17 @@ describe("ErrorSummary", () => {
     expect(screen.getByRole("alert")).toHaveFocus();
   });
 
-  it("moves focus again only when the problems change", () => {
+  it("moves focus again when the problems change or the form fails again, not on other renders", () => {
     const { rerender } = render(<Form problems={TWO} />);
     const name = screen.getByRole("textbox", { name: "Display name" });
     name.focus();
     rerender(<Form problems={[...TWO]} />);
     expect(name).toHaveFocus();
     rerender(<Form problems={[TWO[1]]} />);
+    expect(screen.getByRole("alert")).toHaveFocus();
+    // Submitted again with the same problem: focus and announce again.
+    name.focus();
+    rerender(<Form problems={[TWO[1]]} attempt={2} />);
     expect(screen.getByRole("alert")).toHaveFocus();
   });
 

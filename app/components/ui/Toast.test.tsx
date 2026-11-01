@@ -206,6 +206,52 @@ describe("Toast region", () => {
     }
   });
 
+  it("below sm, adds the shown stack's height to the scroll padding, so focus scrolls clear of it", () => {
+    let observed: (() => void) | undefined;
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback: () => void) {
+          observed = callback;
+        }
+        observe() {}
+        disconnect() {}
+      }
+    );
+    const narrow = { matches: true };
+    vi.stubGlobal("matchMedia", () => ({
+      get matches() {
+        return narrow.matches;
+      },
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+    let height = 0;
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+      () => ({ height }) as DOMRect
+    );
+    const root = document.documentElement;
+    try {
+      const { unmount } = render(<Page />);
+      expect(root.style.getPropertyValue("--toast-stack-h")).toBe("");
+      height = 71.5;
+      raise("You seem to be offline. Your changes haven’t been saved yet.");
+      act(() => observed?.());
+      expect(root.style.getPropertyValue("--toast-stack-h")).toBe("80px");
+      // From sm the stack is bottom right, out of the way: no padding.
+      narrow.matches = false;
+      act(() => observed?.());
+      expect(root.style.getPropertyValue("--toast-stack-h")).toBe("");
+      narrow.matches = true;
+      act(() => observed?.());
+      unmount();
+      expect(root.style.getPropertyValue("--toast-stack-h")).toBe("");
+    } finally {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+    }
+  });
+
   it("needs the provider", () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     expect(() => render(<Raise tone="info" message="Lost" />)).toThrow(

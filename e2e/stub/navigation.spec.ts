@@ -380,6 +380,23 @@ test.describe("from md", () => {
     );
   });
 
+  test("following a sidebar link moves focus to the new page's content and announces it", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await openHydrated(page, "/help/licence");
+    const nav = page.getByRole("navigation", { name: "Site" });
+    await nav.getByRole("link", { name: "FAQ for bards" }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/help\/faq-for-bards$/);
+    await expect(page.getByRole("main")).toBeFocused();
+    await expect(
+      page
+        .getByRole("status")
+        .filter({ hasText: "FAQ for bards · Bardic Torch" })
+    ).toHaveCount(1);
+  });
+
   test("at 1280 × 800 the sidebar shows the current page, and says when there is more below", async ({
     page,
   }) => {

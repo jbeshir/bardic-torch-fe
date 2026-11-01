@@ -533,7 +533,7 @@ CONTRIBUTE                               ← ContributeCard (see below)
 
 ### 5.4 Main column
 
-- `<main id="content" tabindex="-1">` is the skip-link target. It contains a **sheet**: `bg-surface border border-border rounded-xl shadow-1` at ≥lg. Below lg, the sheet is full-bleed with no border or radius, and `bg-surface` runs to the edges.
+- `<main id="content" tabindex="-1">` is the skip-link target. After a client navigation to another path (not a hash jump, not the first load), focus moves to `main` (`preventScroll`), as a document load would leave the reader at the start, and a polite `sr-only` status announces the new `document.title`. It contains a **sheet**: `bg-surface border border-border rounded-xl shadow-1` at ≥lg. Below lg, the sheet is full-bleed with no border or radius, and `bg-surface` runs to the edges.
 - **Short pages:** the shell is a `min-h-dvh` flex column, so the footer sits at the bottom of the window. Below lg `main` takes the spare height (the full-bleed surface runs down to the footer); from lg the grid's rows are `1fr auto` (`grid-rows-shell`) and the sheet is `self-start`, as tall as its content, so a blocked or error page never shows an empty stretched card.
 - Sheet padding: 16 px <md, 24 px md, 32 px lg, 40 px xl. It sits `mt-6 mb-10` at ≥lg.
 - The **page head** has these parts, in order:
@@ -816,7 +816,7 @@ Help text that explains format.       ← caption text-fg-muted, id="{id}-help"
 - **Error summary** (SG; FE1's forms have one field each): a danger Alert at the top of the form with the heading "Check {n} thing(s) below" and in-page links to each field.
   - **Without JS** (server re-render), nothing can move focus. The summary is rendered first in the form with `role="alert"`, so the page load announces it, and the first invalid field gets `autoFocus`.
   - **With JS,** focus moves to the summary (`tabindex="-1"`) after a failed submit.
-  - Component: `ErrorSummary` (`app/components/ui/ErrorSummary.tsx`), given `problems: [{fieldId, message}]`, where `fieldId` is the `id` the parent passed to each `Field` (from its own `useId()`). It takes focus when it mounts and whenever the problems change, not on every re-render. Each link is `href="#{fieldId}"`; with JS a click also focuses the control (an in-page link alone only scrolls).
+  - Component: `ErrorSummary` (`app/components/ui/ErrorSummary.tsx`), given `problems: [{fieldId, message}]`, where `fieldId` is the `id` the parent passed to each `Field` (from its own `useId()`). It takes focus when it mounts, whenever the problems change, and whenever its `attempt` (the form's count of failed submits) goes up, so a resubmit with the same problems is announced again; not on other re-renders. Each link is `href="#{fieldId}"`; with JS a click also focuses the control (an in-page link alone only scrolls).
 - FE1's Settings fields show their server error inline under the field (`aria-invalid`, `aria-describedby`), and focus moves to the field.
 - **With JS,** validate on blur after the first submit attempt, and never on every keystroke before the first submit.
 - There is a 4 px gap between label and help, 8 px between help and control, 6 px between control and error, and 20 px between fields.
@@ -1106,7 +1106,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
   - `<div role="status" aria-live="polite" aria-atomic="false">` for success and info
   - `<div role="alert" aria-live="assertive">` for errors that need immediate attention
 - **Placement:**
-  - **Below sm: at the top**, under the header (`top: calc(var(--header-h) + 8px)`, width `calc(100vw - 32px)`). At the bottom they would cover the bottom app bar and the controls near the thumb, often the very button that triggered them (WCAG 2.4.11).
+  - **Below sm: at the top**, under the header (`top: calc(var(--header-h) + 8px)`, width `calc(100vw - 32px)`). At the bottom they would cover the bottom app bar and the controls near the thumb, often the very button that triggered them (WCAG 2.4.11). While toasts are shown there, the stack's height is set on `html` as `--toast-stack-h`, which `scroll-padding-top` adds, so a control that gets focus scrolls clear of a toast (danger toasts stay until dismissed) as well as of the header.
   - **At ≥sm: bottom right** (`right: 24px; width: 24rem`), clear of the main column's controls: `bottom: 24px` from md, and from sm to md (where the bottom app bar still shows) 16 px above the bar (`bottom-above-app-bar`).
   - At most 3 toasts, with the newest nearest the edge.
 - **Toast:** `bg-surface-raised border border-border rounded-lg shadow-2 p-4 flex gap-3`, with a status icon (`{s}-icon`), message (body-sm `text-fg`) and a close button (36 px, "Dismiss notification").

@@ -20,24 +20,28 @@ function focusField(event: MouseEvent<HTMLAnchorElement>, fieldId: string) {
  * The list of problems at the top of a form that failed (DESIGN §6.4): a
  * danger Alert headed "Check {n} thing(s) below", linking to each field.
  * It is `role="alert"`, so a server-rendered summary is announced when the
- * page loads (no JS); with JS, focus moves to it after a failed submit.
+ * page loads (no JS); with JS, focus moves to it after each failed submit.
  * Render it first in the form.
  */
 export function ErrorSummary({
   problems,
+  attempt,
 }: {
   problems: readonly [Problem, ...Problem[]];
+  /**
+   * Counts the form's failed submits: focus moves on each one, even when
+   * the problems are the same as last time, but not on other renders.
+   */
+  attempt: number;
 }) {
   const box = useRef<HTMLDivElement>(null);
-  // Move focus when the problems change (a new failed submit), not on every
-  // render of the form around it.
   const signature = problems
     .map(({ fieldId, message }) => `${fieldId}:${message}`)
     .join("\n");
 
   useEffect(() => {
     box.current?.focus();
-  }, [signature]);
+  }, [signature, attempt]);
 
   const count = problems.length;
   return (

@@ -8,6 +8,7 @@ import {
   useState,
   type FocusEvent,
   type ReactNode,
+  type RefObject,
 } from "react";
 import { TONE_GLYPHS, TONE_NAMES } from "./Alert";
 import { Button } from "./Button";
@@ -28,6 +29,41 @@ type ToastEntry = ToastMessage & {
 
 /** DESIGN §6.23. */
 const AUTO_DISMISS_MS = 6000;
+
+/** Below sm the stack is at the top, under the header, full width. */
+const BELOW_SM = "(max-width: 639px)";
+
+/**
+ * Below sm, while toasts are shown, `--toast-stack-h` holds the stack's
+ * height, which base.css adds to `scroll-padding-top`: a control that
+ * gets focus is scrolled clear of the toasts as well as the header (WCAG
+ * 2.4.11), since a danger toast stays until it is dismissed.
+ */
+function useToastScrollPadding(region: RefObject<HTMLElement>) {
+  useEffect(() => {
+    const element = region.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const root = document.documentElement;
+    const narrow = window.matchMedia(BELOW_SM);
+    const update = () => {
+      const height = element.getBoundingClientRect().height;
+      if (narrow.matches && height > 0) {
+        root.style.setProperty("--toast-stack-h", `${Math.ceil(height) + 8}px`);
+      } else {
+        root.style.removeProperty("--toast-stack-h");
+      }
+    };
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    narrow.addEventListener("change", update);
+    update();
+    return () => {
+      observer.disconnect();
+      narrow.removeEventListener("change", update);
+      root.style.removeProperty("--toast-stack-h");
+    };
+  }, [region]);
+}
 const MAX_TOASTS = 3;
 /** The exit fade (`duration-fast`). */
 const LEAVE_MS = 120;
@@ -103,7 +139,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
  * with a polite status list (success, info) and an assertive alert list
  * (danger) that are always mounted, so each new toast is announced. Below
  * sm it sits at the top under the header, so it never covers the bottom
- * bar or the control that raised it; from sm, bottom right. The newest toast
+ * bar or the control that raised it, and focus scrolls clear of it; from
+ * sm, bottom right. The newest toast
  * is nearest the edge. Timers pause while the pointer is over the region or
  * focus is inside it.
  */
@@ -117,6 +154,8 @@ function ToastRegion({
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const paused = hovered || focused;
+  const region = useRef<HTMLElement>(null);
+  useToastScrollPadding(region);
 
   function onBlur(event: FocusEvent<HTMLElement>) {
     if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
@@ -137,6 +176,7 @@ function ToastRegion({
   const stack = "flex flex-col-reverse gap-2 sm:flex-col";
   return (
     <section
+      ref={region}
       aria-label="Notifications"
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}

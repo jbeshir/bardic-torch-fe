@@ -71,6 +71,31 @@ function useSidebarScroll(nav: RefObject<HTMLElement>, pathname: string) {
 }
 
 /**
+ * After a client navigation to another page (not a hash jump, not a reload
+ * of the same page's data), focus moves to the main content, as a page load
+ * would leave it at the start, and the new page's title is announced. The
+ * first render (the document load) is left alone.
+ */
+function useNavigationFocus(main: RefObject<HTMLElement>, pathname: string) {
+  const previous = useRef(pathname);
+  const [announcement, setAnnouncement] = useState("");
+
+  useEffect(() => {
+    if (previous.current === pathname) return;
+    previous.current = pathname;
+    // After this render's own focus moves (a closing drawer gives focus
+    // back to its trigger) and the new <title>.
+    const frame = requestAnimationFrame(() => {
+      main.current?.focus({ preventScroll: true });
+      setAnnouncement(document.title);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [main, pathname]);
+
+  return announcement;
+}
+
+/**
  * The layout every page shares (DESIGN §5): skip link, progress bar,
  * header (with the bottom app bar below md), the main sheet, the site
  * navigation, the footer and the navigation drawer.
@@ -96,6 +121,8 @@ export function AppShell({
   const { pathname } = useLocation();
   const siteNav = useRef<HTMLElement>(null);
   const moreBelow = useSidebarScroll(siteNav, pathname);
+  const mainRef = useRef<HTMLElement>(null);
+  const announcement = useNavigationFocus(mainRef, pathname);
   const drawerId = useId();
   const [menuOpen, setMenuOpen] = useState(false);
   const openMenu = useCallback(() => setMenuOpen(true), []);
@@ -110,6 +137,9 @@ export function AppShell({
         Skip to content
       </a>
       <NavigationProgress visible={busy} />
+      <p role="status" className="sr-only">
+        {announcement}
+      </p>
       <Header
         menu={
           <MenuControl
@@ -133,6 +163,7 @@ export function AppShell({
       />
       <div className="mx-auto flex w-full max-w-shell flex-1 flex-col lg:grid lg:grid-cols-shell lg:grid-rows-shell lg:gap-x-8 lg:px-6 xl:grid-cols-shell-xl xl:gap-x-10 xl:px-8">
         <main
+          ref={mainRef}
           id="content"
           tabIndex={-1}
           aria-busy={busy || undefined}

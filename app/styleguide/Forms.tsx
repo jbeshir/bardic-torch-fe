@@ -159,18 +159,20 @@ export function Checkboxes() {
 function SummaryDemo() {
   const nameId = useId();
   const tokenId = useId();
-  const [failed, setFailed] = useState(false);
+  const [attempts, setAttempts] = useState(0);
+  const failed = attempts > 0;
   return (
     <form
       noValidate
       className="grid gap-5"
       onSubmit={event => {
         event.preventDefault();
-        setFailed(true);
+        setAttempts(count => count + 1);
       }}
     >
       {failed ? (
         <ErrorSummary
+          attempt={attempts}
           problems={[
             { fieldId: nameId, message: "Enter a display name." },
             {

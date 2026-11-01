@@ -4,7 +4,9 @@
     background-color: rgb(var(--canvas));
     color: rgb(var(--fg));
     /* Focus and anchor targets never land under the sticky header (WCAG 2.4.11). */
-    scroll-padding-top: calc(var(--header-h) + 0.5rem);
+    scroll-padding-top: calc(
+      var(--header-h) + var(--toast-stack-h, 0px) + 0.5rem
+    );
     -webkit-text-size-adjust: 100%;
   }
 

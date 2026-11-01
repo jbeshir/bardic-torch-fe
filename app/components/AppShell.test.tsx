@@ -12,6 +12,7 @@ function renderShell(url = "/") {
     <ToastProvider>
       <AppShell account={{ state: "signed-out" }}>
         <h1>Page title</h1>
+        <button type="button">Elsewhere</button>
       </AppShell>
     </ToastProvider>,
     url
@@ -113,6 +114,33 @@ describe("AppShell", () => {
     } finally {
       HTMLElement.prototype.getBoundingClientRect = original;
       vi.restoreAllMocks();
+    }
+  });
+
+  it("after a client navigation, focuses the main content and announces the new title", async () => {
+    vi.stubGlobal("requestAnimationFrame", (callback: () => void) => {
+      callback();
+      return 0;
+    });
+    try {
+      const router = await renderShell("/help/licence");
+      const main = screen.getByRole("main");
+      const status = screen
+        .getAllByRole("status")
+        .find(element => element.classList.contains("sr-only"));
+      // The document load is left alone.
+      expect(main).not.toHaveFocus();
+      expect(status).toHaveTextContent("");
+      document.title = "FAQ for bards · Bardic Torch";
+      await act(() => router.navigate("/help/faq-for-bards"));
+      expect(main).toHaveFocus();
+      expect(status).toHaveTextContent("FAQ for bards · Bardic Torch");
+      // A jump within the page isn't a new page.
+      screen.getByRole("button", { name: "Elsewhere" }).focus();
+      await act(() => router.navigate("/help/faq-for-bards#opt-out"));
+      expect(screen.getByRole("button", { name: "Elsewhere" })).toHaveFocus();
+    } finally {
+      vi.unstubAllGlobals();
     }
   });
 
