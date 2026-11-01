@@ -231,7 +231,7 @@ describe("ButtonLink", () => {
 
   it("marks an external target with an icon and a hidden suffix after the label", async () => {
     await renderWithRouter(
-      <ButtonLink to={WIKI_HOME_URL} external="wiki" size="lg">
+      <ButtonLink to={WIKI_HOME_URL} size="lg">
         Browse on the original wiki
       </ButtonLink>
     );

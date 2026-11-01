@@ -1,5 +1,5 @@
 import { Link as RemixLink } from "@remix-run/react";
-import { ExternalMark, externalKind, type ExternalKind } from "./Link";
+import { ExternalMark, externalKind } from "./Link";
 
 type Tag = {
   readonly label: string;
@@ -8,8 +8,6 @@ type Tag = {
   readonly prefix?: string;
   /** This is the term page being shown (`aria-current="page"`). */
   readonly current?: boolean;
-  /** For an absolute URL: where it goes (default "wiki"). */
-  readonly external?: ExternalKind;
 };
 
 const SIZES = {
@@ -26,7 +24,7 @@ const CURRENT =
   "border-accent bg-accent-subtle text-accent-text focus-visible:-outline-offset-2";
 
 function Chip({
-  tag: { label, to, prefix, current = false, external },
+  tag: { label, to, prefix, current = false },
   size,
 }: {
   tag: Tag;
@@ -41,7 +39,7 @@ function Chip({
       {label}
     </span>
   );
-  const kind = externalKind(to, external ?? "wiki");
+  const kind = externalKind(to);
   if (kind) {
     return (
       <a href={to} rel="noopener" className={className}>

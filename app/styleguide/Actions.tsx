@@ -91,9 +91,7 @@ export function Buttons() {
         <ButtonLink to="/" variant="primary" icon={IconArrowRight}>
           Go to the home page
         </ButtonLink>
-        <ButtonLink to={WIKI_HOME_URL} external="wiki">
-          Browse on the original wiki
-        </ButtonLink>
+        <ButtonLink to={WIKI_HOME_URL}>Browse on the original wiki</ButtonLink>
       </Example>
     </Specimen>
   );
@@ -113,7 +111,7 @@ export function Links() {
             contributing guide
           </Link>{" "}
           first, or see the{" "}
-          <Link to={WIKI_HOME_URL} appearance="prose" external="wiki">
+          <Link to={WIKI_HOME_URL} appearance="prose">
             page on the original wiki
           </Link>
           .

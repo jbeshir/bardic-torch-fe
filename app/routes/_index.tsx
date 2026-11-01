@@ -7,7 +7,12 @@ import { ButtonLink } from "~/components/ui/Button";
 import { Card, CardList } from "~/components/ui/Card";
 import { Link } from "~/components/ui/Link";
 import { TagList } from "~/components/ui/TagList";
-import { CONTRIBUTE_HREF, FACETS, wikiPageUrl } from "~/constants/navigation";
+import {
+  CONTRIBUTE_HREF,
+  FACETS,
+  helpHref,
+  wikiPageUrl,
+} from "~/constants/navigation";
 
 export const meta: MetaFunction = () => [
   { title: "Bardic Torch" },
@@ -63,7 +68,6 @@ export default function Index() {
             to={wikiPageUrl("Category:Pieces")}
             variant="secondary"
             size="lg"
-            external="wiki"
           >
             Browse on the original wiki
           </ButtonLink>
@@ -94,7 +98,7 @@ export default function Index() {
               host a copy, and help pass the torch.
             </p>
             <p className="mt-3">
-              <Link to="/help/conservation-status">
+              <Link to={helpHref("conservation-status")}>
                 How conservation statuses work
               </Link>
             </p>
@@ -129,10 +133,13 @@ export default function Index() {
           have one.
         </p>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <ButtonLink to="/help/faq-for-bards" variant="secondary">
+          <ButtonLink to={helpHref("faq-for-bards")} variant="secondary">
             FAQ for bards
           </ButtonLink>
-          <ButtonLink to="/help/bard-preference-checklist" variant="secondary">
+          <ButtonLink
+            to={helpHref("bard-preference-checklist")}
+            variant="secondary"
+          >
             Bard preference checklist
           </ButtonLink>
         </div>

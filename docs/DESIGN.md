@@ -509,7 +509,7 @@ HELP
 CONTRIBUTE                               ← ContributeCard (see below)
 ```
 
-- The URL map lives in one typed, read-only module, `app/constants/navigation.ts`. Each entry has `{label, href, external: boolean}`, so the catalogue launch (FE2) only flips `external` and `href`. The same module holds the header search target (`https://bardictorch.miraheze.org/w/index.php`, query parameter `search`) and the contact form (`https://forms.gle/wUwWnMKtWZSUisWCA`, until FE4). `bardictorch.miraheze.org` appears only in this module, the help content and the docs (a repo-hygiene test checks this). Every wiki target title must exist in `test/fixtures/wiki-categories.json`, a snapshot taken from the wiki dump.
+- The URL map lives in one typed, read-only module, `app/constants/navigation.ts`. Each entry is `{label, href}`, so the catalogue launch (FE2) only changes `href`. Whether a link is external, and to the wiki or elsewhere, follows from its address alone (`externalKind` in `app/components/ui/Link.tsx`, used by every link-like component and the sidebar). The help pages' slugs and sidebar labels are listed once there too (`HELP_PAGES`); the help route, the sidebar, the footer and the home page take their addresses from it. The same module holds the header search target (`https://bardictorch.miraheze.org/w/index.php`, query parameter `search`) and the contact form (`https://forms.gle/wUwWnMKtWZSUisWCA`, until FE4). `bardictorch.miraheze.org` appears only in this module, the help content and the docs (a repo-hygiene test checks this). Every wiki target title must exist in `test/fixtures/wiki-categories.json`, a snapshot taken from the wiki dump.
 - **Nav item:**
   - Layout: `flex items-center gap-2 min-h-11 (44px) <lg / min-h-8 (32px) ≥lg`, `px-3`, `rounded-md`, `text-fg-muted`. Focus ring inset (`-outline-offset-2`). The tighter ≥lg rhythm (and the note's `p-2.5`) lets Browse, Facets and the whole Help group fit in an 800 px tall window.
   - Hover: `bg-surface-sunken text-fg`.
@@ -795,6 +795,7 @@ Generic components live in `app/components/ui/`. App-specific ones (ThemeToggle,
 
 - **States:** hover is `text-link-hover` with a 2 px decoration. Focus-visible is the shared ring with `rounded-sm` and `outline-offset: 2px`. Active (pressed) matches hover. There is no disabled link: render plain text instead.
 - **Current page** links in body text (rare) get `aria-current="page"` and `font-semibold text-fg no-underline`.
+- **Component:** `Link` (`to`, `appearance` prose | standalone | plain | muted | inherit, `current`, `compact`). `plain` is standalone at the surrounding weight (breadcrumbs, the contents list). `compact` gives a link outside running text a 24 px tall target (`inline-flex min-h-6 items-center`): the footer's help links and the breadcrumbs. The TOC's in-page anchors take the same look from `linkClasses`.
 
 ### 6.4 Field pattern (label, help, error)
 

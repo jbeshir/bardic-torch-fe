@@ -1,6 +1,7 @@
 import { Link as RemixLink, useLocation } from "@remix-run/react";
-import { IconArrowUpRight, IconInfoCircle } from "@tabler/icons-react";
+import { IconInfoCircle } from "@tabler/icons-react";
 import { ButtonLink } from "~/components/ui/Button";
+import { EXTERNAL_MARKS, externalKind } from "~/components/ui/Link";
 import { CONTRIBUTE_HREF, NAV_GROUPS } from "~/constants/navigation";
 import { LogoMark } from "./LogoMark";
 
@@ -15,26 +16,26 @@ const ITEM_CURRENT =
 function NavItem({
   label,
   href,
-  external,
   current,
 }: {
-  label: string;
-  href: string;
-  external: boolean;
-  current: boolean;
+  readonly label: string;
+  readonly href: string;
+  readonly current: boolean;
 }) {
-  if (external) {
+  const kind = externalKind(href);
+  if (kind) {
+    const { icon: MarkIcon, suffix } = EXTERNAL_MARKS[kind];
     // Same tab: the hidden text says where it goes, not how it opens.
     return (
       <a href={href} rel="noopener" className={`${ITEM} ${ITEM_IDLE}`}>
         {label}
-        <IconArrowUpRight
+        <MarkIcon
           size={14}
           stroke={1.75}
           aria-hidden="true"
           className="ml-auto shrink-0 text-fg-subtle group-hover:text-accent-text motion-safe:transition-transform motion-safe:duration-fast motion-safe:group-hover:-translate-y-0.5 motion-safe:group-hover:translate-x-0.5"
         />
-        <span className="sr-only"> (opens original wiki)</span>
+        <span className="sr-only">{suffix}</span>
       </a>
     );
   }

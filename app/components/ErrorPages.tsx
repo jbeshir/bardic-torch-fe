@@ -43,7 +43,7 @@ export function NotFound({ pathname }: { pathname: string }) {
           <ButtonLink to="/" variant="primary">
             Go to the home page
           </ButtonLink>
-          <Link to={wikiSearchUrl(lastSegment(pathname))} external="wiki">
+          <Link to={wikiSearchUrl(lastSegment(pathname))}>
             Look on the original wiki
           </Link>
         </>

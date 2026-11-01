@@ -216,7 +216,7 @@ export default function Settings() {
           <Alert tone="danger" title="Your account is blocked" headingLevel={2}>
             You can’t change your settings or suggest edits. If you think this
             is a mistake,{" "}
-            <Link to={CONTACT_FORM_URL} appearance="inherit" external="web">
+            <Link to={CONTACT_FORM_URL} appearance="inherit">
               contact the Bardic Torch team
             </Link>
             .

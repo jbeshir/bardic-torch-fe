@@ -1,21 +1,25 @@
 import { Link as RemixLink } from "@remix-run/react";
 import { IconArrowUpRight, IconExternalLink } from "@tabler/icons-react";
 import type { ReactNode } from "react";
+import { isWikiUrl } from "~/constants/navigation";
 
 /** Where an external link goes; decides its icon and hidden suffix. */
-export type ExternalKind = "web" | "wiki";
+type ExternalKind = "web" | "wiki";
 
-const EXTERNAL = {
+/** Each kind's icon and the hidden text that says where the link goes. */
+export const EXTERNAL_MARKS = {
   web: { icon: IconExternalLink, suffix: " (external link)" },
   wiki: { icon: IconArrowUpRight, suffix: " (opens original wiki)" },
 } as const;
 
-/** The external kind of `to`, or null when it is an internal path. */
-export function externalKind(
-  to: string,
-  kind: ExternalKind = "web"
-): ExternalKind | null {
-  return /^https?:\/\//.test(to) ? kind : null;
+/**
+ * Where `to` goes: null for an internal path, "wiki" for the original
+ * wiki, "web" for any other absolute URL. Every link-like component
+ * decides with this, so a link's marks always match its target.
+ */
+export function externalKind(to: string): ExternalKind | null {
+  if (!/^https?:\/\//.test(to)) return null;
+  return isWikiUrl(to) ? "wiki" : "web";
 }
 
 /**
@@ -26,10 +30,10 @@ export function ExternalMark({
   kind,
   size = "0.85em",
 }: {
-  kind: ExternalKind;
-  size?: number | string;
+  readonly kind: ExternalKind;
+  readonly size?: number | string;
 }) {
-  const { icon: MarkIcon, suffix } = EXTERNAL[kind];
+  const { icon: MarkIcon, suffix } = EXTERNAL_MARKS[kind];
   return (
     <>
       <MarkIcon
@@ -43,13 +47,16 @@ export function ExternalMark({
   );
 }
 
-type Appearance = "prose" | "standalone" | "muted" | "inherit";
+type Appearance = "prose" | "standalone" | "plain" | "muted" | "inherit";
 
-const APPEARANCES: Record<Appearance, string> = {
+const APPEARANCES: Readonly<Record<Appearance, string>> = {
   prose:
     "text-link underline decoration-link/40 decoration-1 underline-offset-prose visited:text-link-visited visited:decoration-link-visited/40 hover:text-link-hover hover:decoration-link-hover hover:decoration-2 active:text-link-hover",
   standalone:
     "font-medium text-link no-underline underline-offset-prose hover:text-link-hover hover:underline hover:decoration-2 focus-visible:underline active:text-link-hover",
+  // Standalone at the surrounding weight: breadcrumbs, the contents list.
+  plain:
+    "text-link no-underline underline-offset-prose hover:text-link-hover hover:underline focus-visible:underline active:text-link-hover",
   muted:
     "text-fg-muted underline decoration-fg-subtle/50 underline-offset-prose hover:text-link-hover hover:decoration-2 active:text-link-hover",
   // Links inside alerts take the alert's own text colour (DESIGN §6.14).
@@ -58,6 +65,14 @@ const APPEARANCES: Record<Appearance, string> = {
 };
 
 const CURRENT = "font-semibold text-fg no-underline";
+
+/** A link's look (DESIGN §6.3), for an anchor that can't be a `Link`. */
+export function linkClasses(appearance: Appearance): string {
+  return `rounded-sm ${APPEARANCES[appearance]}`;
+}
+
+/** A 24 px tall target (WCAG 2.5.8) for links set apart from running text. */
+const COMPACT = "inline-flex min-h-6 items-center";
 
 /**
  * Keeps an external link's icon on the same line as its last word, so the
@@ -93,24 +108,26 @@ export function Link({
   to,
   children,
   appearance = "standalone",
-  external,
   current = false,
+  compact = false,
 }: {
   /** An internal path, or an absolute URL. */
-  to: string;
-  children: ReactNode;
-  appearance?: Appearance;
-  /** For an absolute URL: where it goes (default "web"). */
-  external?: ExternalKind;
+  readonly to: string;
+  readonly children: ReactNode;
+  readonly appearance?: Appearance;
   /** This link is the page being shown (`aria-current="page"`). */
-  current?: boolean;
+  readonly current?: boolean;
+  /** Outside running text (a footer list, a trail): a 24 px tall target. */
+  readonly compact?: boolean;
 }) {
-  const className = `rounded-sm ${current ? CURRENT : APPEARANCES[appearance]}`;
-  const kind = externalKind(to, external);
+  const className = `${current ? `rounded-sm ${CURRENT}` : linkClasses(appearance)}${compact ? ` ${COMPACT}` : ""}`;
+  const kind = externalKind(to);
   if (kind) {
+    const content = withMark(children, <ExternalMark kind={kind} />);
     return (
       <a href={to} rel="noopener" className={className}>
-        {withMark(children, <ExternalMark kind={kind} />)}
+        {/* One flex item, so the words keep their spaces. */}
+        {compact ? <span>{content}</span> : content}
       </a>
     );
   }

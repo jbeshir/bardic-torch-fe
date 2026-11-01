@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { wikiPageUrl } from "~/constants/navigation";
 import { renderWithRouter } from "~/test/router";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
-import { Link } from "./Link";
+import { externalKind, Link, linkClasses } from "./Link";
 
 const WIKI = wikiPageUrl("Category:Moods");
 
@@ -48,19 +48,56 @@ describe("Link", () => {
   });
 
   it("says old-wiki links open the original wiki", async () => {
-    await renderWithRouter(
-      <Link to={WIKI} external="wiki">
-        Mood
-      </Link>
-    );
+    await renderWithRouter(<Link to={WIKI}>Mood</Link>);
     expect(
       screen.getByRole("link", { name: "Mood (opens original wiki)" })
     ).toHaveAttribute("href", WIKI);
   });
 
+  it.each([
+    ["/help", null],
+    ["#contents", null],
+    [WIKI, "wiki"],
+    ["https://bardictorch.miraheze.org", "wiki"],
+    ["https://bardictorch.miraheze.org.example.com/", "web"],
+    ["https://creativecommons.org/", "web"],
+    ["http://example.org", "web"],
+  ] as const)("classifies %s as %s from the address alone", (to, kind) => {
+    expect(externalKind(to)).toBe(kind);
+  });
+
+  it("compact: a 24 px tall target whose words keep their spaces", async () => {
+    await renderWithRouter(
+      <>
+        <Link to="/help" appearance="muted" compact>
+          Help
+        </Link>
+        <Link to={WIKI} appearance="muted" compact>
+          Original wiki
+        </Link>
+      </>
+    );
+    const help = screen.getByRole("link", { name: "Help" });
+    const wiki = screen.getByRole("link", {
+      name: "Original wiki (opens original wiki)",
+    });
+    for (const link of [help, wiki]) {
+      expect(link).toHaveClass("inline-flex", "min-h-6", "items-center");
+    }
+    // One flex item: a flex container would drop the space before "wiki".
+    expect(wiki.children).toHaveLength(1);
+    expect(wiki.firstElementChild).toHaveTextContent(/^Original wiki/);
+  });
+
+  it("gives an anchor that can't be a Link the same look", () => {
+    expect(linkClasses("plain").split(" ")).toEqual(
+      expect.arrayContaining(["rounded-sm", "text-link", "no-underline"])
+    );
+  });
+
   it("keeps the mark with non-text children too", async () => {
     await renderWithRouter(
-      <Link to={WIKI} external="wiki">
+      <Link to={WIKI}>
         <strong>Moods</strong>
       </Link>
     );
@@ -72,6 +109,7 @@ describe("Link", () => {
   it.each([
     ["prose", ["underline", "decoration-link/40", "visited:text-link-visited"]],
     ["standalone", ["text-link", "no-underline", "hover:underline"]],
+    ["plain", ["text-link", "no-underline", "hover:underline"]],
     ["muted", ["text-fg-muted", "underline", "decoration-fg-subtle/50"]],
     ["inherit", ["text-inherit", "underline"]],
   ] as const)(
@@ -104,9 +142,7 @@ describe("Link", () => {
           <Link to="/help" appearance="prose">
             Help
           </Link>{" "}
-          <Link to={WIKI} external="wiki">
-            Mood
-          </Link>
+          <Link to={WIKI}>Mood</Link>
         </p>
       )
     );

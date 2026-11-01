@@ -157,7 +157,7 @@ export function ErrorStates() {
                 <ButtonLink to="/" variant="primary">
                   Go to the home page
                 </ButtonLink>
-                <Link to={wikiSearchUrl("styleguide")} external="wiki">
+                <Link to={wikiSearchUrl("styleguide")}>
                   Look on the original wiki
                 </Link>
               </>

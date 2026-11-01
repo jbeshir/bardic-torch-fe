@@ -1,5 +1,6 @@
 import { IconChevronDown } from "@tabler/icons-react";
 import { useEffect, useId, useRef } from "react";
+import { linkClasses } from "~/components/ui/Link";
 
 type Section = {
   /** The heading's id, the link target. */
@@ -15,8 +16,8 @@ export type TocEntry = Section & {
 /** Below md the contents start folded, out of the way of the first prose. */
 const MD_QUERY = "(min-width: 768px)";
 
-const ITEM =
-  "inline-flex min-h-6 items-baseline gap-2 rounded-sm text-link no-underline underline-offset-prose hover:text-link-hover hover:underline";
+// An in-page anchor, so a plain <a> with the Link look (no Remix routing).
+const ITEM = `${linkClasses("plain")} inline-flex min-h-6 items-baseline gap-2`;
 
 function Item({ number, section }: { number: string; section: Section }) {
   return (

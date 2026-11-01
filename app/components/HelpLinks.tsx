@@ -1,9 +1,10 @@
-import { Link as RemixLink } from "@remix-run/react";
-import { ExternalMark } from "~/components/ui/Link";
-import { CONTACT_FORM_URL, WIKI_HOME_URL } from "~/constants/navigation";
-
-const LINK =
-  "inline-flex min-h-6 items-center rounded-sm text-fg-muted underline decoration-fg-subtle/50 underline-offset-prose hover:text-link-hover hover:decoration-2";
+import { Link } from "~/components/ui/Link";
+import {
+  CONTACT_FORM_URL,
+  HELP_HREF,
+  helpHref,
+  WIKI_HOME_URL,
+} from "~/constants/navigation";
 
 /**
  * Where to get help, the same on every page (DESIGN §5.7, WCAG 3.2.6):
@@ -13,10 +14,10 @@ const LINK =
  * line starts with a "·".
  */
 const HELP_LINKS = [
-  { label: "Contact", href: CONTACT_FORM_URL, external: "web" },
-  { label: "Help", href: "/help" },
-  { label: "Licence & attribution", href: "/help/licence" },
-  { label: "Original wiki", href: WIKI_HOME_URL, external: "wiki" },
+  { label: "Contact", href: CONTACT_FORM_URL },
+  { label: "Help", href: HELP_HREF },
+  { label: "Licence & attribution", href: helpHref("licence") },
+  { label: "Original wiki", href: WIKI_HOME_URL },
 ] as const;
 
 export function HelpLinks() {
@@ -31,16 +32,9 @@ export function HelpLinks() {
           <span aria-hidden="true" className="separated-list-mark">
             ·
           </span>
-          {"external" in link ? (
-            <a href={link.href} rel="noopener" className={LINK}>
-              {link.label}
-              <ExternalMark kind={link.external} />
-            </a>
-          ) : (
-            <RemixLink to={link.href} className={LINK}>
-              {link.label}
-            </RemixLink>
-          )}
+          <Link to={link.href} appearance="muted" compact>
+            {link.label}
+          </Link>
         </li>
       ))}
     </ul>

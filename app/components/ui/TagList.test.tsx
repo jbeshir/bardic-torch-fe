@@ -49,7 +49,16 @@ describe("TagList", () => {
     );
   });
 
-  it("marks external chips as going to the original wiki by default", async () => {
+  it("marks a chip to any other site as an external link", async () => {
+    await renderWithRouter(
+      <TagList tags={[{ label: "Licence", to: "https://example.org/x" }]} />
+    );
+    expect(
+      screen.getByRole("link", { name: "Licence (external link)" })
+    ).toHaveAttribute("href", "https://example.org/x");
+  });
+
+  it("marks chips to the wiki as going to the original wiki", async () => {
     await renderWithRouter(<TagList tags={[{ label: "Moods", to: WIKI }]} />);
     const chip = screen.getByRole("link", {
       name: "Moods (opens original wiki)",

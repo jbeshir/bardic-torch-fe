@@ -1,7 +1,7 @@
 import type { MetaDescriptor } from "@remix-run/cloudflare";
 import { Fragment } from "react";
 import { Link } from "~/components/ui/Link";
-import { LICENCE_URL, wikiPageUrl } from "~/constants/navigation";
+import { HELP_HREF, LICENCE_URL, wikiPageUrl } from "~/constants/navigation";
 import { MarkdownPart } from "~/content/markdown/components";
 import type { HelpContent } from "~/content/help/pages";
 import type { HelpFrontmatter } from "~/content/help/frontmatter";
@@ -34,7 +34,7 @@ function SourceList({ titles }: { titles: readonly string[] }) {
   return titles.map((title, index) => (
     <Fragment key={title}>
       {index === 0 ? "" : index === titles.length - 1 ? " and " : ", "}
-      <Link to={wikiPageUrl(title)} appearance="inherit" external="wiki">
+      <Link to={wikiPageUrl(title)} appearance="inherit">
         {`‘${title}’`}
       </Link>
     </Fragment>
@@ -88,15 +88,15 @@ export function HelpPage({ content }: { content: HelpContent }) {
         ? {}
         : {
             breadcrumbs: {
-              trail: [{ label: "Help", to: "/help" }],
+              trail: [{ label: "Help", to: HELP_HREF }],
               current: frontmatter.title,
             },
-            categories: [{ label: "Help", to: "/help" }],
+            categories: [{ label: "Help", to: HELP_HREF }],
           })}
       {...(source
         ? {
             meta: (
-              <Link to={wikiPageUrl(source)} appearance="muted" external="wiki">
+              <Link to={wikiPageUrl(source)} appearance="muted">
                 Adapted from the original wiki
               </Link>
             ),

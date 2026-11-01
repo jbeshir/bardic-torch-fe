@@ -1,5 +1,5 @@
-import { Link as RemixLink } from "@remix-run/react";
 import { IconChevronRight } from "@tabler/icons-react";
+import { Link } from "./Link";
 
 type Crumb = {
   readonly label: string;
@@ -27,9 +27,9 @@ export function Breadcrumbs({
   current,
 }: {
   /** The ancestors, outermost first: e.g. Help. */
-  trail: readonly [Crumb, ...Crumb[]];
+  readonly trail: readonly [Crumb, ...Crumb[]];
   /** The page being shown. */
-  current: string;
+  readonly current: string;
 }) {
   return (
     <nav aria-label="Breadcrumb">
@@ -40,13 +40,9 @@ export function Breadcrumbs({
         {trail.map(({ label, to }) => (
           <li key={to}>
             <Chevron />
-            <RemixLink
-              to={to}
-              prefetch="intent"
-              className="inline-flex min-h-6 items-center rounded-sm text-link no-underline underline-offset-prose hover:text-link-hover hover:underline"
-            >
+            <Link to={to} appearance="plain" compact>
               {label}
-            </RemixLink>
+            </Link>
           </li>
         ))}
         <li>

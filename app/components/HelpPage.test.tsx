@@ -31,11 +31,11 @@ Statuses flag works that need help.
 `;
 
 async function testPage(source = SOURCE): Promise<HelpContent> {
-  return { slug: "test-page", ...(await compileMarkdown(source)) };
+  return { slug: "contributing", ...(await compileMarkdown(source)) };
 }
 
 async function renderHelpPage(content: HelpContent) {
-  return renderWithRouter(<HelpPage content={content} />, "/help/test-page");
+  return renderWithRouter(<HelpPage content={content} />, "/help/contributing");
 }
 
 describe("HelpPage", () => {

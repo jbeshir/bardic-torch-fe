@@ -3,7 +3,9 @@
  * catalogue arrives in FE2; until then Browse, the facets and the search
  * go to the original wiki, marked as external. This is the only app module
  * that names the wiki's host (test/repo-hygiene.test.ts), so the catalogue
- * launch only changes this file: an entry flips `external` and `href`.
+ * launch only changes this file: an entry gets an internal `href`. Links
+ * are marked as external from their address (`externalKind` in
+ * components/ui/Link.tsx).
  */
 
 const WIKI_ORIGIN = "https://bardictorch.miraheze.org";
@@ -38,11 +40,33 @@ export const CONTACT_FORM_URL = "https://forms.gle/wUwWnMKtWZSUisWCA";
 /** The licence of the site's text (DESIGN §5.7). */
 export const LICENCE_URL = "https://creativecommons.org/licenses/by-sa/4.0/";
 
+/** The help index. */
+export const HELP_HREF = "/help";
+
+/**
+ * The help pages, in the site navigation's order: each is at
+ * /help/{slug} (app/content/help/pages.ts holds its content) and listed in
+ * the sidebar under `label`.
+ */
+export const HELP_PAGES = [
+  { slug: "contributing", label: "Contributing" },
+  { slug: "faq-for-bards", label: "FAQ for bards" },
+  { slug: "bard-preference-checklist", label: "Bard preference checklist" },
+  { slug: "conservation-status", label: "Conservation status" },
+  { slug: "licence", label: "Licence & attribution" },
+] as const;
+
+export type HelpSlug = (typeof HELP_PAGES)[number]["slug"];
+
+/** The address of a help page. */
+export function helpHref(slug: HelpSlug): string {
+  return `${HELP_HREF}/${slug}`;
+}
+
 type NavItem = {
   readonly label: string;
+  /** An internal path, or an absolute URL (the original wiki, for now). */
   readonly href: string;
-  /** True while the target is on the original wiki. */
-  readonly external: boolean;
 };
 
 type NavGroup = {
@@ -55,14 +79,9 @@ type NavGroup = {
 const wiki = (label: string, title: string): NavItem => ({
   label,
   href: wikiPageUrl(title),
-  external: true,
 });
 
-const page = (label: string, href: string): NavItem => ({
-  label,
-  href,
-  external: false,
-});
+const page = (label: string, href: string): NavItem => ({ label, href });
 
 /** The ways to browse pieces: the sidebar's Facets, the home page's chips. */
 export const FACETS: readonly NavItem[] = [
@@ -90,15 +109,9 @@ export const NAV_GROUPS: readonly NavGroup[] = [
   { heading: "Facets", items: FACETS },
   {
     heading: "Help",
-    items: [
-      page("Contributing", "/help/contributing"),
-      page("FAQ for bards", "/help/faq-for-bards"),
-      page("Bard preference checklist", "/help/bard-preference-checklist"),
-      page("Conservation status", "/help/conservation-status"),
-      page("Licence & attribution", "/help/licence"),
-    ],
+    items: HELP_PAGES.map(({ slug, label }) => page(label, helpHref(slug))),
   },
 ];
 
 /** Where the ContributeCard's button goes. */
-export const CONTRIBUTE_HREF = "/help/contributing";
+export const CONTRIBUTE_HREF = helpHref("contributing");

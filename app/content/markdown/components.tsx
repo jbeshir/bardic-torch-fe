@@ -10,7 +10,6 @@ import {
   InfoboxFactValue,
 } from "~/components/ui/Infobox";
 import { Link } from "~/components/ui/Link";
-import { isWikiUrl } from "~/constants/navigation";
 import type { HelpContent } from "~/content/help/pages";
 
 type Children = { children?: ReactNode };
@@ -25,11 +24,7 @@ function contentLink(appearance: "prose" | "standalone") {
       throw new Error("A link in a help page has no address");
     }
     return (
-      <Link
-        to={href}
-        appearance={appearance}
-        external={isWikiUrl(href) ? "wiki" : "web"}
-      >
+      <Link to={href} appearance={appearance}>
         {children}
       </Link>
     );

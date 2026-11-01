@@ -150,7 +150,6 @@ export function PageTemplate() {
               <Link
                 to={wikiPageUrl("Category:Conservation Status")}
                 appearance="muted"
-                external="wiki"
               >
                 Adapted from the original wiki
               </Link>

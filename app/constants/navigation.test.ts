@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   CONTACT_FORM_URL,
   CONTRIBUTE_HREF,
+  HELP_PAGES,
+  helpHref,
   isWikiUrl,
   LICENCE_URL,
   NAV_GROUPS,
@@ -54,7 +56,7 @@ describe("wiki targets", () => {
     ).toBe(true);
   });
 
-  it.each(items.filter(item => item.external))(
+  it.each(items.filter(item => isWikiUrl(item.href)))(
     "$label goes to a page that exists on the wiki",
     ({ href }) => {
       const title = wikiTitle(href);
@@ -125,10 +127,10 @@ describe("navigation", () => {
   it("lists the catalogue entries from the plan, all on the wiki", () => {
     expect(
       NAV_GROUPS.slice(0, 2).flatMap(group =>
-        group.items.map(({ label, href, external }) => [
+        group.items.map(({ label, href }) => [
           label,
           wikiTitle(href),
-          external,
+          isWikiUrl(href),
         ])
       )
     ).toEqual([
@@ -148,30 +150,30 @@ describe("navigation", () => {
 
   it("links the help pages internally", () => {
     expect(NAV_GROUPS[2]?.items).toEqual([
-      { label: "Contributing", href: "/help/contributing", external: false },
-      { label: "FAQ for bards", href: "/help/faq-for-bards", external: false },
+      { label: "Contributing", href: "/help/contributing" },
+      { label: "FAQ for bards", href: "/help/faq-for-bards" },
       {
         label: "Bard preference checklist",
         href: "/help/bard-preference-checklist",
-        external: false,
       },
       {
         label: "Conservation status",
         href: "/help/conservation-status",
-        external: false,
       },
       {
         label: "Licence & attribution",
         href: "/help/licence",
-        external: false,
       },
     ]);
     expect(CONTRIBUTE_HREF).toBe("/help/contributing");
+    expect(HELP_PAGES.map(({ slug }) => helpHref(slug))).toEqual(
+      NAV_GROUPS[2]?.items.map(({ href }) => href)
+    );
   });
 
-  it("marks exactly the absolute URLs as external", () => {
-    for (const { href, external } of items) {
-      expect(external, href).toBe(/^https:\/\//.test(href));
+  it("leaves the wiki for every absolute URL, and only for those", () => {
+    for (const { href } of items) {
+      expect(isWikiUrl(href), href).toBe(/^https:\/\//.test(href));
     }
   });
 

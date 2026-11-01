@@ -2,7 +2,7 @@ import { Link as RemixLink } from "@remix-run/react";
 import type { Icon } from "@tabler/icons-react";
 import type { ButtonHTMLAttributes, MouseEvent, ReactNode, Ref } from "react";
 import { forwardRef } from "react";
-import { ExternalMark, externalKind, type ExternalKind } from "./Link";
+import { ExternalMark, externalKind } from "./Link";
 import { Spinner } from "./Spinner";
 
 type Variant =
@@ -210,8 +210,6 @@ type ButtonLinkProps = Look &
   Content & {
     /** An internal path (through Remix), or an absolute URL (external). */
     to: string;
-    /** For an absolute URL: where it goes, for the hidden suffix. */
-    external?: ExternalKind;
     /**
      * Load the page from the server instead of navigating in the app: the
      * no-JS "Try again", which must work when the app itself failed.
@@ -233,11 +231,10 @@ export function ButtonLink({
   label,
   children,
   to,
-  external,
   reloadDocument = false,
 }: ButtonLinkProps) {
   const className = classes({ variant, size, fullWidth }, label !== undefined);
-  const kind = externalKind(to, external);
+  const kind = externalKind(to);
   if (kind) {
     return (
       <a href={to} rel="noopener" aria-label={label} className={className}>
