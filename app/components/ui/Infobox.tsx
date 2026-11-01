@@ -16,13 +16,34 @@ type InfoboxSection = {
 const ROW =
   "border-b border-border py-2 last:border-b-0 sm:grid sm:grid-cols-infobox sm:gap-x-3";
 
+/**
+ * The parts of a list of facts, for facts written as content (a help page's
+ * `:::infobox`, whose labels may be links): the list, a row, and the row's
+ * label and value. `sections` uses the same parts.
+ */
+export function InfoboxFacts({ children }: { children: ReactNode }) {
+  return <dl className="mt-1 text-body-sm">{children}</dl>;
+}
+
+export function InfoboxFact({ children }: { children: ReactNode }) {
+  return <div className={ROW}>{children}</div>;
+}
+
+export function InfoboxFactLabel({ children }: { children: ReactNode }) {
+  return <dt className="text-fg-muted">{children}</dt>;
+}
+
+export function InfoboxFactValue({ children }: { children: ReactNode }) {
+  return <dd className="text-fg">{children}</dd>;
+}
+
 function Rows({ rows }: { rows: readonly InfoboxRow[] }) {
   return (
-    <dl className="mt-1 text-body-sm">
+    <InfoboxFacts>
       {rows.map(({ label, value }) => (
-        <div key={label} className={ROW}>
-          <dt className="text-fg-muted">{label}</dt>
-          <dd className="text-fg">
+        <InfoboxFact key={label}>
+          <InfoboxFactLabel>{label}</InfoboxFactLabel>
+          <InfoboxFactValue>
             {value ?? (
               <>
                 <span aria-hidden="true" className="text-fg-subtle">
@@ -31,10 +52,10 @@ function Rows({ rows }: { rows: readonly InfoboxRow[] }) {
                 <span className="sr-only">Not recorded</span>
               </>
             )}
-          </dd>
-        </div>
+          </InfoboxFactValue>
+        </InfoboxFact>
       ))}
-    </dl>
+    </InfoboxFacts>
   );
 }
 
@@ -61,19 +82,24 @@ function LoadingRows() {
  * width above the prose below md (§5.5); put it first in the content.
  *
  * `loading` shows skeleton rows (client transitions only); `error` replaces
- * the rows with a danger line and the retry control you pass.
+ * the rows with a danger line and the retry control you pass. Facts with
+ * no section heading (a help page's "At a glance") are `children`, built
+ * from InfoboxFacts.
  */
 export function Infobox({
   title,
   subtitle,
-  sections,
+  sections = [],
+  children,
   footer,
   loading = false,
   error,
 }: {
   title: string;
   subtitle?: ReactNode;
-  sections: readonly InfoboxSection[];
+  sections?: readonly InfoboxSection[];
+  /** Facts outside any section: an InfoboxFacts list. */
+  children?: ReactNode;
   /** An action under the facts, e.g. "Help complete this page". */
   footer?: ReactNode;
   loading?: boolean;
@@ -116,6 +142,7 @@ export function Infobox({
             </section>
           ))
         : null}
+      {!loading && !error ? children : null}
       {footer ? (
         <div className="mt-4 border-t border-border pt-3 text-body-sm">
           {footer}

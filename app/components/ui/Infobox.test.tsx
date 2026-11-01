@@ -1,7 +1,30 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
-import { Infobox } from "./Infobox";
+import {
+  Infobox,
+  InfoboxFact,
+  InfoboxFactLabel,
+  InfoboxFacts,
+  InfoboxFactValue,
+} from "./Infobox";
+
+function Facts() {
+  return (
+    <InfoboxFacts>
+      <InfoboxFact>
+        <InfoboxFactLabel>
+          <a href="#low-risk">Low Risk</a>
+        </InfoboxFactLabel>
+        <InfoboxFactValue>found in at least 4 places.</InfoboxFactValue>
+      </InfoboxFact>
+      <InfoboxFact>
+        <InfoboxFactLabel>Restricted</InfoboxFactLabel>
+        <InfoboxFactValue>never shared.</InfoboxFactValue>
+      </InfoboxFact>
+    </InfoboxFacts>
+  );
+}
 
 const SECTIONS = [
   {
@@ -117,9 +140,51 @@ describe("Infobox", () => {
     expect(screen.queryByRole("term")).toBeNull();
   });
 
+  it("takes facts outside any section as children, styled like section rows", () => {
+    render(
+      <Infobox title="At a glance">
+        <Facts />
+      </Infobox>
+    );
+    const aside = screen.getByRole("complementary", { name: "At a glance" });
+    expect(within(aside).queryByRole("heading", { level: 3 })).toBeNull();
+    const terms = within(aside).getAllByRole("term");
+    expect(terms.map(term => term.textContent)).toEqual([
+      "Low Risk",
+      "Restricted",
+    ]);
+    expect(
+      within(terms[0] as HTMLElement).getByRole("link", { name: "Low Risk" })
+    ).toHaveAttribute("href", "#low-risk");
+    expect(terms[0]).toHaveClass("text-fg-muted");
+    expect(within(aside).getAllByRole("definition")[1]).toHaveClass("text-fg");
+    expect(terms[0]?.parentElement).toHaveClass("sm:grid-cols-infobox");
+  });
+
+  it("hides child facts while loading or failed, like section rows", () => {
+    render(
+      <>
+        <Infobox title="Loading" loading>
+          <Facts />
+        </Infobox>
+        <Infobox
+          title="Failed"
+          error={{ retry: <button type="button">Try again</button> }}
+        >
+          <Facts />
+        </Infobox>
+      </>
+    );
+    expect(screen.queryByRole("term")).toBeNull();
+  });
+
   it("renders the same token classes in both themes", async () => {
     await expectSameMarkupInBothThemes(() =>
-      render(<Infobox title="At a glance" sections={SECTIONS} />)
+      render(
+        <Infobox title="At a glance" sections={SECTIONS}>
+          <Facts />
+        </Infobox>
+      )
     );
   });
 });

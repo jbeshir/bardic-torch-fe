@@ -3,8 +3,10 @@ import {
   vitePlugin as remix,
   cloudflareDevProxyVitePlugin as remixCloudflareDevProxy,
 } from "@remix-run/dev";
+import mdx from "@mdx-js/rollup";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
+import { MARKDOWN_OPTIONS } from "./app/content/markdown/options";
 import { ENV_NAMES, parseEnv } from "./app/server/env.server";
 import type { Env } from "./worker-configuration";
 
@@ -30,6 +32,8 @@ export default defineConfig(({ mode }) => ({
         __STUB_AUTH__: JSON.stringify(mode === "e2e" || mode === "development"),
       },
   plugins: [
+    // Help pages are Markdown, compiled before Remix sees the route modules.
+    { enforce: "pre", ...mdx(MARKDOWN_OPTIONS) },
     ...(!isTest
       ? [
           remixCloudflareDevProxy<Env, IncomingRequestCfProperties>({

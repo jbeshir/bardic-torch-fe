@@ -13,6 +13,11 @@ export function wikiPageUrl(title: string): string {
   return `${WIKI_ORIGIN}/wiki/${encodeURIComponent(title.replaceAll(" ", "_")).replaceAll("%3A", ":")}`;
 }
 
+/** Whether `url` is on the original wiki (its links are marked as such). */
+export function isWikiUrl(url: string): boolean {
+  return url === WIKI_ORIGIN || url.startsWith(`${WIKI_ORIGIN}/`);
+}
+
 /** The original wiki's own search (DESIGN §6.26): a GET form. */
 export const WIKI_SEARCH = {
   action: `${WIKI_ORIGIN}/w/index.php`,

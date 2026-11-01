@@ -13,6 +13,12 @@ function lastSegment(pathname: string): string {
   }
 }
 
+/** The 404 page's title, kept out of search results. */
+export const NOT_FOUND_META = [
+  { title: "Page not found · Bardic Torch" },
+  { name: "robots", content: "noindex" },
+] as const;
+
 /**
  * The 404 page body (DESIGN §10.4): the unlit torch, what happened, the way
  * home and a search of the original wiki for the address's last part,

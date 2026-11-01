@@ -1394,6 +1394,11 @@ Every page uses the app shell (header, bottom bar or sidebar, drawer, sheet, foo
 - **Footer meta line** (caption fg-subtle): "This page is available under CC BY-SA 4.0. Adapted from 'Conservation Status' on the original Bardic Torch wiki by its contributors."
 - **Content pages in FE1:** `contributing`, `faq-for-bards`, `bard-preference-checklist`, `conservation-status`, `licence`, plus an index at `/help`. The index is a `ul role="list"` of `link` Cards.
 - Help pages are **Markdown** (`.md`, compiled by `@mdx-js/rollup` with `format: "md"`), with `:::note`, `:::warning` and `:::infobox` directives that map to Alert and Infobox. They are reviewed for tone (§11) and adapted rather than copied verbatim. Remove the wiki's mobile warning and "make an account on Miraheze" instructions.
+- **Built as (FE1):** the pages live in `app/content/help/*.md`; the pipeline is `app/content/markdown/` (options, plugins and the component map).
+  - Front matter: `title`, `description` (≤160 characters, the meta description), `summary` (`og:description`; the index's intro), `sourcePages` (wiki page titles, credited in the meta link and the licence line) and `lastReviewed` (`YYYY-MM-DD`, shown in the licence line). The build fails on front matter that doesn't match `helpFrontmatterSchema`.
+  - `:::infobox{title="At a glance"}` holds one list of `**Label:** value` or `[Label](#section): value` items, which become the Infobox's rows. `:::cards` (the index only) holds one list of `[Title](/help/slug): description` items, which become link Cards. A note or warning with one paragraph renders it as the Alert's body. Any other directive, a missing infobox title or a stray `:name` text directive fails the build.
+  - h2s and h3s get GitHub-style ids from their text (`#how-restricted-works`), and the module exports them as the contents. The infobox is rendered first and outside `.prose-bt`; the content before the first h2 is the intro; the TOC follows it.
+  - Links: absolute URLs are external `Link`s (wiki URLs get the wiki mark and suffix); paths go through Remix. Links in the infobox are standalone, in the prose they are prose links.
 
 ### 10.3 Settings (`/settings`, signed-in only)
 

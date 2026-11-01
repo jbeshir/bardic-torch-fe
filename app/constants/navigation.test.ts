@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   CONTACT_FORM_URL,
   CONTRIBUTE_HREF,
+  isWikiUrl,
   LICENCE_URL,
   NAV_GROUPS,
   WIKI_HOME_URL,
@@ -93,6 +94,19 @@ describe("wiki URLs", () => {
     expect(wikiSearchUrl("ballad of the reeve & bell")).toBe(
       "https://bardictorch.miraheze.org/w/index.php?search=ballad+of+the+reeve+%26+bell"
     );
+  });
+});
+
+describe("isWikiUrl", () => {
+  it("is true for the wiki and its pages only", () => {
+    expect(isWikiUrl("https://bardictorch.miraheze.org")).toBe(true);
+    expect(isWikiUrl(wikiPageUrl("Collections"))).toBe(true);
+    expect(isWikiUrl(wikiSearchUrl("bell"))).toBe(true);
+    expect(isWikiUrl("https://bardictorch.miraheze.org.example.com/wiki")).toBe(
+      false
+    );
+    expect(isWikiUrl(CONTACT_FORM_URL)).toBe(false);
+    expect(isWikiUrl("/help/licence")).toBe(false);
   });
 });
 
