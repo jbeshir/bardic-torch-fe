@@ -96,7 +96,7 @@ describe("HelpPage", () => {
     );
     const licence = screen.getByText(/^This page is available under/);
     expect(licence).toHaveTextContent(
-      "This page is available under CC BY-SA 4.0 (external link). Adapted from ‘Conservation Status’ (opens original wiki), ‘Main Page’ (opens original wiki) and ‘FAQ for Bards’ (opens original wiki) on the original Bardic Torch wiki by its contributors. Last reviewed 31 October 2026."
+      "This page is available under CC BY-SA 4.0 (external link). Adapted from ‘Conservation Status’ (opens original wiki), ‘Main Page’ (opens original wiki) and ‘FAQ for Bards’ (opens original wiki) on the original Bardic Torch wiki by its contributors. Last reviewed 31 Oct 2026."
     );
     expect(
       within(licence).getByRole("link", { name: /CC BY-SA 4\.0/ })
@@ -107,7 +107,7 @@ describe("HelpPage", () => {
     expect(
       within(licence).getByRole("link", { name: /‘FAQ for Bards’/ })
     ).toHaveAttribute("href", wikiPageUrl("FAQ for Bards"));
-    expect(within(licence).getByText("31 October 2026")).toHaveAttribute(
+    expect(within(licence).getByText("31 Oct 2026")).toHaveAttribute(
       "dateTime",
       "2026-10-31"
     );

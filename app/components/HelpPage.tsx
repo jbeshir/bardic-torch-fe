@@ -7,8 +7,11 @@ import type { HelpContent } from "~/content/help/pages";
 import type { HelpFrontmatter } from "~/content/help/frontmatter";
 import { WikiPage } from "./WikiPage";
 
+/** "31 Oct 2026" (DESIGN §11.1). */
 const REVIEWED = new Intl.DateTimeFormat("en-GB", {
-  dateStyle: "long",
+  day: "numeric",
+  month: "short",
+  year: "numeric",
   timeZone: "UTC",
 });
 
@@ -60,7 +63,7 @@ function LicenceLine({ frontmatter }: { frontmatter: HelpFrontmatter }) {
         </>
       ) : null}{" "}
       Last reviewed{" "}
-      <time dateTime={lastReviewed}>
+      <time dateTime={lastReviewed} className="whitespace-nowrap">
         {REVIEWED.format(new Date(`${lastReviewed}T00:00:00Z`))}
       </time>
       .

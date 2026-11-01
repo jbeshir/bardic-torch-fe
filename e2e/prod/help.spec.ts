@@ -142,6 +142,30 @@ for (const help of PAGES.filter(({ infobox }) => infobox)) {
       expect(Math.abs(wideBox.y - wideIntro.y)).toBeLessThanOrEqual(24);
     }
   });
+
+  test(`${help.path}: the contents box never runs under the floated infobox`, async ({
+    page,
+  }) => {
+    const main = page.getByRole("main");
+    const infobox = main.getByRole("complementary", { name: "At a glance" });
+    const contents = main.getByRole("navigation", { name: "Contents" });
+    for (const width of [768, 1024, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(help.path);
+      if ((await contents.count()) === 0) continue;
+      const [box, toc] = await Promise.all([
+        infobox.boundingBox(),
+        contents.boundingBox(),
+      ]);
+      expect(box && toc).toBeTruthy();
+      if (box && toc) {
+        // Beside the float (narrowed by it) or below it, never behind it.
+        const beside = toc.x + toc.width <= box.x + 1;
+        const below = toc.y >= box.y + box.height - 1;
+        expect(beside || below, `at ${width}`).toBe(true);
+      }
+    }
+  });
 }
 
 test("the contents fold below md and jump to their section", async ({
@@ -177,8 +201,20 @@ test("the contents fold below md and jump to their section", async ({
 test("the help index has a card for each help page, and each one opens it", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/help");
   const cards = page.getByRole("main").getByRole("listitem");
+  // Cards, not prose bullets: no marker, and each row's tops level.
+  for (const item of await cards.all()) {
+    expect(
+      await item.evaluate(element => getComputedStyle(element).display)
+    ).not.toBe("list-item");
+  }
+  const [first, second] = await Promise.all([
+    cards.nth(0).boundingBox(),
+    cards.nth(1).boundingBox(),
+  ]);
+  expect(first && second && Math.abs(first.y - second.y)).toBe(0);
   const titles = PAGES.filter(({ path }) => path !== "/help").map(
     ({ title }) => title
   );
@@ -240,6 +276,13 @@ test("the conservation infobox jumps to its statuses, and the table fits at 320"
   await expect(
     main.getByRole("heading", { level: 2, name: "How Restricted works" })
   ).toBeInViewport();
+  // The other statuses each go to their own row of the table.
+  await main
+    .getByRole("complementary", { name: "At a glance" })
+    .getByRole("link", { name: "Critically Endangered" })
+    .click();
+  await expect(page).toHaveURL(/#critically-endangered$/);
+  await expect(main.locator("tr#critically-endangered")).toBeInViewport();
 });
 
 test("the licence page links the licence, the original wiki and its contributors", async ({

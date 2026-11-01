@@ -5,138 +5,148 @@
     text-wrap: pretty;
   }
 
-  .prose-bt :where(p, ul, ol, dl, table, blockquote, pre) {
+  .prose-bt
+    :where(p, ul, ol, dl, table, blockquote, pre):not(
+      :where(.not-prose, .not-prose *)
+    ) {
     margin-block: 0 1em;
   }
 
-  .prose-bt :where(h2) {
+  .prose-bt :where(h2):not(:where(.not-prose, .not-prose *)) {
     @apply text-h2;
     margin-block: 2em 0.5em;
     padding-bottom: 0.25em;
     border-bottom: 1px solid rgb(var(--border));
   }
 
-  .prose-bt :where(h3) {
+  .prose-bt :where(h3):not(:where(.not-prose, .not-prose *)) {
     @apply text-h3;
     margin-block: 1.5em 0.4em;
   }
 
-  .prose-bt :where(h4) {
+  .prose-bt :where(h4):not(:where(.not-prose, .not-prose *)) {
     @apply font-sans text-h4;
     margin-block: 1.25em 0.25em;
   }
 
-  .prose-bt :where(a) {
+  .prose-bt :where(a):not(:where(.not-prose, .not-prose *)) {
     @apply text-link underline decoration-link/40 decoration-1 underline-offset-prose;
   }
 
-  .prose-bt :where(a:visited) {
+  .prose-bt :where(a:visited):not(:where(.not-prose, .not-prose *)) {
     @apply text-link-visited decoration-link-visited/40;
   }
 
-  .prose-bt :where(a:hover, a:active) {
+  .prose-bt :where(a:hover, a:active):not(:where(.not-prose, .not-prose *)) {
     @apply text-link-hover decoration-link-hover decoration-2;
   }
 
-  .prose-bt :where(ul, ol) {
+  .prose-bt :where(ul, ol):not(:where(.not-prose, .not-prose *)) {
     padding-left: 1.5em;
   }
 
-  .prose-bt :where(ul) {
+  .prose-bt :where(ul):not(:where(.not-prose, .not-prose *)) {
     list-style-type: disc;
   }
 
-  .prose-bt :where(ul ul) {
+  .prose-bt :where(ul ul):not(:where(.not-prose, .not-prose *)) {
     list-style-type: circle;
   }
 
-  .prose-bt :where(ol) {
+  .prose-bt :where(ol):not(:where(.not-prose, .not-prose *)) {
     list-style-type: decimal;
   }
 
-  .prose-bt :where(ol ol) {
+  .prose-bt :where(ol ol):not(:where(.not-prose, .not-prose *)) {
     list-style-type: lower-alpha;
   }
 
-  .prose-bt :where(ul > li)::marker {
+  .prose-bt :where(ul > li):not(:where(.not-prose, .not-prose *))::marker {
     color: rgb(var(--fg-subtle));
   }
 
-  .prose-bt :where(ol > li)::marker {
+  .prose-bt :where(ol > li):not(:where(.not-prose, .not-prose *))::marker {
     color: rgb(var(--fg-muted));
   }
 
-  .prose-bt :where(li + li) {
+  .prose-bt :where(li + li):not(:where(.not-prose, .not-prose *)) {
     margin-top: 0.25em;
   }
 
-  .prose-bt :where(blockquote) {
+  .prose-bt :where(blockquote):not(:where(.not-prose, .not-prose *)) {
     @apply text-fg-muted;
     border-left: 3px solid rgb(var(--border-strong));
     padding: 0.25em 0 0.25em 1em;
     font-style: normal;
   }
 
-  .prose-bt :where(blockquote footer) {
+  .prose-bt :where(blockquote footer):not(:where(.not-prose, .not-prose *)) {
     @apply text-caption;
   }
 
-  .prose-bt :where(blockquote footer)::before {
+  .prose-bt
+    :where(blockquote footer):not(:where(.not-prose, .not-prose *))::before {
     content: "— ";
   }
 
-  .prose-bt :where(table) {
+  .prose-bt :where(table):not(:where(.not-prose, .not-prose *)) {
     @apply w-full text-body-sm;
     border-collapse: collapse;
   }
 
-  .prose-bt :where(caption) {
+  .prose-bt :where(caption):not(:where(.not-prose, .not-prose *)) {
     @apply text-caption text-fg-muted;
     caption-side: top;
     text-align: left;
   }
 
-  .prose-bt :where(th) {
+  .prose-bt :where(th):not(:where(.not-prose, .not-prose *)) {
     @apply bg-surface-sunken text-left font-semibold text-fg;
   }
 
-  .prose-bt :where(th, td) {
+  .prose-bt :where(th, td):not(:where(.not-prose, .not-prose *)) {
     padding: 0.5rem 0.75rem;
     border-bottom: 1px solid rgb(var(--border));
+    vertical-align: top;
   }
 
-  .prose-bt :where(dl) {
+  /* A table row is a link target too (a help page's status table). */
+  .prose-bt :where(tr[id]):not(:where(.not-prose, .not-prose *)) {
+    scroll-margin-top: calc(var(--header-h) + 0.5rem);
+  }
+
+  .prose-bt :where(dl):not(:where(.not-prose, .not-prose *)) {
     display: grid;
     gap: 0.25rem 1rem;
   }
 
   @media (min-width: 640px) {
-    .prose-bt :where(dl) {
+    .prose-bt :where(dl):not(:where(.not-prose, .not-prose *)) {
       grid-template-columns: minmax(8rem, max-content) 1fr;
     }
   }
 
-  .prose-bt :where(dt) {
+  .prose-bt :where(dt):not(:where(.not-prose, .not-prose *)) {
     @apply text-body-sm font-semibold text-fg-muted;
   }
 
-  .prose-bt :where(dd) {
+  .prose-bt :where(dd):not(:where(.not-prose, .not-prose *)) {
     @apply mb-2 text-body sm:mb-0;
   }
 
-  .prose-bt :where(code) {
+  .prose-bt :where(code):not(:where(.not-prose, .not-prose *)) {
     @apply rounded-sm border border-border bg-surface-sunken px-1.5 py-0.5 font-mono text-code text-fg;
   }
 
-  .prose-bt :where(pre) {
+  .prose-bt :where(pre):not(:where(.not-prose, .not-prose *)) {
     @apply overflow-x-auto rounded-md bg-surface-sunken p-4;
   }
 
-  .prose-bt :where(pre code) {
+  .prose-bt :where(pre code):not(:where(.not-prose, .not-prose *)) {
     @apply border-0 bg-transparent p-0;
   }
 
-  .prose-bt :where(hr) {
+  .prose-bt :where(hr):not(:where(.not-prose, .not-prose *)) {
     position: relative;
     margin: 2em auto;
     border: 0;
@@ -145,7 +155,7 @@
   }
 
   /* A decorative lozenge; generated content in ::after is not read out. */
-  .prose-bt :where(hr)::after {
+  .prose-bt :where(hr):not(:where(.not-prose, .not-prose *))::after {
     content: "";
     position: absolute;
     top: -0.3rem;
@@ -156,7 +166,7 @@
     transform: translateX(-50%) rotate(45deg);
   }
 
-  .prose-bt :where(abbr[title]) {
+  .prose-bt :where(abbr[title]):not(:where(.not-prose, .not-prose *)) {
     text-decoration: underline dotted;
   }
 }

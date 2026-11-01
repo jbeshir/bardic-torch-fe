@@ -21,7 +21,9 @@ const ITEM =
 function Item({ number, section }: { number: string; section: Section }) {
   return (
     <a href={`#${section.id}`} className={ITEM}>
-      <span className="tabular-nums text-fg-subtle">{number}</span>
+      <span className="min-w-6 shrink-0 text-right tabular-nums text-fg-subtle">
+        {number}
+      </span>
       {section.label}
     </a>
   );
@@ -30,7 +32,10 @@ function Item({ number, section }: { number: string; section: Section }) {
 /**
  * A help page's contents (DESIGN §6.27): a numbered list of its h2s and
  * h3s in a disclosure, inline after the intro. It is open as the server
- * renders it (and without JS); with JS it folds itself below md.
+ * renders it (and without JS); with JS it folds itself below md, once, as
+ * it mounts: resizing later leaves it as the reader has it. It is its own
+ * block formatting context (`flow-root`), so beside the floated infobox the
+ * whole box narrows instead of running underneath it.
  */
 export function TableOfContents({ entries }: { entries: readonly TocEntry[] }) {
   const titleId = useId();
@@ -45,7 +50,7 @@ export function TableOfContents({ entries }: { entries: readonly TocEntry[] }) {
   return (
     <nav
       aria-labelledby={titleId}
-      className="my-6 max-w-prose rounded-lg bg-surface-sunken p-4"
+      className="my-6 flow-root max-w-prose rounded-lg bg-surface-sunken p-4"
     >
       <details ref={details} open className="group">
         <summary className="summary-plain flex min-h-6 cursor-pointer items-center justify-between gap-2 rounded-sm">

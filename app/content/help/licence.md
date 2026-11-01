@@ -11,10 +11,10 @@ Bardic Torch is a community project, and its text belongs to the community too. 
 
 :::infobox{title="At a glance"}
 
-- **Site text:** [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
-- **Your contributions:** released under CC BY-SA 4.0 when you save them.
-- **Imported text:** from the [Bardic Torch wiki](https://bardictorch.miraheze.org), also CC BY-SA 4.0.
-- **Linked works:** belong to their creators. Our licence doesn’t cover them.
+- **Site text:** [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+- **Your contributions:** released under CC BY-SA 4.0 when you save them
+- **Imported text:** from the [Bardic Torch wiki](https://bardictorch.miraheze.org), also CC BY-SA 4.0
+- **Linked works:** belong to their creators. Our licence doesn’t cover them
 
 :::
 

@@ -112,4 +112,34 @@ describe("CardList", () => {
       within(items[0] as HTMLElement).getByRole("heading", { name: "One" })
     ).toBeVisible();
   });
+
+  it("opts out of the prose styles, so help prose can't restyle its cards", () => {
+    render(
+      <div className="prose-bt">
+        <CardList>
+          <Card title="One">A</Card>
+        </CardList>
+      </div>
+    );
+    expect(screen.getByRole("list")).toHaveClass("not-prose");
+  });
+
+  it("goes to three columns from lg, or stops at two within a measure", () => {
+    const { rerender } = render(
+      <CardList>
+        <Card title="One">A</Card>
+      </CardList>
+    );
+    expect(screen.getByRole("list")).toHaveClass(
+      "md:grid-cols-2",
+      "lg:grid-cols-3"
+    );
+    rerender(
+      <CardList columns={2}>
+        <Card title="One">A</Card>
+      </CardList>
+    );
+    expect(screen.getByRole("list")).toHaveClass("md:grid-cols-2");
+    expect(screen.getByRole("list")).not.toHaveClass("lg:grid-cols-3");
+  });
 });

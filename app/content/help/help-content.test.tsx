@@ -201,7 +201,7 @@ describe("contributing guide", () => {
     );
     expect(
       within(main).getByRole("complementary", { name: "At a glance" })
-    ).toHaveTextContent("Never lyrics, files, audio or video.");
+    ).toHaveTextContent("Never lyrics, files, audio or video");
   });
 
   it("needs a public source for every licensing and etiquette claim, even from the bard", async () => {
@@ -223,7 +223,7 @@ describe("contributing guide", () => {
     expect(
       within(main).getByRole("complementary", { name: "At a glance" })
     ).toHaveTextContent(
-      "a moderator checks every contributor’s edit before it goes live."
+      "a moderator checks every contributor’s edit before it goes live"
     );
   });
 
@@ -417,14 +417,14 @@ describe("conservation status", () => {
     ]);
     expect(links[1]).toHaveAttribute(
       "href",
-      "/help/conservation-status#the-statuses"
+      "/help/conservation-status#endangered"
     );
     expect(links[3]).toHaveAttribute(
       "href",
       "/help/conservation-status#how-restricted-works"
     );
     expect(within(glance).getAllByRole("definition")[1]).toHaveTextContent(
-      "found in 3 places or fewer."
+      "found in 3 places or fewer"
     );
   });
 

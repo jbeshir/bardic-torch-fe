@@ -1,3 +1,4 @@
+import userEvent from "@testing-library/user-event";
 import { screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderWithRouter } from "~/test/router";
@@ -64,6 +65,35 @@ describe("TableOfContents", () => {
     expect(
       screen.getByRole("navigation", { name: "Contents" })
     ).toBeInTheDocument();
+  });
+
+  it("keeps the reader's choice when the window is resized", async () => {
+    viewport(false);
+    const user = userEvent.setup();
+    await renderWithRouter(<TableOfContents entries={ENTRIES} />);
+    await user.click(screen.getByText("Contents"));
+    viewport(true);
+    window.dispatchEvent(new Event("resize"));
+    expect(document.querySelector("details")).toHaveProperty("open", true);
+    await user.click(screen.getByText("Contents"));
+    viewport(false);
+    window.dispatchEvent(new Event("resize"));
+    expect(document.querySelector("details")).toHaveProperty("open", false);
+  });
+
+  it("is its own block, so it narrows beside a floated infobox", async () => {
+    viewport(true);
+    await renderWithRouter(<TableOfContents entries={ENTRIES} />);
+    expect(screen.getByRole("navigation", { name: "Contents" })).toHaveClass(
+      "flow-root"
+    );
+  });
+
+  it("right-aligns its numbers in a fixed column, so 10 lines up with 9", async () => {
+    viewport(true);
+    await renderWithRouter(<TableOfContents entries={ENTRIES} />);
+    const number = screen.getByText("2.1");
+    expect(number).toHaveClass("min-w-6", "text-right", "tabular-nums");
   });
 
   it("looks the same in both themes", async () => {

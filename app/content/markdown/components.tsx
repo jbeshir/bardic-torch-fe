@@ -57,7 +57,11 @@ const COMPONENTS = {
   a: contentLink("prose"),
   note: contentAlert("info"),
   warning: contentAlert("warning"),
-  cardlist: ({ children }: Children) => <CardList>{children}</CardList>,
+  cardlist: ({ children }: Children) => (
+    <div className="my-6">
+      <CardList columns={2}>{children}</CardList>
+    </div>
+  ),
   card: ({ title, to, children }: Children & { title: string; to: string }) => (
     <Card title={title} to={to}>
       {children}

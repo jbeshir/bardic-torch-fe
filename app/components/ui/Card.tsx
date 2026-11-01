@@ -57,13 +57,27 @@ export function Card({
   );
 }
 
+const COLUMNS = {
+  2: "md:grid-cols-2",
+  3: "md:grid-cols-2 lg:grid-cols-3",
+} as const;
+
 /**
  * Cards as a list (DESIGN §6.11): `ul role="list"`, each card in an `li`,
- * one column, two from md and three from lg.
+ * one column, two from md and (with `columns` 3) three from lg. It is
+ * `not-prose`, so inside help prose the list, heading and link styles of
+ * `.prose-bt` leave the cards alone.
  */
-export function CardList({ children }: { children: ReactNode }) {
+export function CardList({
+  columns = 3,
+  children,
+}: {
+  /** The most columns: 2 within the prose measure, 3 on a full-width page. */
+  columns?: keyof typeof COLUMNS;
+  children: ReactNode;
+}) {
   return (
-    <ul role="list" className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <ul role="list" className={`not-prose grid gap-4 ${COLUMNS[columns]}`}>
       {Children.map(children, card => (
         <li>{card}</li>
       ))}

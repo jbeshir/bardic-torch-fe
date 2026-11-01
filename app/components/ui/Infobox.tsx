@@ -13,8 +13,10 @@ type InfoboxSection = {
   readonly rows: readonly InfoboxRow[];
 };
 
+// The label sits beside its value where the box is wide: full width (sm
+// to md) and the wider float from xl. In the md–xl float it sits above.
 const ROW =
-  "border-b border-border py-2 last:border-b-0 sm:grid sm:grid-cols-infobox sm:gap-x-3";
+  "border-b border-border py-2 last:border-b-0 sm:grid sm:grid-cols-infobox sm:gap-x-3 md:block xl:grid";
 
 /**
  * The parts of a list of facts, for facts written as content (a help page's

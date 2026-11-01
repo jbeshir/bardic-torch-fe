@@ -7,6 +7,7 @@ import type { Element, ElementContent, Root, RootContent, Text } from "hast";
  * - every h2 and h3 gets an id from its text (the same slugs GitHub uses, so
  *   in-page links such as `#how-restricted-works` keep working), and the
  *   module exports them as `contents` for the table of contents;
+ * - every table body row gets an id from its first cell (`#low-risk`);
  * - the infobox's and the cards' lists become their facts and cards;
  * - the page is split into three `pageslot` elements (`infobox`, `intro`:
  *   everything before the first h2, and `body`), so the template can put
@@ -120,19 +121,26 @@ function toCards(cardList: Element): void {
   });
 }
 
+/** A slug from `text`, numbered if the page already has it ("x-1"). */
+function uniqueId(text: string, used: Map<string, number>): string {
+  const base = slugify(text);
+  const count = used.get(base) ?? 0;
+  used.set(base, count + 1);
+  return count === 0 ? base : `${base}-${count}`;
+}
+
 /** Gives h2s and h3s their ids and lists them, h3s under their h2. */
-function collectContents(nodes: readonly ElementContent[]): ContentsEntry[] {
-  const used = new Map<string, number>();
+function collectContents(
+  nodes: readonly ElementContent[],
+  used: Map<string, number>
+): ContentsEntry[] {
   const entries: { id: string; label: string; children: Section[] }[] = [];
   for (const node of nodes) {
     if (!isElement(node, "h2") && !isElement(node, "h3")) {
       continue;
     }
     const label = textOf(node).trim();
-    const base = slugify(label);
-    const count = used.get(base) ?? 0;
-    used.set(base, count + 1);
-    const id = count === 0 ? base : `${base}-${count}`;
+    const id = uniqueId(label, used);
     node.properties["id"] = id;
     if (node.tagName === "h2") {
       entries.push({ id, label, children: [] });
@@ -147,6 +155,29 @@ function collectContents(nodes: readonly ElementContent[]): ContentsEntry[] {
   return entries.map(({ children, ...entry }) =>
     children.length > 0 ? { ...entry, children } : entry
   );
+}
+
+/**
+ * Each body row of a table gets an id from its first cell ("Low Risk" →
+ * `#low-risk`), so a page can link to one entry of a table, as the
+ * conservation statuses' infobox does.
+ */
+function idTableRows(
+  nodes: readonly ElementContent[],
+  used: Map<string, number>
+): void {
+  for (const node of nodes) {
+    if (node.type !== "element") continue;
+    if (node.tagName !== "tbody") {
+      idTableRows(node.children, used);
+      continue;
+    }
+    for (const row of node.children) {
+      if (!isElement(row, "tr")) continue;
+      const [cell] = row.children.filter(child => isElement(child));
+      if (cell) row.properties["id"] = uniqueId(textOf(cell).trim(), used);
+    }
+  }
 }
 
 function exportContents(contents: readonly ContentsEntry[]): RootContent {
@@ -189,7 +220,9 @@ export function rehypeHelpPage() {
         node.type !== "doctype" &&
         !isWhitespace(node)
     );
-    const contents = collectContents(blocks);
+    const used = new Map<string, number>();
+    const contents = collectContents(blocks, used);
+    idTableRows(blocks, used);
 
     const infobox: ElementContent[] = [];
     const intro: ElementContent[] = [];

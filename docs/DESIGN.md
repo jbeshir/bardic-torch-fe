@@ -356,10 +356,11 @@ The base is 16 px (1 rem). The scale is about a 1.2 minor third, rounded to 4 px
   - `li + li` has `margin-top: 0.25em`.
 - **Blockquote:** `border-left: 3px solid rgb(var(--border-strong))`, `padding: 0.25em 0 0.25em 1em`, `color: fg-muted`, Fraunces 400 italic is **not** used (no italic face loaded). Use sans 1.0625rem with `font-style: normal`.
   - The attribution sits in a `<footer>` with `caption` styling, prefixed with "— ".
-- The prose styles live in `app/styles/prose.css` as the `.prose-bt` component class. Markdown help content (FE1) is rendered inside it.
+- The prose styles live in `app/styles/prose.css` as the `.prose-bt` component class. Markdown help content (FE1) is rendered inside it. Every rule is written `:where(…):not(:where(.not-prose, .not-prose *))`: a component placed in prose that draws its own lists, headings or links (CardList) puts `not-prose` on its root, and nothing inside it is restyled.
 - **Tables:**
   - Full width of the measure, `border-collapse: collapse`, `body-sm`.
-  - `th` has `bg-surface-sunken text-fg font-semibold text-left`, and cells have `padding: 0.5rem 0.75rem; border-bottom: 1px solid border`.
+  - `th` has `bg-surface-sunken text-fg font-semibold text-left`, and cells have `padding: 0.5rem 0.75rem; border-bottom: 1px solid border; vertical-align: top`, so a short row label sits level with the first line of a long value.
+  - In help pages each body row gets an id from its first cell (`#low-risk`), with the headings' `scroll-margin-top`, so an infobox row can link to its own table row.
   - Wrap in `<div class="overflow-x-auto" tabindex="0" role="region" aria-label="{caption}">` for horizontal scroll at 360 px.
   - `caption` uses caption style, `text-fg-muted`, aligned left and on top.
 - **Definition lists** (used for "at a glance" and preference lists):
@@ -904,7 +905,8 @@ Read   Edit   History                         Last edited 3 Oct 2026
   - an optional subtitle (caption, fg-muted)
   - sections, each with an **`h3`** heading styled `label-caps`, and a `<dl>`
   - an optional footer action, e.g. "Help complete this page" or "Edit facts"
-- **Style:** `bg-surface-raised border border-border rounded-lg shadow-1`, padding 16 px. The `dl` uses rows: `dt` is `body-sm text-fg-muted` and `dd` is `body-sm text-fg`, in a 2-column grid `7rem 1fr` (≥sm, inside the box). Rows have `py-2 border-b border-border`, and the last row has none.
+- **Style:** `bg-surface-raised border border-border rounded-lg shadow-1`, padding 16 px. The `dl` uses rows: `dt` is `body-sm text-fg-muted` and `dd` is `body-sm text-fg`, in a 2-column grid `7rem 1fr` where the box is wide: full width at sm–md, and the 18rem float from xl. In the 16.5rem float at md–xl the label stacks over its value (as below sm), since a 7rem label column left the values 1–3 words a line. Rows have `py-2 border-b border-border`, and the last row has none.
+- **Values are fragments:** no terminal full stop, which would also follow a link's ↗ mark.
 - **Values** may be links (standalone link style), chip lists (TagList `sm`), or a ConservationBadge.
 - **Empty value:** an em dash "—" `text-fg-subtle` with `sr-only` "Not recorded". Empty _sections_ are omitted entirely.
 - **Loading:** Skeleton rows (3 × 2 bars). **Error:** an inline danger text row, "Couldn't load these details. [Try again]".
@@ -920,7 +922,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
 - **Variants:**
   - `static` (the home "Why" cards): no link, no hover and no focus ring. The title is a plain h3.
   - `link` (the help index): the title is the link, and the whole card is clickable (below).
-- **Lists of cards** are a `<ul role="list">` with each card inside an `<li>` (`CardList`). Cards are never loose boxes without list semantics. ESLint's `jsx-a11y/no-redundant-roles` is configured to allow `role="list"` on `ul`/`ol` for this reason.
+- **Lists of cards** are a `<ul role="list">` with each card inside an `<li>` (`CardList`). Cards are never loose boxes without list semantics. One column, two from md, three from lg; `columns={2}` stops at two, for a list inside the prose measure (the help index), where three would squeeze the titles. The list carries `not-prose` (§3.3), so `.prose-bt` never adds bullets, list indents, heading margins or underlines to its cards. ESLint's `jsx-a11y/no-redundant-roles` is configured to allow `role="list"` on `ul`/`ol` for this reason.
 - **Whole-card link** (`link` variant): the title `<a>` gets `after:absolute after:inset-0`, and the card is `relative`. Secondary links inside get `relative z-10`. Hover gives `border-border-strong` and a title underline. Focus-visible puts the ring around the card by drawing it on the title link's `::after` (which already covers the card, `after:rounded-lg`), and the link's own outline is removed; `:has()` on the card would need an arbitrary variant. A link card has no other links inside.
 - Cards don't nest.
 
@@ -1187,10 +1189,11 @@ Read   Edit   History                         Last edited 3 Oct 2026
 
 **Tag: FE1** (inline). The sticky right rail, the current-section highlight and the heading "§" anchors are **FE2+**.
 
-- Shown when a page has **≥4 h2s**. It is `<nav aria-labelledby={titleId}>`, with the title "Contents" in `label-caps`. Items are an `<ol>` of h2s and h3s, each with its number (e.g. "2.1") in `text-fg-subtle tabular-nums`. Each item link is `inline-flex min-h-6 items-center` (WCAG 2.5.8).
+- Shown when a page has **≥4 h2s**. It is `<nav aria-labelledby={titleId}>`, with the title "Contents" in `label-caps`. Items are an `<ol>` of h2s and h3s, each with its number (e.g. "2.1") in `text-fg-subtle tabular-nums`, right-aligned in a `min-w-6` column so "10" lines up with "9".
+- The box is `flow-root` (its own block formatting context): beside the floated infobox the whole sunken box narrows, instead of its background running under the float while only its lines wrap. Each item link is `inline-flex min-h-6 items-center` (WCAG 2.5.8).
 - **<xl, and in FE1 at every width:** inline after the intro paragraph, as `<details open>` on md+ and `<details>` (closed) on mobile, with `bg-surface-sunken rounded-lg p-4`.
 - **≥xl with no infobox (FE2+):** sticky in the right rail (`top: calc(var(--header-h) + 24px)`, width 14rem). The current section is highlighted with an IntersectionObserver: `aria-current="true"`, `text-accent-text font-semibold` and an inset left bar. With no JS, there is no highlight.
-- **Built as (FE1):** `TableOfContents({ entries: [{ id, label, children? }] })`. It server-renders `<details open>` (so it is open without JS) and folds itself after hydration below md. `WikiPage` shows it after `intro` when `contents` has four or more entries.
+- **Built as (FE1):** `TableOfContents({ entries: [{ id, label, children? }] })`. It server-renders `<details open>` (so it is open without JS) and folds itself after hydration below md. That happens once, on mount: resizing or rotating later leaves it as the reader has it (unit-tested; e2e checks it folded at 360 on load). `WikiPage` shows it after `intro` when `contents` has four or more entries.
 - Headings get `id`s (and `scroll-margin-top`, §3.3). FE2+ adds a hover "§" anchor link, 24 × 24 px, `aria-label="Link to this section"`.
 
 ---
@@ -1393,7 +1396,7 @@ Every page uses the app shell (header, bottom bar or sidebar, drawer, sheet, foo
   - no meta line (the breadcrumb, sidebar and chips already say "Help")
   - the tab row with the **non-interactive "Read" label** (§6.9 a′)
   - the right of the tab row: "Adapted from the original wiki ↗" (caption, a link to the source page). This is the page's only meta.
-- **Optional infobox "At a glance":** a 3–6 row `dl` summarising the page. For example, Conservation status lists the five statuses, each a link to its section. The Bard preference checklist shows "What it is / Who it's for / Time needed".
+- **Optional infobox "At a glance":** a 3–6 row `dl` summarising the page. For example, Conservation status lists the five statuses, each a link to its own row of the status table (or to its section). The Bard preference checklist shows "What it is / Who it's for / Time needed".
 - **TOC** when there are ≥4 h2s (§6.27).
 - Prose in `.prose-bt`.
 - **Template (FE1):** `WikiPage` (`app/components/WikiPage.tsx`): `title`, `breadcrumbs?` (Breadcrumbs props), `meta?` (the tab row's right end), `infobox?`, `intro?`, `contents?` (TOC entries), `categories?` (TagList tags; the chip row is `<nav>` labelled by its "Categories" h2), `licence?` (the footer meta line) and the prose as children. The Read label's `to` is the current path.
