@@ -6,7 +6,7 @@ import {
   TYPE_SCALE,
   type ColourName,
 } from "~/styles/tokens";
-import { contrastRatio } from "./contrast";
+import { contrastLabel } from "./contrast";
 import { Example, Specimen } from "./Specimen";
 
 /**
@@ -159,11 +159,11 @@ export function Colours() {
               </span>
               <span className="block whitespace-nowrap text-fg-muted">
                 Light {resolveColour("light", name)} ·{" "}
-                {contrastRatio("light", name, "canvas")}
+                {contrastLabel("light", name, "canvas")}
               </span>
               <span className="block whitespace-nowrap text-fg-muted">
                 Dark {resolveColour("dark", name)} ·{" "}
-                {contrastRatio("dark", name, "canvas")}
+                {contrastLabel("dark", name, "canvas")}
               </span>
             </span>
           </li>

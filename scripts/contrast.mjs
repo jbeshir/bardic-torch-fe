@@ -6,7 +6,12 @@
 // apart in both themes (DESIGN §2.4). Run through tsx.
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { COLOURS, resolveColour } from "../app/styles/tokens.ts";
+import {
+  channels,
+  COLOURS,
+  contrastRatio,
+  resolveColour,
+} from "../app/styles/tokens.ts";
 
 const DESIGN_DOC = new URL("../docs/DESIGN.md", import.meta.url);
 const THEMES = ["light", "dark"];
@@ -15,28 +20,6 @@ const HUE_PAIRS = [
   ["accent", "danger"],
   ["accent-hover", "danger-hover"],
 ];
-
-function channels(hex) {
-  return [1, 3, 5].map(start =>
-    Number.parseInt(hex.slice(start, start + 2), 16)
-  );
-}
-
-function luminance(hex) {
-  const [r, g, b] = channels(hex).map(value => {
-    const c = value / 255;
-    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-/** The WCAG 2.x contrast ratio of two `#RRGGBB` colours. */
-export function contrastRatio(first, second) {
-  const [lighter, darker] = [luminance(first), luminance(second)].sort(
-    (a, b) => b - a
-  );
-  return (lighter + 0.05) / (darker + 0.05);
-}
 
 function hue(hex) {
   const [r, g, b] = channels(hex).map(value => value / 255);

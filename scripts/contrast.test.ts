@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { contrastRatio } from "../app/styles/tokens";
 import {
   contrastProblems,
-  contrastRatio,
   hueDistance,
   parseContrastTable,
 } from "./contrast.mjs";

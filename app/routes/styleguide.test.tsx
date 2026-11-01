@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { ToastProvider } from "~/components/ui/Toast";
 import { COLOURS, resolveColour } from "~/styles/tokens";
-import { contrastRatio } from "~/styleguide/contrast";
+import { contrastLabel } from "~/styleguide/contrast";
 import { SPECIMENS } from "~/styleguide/Gallery";
 import { renderWithRouter } from "~/test/router";
 import Styleguide, { meta } from "./styleguide";
@@ -178,13 +178,13 @@ describe("/styleguide", () => {
   });
 });
 
-describe("contrastRatio", () => {
+describe("contrastLabel", () => {
   it("matches the DESIGN §2.7 table", () => {
-    expect(contrastRatio("light", "fg", "canvas")).toBe("14.11:1");
-    expect(contrastRatio("dark", "fg", "canvas")).toBe("13.34:1");
-    expect(contrastRatio("light", "canvas", "fg")).toBe("14.11:1");
-    expect(contrastRatio("light", "input-bg", "canvas")).toBe(
-      contrastRatio("light", "surface-raised", "canvas")
+    expect(contrastLabel("light", "fg", "canvas")).toBe("14.11:1");
+    expect(contrastLabel("dark", "fg", "canvas")).toBe("13.34:1");
+    expect(contrastLabel("light", "canvas", "fg")).toBe("14.11:1");
+    expect(contrastLabel("light", "input-bg", "canvas")).toBe(
+      contrastLabel("light", "surface-raised", "canvas")
     );
   });
 });

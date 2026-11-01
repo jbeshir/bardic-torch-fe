@@ -10,10 +10,31 @@
 export type Theme = "light" | "dark";
 type Hex = `#${string}`;
 
-function channels(hex: Hex): readonly [number, number, number] {
+/** The red, green and blue channels of a colour, 0–255. */
+export function channels(hex: Hex): readonly [number, number, number] {
   const channel = (start: number) =>
     Number.parseInt(hex.slice(start, start + 2), 16);
   return [channel(1), channel(3), channel(5)];
+}
+
+/** WCAG 2.x relative luminance. */
+function luminance(hex: Hex): number {
+  const [r, g, b] = channels(hex).map(value => {
+    const c = value / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * (r ?? 0) + 0.7152 * (g ?? 0) + 0.0722 * (b ?? 0);
+}
+
+/**
+ * The WCAG 2.x contrast ratio of two colours, 1 to 21: the one
+ * implementation behind `npm run check:contrast` and the styleguide.
+ */
+export function contrastRatio(first: Hex, second: Hex): number {
+  const [lighter = 0, darker = 0] = [luminance(first), luminance(second)].sort(
+    (a, b) => b - a
+  );
+  return (lighter + 0.05) / (darker + 0.05);
 }
 
 /** `"247 242 232"`: the form the CSS custom properties hold. */
