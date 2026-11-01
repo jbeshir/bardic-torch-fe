@@ -20,7 +20,8 @@ describe("TagList", () => {
     );
     const list = screen.getByRole("list");
     expect(list).toHaveAttribute("role", "list");
-    expect(list).toHaveClass("flex", "flex-wrap", "gap-2");
+    // Centred on one line, so a small chip sits level with full-size ones.
+    expect(list).toHaveClass("flex", "flex-wrap", "items-center", "gap-2");
     const links = within(list).getAllByRole("link");
     expect(links.map(link => link.getAttribute("href"))).toEqual([
       "/help",

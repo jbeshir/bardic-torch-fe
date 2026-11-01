@@ -186,7 +186,7 @@ export function TypeScale() {
             key={name}
             className="grid gap-1 border-b border-border pb-3 sm:grid-cols-infobox sm:gap-4"
           >
-            <dt className="font-mono text-caption text-fg-muted">
+            <dt className="whitespace-nowrap font-mono text-caption text-fg-muted">
               text-{name}
             </dt>
             <dd className={`min-w-0 text-fg ${TYPE_CLASSES[name] ?? ""}`}>

@@ -81,7 +81,7 @@ export function TagList({
     return <p className="text-caption text-fg-subtle">{emptyText}</p>;
   }
   return (
-    <ul role="list" className="flex flex-wrap gap-2">
+    <ul role="list" className="flex flex-wrap items-center gap-2">
       {tags.map(tag => (
         <li key={tag.to} className="flex">
           <Chip tag={tag} size={size} />
