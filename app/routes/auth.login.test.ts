@@ -113,6 +113,20 @@ describe("/auth/login stub auth", () => {
     expect(session.get("user")?.accessToken).toBe("fixture:moderator");
   });
 
+  it("shows the fixture-user chooser without ?as", async () => {
+    vi.stubGlobal("__STUB_AUTH__", true);
+    const response = await login(
+      "http://localhost:8788/auth/login?returnTo=/settings",
+      { AUTH_MODE: "stub" }
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain(
+      "/auth/login?as=moderator&amp;returnTo=%2Fsettings"
+    );
+    expect(setCookies(response)).toEqual([]);
+  });
+
   it("uses Auth0 when the build lacks stub auth, logging an error", async () => {
     const error = vi
       .spyOn(console, "error")

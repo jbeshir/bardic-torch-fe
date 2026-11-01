@@ -7,7 +7,9 @@ import { assertSameOrigin } from "~/server/csrf.server";
  * Logout route - clears the session and redirects to Auth0 logout.
  *
  * POST only, from this site only: a link or a cross-site form cannot sign
- * the user out.
+ * the user out. The account panel's "Log out" form posts here as a full
+ * document submission, so the browser follows the redirect to Auth0, which
+ * CSP `form-action` allows, and Auth0 sends the reader back to this site.
  */
 export async function action({ request, context }: ActionFunctionArgs) {
   assertSameOrigin(request);
@@ -23,6 +25,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
   return redirect(logoutURL.toString(), {
     headers: {
+      "Cache-Control": "no-store",
       "Set-Cookie": await sessionStorage.destroySession(session),
     },
   });

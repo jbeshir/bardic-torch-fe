@@ -24,6 +24,7 @@ describe("/auth/logout", () => {
     expect(response.headers.get("Set-Cookie")).toMatch(
       /^__Host-bt_session=;.*Expires=Thu, 01 Jan 1970/
     );
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
   });
 
   it("rejects a cross-site POST without touching the session", async () => {

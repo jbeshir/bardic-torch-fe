@@ -19,22 +19,63 @@ afterEach(() => {
 
 describe("stubLogin", () => {
   it.each(["http://localhost:5173", "http://127.0.0.1:8788"])(
-    "signs in the seeded contributor by default on %s",
+    "without ?as shows the fixture-user chooser on %s, signing nobody in",
     async origin => {
-      vi.spyOn(console, "warn").mockImplementation(() => undefined);
       const response = await stubLogin(
-        new Request(`${origin}/auth/login`),
+        new Request(`${origin}/auth/login?returnTo=%2Fsettings`),
         stubEnv
       );
 
-      expect(response?.status).toBe(302);
-      expect(response?.headers.get("Location")).toBe("/");
-      expect(await sessionUserFrom(response as Response)).toMatchObject({
-        id: "fixture|contributor",
-        accessToken: "fixture:contributor",
-      });
+      expect(response?.status).toBe(200);
+      expect(response?.headers.get("Set-Cookie")).toBeNull();
+      expect(response?.headers.get("Content-Type")).toBe(
+        "text/html; charset=utf-8"
+      );
+      expect(response?.headers.get("Cache-Control")).toBe("no-store");
+      const csp = response?.headers.get("Content-Security-Policy") ?? "";
+      expect(csp).toContain("frame-ancestors 'none'");
+      expect(csp).not.toContain("unsafe-inline");
+
+      const html = (await response?.text()) ?? "";
+      expect(html).toContain('<html lang="en">');
+      expect(html).toContain(
+        "<title>Choose a fixture user · Bardic Torch</title>"
+      );
+      expect(html).toContain('<meta name="robots" content="noindex">');
+      expect(html).toContain(
+        '<a href="/auth/login?as=contributor&amp;returnTo=%2Fsettings">Log in as the seeded contributor'
+      );
+      expect(html).toContain(
+        '<a href="/auth/login?as=moderator&amp;returnTo=%2Fsettings">Log in as the seeded moderator'
+      );
+      expect(html).toContain('<label for="fixture-user">');
+      expect(html).toContain('pattern="[a-z0-9][a-z0-9\\-]{0,63}"');
+      expect(html).toContain(
+        '<input type="hidden" name="returnTo" value="/settings">'
+      );
+      expect(html).not.toMatch(/<script|style=/);
     }
   );
+
+  it("the chooser carries only a safe returnTo, which can't break out of the markup", async () => {
+    const unsafe = await stubLogin(
+      new Request("http://localhost/auth/login?returnTo=//evil.com"),
+      stubEnv
+    );
+    expect(await unsafe?.text()).toContain(
+      '<input type="hidden" name="returnTo" value="/">'
+    );
+
+    const quoted = await stubLogin(
+      new Request(
+        `http://localhost/auth/login?returnTo=${encodeURIComponent('/help?q="><b>')}`
+      ),
+      stubEnv
+    );
+    const html = (await quoted?.text()) ?? "";
+    expect(html).not.toContain('"><b>');
+    expect(html).toContain('value="/help?q=%22%3E%3Cb%3E"');
+  });
 
   it("signs in the fixture user named by ?as and honours a safe returnTo", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
@@ -52,7 +93,9 @@ describe("stubLogin", () => {
   it("sends an unsafe returnTo home", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const response = await stubLogin(
-      new Request("http://localhost/auth/login?returnTo=//evil.com"),
+      new Request(
+        "http://localhost/auth/login?as=contributor&returnTo=//evil.com"
+      ),
       stubEnv
     );
     expect(response?.headers.get("Location")).toBe("/");
@@ -61,7 +104,7 @@ describe("stubLogin", () => {
   it("sets the real session cookie", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const response = await stubLogin(
-      new Request("http://localhost/auth/login"),
+      new Request("http://localhost/auth/login?as=contributor"),
       stubEnv
     );
     const setCookie = response?.headers.get("Set-Cookie") ?? "";

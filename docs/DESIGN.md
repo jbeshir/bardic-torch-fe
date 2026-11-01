@@ -1425,7 +1425,7 @@ The head is the h1 "Settings" with no tab row. Sections are separated by h2 plus
    - **Create:** the field "Token name" (optional; help: "So you can tell your tokens apart, e.g. 'Laptop MCP'.") plus [Create token] (secondary). Inline at ≥md, stacked at <md.
      - The name is trimmed and may be up to **128 characters**; a blank name means no name (`TOKEN_NAME_RULE`: "Use 128 characters or fewer, or leave the name blank."). An upstream 400 `invalid_request` becomes the inline error with that copy.
      - **409 `token_limit_reached`:** a danger Alert "You already have 10 API tokens, the most allowed. Revoke one before creating another."
-     - **403 `api_token_not_allowed`:** "API tokens can't manage API tokens. Sign in on the website to do this." **403 `user_blocked`:** the blocked copy above. Both are danger Alerts next to the form.
+     - **403 `api_token_not_allowed`:** "API tokens can't manage API tokens. Log in on the website to do this." **403 `user_blocked`:** the blocked copy above. Both are danger Alerts next to the form.
    - **One-time reveal** (after create, from the `POST /api/tokens` response, never re-fetchable):
      ```
      ┌ success Alert ───────────────────────────────────────────────┐

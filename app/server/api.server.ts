@@ -82,7 +82,11 @@ function upstreamError(
 ): ApiError {
   switch (code) {
     case "unauthenticated":
-      return { code, message: "Your session has ended. Sign in again." };
+      return {
+        code,
+        message:
+          "You've been signed out. Log in again and we'll bring you back here.",
+      };
     case "user_blocked":
       return {
         code,
@@ -93,7 +97,7 @@ function upstreamError(
       return {
         code,
         message:
-          "API tokens can't manage API tokens. Sign in on the website to do this.",
+          "API tokens can't manage API tokens. Log in on the website to do this.",
       };
     case "token_limit_reached":
       return {
@@ -178,7 +182,7 @@ async function callApi<T>(
   if (!auth.isAuthenticated) {
     return failure(
       401,
-      { code: "unauthenticated", message: "Sign in to continue." },
+      { code: "unauthenticated", message: "Log in to continue." },
       headers
     );
   }

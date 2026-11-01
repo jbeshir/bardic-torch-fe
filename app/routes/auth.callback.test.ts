@@ -119,6 +119,7 @@ describe("/auth/callback", () => {
       refreshToken: "refresh-42",
     });
     expectReturnToCleared(response);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
   });
 
   it("ignores a returnTo in the callback's query string", async () => {
@@ -157,9 +158,9 @@ describe("/auth/callback", () => {
 
   it.each([
     ["a state that doesn't match the cookie", "code=abc&state=forged"],
-    ["an Auth0 error", "error=access_denied&error_description=no"],
+    ["an Auth0 server error", "error=server_error&error_description=no"],
   ])(
-    "on %s redirects home without a session and clears returnTo",
+    "on %s goes back to the page logged out, logs an error and clears returnTo",
     async (_name, query) => {
       const error = vi
         .spyOn(console, "error")
@@ -171,7 +172,7 @@ describe("/auth/callback", () => {
       );
 
       expect(response.status).toBe(302);
-      expect(response.headers.get("Location")).toBe("/");
+      expect(response.headers.get("Location")).toBe("/help");
       expect(await sessionUserFrom(response)).toBeUndefined();
       expectReturnToCleared(response);
       expect(exchangedCodes).toEqual([]);
@@ -179,7 +180,28 @@ describe("/auth/callback", () => {
     }
   );
 
-  it("redirects home without a session when the code exchange fails", async () => {
+  it("when the reader cancels at Auth0, goes back to the page logged out with a warning, not an error", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const error = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const { state, cookies } = await startLogin("/settings");
+    const response = await runCallback(
+      `error=access_denied&error_description=cancelled&state=${state}`,
+      cookies
+    );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toBe("/settings");
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(await sessionUserFrom(response)).toBeUndefined();
+    expectReturnToCleared(response);
+    expect(exchangedCodes).toEqual([]);
+    expect(warn).toHaveBeenCalledWith("Sign-in cancelled or refused at Auth0");
+    expect(error).not.toHaveBeenCalled();
+  });
+
+  it("goes back to the page without a session when the code exchange fails", async () => {
     const error = vi
       .spyOn(console, "error")
       .mockImplementation(() => undefined);
@@ -189,7 +211,7 @@ describe("/auth/callback", () => {
     const { state, cookies } = await startLogin("/help");
     const response = await runCallback(`code=abc&state=${state}`, cookies);
 
-    expect(response.headers.get("Location")).toBe("/");
+    expect(response.headers.get("Location")).toBe("/help");
     expect(await sessionUserFrom(response)).toBeUndefined();
     expect(error).toHaveBeenCalled();
   });

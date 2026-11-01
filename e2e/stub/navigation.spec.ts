@@ -265,6 +265,10 @@ test.describe("from md", () => {
       "/auth/login?returnTo=%2Fhelp%2Ffaq-for-bards"
     );
     await login.click();
+    // A stub build asks which fixture user to be.
+    await page
+      .getByRole("link", { name: /^Log in as the seeded contributor/ })
+      .click();
     await expect(page).toHaveURL(/\/help\/faq-for-bards$/);
     // Stub sign-in is a full document load: the Escape handler needs JS.
     await waitForHydration(page);

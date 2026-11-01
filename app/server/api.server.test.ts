@@ -118,7 +118,7 @@ describe("authentication", () => {
     expect(result).toMatchObject({
       ok: false,
       status: 401,
-      error: { code: "unauthenticated", message: "Sign in to continue." },
+      error: { code: "unauthenticated", message: "Log in to continue." },
     });
   });
 
@@ -153,7 +153,8 @@ describe("authentication", () => {
       status: 401,
       error: {
         code: "unauthenticated",
-        message: "Your session has ended. Sign in again.",
+        message:
+          "You've been signed out. Log in again and we'll bring you back here.",
       },
     });
     expect(result.headers.get("Set-Cookie")).toMatch(
@@ -247,7 +248,7 @@ describe("responses", () => {
       "api_token_not_allowed",
       {
         message:
-          "API tokens can't manage API tokens. Sign in on the website to do this.",
+          "API tokens can't manage API tokens. Log in on the website to do this.",
       },
     ],
     [

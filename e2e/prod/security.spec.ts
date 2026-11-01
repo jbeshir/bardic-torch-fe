@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import { collectCspViolations } from "../support/csp";
 import { waitForHydration } from "../support/hydration";
 import { appBar } from "../support/shell";
 import { test } from "../support/test";
@@ -6,12 +7,7 @@ import { test } from "../support/test";
 test("/ has a nonce CSP that every script carries, and hydrates without violations", async ({
   page,
 }) => {
-  const violations: string[] = [];
-  page.on("console", message => {
-    if (message.text().includes("Content Security Policy")) {
-      violations.push(message.text());
-    }
-  });
+  const violations = collectCspViolations(page);
 
   const response = await page.goto("/");
   const csp = (await response?.headerValue("content-security-policy")) ?? "";
@@ -48,12 +44,7 @@ test("every load gets a fresh nonce", async ({ request }) => {
 test("the 404 page in the shell carries the nonce CSP and hydrates without violations", async ({
   page,
 }) => {
-  const violations: string[] = [];
-  page.on("console", message => {
-    if (message.text().includes("Content Security Policy")) {
-      violations.push(message.text());
-    }
-  });
+  const violations = collectCspViolations(page);
   const response = await page.goto("/no-such-page");
   expect(response?.status()).toBe(404);
   expect(await response?.headerValue("content-security-policy")).toMatch(

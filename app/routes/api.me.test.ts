@@ -140,7 +140,7 @@ describe("PATCH /api/me", () => {
     expect(response.status).toBe(401);
     expect(await response.json()).toEqual({
       ok: false,
-      error: { code: "unauthenticated", message: "Sign in to continue." },
+      error: { code: "unauthenticated", message: "Log in to continue." },
     });
   });
 

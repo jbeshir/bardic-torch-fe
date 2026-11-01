@@ -1,5 +1,8 @@
 import { expect } from "@playwright/test";
+import { collectCspViolations } from "../support/csp";
 import { createFixtureUser } from "../support/fixture-api";
+import { waitForHydration } from "../support/hydration";
+import { accountPanel, accountTrigger } from "../support/shell";
 import { test } from "../support/test";
 
 const FORM = "application/x-www-form-urlencoded";
@@ -114,4 +117,98 @@ test("a cross-site PATCH is refused even with a session", async ({ page }) => {
     headers: { Origin: "https://evil.example" },
   });
   expect(response.status()).toBe(403);
+});
+
+test("Log in opens the fixture-user chooser, which signs in a seeded or a fresh user and returns to the page", async ({
+  page,
+  baseURL,
+}) => {
+  const violations = collectCspViolations(page);
+  const chooser = await page.goto("/auth/login?returnTo=%2Fhelp");
+  expect(chooser?.status()).toBe(200);
+  expect(await chooser?.headerValue("cache-control")).toBe("no-store");
+  expect(await chooser?.headerValue("content-security-policy")).toContain(
+    "frame-ancestors 'none'"
+  );
+  await expect(page).toHaveTitle("Choose a fixture user · Bardic Torch");
+  expect(
+    (await page.context().cookies()).some(
+      cookie => cookie.name === "__Host-bt_session"
+    )
+  ).toBe(false);
+
+  await page
+    .getByRole("link", { name: /^Log in as the seeded moderator/ })
+    .click();
+  await expect(page).toHaveURL(`${baseURL}/help`);
+  await expect(accountTrigger(page.getByRole("banner"))).toHaveText(
+    /Account: Master Tobias Fiddler$/
+  );
+
+  const id = await createFixtureUser(page.request, {
+    display_name: "Wynn the Watchful",
+  });
+  await page.goto("/auth/login?returnTo=%2F");
+  await page.getByLabel("Another fixture user’s id").fill(id);
+  await page.getByRole("button", { name: "Log in" }).click();
+  await expect(page).toHaveURL(`${baseURL}/`);
+  await expect(accountTrigger(page.getByRole("banner"))).toHaveText(
+    /Account: Wynn the Watchful$/
+  );
+  expect(violations).toEqual([]);
+});
+
+test("Log out posts to /auth/logout, clears the session and goes to Auth0's logout with no CSP violation", async ({
+  page,
+  baseURL,
+}) => {
+  const violations = collectCspViolations(page);
+  await page.goto("/auth/login?as=contributor&returnTo=/help");
+  await waitForHydration(page);
+
+  // Auth0 is not on this machine: answer its logout page here instead of
+  // following the redirect to the network (the guard would block it).
+  const auth0Requests: string[] = [];
+  await page.route("https://auth0.invalid/**", route => {
+    auth0Requests.push(route.request().url());
+    return route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: "<!DOCTYPE html><title>Auth0 logout</title><p>Logged out</p>",
+    });
+  });
+
+  const trigger = accountTrigger(page.getByRole("banner"));
+  await trigger.click();
+  const panel = await accountPanel(trigger);
+  const [logout] = await Promise.all([
+    page.waitForResponse(
+      response => new URL(response.url()).pathname === "/auth/logout"
+    ),
+    panel.getByRole("button", { name: "Log out" }).click(),
+  ]);
+
+  expect(logout.request().method()).toBe("POST");
+  expect(logout.status()).toBe(302);
+  expect(logout.headers()["cache-control"]).toBe("no-store");
+  const target = new URL(logout.headers()["location"] ?? "");
+  expect(`${target.origin}${target.pathname}`).toBe(
+    "https://auth0.invalid/v2/logout"
+  );
+  expect(target.searchParams.get("client_id")).toBe("e2e-client-id");
+  expect(target.searchParams.get("returnTo")).toBe(baseURL);
+
+  await expect(page).toHaveTitle("Auth0 logout");
+  expect(auth0Requests).toEqual([target.href]);
+  expect(
+    (await page.context().cookies()).some(
+      cookie => cookie.name === "__Host-bt_session"
+    )
+  ).toBe(false);
+  expect(violations).toEqual([]);
+
+  await page.goto("/help");
+  await expect(
+    page.getByRole("banner").getByRole("link", { name: "Log in" })
+  ).toHaveAttribute("href", "/auth/login?returnTo=%2Fhelp");
 });
