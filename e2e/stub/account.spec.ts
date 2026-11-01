@@ -147,9 +147,10 @@ test("create a token, see it once, copy it, then revoke it after confirming", as
   ).toBeVisible();
   await expect(tokenNameField(page)).toHaveValue("");
 
-  await main(page).getByRole("button", { name: "Copy" }).click();
+  // Exact: "I've copied it" contains "copied".
+  await main(page).getByRole("button", { name: "Copy", exact: true }).click();
   await expect(
-    main(page).getByRole("button", { name: "Copied" })
+    main(page).getByRole("button", { name: "Copied", exact: true })
   ).toBeVisible();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(value);
 
@@ -320,11 +321,13 @@ test.describe("without JavaScript", () => {
     const id = await createFixtureUser(page.request);
     await page.goto(`/auth/login?as=${id}&returnTo=/settings`);
     await expect(page).toHaveURL(/\/settings$/);
-    await expect(
-      main(page).getByText(
-        "Changing your settings needs JavaScript. Everything else on Bardic Torch works without it."
-      )
-    ).toBeVisible();
+    // Playwright's text and role engines skip <noscript>, so the notice is
+    // found by CSS. With scripting off it is parsed as markup and rendered.
+    const notice = main(page).locator("noscript > div");
+    await expect(notice).toBeVisible();
+    await expect(notice).toHaveText(
+      "Warning: Changing your settings needs JavaScript. Everything else on Bardic Torch works without it."
+    );
     await expect(nameField(page)).toHaveValue(/.+/);
     await expect(
       main(page).getByRole("button", { name: "Save changes" })

@@ -45,6 +45,14 @@ const bindings = {
   AUTH_MODE: "stub",
 };
 
+/**
+ * Chromium resolves no host but this machine. The network guard in
+ * e2e/support/test.ts fails a test on any other request, but a redirect's
+ * next hop (e.g. /auth/logout's 302 to Auth0) never reaches a route
+ * handler, so without this its DNS lookup would still leave the machine.
+ */
+const LOCAL_ONLY_RESOLVER = `--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE ${HOST}, EXCLUDE ${BIND_IP}`;
+
 const bindingFlags = Object.entries(bindings)
   .map(([name, value]) => `--binding ${name}=${value}`)
   .join(" ");
@@ -73,7 +81,10 @@ export default defineConfig({
       name: phase,
       testDir: `./e2e/${phase}`,
       teardown: "screenshots",
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        launchOptions: { args: [LOCAL_ONLY_RESOLVER] },
+      },
     },
     { name: "screenshots", testDir: "./e2e", testMatch: "global-teardown.ts" },
   ],

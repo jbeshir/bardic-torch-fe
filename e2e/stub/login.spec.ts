@@ -158,57 +158,63 @@ test("Log in opens the fixture-user chooser, which signs in a seeded or a fresh 
   expect(violations).toEqual([]);
 });
 
-test("Log out posts to /auth/logout, clears the session and goes to Auth0's logout with no CSP violation", async ({
-  page,
-  baseURL,
-}) => {
-  const violations = collectCspViolations(page);
-  await page.goto("/auth/login?as=contributor&returnTo=/help");
-  await waitForHydration(page);
+test.describe("logout", () => {
+  // Chromium follows the 302 to Auth0 itself; nothing there can resolve
+  // (see LOCAL_ONLY_RESOLVER), so the hop fails locally and the test
+  // asserts it instead of the guard failing on it.
+  test.use({ offHostRedirects: ["auth0.invalid"] });
 
-  // Auth0 is not on this machine: answer its logout page here instead of
-  // following the redirect to the network (the guard would block it).
-  const auth0Requests: string[] = [];
-  await page.route("https://auth0.invalid/**", route => {
-    auth0Requests.push(route.request().url());
-    return route.fulfill({
-      status: 200,
-      contentType: "text/html",
-      body: "<!DOCTYPE html><title>Auth0 logout</title><p>Logged out</p>",
-    });
+  test("Log out posts to /auth/logout, clears the session and goes to Auth0's logout with no CSP violation", async ({
+    page,
+    baseURL,
+  }) => {
+    const violations = collectCspViolations(page);
+    await page.goto("/auth/login?as=contributor&returnTo=/help");
+    await waitForHydration(page);
+
+    const trigger = accountTrigger(page.getByRole("banner"));
+    await trigger.click();
+    const panel = await accountPanel(trigger);
+    const [logout, auth0Hop] = await Promise.all([
+      page.waitForResponse(
+        response => new URL(response.url()).pathname === "/auth/logout"
+      ),
+      page.waitForEvent(
+        "requestfailed",
+        request => new URL(request.url()).hostname === "auth0.invalid"
+      ),
+      panel.getByRole("button", { name: "Log out" }).click(),
+    ]);
+
+    expect(logout.request().method()).toBe("POST");
+    expect(logout.status()).toBe(302);
+    expect(logout.headers()["cache-control"]).toBe("no-store");
+    const target = new URL(logout.headers()["location"] ?? "");
+    expect(`${target.origin}${target.pathname}`).toBe(
+      "https://auth0.invalid/v2/logout"
+    );
+    expect(target.searchParams.get("client_id")).toBe("e2e-client-id");
+    expect(target.searchParams.get("returnTo")).toBe(baseURL);
+
+    // The browser followed that redirect as the page's navigation: the
+    // form-action CSP allowed it (a block would be ERR_BLOCKED_BY_CSP), and
+    // it stopped at name resolution, on this machine.
+    expect(auth0Hop.url()).toBe(target.href);
+    expect(auth0Hop.redirectedFrom()?.url()).toBe(logout.url());
+    expect(auth0Hop.isNavigationRequest()).toBe(true);
+    expect(auth0Hop.frame()).toBe(page.mainFrame());
+    expect(auth0Hop.failure()?.errorText).toBe("net::ERR_NAME_NOT_RESOLVED");
+
+    expect(
+      (await page.context().cookies()).some(
+        cookie => cookie.name === "__Host-bt_session"
+      )
+    ).toBe(false);
+    expect(violations).toEqual([]);
+
+    await page.goto("/help");
+    await expect(
+      page.getByRole("banner").getByRole("link", { name: "Log in" })
+    ).toHaveAttribute("href", "/auth/login?returnTo=%2Fhelp");
   });
-
-  const trigger = accountTrigger(page.getByRole("banner"));
-  await trigger.click();
-  const panel = await accountPanel(trigger);
-  const [logout] = await Promise.all([
-    page.waitForResponse(
-      response => new URL(response.url()).pathname === "/auth/logout"
-    ),
-    panel.getByRole("button", { name: "Log out" }).click(),
-  ]);
-
-  expect(logout.request().method()).toBe("POST");
-  expect(logout.status()).toBe(302);
-  expect(logout.headers()["cache-control"]).toBe("no-store");
-  const target = new URL(logout.headers()["location"] ?? "");
-  expect(`${target.origin}${target.pathname}`).toBe(
-    "https://auth0.invalid/v2/logout"
-  );
-  expect(target.searchParams.get("client_id")).toBe("e2e-client-id");
-  expect(target.searchParams.get("returnTo")).toBe(baseURL);
-
-  await expect(page).toHaveTitle("Auth0 logout");
-  expect(auth0Requests).toEqual([target.href]);
-  expect(
-    (await page.context().cookies()).some(
-      cookie => cookie.name === "__Host-bt_session"
-    )
-  ).toBe(false);
-  expect(violations).toEqual([]);
-
-  await page.goto("/help");
-  await expect(
-    page.getByRole("banner").getByRole("link", { name: "Log in" })
-  ).toHaveAttribute("href", "/auth/login?returnTo=%2Fhelp");
 });

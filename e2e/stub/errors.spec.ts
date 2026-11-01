@@ -107,8 +107,9 @@ test("settings route boundary on GET /v1/tokens 500 while root degrades on /v1/m
   await expect(
     main.getByRole("link", { name: "Go to the home page" })
   ).toBeVisible();
+  // Exact: the boundary's own h1 ends in "settings".
   await expect(
-    page.getByRole("heading", { level: 1, name: "Settings" })
+    page.getByRole("heading", { level: 1, name: "Settings", exact: true })
   ).toHaveCount(0);
   await checkpoint(page, "settings-error");
 
@@ -116,7 +117,7 @@ test("settings route boundary on GET /v1/tokens 500 while root degrades on /v1/m
   // root's in place.
   await main.getByRole("button", { name: "Try again" }).click();
   await expect(
-    main.getByRole("heading", { level: 1, name: "Settings" })
+    main.getByRole("heading", { level: 1, name: "Settings", exact: true })
   ).toBeVisible();
   await expect(
     main.getByRole("table", { name: "Your API tokens" })
