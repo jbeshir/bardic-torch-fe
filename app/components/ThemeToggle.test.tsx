@@ -1,6 +1,5 @@
-import { act, render, screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ToastProvider } from "~/components/ui/Toast";
 import type { ThemeChoice } from "~/constants/theme";
@@ -8,6 +7,7 @@ import {
   ThemeChoiceProvider,
   useThemeChoice,
 } from "~/contexts/ThemeChoiceContext";
+import { renderRoutes } from "~/test/router";
 import { ThemeToggle } from "./ThemeToggle";
 
 /** What the document root renders from: the shared optimistic choice. */
@@ -50,7 +50,7 @@ async function renderToggle({
     sent.push(request);
     return respond(request);
   });
-  const router = createMemoryRouter(
+  await renderRoutes(
     [
       {
         path: "/help/licence",
@@ -65,11 +65,8 @@ async function renderToggle({
         errorElement: <p>Error boundary</p>,
       },
     ],
-    { initialEntries: ["/help/licence?x=1"] }
+    "/help/licence?x=1"
   );
-  await act(async () => {
-    render(<RouterProvider router={router} />);
-  });
   return { sent };
 }
 

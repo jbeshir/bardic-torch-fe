@@ -1,6 +1,6 @@
 import { act, render, screen } from "@testing-library/react";
-import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { renderRoutes } from "~/test/router";
 import { NavigationProgress, useSlowNavigation } from "./NavigationProgress";
 
 function Page() {
@@ -39,23 +39,17 @@ describe("NavigationProgress", () => {
   it("shows only for navigations that take longer than 300 ms", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     let finish: () => void = () => undefined;
-    const router = createMemoryRouter(
-      [
-        { path: "/", element: <Page /> },
-        {
-          path: "/slow",
-          loader: () =>
-            new Promise(resolve => {
-              finish = () => resolve(null);
-            }),
-          element: <Page />,
-        },
-      ],
-      { initialEntries: ["/"] }
-    );
-    await act(async () => {
-      render(<RouterProvider router={router} />);
-    });
+    const router = await renderRoutes([
+      { path: "/", element: <Page /> },
+      {
+        path: "/slow",
+        loader: () =>
+          new Promise(resolve => {
+            finish = () => resolve(null);
+          }),
+        element: <Page />,
+      },
+    ]);
     act(() => {
       void router.navigate("/slow");
     });

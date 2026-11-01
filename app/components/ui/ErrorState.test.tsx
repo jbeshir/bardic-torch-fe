@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactElement } from "react";
 import { hydrateRoot } from "react-dom/client";
@@ -10,7 +10,7 @@ import {
   StaticRouterProvider,
 } from "react-router-dom/server";
 import { describe, expect, it } from "vitest";
-import { renderWithRouter } from "~/test/router";
+import { renderRoutes, renderWithRouter } from "~/test/router";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { ButtonLink } from "./Button";
 import { ErrorState, SectionError, TryAgain } from "./ErrorState";
@@ -104,6 +104,7 @@ describe("ErrorState", () => {
     const container = document.createElement("div");
     container.innerHTML = await renderOnServer(<ServerError />, url);
     document.body.appendChild(container);
+    // Hydrating server HTML, which renderRoutes (a fresh render) can't do.
     const router = createMemoryRouter(
       [{ path: "*", element: <ServerError /> }],
       {
@@ -147,12 +148,7 @@ describe("TryAgain", () => {
         finish = resolve;
       });
     };
-    const router = createMemoryRouter([
-      { path: "/", loader, element: <TryAgain /> },
-    ]);
-    await act(async () => {
-      render(<RouterProvider router={router} />);
-    });
+    await renderRoutes([{ path: "/", loader, element: <TryAgain /> }]);
     const button = await screen.findByRole("button", { name: "Try again" });
     await act(() => userEvent.click(button));
     expect(calls).toBe(2);
