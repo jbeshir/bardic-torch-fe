@@ -69,20 +69,26 @@ describe("problemMessage", () => {
     "upstream_unavailable",
     "unexpected_response",
     "offline",
-  ] satisfies ProxyErrorCode[])("uses the form's own words when the service had trouble (%s)", code => {
-    expect(problemMessage({ code, message: "Proxy copy" }, "Form copy")).toBe(
-      "Form copy"
-    );
-  });
+  ] satisfies ProxyErrorCode[])(
+    "uses the form's own words when the service had trouble (%s)",
+    code => {
+      expect(problemMessage({ code, message: "Proxy copy" }, "Form copy")).toBe(
+        "Form copy"
+      );
+    }
+  );
 
   it.each([
     "token_limit_reached",
     "user_blocked",
     "not_found",
     "unauthenticated",
-  ] satisfies ProxyErrorCode[])("keeps the proxy's specific copy for %s", code => {
-    expect(problemMessage({ code, message: "Proxy copy" }, "Form copy")).toBe(
-      "Proxy copy"
-    );
-  });
+  ] satisfies ProxyErrorCode[])(
+    "keeps the proxy's specific copy for %s",
+    code => {
+      expect(problemMessage({ code, message: "Proxy copy" }, "Form copy")).toBe(
+        "Proxy copy"
+      );
+    }
+  );
 });

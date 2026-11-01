@@ -2,12 +2,24 @@ import type { components } from "~/api/schema.gen";
 
 type APIToken = components["schemas"]["APIToken"];
 
+type Named = Pick<APIToken, "name" | "prefix">;
+
+/** What a token without a name is called (DESIGN §10.3): "token {prefix}…". */
+function unnamed(word: "Token" | "token", prefix: string): string {
+  return `${word} ${prefix}…`;
+}
+
 /**
- * A token's name for people (DESIGN §10.3): its own, or "Token {prefix}…"
- * when it has none, both on screen and in the names of its controls.
+ * A token's name for people: its own, or "Token {prefix}…" when it has
+ * none, both on screen and in the names of its controls.
  */
-export function tokenLabel(token: Pick<APIToken, "name" | "prefix">): string {
-  return token.name ?? `Token ${token.prefix}…`;
+export function tokenLabel(token: Named): string {
+  return token.name ?? unnamed("Token", token.prefix);
+}
+
+/** The same, inside a sentence: "‘Laptop MCP’", or "token {prefix}…". */
+export function tokenInSentence(token: Named): string {
+  return token.name ? `‘${token.name}’` : unnamed("token", token.prefix);
 }
 
 const MONTHS = [

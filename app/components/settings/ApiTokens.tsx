@@ -12,6 +12,7 @@ import type { ProxyBody, ProxyError } from "~/schemas/proxy";
 import { ACTIVE_TOKEN_LIMIT } from "~/schemas/rules";
 import { CreateTokenForm } from "./CreateTokenForm";
 import { ProblemAlert } from "./ProblemAlert";
+import { tokenInSentence } from "./format";
 import { fieldMessage, useFetcherResult } from "./results";
 import { SettingsSection } from "./SettingsSection";
 import { TokenList } from "./TokenList";
@@ -25,10 +26,8 @@ const CREATE_FAILED =
 const REVOKE_FAILED =
   "We couldn’t revoke that token. Check your connection and try again.";
 
-/** What the confirm dialog calls a token: its name, or "token {prefix}…". */
 function revokeDescription(token: APIToken): string {
-  const called = token.name ? `‘${token.name}’` : `token ${token.prefix}…`;
-  return `Anything using ${called} will stop working straight away. This can’t be undone.`;
+  return `Anything using ${tokenInSentence(token)} will stop working straight away. This can’t be undone.`;
 }
 
 type Problem = { readonly error: ProxyError; readonly fallback: string };
