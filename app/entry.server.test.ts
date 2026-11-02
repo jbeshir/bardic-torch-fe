@@ -1,5 +1,4 @@
-import { data } from "@remix-run/cloudflare";
-import { UNSAFE_ErrorResponseImpl } from "react-router-dom";
+import { data, UNSAFE_ErrorResponseImpl } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { handleError } from "./entry.server";
 import * as indexModule from "./routes/_index";
@@ -17,7 +16,7 @@ vi.mock("@sentry/cloudflare", () => ({
 
 /**
  * The real entry module, root and home route, plus a route that opts out of
- * caching, served the way the Pages function does.
+ * caching, served the way the Worker does.
  */
 const privateRoute = {
   loader: () => data({}, { headers: { "Cache-Control": "no-store" } }),
@@ -99,7 +98,7 @@ describe("server error reporting (R28)", () => {
     );
   });
 
-  it("doesn't report a 4xx answer (Remix's 405 for a POST without an action)", () => {
+  it("doesn't report a 4xx answer (React Router's 405 for a POST without an action)", () => {
     const consoleError = vi
       .spyOn(console, "error")
       .mockImplementation(() => undefined);
@@ -217,7 +216,7 @@ describe("document responses", () => {
 
 describe("data responses", () => {
   it("carry the security and cache headers", async () => {
-    const response = await get("/_root.data");
+    const response = await get("/_.data");
     expect(response.headers.get("X-Remix-Response")).toBe("yes");
     expect(response.headers.get("Content-Security-Policy")).toContain(
       "frame-ancestors 'none'"

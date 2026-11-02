@@ -183,7 +183,8 @@ describe("/settings route error boundary", () => {
       "routes/settings": {
         error: {
           status: 500,
-          statusText: "",
+          // React Router 8 sends the status's reason phrase.
+          statusText: "Internal Server Error",
           data: { message: "We couldn’t do that just now. Try again shortly." },
         },
       },
@@ -217,7 +218,7 @@ describe("/settings route error boundary", () => {
     // Single fetch gives the answer the page's route headers: on /settings
     // that is the settings route's no-store, so the root's own is asked for
     // at "/", where no route sets one.
-    const signedOutRoot = await get("/_root.data?_routes=root");
+    const signedOutRoot = await get("/_.data?_routes=root");
     expect(signedOutRoot.headers.get("Cache-Control")).toBe(
       "private, no-cache"
     );

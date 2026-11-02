@@ -1,4 +1,4 @@
-import { createCookieSessionStorage } from "@remix-run/cloudflare";
+import { createCookieSessionStorage } from "react-router";
 import { SESSION_MAX_AGE_SECONDS } from "~/constants/auth";
 
 /**

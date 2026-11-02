@@ -63,11 +63,11 @@ export function useModalDialog({
 }: {
   readonly open: boolean;
   readonly onClose: () => void;
-  readonly initialFocus: RefObject<HTMLElement>;
+  readonly initialFocus: RefObject<HTMLElement | null>;
   readonly fallbackFocus?: (() => HTMLElement | null) | undefined;
   readonly dismissible?: boolean;
   readonly closeOnBackdrop: boolean;
-}): RefObject<HTMLDialogElement> {
+}): RefObject<HTMLDialogElement | null> {
   const dialogRef = useRef<HTMLDialogElement>(null);
   // The latest props, for listeners that live as long as the dialog is open.
   const latestRef = useRef({

@@ -1,17 +1,22 @@
 import mdx from "@mdx-js/rollup";
-import tsconfigPaths from "vite-tsconfig-paths";
 import { defineConfig } from "vitest/config";
 import { MARKDOWN_OPTIONS } from "./app/content/markdown/options";
 
-// Vitest has its own config, so it never loads the Remix or Cloudflare
-// plugins from vite.config.ts: only Vite core, the Markdown compiler (help
-// pages) and the `~/` path alias.
+// Vitest has its own config, so it never loads the React Router or
+// Cloudflare plugins from vite.config.ts (no dev server, no workerd): only
+// Vite core, the Markdown compiler (help pages) and the `~/` path alias.
 export default defineConfig({
-  plugins: [{ enforce: "pre", ...mdx(MARKDOWN_OPTIONS) }, tsconfigPaths()],
+  plugins: [{ enforce: "pre", ...mdx(MARKDOWN_OPTIONS) }],
   resolve: {
-    // Workers resolve react-dom's `worker` build, which (unlike the Node
-    // build) has the renderToReadableStream that entry.server uses.
-    alias: { "react-dom/server": "react-dom/server.browser" },
+    tsconfigPaths: true,
+    alias: {
+      // Workers resolve react-dom's `workerd` build, which (unlike the Node
+      // build) has the renderToReadableStream that entry.server uses.
+      "react-dom/server": "react-dom/server.edge",
+      // The Worker entry imports the build React Router's plugin provides;
+      // its tests mock this stub instead (test/worker-entry.test.ts).
+      "virtual:react-router/server-build": "/test/support/server-build-stub.ts",
+    },
   },
   test: {
     globals: true,

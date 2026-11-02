@@ -14,7 +14,7 @@ import type { HelpContent } from "~/content/help/pages";
 
 type Children = { readonly children?: ReactNode };
 
-/** A Markdown link: internal paths through Remix, absolute URLs marked as external. */
+/** A Markdown link: internal paths through React Router, absolute URLs marked as external. */
 function contentLink(appearance: "prose" | "standalone") {
   return function ContentLink({
     href,

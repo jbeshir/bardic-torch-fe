@@ -1,7 +1,6 @@
-import { Link as RemixLink } from "@remix-run/react";
+import { Link as RouterLink } from "react-router";
 import type { Icon } from "@tabler/icons-react";
 import type { ButtonHTMLAttributes, MouseEvent, ReactNode, Ref } from "react";
-import { forwardRef } from "react";
 import { ExternalMark, externalKind } from "./Link";
 import { Spinner } from "./Spinner";
 
@@ -149,7 +148,7 @@ type ButtonProps = Look &
   Omit<
     ButtonHTMLAttributes<HTMLButtonElement>,
     "className" | "style" | "children" | "aria-label"
-  >;
+  > & { readonly ref?: Ref<HTMLButtonElement> };
 
 /**
  * DESIGN §6.2. A real `<button>` (type "button" unless you say "submit").
@@ -157,22 +156,20 @@ type ButtonProps = Look &
  * clicks, so a repeat submit can't happen; announce "Saving…" from the
  * form's own status region, not from here.
  */
-export const Button = forwardRef(function Button(
-  {
-    variant,
-    size,
-    fullWidth,
-    icon,
-    trailingIcon,
-    label,
-    loading = false,
-    children,
-    type = "button",
-    onClick,
-    ...rest
-  }: ButtonProps,
-  ref: Ref<HTMLButtonElement>
-) {
+export function Button({
+  variant,
+  size,
+  fullWidth,
+  icon,
+  trailingIcon,
+  label,
+  loading = false,
+  children,
+  type = "button",
+  onClick,
+  ref,
+  ...rest
+}: ButtonProps) {
   function guardWhileBusy(event: MouseEvent<HTMLButtonElement>) {
     if (loading) {
       event.preventDefault();
@@ -202,11 +199,11 @@ export const Button = forwardRef(function Button(
       </Inside>
     </button>
   );
-});
+}
 
 type ButtonLinkProps = Look &
   Content & {
-    /** An internal path (through Remix), or an absolute URL (external). */
+    /** An internal path (through React Router), or an absolute URL (external). */
     readonly to: string;
     /**
      * Load the page from the server instead of navigating in the app: the
@@ -244,7 +241,7 @@ export function ButtonLink({
     );
   }
   return (
-    <RemixLink
+    <RouterLink
       to={to}
       prefetch={reloadDocument ? "none" : "intent"}
       reloadDocument={reloadDocument}
@@ -254,6 +251,6 @@ export function ButtonLink({
       <Inside icon={icon} trailingIcon={trailingIcon} size={size}>
         {children}
       </Inside>
-    </RemixLink>
+    </RouterLink>
   );
 }

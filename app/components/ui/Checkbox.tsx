@@ -1,7 +1,7 @@
 import { IconCheck, IconMinus } from "@tabler/icons-react";
 import {
   createContext,
-  useContext,
+  use,
   useEffect,
   useId,
   useRef,
@@ -45,7 +45,7 @@ export function Checkbox({
 }) {
   const id = useId();
   const ref = useRef<HTMLInputElement>(null);
-  const invalid = useContext(GroupInvalidContext) || Boolean(error);
+  const invalid = use(GroupInvalidContext) || Boolean(error);
 
   // `indeterminate` is a DOM property only; there is no attribute for it.
   useEffect(() => {
@@ -123,9 +123,9 @@ export function CheckboxGroup({
       </legend>
       {help ? <FieldHelp id={`${id}-help`}>{help}</FieldHelp> : null}
       <div className="mt-1">
-        <GroupInvalidContext.Provider value={Boolean(error)}>
+        <GroupInvalidContext value={Boolean(error)}>
           {children}
-        </GroupInvalidContext.Provider>
+        </GroupInvalidContext>
       </div>
       {error ? <FieldError id={`${id}-error`}>{error}</FieldError> : null}
     </fieldset>

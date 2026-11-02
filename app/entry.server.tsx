@@ -1,14 +1,15 @@
 import { captureException } from "@sentry/cloudflare";
+import { isRouteErrorResponse, ServerRouter } from "react-router";
 import type {
-  AppLoadContext,
   EntryContext,
   HandleDataRequestFunction,
   HandleErrorFunction,
-} from "@remix-run/cloudflare";
-import { isRouteErrorResponse, RemixServer } from "@remix-run/react";
+  RouterContextProvider,
+} from "react-router";
 import { isbot } from "isbot";
 import { renderToReadableStream } from "react-dom/server";
 import { NonceContext } from "~/contexts/NonceContext";
+import { appEnvContext } from "~/server/context.server";
 import {
   createNonce,
   withSecurityHeaders,
@@ -18,8 +19,8 @@ import {
 const reported = new WeakSet<object>();
 
 /**
- * Errors are logged (Cloudflare's real-time logs) and reported to Sentry,
- * which functions/_middleware.ts sets up per request; without SENTRY_DSN
+ * Errors are logged (Workers Logs) and reported to Sentry, which
+ * workers/app.ts's `withSentry` sets up per request; without SENTRY_DSN
  * `captureException` does nothing. Each error object is reported once.
  */
 function report(error: unknown): void {
@@ -32,9 +33,10 @@ function report(error: unknown): void {
 }
 
 /**
- * What a loader or action throws (Remix renders the error boundary). A
- * request the reader abandoned is not an error, and neither is a 4xx
- * answer (Remix's own 405 for a form posted to a page without an action).
+ * What a loader or action throws (React Router renders the error
+ * boundary). A request the reader abandoned is not an error, and neither is
+ * a 4xx answer (React Router's own 405 for a form posted to a page without
+ * an action).
  */
 export const handleError: HandleErrorFunction = (error, { request }) => {
   if (request.signal.aborted) return;
@@ -46,15 +48,15 @@ export default async function handleRequest(
   request: Request,
   responseStatusCode: number,
   responseHeaders: Headers,
-  remixContext: EntryContext,
-  loadContext: AppLoadContext
+  routerContext: EntryContext,
+  loadContext: RouterContextProvider
 ) {
   const nonce = createNonce();
 
   const body = await renderToReadableStream(
-    <NonceContext.Provider value={nonce}>
-      <RemixServer context={remixContext} url={request.url} nonce={nonce} />
-    </NonceContext.Provider>,
+    <NonceContext value={nonce}>
+      <ServerRouter context={routerContext} url={request.url} nonce={nonce} />
+    </NonceContext>,
     {
       nonce,
       signal: request.signal,
@@ -70,7 +72,7 @@ export default async function handleRequest(
   }
 
   const headers = withSecurityHeaders(responseHeaders, {
-    env: loadContext.cloudflare.env,
+    env: loadContext.get(appEnvContext),
     nonce,
     development: import.meta.env.DEV,
   });
@@ -86,7 +88,7 @@ export const handleDataRequest: HandleDataRequestFunction = (
     status: response.status,
     statusText: response.statusText,
     headers: withSecurityHeaders(response.headers, {
-      env: context.cloudflare.env,
+      env: context.get(appEnvContext),
       nonce: createNonce(),
       development: import.meta.env.DEV,
     }),

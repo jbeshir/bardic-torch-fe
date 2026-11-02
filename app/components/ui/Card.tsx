@@ -1,5 +1,5 @@
-import { Link as RemixLink } from "@remix-run/react";
-import { createContext, useContext, type ReactNode } from "react";
+import { Link as RouterLink } from "react-router";
+import { createContext, use, type ReactNode } from "react";
 
 const COLUMNS = {
   2: "md:grid-cols-2",
@@ -43,7 +43,7 @@ export function Card({
   readonly headingLevel?: 2 | 3;
   readonly children: ReactNode;
 }) {
-  const columns = useContext(CardListColumnsContext);
+  const columns = use(CardListColumnsContext);
   const Heading = headingLevel === 2 ? "h2" : "h3";
   const card = (
     <div
@@ -56,13 +56,13 @@ export function Card({
       ) : null}
       <Heading className="text-h3 text-fg">
         {to ? (
-          <RemixLink
+          <RouterLink
             to={to}
             prefetch="intent"
             className="text-link underline-offset-prose after:absolute after:inset-0 after:rounded-lg focus-visible:outline-none focus-visible:after:outline focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-focus group-hover:text-link-hover group-hover:underline"
           >
             {title}
-          </RemixLink>
+          </RouterLink>
         ) : (
           title
         )}
@@ -92,9 +92,9 @@ export function CardList({
 }) {
   return (
     <ul role="list" className={`not-prose grid gap-4 ${COLUMNS[columns]}`}>
-      <CardListColumnsContext.Provider value={columns}>
+      <CardListColumnsContext value={columns}>
         {children}
-      </CardListColumnsContext.Provider>
+      </CardListColumnsContext>
     </ul>
   );
 }

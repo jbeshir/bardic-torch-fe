@@ -1,4 +1,4 @@
-import type { MetaFunction } from "@remix-run/cloudflare";
+import type { MetaFunction } from "react-router";
 import { useId, type ReactNode } from "react";
 import { LogoMark } from "~/components/LogoMark";
 import { SearchBox } from "~/components/SearchBox";

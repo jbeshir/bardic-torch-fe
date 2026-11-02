@@ -1,5 +1,6 @@
-import type { LoaderFunctionArgs } from "@remix-run/cloudflare";
+import type { LoaderFunctionArgs } from "react-router";
 import { getOrCreateAuthenticator } from "~/server/auth.server";
+import { appEnvContext } from "~/server/context.server";
 import type { AppEnv } from "~/server/env.server";
 import { createReturnToCookie, safeReturnTo } from "~/server/return-to.server";
 
@@ -9,7 +10,7 @@ import { createReturnToCookie, safeReturnTo } from "~/server/return-to.server";
  * fixture users here instead when AUTH_MODE=stub (see stub-auth.server.ts).
  */
 export async function loader({ request, context }: LoaderFunctionArgs) {
-  const env = context.cloudflare.env;
+  const env = context.get(appEnvContext);
 
   if (env.AUTH_MODE === "stub") {
     if (__STUB_AUTH__) {

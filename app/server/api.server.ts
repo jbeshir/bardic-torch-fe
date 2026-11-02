@@ -1,5 +1,4 @@
-import type { AppLoadContext } from "@remix-run/cloudflare";
-import { json } from "@remix-run/cloudflare";
+import type { RouterContextProvider } from "react-router";
 import { z } from "zod";
 import type { operations, paths } from "~/api/schema.gen";
 import {
@@ -26,6 +25,8 @@ import {
   getOrCreateSessionStorage,
   getServerAuthContext,
 } from "./auth.server";
+import { appEnvContext } from "./context.server";
+import { jsonResponse } from "./json.server";
 
 /**
  * Server-side client for the Bardic Torch API. Every call is authenticated
@@ -226,10 +227,10 @@ function isTimeout(error: unknown): boolean {
 
 async function callApi<T>(
   request: Request,
-  context: AppLoadContext,
+  context: Readonly<RouterContextProvider>,
   apiRequest: ApiRequest<T>
 ): Promise<ApiResult<T>> {
-  const env = context.cloudflare.env;
+  const env = context.get(appEnvContext);
   const auth = await createAuthenticatedFetch(request, context);
   const headers = new Headers(auth.headers);
 
@@ -413,7 +414,7 @@ async function readFormBody<S extends z.ZodType>(
  */
 export async function proxyForm<S extends z.ZodType>(
   request: Request,
-  context: AppLoadContext,
+  context: Readonly<RouterContextProvider>,
   schema: S,
   send: (data: z.output<S>) => Promise<ApiResult<unknown>>
 ): Promise<Response> {
@@ -435,7 +436,7 @@ export async function proxyForm<S extends z.ZodType>(
 function proxyResponse(result: ApiResult<unknown>): Response {
   const headers = new Headers(result.headers);
   headers.set("Cache-Control", "no-store");
-  return json<ProxyBody<unknown>>(
+  return jsonResponse<ProxyBody<unknown>>(
     result.ok
       ? { ok: true, data: result.data }
       : { ok: false, error: result.error },
@@ -463,7 +464,10 @@ type RequestBody<Id extends OperationId> = operations[Id] extends {
   ? Body
   : never;
 
-export function getMe(request: Request, context: AppLoadContext) {
+export function getMe(
+  request: Request,
+  context: Readonly<RouterContextProvider>
+) {
   return callApi<User>(request, context, {
     operationId: "getMe",
     schema: userSchema,
@@ -472,7 +476,7 @@ export function getMe(request: Request, context: AppLoadContext) {
 
 export function updateMe(
   request: Request,
-  context: AppLoadContext,
+  context: Readonly<RouterContextProvider>,
   body: RequestBody<"updateMe">
 ) {
   return callApi(request, context, {
@@ -482,7 +486,10 @@ export function updateMe(
   });
 }
 
-export function listApiTokens(request: Request, context: AppLoadContext) {
+export function listApiTokens(
+  request: Request,
+  context: Readonly<RouterContextProvider>
+) {
   return callApi(request, context, {
     operationId: "listAPITokens",
     schema: apiTokenListSchema,
@@ -491,7 +498,7 @@ export function listApiTokens(request: Request, context: AppLoadContext) {
 
 export function createApiToken(
   request: Request,
-  context: AppLoadContext,
+  context: Readonly<RouterContextProvider>,
   body: RequestBody<"createAPIToken">
 ) {
   return callApi(request, context, {
@@ -503,7 +510,7 @@ export function createApiToken(
 
 export function revokeApiToken(
   request: Request,
-  context: AppLoadContext,
+  context: Readonly<RouterContextProvider>,
   tokenId: string
 ) {
   return callApi(request, context, {

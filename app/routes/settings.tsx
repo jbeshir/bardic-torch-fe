@@ -1,17 +1,17 @@
-import type {
-  HeadersFunction,
-  LoaderFunctionArgs,
-  MetaFunction,
-} from "@remix-run/cloudflare";
-import { data } from "@remix-run/cloudflare";
 import {
+  data,
   isRouteErrorResponse,
   useLoaderData,
   useRouteError,
   useRouteLoaderData,
-  type ClientActionFunctionArgs,
-  type ShouldRevalidateFunction,
-} from "@remix-run/react";
+} from "react-router";
+import type {
+  ClientActionFunctionArgs,
+  HeadersFunction,
+  LoaderFunctionArgs,
+  MetaFunction,
+  ShouldRevalidateFunction,
+} from "react-router";
 import { IconLogin } from "@tabler/icons-react";
 import type { ReactNode } from "react";
 import type { components } from "~/api/schema.gen";
@@ -265,7 +265,7 @@ export default function Settings() {
  */
 /**
  * A form posted to the page itself (only possible without JS, since the
- * settings forms need it) has no server action to answer it: Remix's 405
+ * settings forms need it) has no server action to answer it: React Router's 405
  * says so, plainly, rather than as a failure to load. Anything else is
  * the settings failing to load.
  */

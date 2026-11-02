@@ -4,8 +4,9 @@ import { createServer } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 /**
- * Runs `npm run dev:fixtures` for real: the fixture API and the Vite dev
- * server with stub auth, signed in through /auth/login with a cookie jar.
+ * Runs `npm run dev:fixtures` for real: the fixture API and `react-router
+ * dev` (the Vite dev server, with the Worker in workerd) with stub auth,
+ * signed in through /auth/login with a cookie jar.
  * The script runs in its own process group so the test can stop exactly the
  * processes it started.
  */
@@ -120,6 +121,19 @@ describe("npm run dev:fixtures", () => {
     const response = await fetch(`${origin}/`);
     expect(response.status).toBe(200);
     expect(await response.text()).toContain("Bardic Torch");
+  });
+
+  it("shows the stub sign-in chooser at /auth/login: its process variables (AUTH_MODE) reach the Worker over .dev.vars", async () => {
+    const response = await fetch(`${origin}/auth/login`, {
+      redirect: "manual",
+    });
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain("<h1>Choose a fixture user</h1>");
+  });
+
+  it("serves the styleguide (the development build mode)", async () => {
+    const response = await fetch(`${origin}/styleguide`);
+    expect(response.status).toBe(200);
   });
 
   it("signs in a fixture user with stub auth and the session reaches the fixture API", async () => {

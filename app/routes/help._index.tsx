@@ -1,4 +1,4 @@
-import type { MetaFunction } from "@remix-run/cloudflare";
+import type { MetaFunction } from "react-router";
 import { HelpPage, helpMeta } from "~/components/HelpPage";
 import { HELP_INDEX } from "~/content/help/pages";
 

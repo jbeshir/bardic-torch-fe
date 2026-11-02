@@ -1,4 +1,4 @@
-import { Link as RemixLink } from "@remix-run/react";
+import { Link as RouterLink } from "react-router";
 import {
   IconChevronLeft,
   IconChevronRight,
@@ -68,9 +68,9 @@ function Step({
     );
   }
   return (
-    <RemixLink to={to} rel={rel} prefetch="intent" className={`${LINK} gap-1`}>
+    <RouterLink to={to} rel={rel} prefetch="intent" className={`${LINK} gap-1`}>
       {content}
-    </RemixLink>
+    </RouterLink>
   );
 }
 
@@ -122,10 +122,10 @@ export function Pagination({
                   {item}
                 </span>
               ) : (
-                <RemixLink to={href(item)} prefetch="intent" className={LINK}>
+                <RouterLink to={href(item)} prefetch="intent" className={LINK}>
                   <span className="sr-only">Page </span>
                   {item}
-                </RemixLink>
+                </RouterLink>
               )}
             </li>
           )

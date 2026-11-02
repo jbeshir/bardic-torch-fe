@@ -1,9 +1,9 @@
-import { createRequestHandler, type ServerBuild } from "@remix-run/cloudflare";
+import { createRequestHandler, type ServerBuild } from "react-router";
 import * as entryServer from "~/entry.server";
 import * as rootModule from "~/root";
 import { loadContext } from "./context";
 
-type RouteModule = ServerBuild["routes"][string]["module"];
+type RouteModule = NonNullable<ServerBuild["routes"][string]>["module"];
 
 /**
  * A route module as the server sees it: resource routes (actions and
@@ -38,14 +38,18 @@ function manifestEntry({
     hasAction: false,
     hasClientAction: false,
     hasClientLoader: false,
+    hasClientMiddleware: false,
     hasErrorBoundary: route.id === "root" || hasErrorBoundary,
+    clientActionModule: undefined,
+    clientLoaderModule: undefined,
+    clientMiddlewareModule: undefined,
+    hydrateFallbackModule: undefined,
   };
 }
 
 /** A server build made of the real entry module and root plus `routes`. */
 export function testBuild(routes: readonly TestRoute[]): ServerBuild {
   return {
-    mode: "production",
     entry: { module: entryServer },
     routes: {
       root: { id: "root", path: "", module: rootModule },
@@ -85,20 +89,17 @@ export function testBuild(routes: readonly TestRoute[]): ServerBuild {
     },
     publicPath: "/",
     assetsBuildDirectory: "build/client",
-    future: {
-      v3_fetcherPersist: true,
-      v3_relativeSplatPath: true,
-      v3_throwAbortReason: true,
-      v3_singleFetch: true,
-      v3_lazyRouteDiscovery: true,
-    },
+    future: {},
+    ssr: true,
     isSpaMode: false,
+    prerender: [],
+    routeDiscovery: { mode: "lazy", manifestPath: "/__manifest" },
   };
 }
 
 /**
- * `testBuild(routes)` served the way the Pages function serves it. `get`
- * requests a path with an optional Cookie header.
+ * `testBuild(routes)` served the way the Worker serves it. `get` requests a
+ * path with an optional Cookie header.
  */
 export function serveApp(routes: readonly TestRoute[]) {
   const handler = createRequestHandler(testBuild(routes), "production");

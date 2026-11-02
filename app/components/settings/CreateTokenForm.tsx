@@ -1,4 +1,4 @@
-import type { FetcherWithComponents } from "@remix-run/react";
+import type { FetcherWithComponents } from "react-router";
 import { IconPlus } from "@tabler/icons-react";
 import { useState, type FormEvent, type RefObject } from "react";
 import { Button } from "~/components/ui/Button";
@@ -24,7 +24,7 @@ export function CreateTokenForm({
 }: {
   readonly fetcher: FetcherWithComponents<unknown>;
   /** The name field, which the section focuses when the server rejects it. */
-  readonly inputRef: RefObject<HTMLInputElement>;
+  readonly inputRef: RefObject<HTMLInputElement | null>;
   /** The server's or the browser's message for the name, if any. */
   readonly fieldError: string | null;
   /** Called with the browser's message when the name breaks the rule. */

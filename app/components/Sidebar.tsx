@@ -1,4 +1,4 @@
-import { Link as RemixLink, useLocation } from "@remix-run/react";
+import { Link as RouterLink, useLocation } from "react-router";
 import { IconInfoCircle } from "@tabler/icons-react";
 import { ButtonLink } from "~/components/ui/Button";
 import { EXTERNAL_MARKS, externalKind } from "~/components/ui/Link";
@@ -40,14 +40,14 @@ function NavItem({
     );
   }
   return (
-    <RemixLink
+    <RouterLink
       to={href}
       prefetch="intent"
       aria-current={current ? "page" : undefined}
       className={`${ITEM} ${current ? ITEM_CURRENT : ITEM_IDLE}`}
     >
       {label}
-    </RemixLink>
+    </RouterLink>
   );
 }
 

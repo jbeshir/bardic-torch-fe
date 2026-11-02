@@ -1,4 +1,5 @@
-import type { AppLoadContext } from "@remix-run/cloudflare";
+import { RouterContextProvider } from "react-router";
+import { appEnvContext, authCacheContext } from "~/server/context.server";
 import { parseEnv, type AppEnv } from "~/server/env.server";
 import {
   createSessionStorage,
@@ -23,8 +24,42 @@ if (!parsed.ok) throw new Error(parsed.problems.join("\n"));
 
 const TEST_ENV: AppEnv = parsed.env;
 
-export function loadContext(env: Partial<AppEnv> = {}): AppLoadContext {
-  return { cloudflare: { env: { ...TEST_ENV, ...env } }, authCache: {} };
+/** The validated test environment, with `env` laid over it. */
+export function testEnv(env: Partial<AppEnv> = {}): AppEnv {
+  return { ...TEST_ENV, ...env };
+}
+
+/**
+ * A request's React Router context as the Worker builds it
+ * (app/server/worker.server.ts): the environment and a fresh auth cache.
+ */
+export function loadContext(env: Partial<AppEnv> = {}): RouterContextProvider {
+  const context = new RouterContextProvider();
+  context.set(appEnvContext, testEnv(env));
+  context.set(authCacheContext, {});
+  return context;
+}
+
+/**
+ * The arguments React Router passes a loader or action for `request`: its
+ * URL (without React Router's `.data` suffix, as the router normalises
+ * it), the route's `pattern`, `params` and a fresh context.
+ */
+export function routeArgs(
+  request: Request,
+  {
+    pattern = new URL(request.url).pathname,
+    params = {},
+    context = loadContext(),
+  }: {
+    readonly pattern?: string;
+    readonly params?: Readonly<Record<string, string | undefined>>;
+    readonly context?: Readonly<RouterContextProvider>;
+  } = {}
+) {
+  const url = new URL(request.url);
+  url.pathname = url.pathname.replace(/\.data$/, "");
+  return { request, url, pattern, params, context };
 }
 
 export function sessionTokens(

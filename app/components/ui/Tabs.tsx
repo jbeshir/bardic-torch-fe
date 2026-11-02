@@ -1,4 +1,4 @@
-import { Link as RemixLink } from "@remix-run/react";
+import { Link as RouterLink } from "react-router";
 import type { Icon } from "@tabler/icons-react";
 import {
   useEffect,
@@ -70,14 +70,14 @@ export function ViewTabs({
             <ul className="flex">
               {views.map(view => (
                 <li key={view.to}>
-                  <RemixLink
+                  <RouterLink
                     to={view.to}
                     prefetch="intent"
                     aria-current={view.to === current ? "page" : undefined}
                     className={`${VIEW_TAB} ${view.to === current ? VIEW_CURRENT : VIEW_OTHER}`}
                   >
                     <ViewLabel view={view} />
-                  </RemixLink>
+                  </RouterLink>
                 </li>
               ))}
             </ul>

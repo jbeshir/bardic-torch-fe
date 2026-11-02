@@ -7,12 +7,12 @@ import {
 } from "~/constants/auth";
 import { getOrCreateSessionStorage } from "~/server/auth.server";
 import { createReturnToCookie } from "~/server/return-to.server";
-import { loadContext } from "~/test/context";
+import { routeArgs, testEnv } from "~/test/context";
 import { loader as callback } from "./auth.callback";
 import { loader as login } from "./auth.login";
 import { serveMocks } from "~/test/msw";
 
-const SECRET = loadContext().cloudflare.env.AUTH_SESSION_SECRET;
+const SECRET = testEnv().AUTH_SESSION_SECRET;
 
 const ID_TOKEN = "header.payload.signature";
 
@@ -55,11 +55,9 @@ function cookiePairs(response: Response): string[] {
 /** Start a login and return what the browser brings back to the callback. */
 async function startLogin(returnTo?: string) {
   const query = returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : "";
-  const response = await login({
-    request: new Request(`https://app.test/auth/login${query}`),
-    params: {},
-    context: loadContext(),
-  });
+  const response = await login(
+    routeArgs(new Request(`https://app.test/auth/login${query}`))
+  );
   const state = new URL(
     response.headers.get("Location") ?? ""
   ).searchParams.get("state");
@@ -67,13 +65,13 @@ async function startLogin(returnTo?: string) {
 }
 
 function runCallback(query: string, cookies: readonly string[]) {
-  return callback({
-    request: new Request(`https://app.test/auth/callback?${query}`, {
-      headers: { Cookie: cookies.join("; ") },
-    }),
-    params: {},
-    context: loadContext(),
-  });
+  return callback(
+    routeArgs(
+      new Request(`https://app.test/auth/callback?${query}`, {
+        headers: { Cookie: cookies.join("; ") },
+      })
+    )
+  );
 }
 
 async function sessionTokensFrom(response: Response) {

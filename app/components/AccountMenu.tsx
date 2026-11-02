@@ -1,4 +1,4 @@
-import { Form, Link as RemixLink, useLocation } from "@remix-run/react";
+import { Form, Link as RouterLink, useLocation } from "react-router";
 import {
   IconChevronDown,
   IconLogin,
@@ -94,7 +94,7 @@ function AccountPanel({
         <Alert tone="danger">{account.message}</Alert>
       ) : null}
       {account.state === "blocked" ? null : (
-        <RemixLink to={SETTINGS_PATH} prefetch="intent" className={ROW}>
+        <RouterLink to={SETTINGS_PATH} prefetch="intent" className={ROW}>
           <IconSettings
             size={18}
             stroke={1.75}
@@ -102,7 +102,7 @@ function AccountPanel({
             className="text-fg-muted"
           />
           Settings
-        </RemixLink>
+        </RouterLink>
       )}
       <div className="border-t border-border pt-1">
         {/* A real form post: logging out leaves for Auth0. */}

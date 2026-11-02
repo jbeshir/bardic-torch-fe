@@ -1,4 +1,4 @@
-import { useFetcher } from "@remix-run/react";
+import { useFetcher } from "react-router";
 import { IconTrash } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
 import type { components } from "~/api/schema.gen";

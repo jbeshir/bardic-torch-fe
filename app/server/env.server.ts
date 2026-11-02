@@ -10,7 +10,7 @@ import { withStaticPageHeaders } from "./security-headers.server";
 const MIN_SECRET_LENGTH = 32;
 
 /**
- * How wrangler.toml and .dev.vars.example mark a value still to be filled
+ * How wrangler.jsonc and .dev.vars.example mark a value still to be filled
  * in. A deploy that forgot one gets the configuration error page, not a
  * site whose sign-in fails at Auth0.
  */

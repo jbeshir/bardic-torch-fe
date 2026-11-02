@@ -6,7 +6,7 @@ import { WikiPage } from "~/components/WikiPage";
 import { Infobox } from "~/components/ui/Infobox";
 import { Link } from "~/components/ui/Link";
 import { wikiPageUrl } from "~/constants/navigation";
-import { useContext, type ReactNode } from "react";
+import { use, type ReactNode } from "react";
 import { AnchorPrefixContext, Example, Specimen } from "./Specimen";
 
 const MORWEN = {
@@ -20,7 +20,7 @@ const MORWEN = {
 
 /** Contents for the examples, their ids kept apart per gallery copy. */
 function useContents() {
-  const prefix = `${useContext(AnchorPrefixContext)}sg-`;
+  const prefix = `${use(AnchorPrefixContext)}sg-`;
   return [
     { id: `${prefix}low-risk`, label: "Low risk" },
     {

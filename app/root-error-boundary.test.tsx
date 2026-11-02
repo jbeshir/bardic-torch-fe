@@ -8,9 +8,9 @@ const sentry = vi.hoisted(() => ({
   captured: [] as unknown[],
 }));
 
-vi.mock("@sentry/remix", () => ({
+vi.mock("@sentry/react", () => ({
   isInitialized: () => sentry.initialised,
-  captureRemixErrorBoundaryError: (error: unknown) => {
+  captureException: (error: unknown) => {
     sentry.captured.push(error);
     return "5e1f00d2a4b94c7e";
   },
@@ -78,6 +78,20 @@ describe("root ErrorBoundary", () => {
       })
     ).toBeInTheDocument();
     expect(sentry.captured).toEqual([]);
+  });
+
+  it("doesn't report an error response the server sent on purpose, as @sentry/remix didn't", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    sentry.initialised = true;
+    await renderFailure(new Response(null, { status: 503 }));
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Something went wrong",
+      })
+    ).toBeInTheDocument();
+    expect(sentry.captured).toEqual([]);
+    expect(screen.queryByText(/Reference/)).toBeNull();
   });
 
   it("keeps the home link, a main landmark and the help links", async () => {

@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getOrCreateSessionStorage } from "./auth.server";
-import { loadContext } from "~/test/context";
+import { testEnv } from "~/test/context";
 import { stubLogin } from "./stub-auth.server";
 
-const stubEnv = loadContext({ AUTH_MODE: "stub" }).cloudflare.env;
+const stubEnv = testEnv({ AUTH_MODE: "stub" });
 
 async function sessionTokensFrom(response: Response) {
   const setCookie = response.headers.get("Set-Cookie") ?? "";
@@ -131,7 +131,7 @@ describe("stubLogin", () => {
   );
 
   it("does nothing unless AUTH_MODE=stub", async () => {
-    const env = loadContext({ AUTH_MODE: "auth0" }).cloudflare.env;
+    const env = testEnv({ AUTH_MODE: "auth0" });
     expect(
       await stubLogin(new Request("http://localhost/auth/login"), env)
     ).toBeNull();

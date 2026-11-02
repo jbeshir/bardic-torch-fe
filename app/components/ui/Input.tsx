@@ -1,5 +1,5 @@
 import type { Icon } from "@tabler/icons-react";
-import { forwardRef, type InputHTMLAttributes, type Ref } from "react";
+import type { InputHTMLAttributes, Ref } from "react";
 import { useFieldControl } from "./Field";
 
 /**
@@ -34,16 +34,20 @@ type InputProps = Omit<
     "text" | "email" | "url" | "search" | "tel" | "password" | "number";
   /** A decorative 20 px icon before the value (e.g. a search glass). */
   readonly icon?: Icon;
+  readonly ref?: Ref<HTMLInputElement>;
 };
 
 /**
  * A single-line text control (DESIGN §6.5). Inside a Field it takes its id,
  * descriptions and state from there; on its own it needs an `aria-label`.
  */
-export const Input = forwardRef(function Input(
-  { type = "text", icon: LeadingIcon, readOnly, ...rest }: InputProps,
-  ref: Ref<HTMLInputElement>
-) {
+export function Input({
+  type = "text",
+  icon: LeadingIcon,
+  readOnly,
+  ref,
+  ...rest
+}: InputProps) {
   const { invalid, attributes } = useFieldControl();
   const input = (
     <input
@@ -67,4 +71,4 @@ export const Input = forwardRef(function Input(
       {input}
     </div>
   );
-});
+}

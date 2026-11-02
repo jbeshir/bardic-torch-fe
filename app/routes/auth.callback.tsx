@@ -1,8 +1,9 @@
-import type { LoaderFunctionArgs } from "@remix-run/cloudflare";
+import type { LoaderFunctionArgs } from "react-router";
 import {
   completeAuth0Login,
   getOrCreateSessionStorage,
 } from "~/server/auth.server";
+import { appEnvContext } from "~/server/context.server";
 import { createReturnToCookie, safeReturnTo } from "~/server/return-to.server";
 
 /**
@@ -18,7 +19,7 @@ import { createReturnToCookie, safeReturnTo } from "~/server/return-to.server";
  * here may be cached: the response carries the session.
  */
 export async function loader({ request, context }: LoaderFunctionArgs) {
-  const env = context.cloudflare.env;
+  const env = context.get(appEnvContext);
   const returnToCookie = createReturnToCookie(env.AUTH_SESSION_SECRET);
   const cookieHeader = request.headers.get("Cookie");
   const returnTo = safeReturnTo(await returnToCookie.parse(cookieHeader));

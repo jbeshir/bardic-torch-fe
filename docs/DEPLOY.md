@@ -2,8 +2,8 @@
 
 This runbook covers four pieces:
 
-- the Cloudflare Pages project behind https://bardictorch.org and https://www.bardictorch.org;
-- its DNS;
+- the two Cloudflare Workers behind https://bardictorch.org (and https://www.bardictorch.org) and https://preview.bardictorch.org;
+- their DNS;
 - the API's DNS at https://api.bardictorch.org;
 - the Auth0, Turnstile and Sentry set-up the frontend relies on.
 
@@ -11,81 +11,106 @@ The dashboard steps are done by a maintainer with access to the Cloudflare accou
 
 Names used below:
 
-| thing             | value                                                   |
-| ----------------- | ------------------------------------------------------- |
-| Pages project     | `bardic-torch-fe` (the `name` in `wrangler.toml`)       |
-| production branch | `main`                                                  |
-| preview branch    | `preview` → `https://preview.bardic-torch-fe.pages.dev` |
-| site              | `https://bardictorch.org` (`www` redirects to it)       |
-| API               | `https://api.bardictorch.org` (dokku)                   |
+| thing             | value                                                                               |
+| ----------------- | ----------------------------------------------------------------------------------- |
+| production Worker | `bardic-torch-fe` (the top-level `name` in `wrangler.jsonc`), built from `main`     |
+| preview Worker    | `bardic-torch-fe-preview` (`env.preview` in `wrangler.jsonc`), built from `preview` |
+| site              | `https://bardictorch.org` (`www` redirects to it)                                   |
+| preview site      | `https://preview.bardictorch.org`                                                   |
+| API               | `https://api.bardictorch.org` (dokku)                                               |
+
+The site moves here from a Cloudflare Pages project (FE1). Moving the custom domains off that project is a one-off migration with its own runbook, which comes in a later stage; §3 notes what it involves.
 
 ## 1. Before the first deploy
 
-1. **Set the two Auth0 values in `wrangler.toml`.** First create the Auth0 application and API (§4). Then replace `AUTH0_DOMAIN` and the placeholder `AUTH0_CLIENT_ID`, in both `[env.preview.vars]` and `[env.production.vars]`, with the tenant domain and the application's client ID. Both are public values, so they belong in the repository. Commit and push. Until the placeholder is replaced, a deploy serves only the "Site configuration error" page (§2), not a site whose sign-in fails at Auth0.
+1. **Set the two Auth0 values in `wrangler.jsonc`.** First create the Auth0 application and API (§4). Then replace `AUTH0_DOMAIN` and the placeholder `AUTH0_CLIENT_ID`, in both the top-level `vars` (production) and `env.preview.vars`, with the tenant domain and the application's client ID. Both are public values, so they belong in the repository. Commit and push. Until the placeholder is replaced, a deploy serves only the "Site configuration error" page (§2), not a site whose sign-in fails at Auth0.
 2. **Protect `main`.** In GitHub → Settings → Branches, add a branch protection rule (or ruleset) for `main`:
    - require a pull request;
    - require the status checks **`validate`** and **`e2e`** (the two jobs in `.github/workflows/ci.yml`) to pass.
 
-   Add a rule for `preview` too that restricts who can push to it: a push to `preview` deploys with the Preview environment's secrets (§2).
+   Add a rule for `preview` too that restricts who can push to it: a push to `preview` deploys with the preview Worker's secrets (§2).
 
    CI needs no secrets.
 
-## 2. Cloudflare Pages project
+3. **Give both Workers their secrets** before connecting Workers Builds (§2, "Bootstrap").
 
-Go to Workers & Pages → Create → Pages → **Connect to Git**, choose the GitHub repository, and fill in:
+## 2. Cloudflare Workers
 
-| setting                | value                                                   |
-| ---------------------- | ------------------------------------------------------- |
-| project name           | `bardic-torch-fe`                                       |
-| production branch      | `main`                                                  |
-| framework preset       | None                                                    |
-| build command          | `npm run build:pages`                                   |
-| build output directory | `build/client`                                          |
-| root directory         | `/` (empty)                                             |
-| Node version           | from `.nvmrc` (`22`), which the Pages build image reads |
-| runtime                | from `wrangler.toml`; see below                         |
+There are two Workers, both described by `wrangler.jsonc`: the production Worker `bardic-torch-fe` at the top level, and the preview Worker `bardic-torch-fe-preview` in `env.preview` (environments don't inherit, so each block is complete). Both have `workers_dev: false` and `preview_urls: false`, so neither serves a `*.workers.dev` URL or a version URL: only their custom domains (§3).
 
-**Check the project's `*.pages.dev` subdomain** once the project exists. These subdomains are globally unique, so if `bardic-torch-fe` is taken, Cloudflare assigns something like `bardic-torch-fe-1ab.pages.dev`. In that case, replace `bardic-torch-fe.pages.dev` everywhere it is named: `AUTH0_DEFAULT_REDIRECT_URI` in `wrangler.toml`'s `[env.preview.vars]`, this runbook (§3, §4, §5), and the preview-origin pattern in `test/repo-hygiene.test.ts`.
+### Bootstrap: secrets before the first build
 
-Then set the branch controls under Settings → Builds & deployments → Branch control:
+`wrangler.jsonc` lists `AUTH_SESSION_SECRET` and `AUTH0_CLIENT_SECRET` under `secrets.required`, so a deploy of a Worker that lacks either fails. Workers Builds' first deploy of a new Worker would fail too. So set them first, from a checkout, logged in with `npx wrangler login`:
 
-- **Production branch:** `main`. It must stay `main`: `scripts/build-pages.mjs` names it.
-- **Preview branches:** **Custom branches**, include `preview` only. No other branch is built.
+```sh
+npx wrangler secret put AUTH_SESSION_SECRET --name bardic-torch-fe
+npx wrangler secret put AUTH0_CLIENT_SECRET --name bardic-torch-fe
+npx wrangler secret put AUTH_SESSION_SECRET --name bardic-torch-fe-preview
+npx wrangler secret put AUTH0_CLIENT_SECRET --name bardic-torch-fe-preview
+# Optional (§6), for either or both:
+npx wrangler secret put SENTRY_DSN --name bardic-torch-fe
+```
 
-`npm run build:pages` (`scripts/build-pages.mjs`) reads the `CF_PAGES_BRANCH` variable that Pages sets:
+`wrangler secret put` on a Worker that doesn't exist yet creates it as a draft Worker that holds only the secret, which the first deploy then fills in. If that doesn't work for an account, deploy once from a local build instead: build the mode (`npm run build`, or `npm run build:preview` for the preview Worker), write the secrets to a temporary file in `KEY=value` lines with `umask 077`, run `npx wrangler deploy --secrets-file <that file>`, and delete the file straight away.
 
-- `main`, or no branch at all → the **production** build: no styleguide, no stub sign-in.
-- `preview` → the **preview** build: includes `/styleguide`, still no stub sign-in.
-- Any other branch → the build **fails** ("Branch … is not deployed"). This catches a branch control that was widened by mistake, or a production branch renamed in the dashboard.
+Later, change a secret with `npx wrangler secret put NAME` (production) or `npx wrangler secret put NAME --env preview` (preview), from a checkout, or in the dashboard (the Worker → Settings → Variables and Secrets).
 
-**Why only `preview`.** A preview build runs with the Preview environment's secrets, and Pages builds a branch whether or not CI passed. The Preview environment shares the production Auth0 application (its client secret) and the production API (§4). If every branch were built, anyone who can push a branch could deploy unreviewed code that reads the client secret or uses real tokens against `api.bardictorch.org`. With one preview branch, the trade-off is:
+### Workers Builds
+
+Connect each Worker to the GitHub repository: Workers & Pages → the Worker → Settings → Builds → **Connect**. Fill in, for each:
+
+| setting                            | production Worker     | preview Worker            |
+| ---------------------------------- | --------------------- | ------------------------- |
+| Worker                             | `bardic-torch-fe`     | `bardic-torch-fe-preview` |
+| build command                      | `npm run build:ci`    | `npm run build:ci`        |
+| deploy command                     | `npx wrangler deploy` | `npx wrangler deploy`     |
+| root directory                     | `/`                   | `/`                       |
+| production branch                  | `main`                | `preview`                 |
+| builds for non-production branches | **off**               | **off**                   |
+
+So the production Worker has **Production branch:** `main`; **builds for non-production branches:** off. The preview Worker has **Production branch:** `preview`; **builds for non-production branches:** off.
+
+**Node and npm.** The build image takes Node from `.nvmrc` (26.13.0) and npm from `package.json`'s `packageManager`. Check that each Worker's first build log shows Node v26.13.0; if it doesn't, add the build variable `NODE_VERSION=26.13.0` (Settings → Builds → Variables).
+
+`npm run build:ci` (`node scripts/build.mjs --from-branch`) reads the `WORKERS_CI_BRANCH` variable that Workers Builds sets:
+
+- `main` → the **production** build for `bardic-torch-fe`: no styleguide, no stub sign-in.
+- `preview` → the **preview** build for `bardic-torch-fe-preview` (it sets `CLOUDFLARE_ENV=preview`, so the built config names the preview Worker): includes `/styleguide`, still no stub sign-in.
+- Empty or unset → the build **fails** ("WORKERS_CI_BRANCH is empty: refusing to guess a deploy target"): the mode decides which Worker is deployed, so it never guesses.
+- Any other branch → the build **fails** ("Branch … is not deployed"). This catches non-production builds turned on by mistake.
+
+It then checks that the built config (`build/server/wrangler.json`, which `npx wrangler deploy` deploys) names the mode's Worker, and, when Workers Builds names the connection's Worker (`WORKERS_CI_WORKER_NAME`), that it is that one, so the preview connection can't deploy a production build or the reverse. It deletes the `build/server/.dev.vars` the Cloudflare Vite plugin writes, so no local value ends up in a build.
+
+**Why only `preview`.** A preview build runs with the preview Worker's secrets, and Workers Builds builds a branch whether or not CI passed. The preview Worker shares the production Auth0 application (its client secret) and the production API (§4). If every branch were built, anyone who can push a branch could deploy unreviewed code that reads the client secret or uses real tokens against `api.bardictorch.org`. With one preview branch, the trade-off is:
 
 - only people who may push to `preview` can run code with those secrets, so protect `preview` like `main` in GitHub (restrict who can push to it);
-- feature branches get no deployment of their own. Push a branch to `preview` to try it on Pages (§7), or run it locally (README).
+- feature branches get no deployment of their own. Push a branch to `preview` to try it (§7), or run it locally (README).
+
+Workers' own previews (non-production branch builds and version preview URLs) aren't used for the same reason: every branch would get a URL running with the Worker's secrets, and the URLs vary, so Auth0's callback and logout lists couldn't name them exactly. Cloudflare's own guidance is "Do not use Version URLs for branch or pull request testing".
 
 A separate Auth0 application for previews would remove the shared client secret too. It isn't used: previews would then sign in against a different set of Auth0 users from production.
 
-**Runtime.** Because `wrangler.toml` exists, Pages takes the compatibility date (`2024-05-12`) and flags (`nodejs_als`, §6) from it. The dashboard's runtime settings are ignored or read-only: change these in `wrangler.toml` only. The date is the newest that wrangler 3.57.1's local workerd can run. To bump it, bump wrangler too, and change the date in `wrangler.toml` and `playwright.config.ts` together (a hygiene test checks they agree).
+**Runtime.** `wrangler.jsonc` sets the compatibility date (`2026-11-01`, the bundled workerd's: a hygiene test ties them, so bump it with wrangler) and the `nodejs_compat` flag (`@sentry/cloudflare` needs it, §6), for both Workers. Change these in `wrangler.jsonc` only. `observability.enabled` turns on Workers Logs, and `upload_source_maps` uploads the Worker's source maps with each deploy.
 
-The Pages Function is `functions/[[path]].ts` (`app/server/pages-function.server.ts`: one Remix handler per isolate; the environment is validated on every request), behind `functions/_middleware.ts` (Sentry, §6). `public/_routes.json` keeps `/assets/*`, `/favicon.svg` and `/site.webmanifest` away from it, so static files never cost a Function invocation. `public/_headers` gives `/assets/*` a one-year immutable cache. Everything else (security headers and the nonce CSP on every response the Function makes, resource routes and redirects included, `Cache-Control: private, no-cache` on documents, `no-store` on `/settings` and its data, signed-in root data, the auth routes and the proxies) is set per request by the app.
+**What runs where.** The Worker is `workers/app.ts` (Sentry's `withSentry`, §6, around `app/server/worker.server.ts`). For every request it validates the environment, gives React Router the request's context (the validated environment and a per-request auth cache, `app/server/context.server.ts`), and adds the security headers to any response without a CSP. Before React Router runs, it answers an `/assets/*` file that doesn't exist with a plain 404 (`no-store`), never a rendered page, and a cross-origin POST, PUT, PATCH or DELETE to a page or `.data` URL with 400 "Bad Request" (`no-store`): React Router refuses those itself, but would report them to Sentry. The resource routes (`/api/*`, `/auth/*`, `/resources/theme`) keep their own same-origin check, a 403. The static files (`build/client`: `/assets/*`, `/favicon.svg`, `/site.webmanifest`) are Workers static assets, wired up by `@cloudflare/vite-plugin`: they are served without running the Worker. `public/_headers` gives `/assets/*` a one-year immutable cache. Everything else (security headers and the nonce CSP on every response the Worker makes, resource routes and redirects included, `Cache-Control: private, no-cache` on documents, `no-store` on `/settings` and its data, signed-in root data, the auth routes and the proxies) is set per request by the app.
 
 ### Environment variables
 
-Because the repository has a `wrangler.toml` with `pages_build_output_dir`, **`wrangler.toml` is the source of truth for plain-text variables**, per environment. The dashboard shows them read-only. Change them with a commit.
+**`wrangler.jsonc` is the source of truth for plain-text variables**, per Worker (`vars`). The dashboard can't edit them while it exists, and a deploy replaces them. Change them with a commit.
 
-**Secrets** are set in the dashboard: Settings → Variables and Secrets → Add → type **Secret**, once for **Production** and once for **Preview**.
+**Secrets** are set with `npx wrangler secret put` (see "Bootstrap" above) or in the dashboard, once per Worker. They are never committed.
 
-| variable                     | kind                   | production                      | preview                                     |
-| ---------------------------- | ---------------------- | ------------------------------- | ------------------------------------------- |
-| `BARDIC_TORCH_API_BASE_URL`  | plain, `wrangler.toml` | `https://api.bardictorch.org`   | `https://api.bardictorch.org`               |
-| `AUTH0_DOMAIN`               | plain, `wrangler.toml` | the tenant domain               | the same                                    |
-| `AUTH0_CLIENT_ID`            | plain, `wrangler.toml` | the application's client ID     | the same                                    |
-| `AUTH0_DEFAULT_REDIRECT_URI` | plain, `wrangler.toml` | `https://bardictorch.org`       | `https://preview.bardic-torch-fe.pages.dev` |
-| `AUTH0_AUDIENCE`             | plain, `wrangler.toml` | `https://api.bardictorch.org`   | the same                                    |
-| `AUTH_SESSION_SECRET`        | **secret**             | random, at least 32 characters  | a **different** random value                |
-| `AUTH0_CLIENT_SECRET`        | **secret**             | the application's client secret | the same                                    |
-| `SENTRY_DSN`                 | **secret**, optional   | the Sentry DSN, or unset        | the same, or unset                          |
-| `AUTH_MODE`                  | never set              | —                               | —                                           |
+| variable                     | kind                    | production                      | preview                           |
+| ---------------------------- | ----------------------- | ------------------------------- | --------------------------------- |
+| `BARDIC_TORCH_API_BASE_URL`  | plain, `wrangler.jsonc` | `https://api.bardictorch.org`   | `https://api.bardictorch.org`     |
+| `AUTH0_DOMAIN`               | plain, `wrangler.jsonc` | the tenant domain               | the same                          |
+| `AUTH0_CLIENT_ID`            | plain, `wrangler.jsonc` | the application's client ID     | the same                          |
+| `AUTH0_DEFAULT_REDIRECT_URI` | plain, `wrangler.jsonc` | `https://bardictorch.org`       | `https://preview.bardictorch.org` |
+| `AUTH0_AUDIENCE`             | plain, `wrangler.jsonc` | `https://api.bardictorch.org`   | the same                          |
+| `AUTH_SESSION_SECRET`        | **secret**, required    | random, at least 32 characters  | a **different** random value      |
+| `AUTH0_CLIENT_SECRET`        | **secret**, required    | the application's client secret | the same                          |
+| `SENTRY_DSN`                 | **secret**, optional    | the Sentry DSN, or unset        | the same, or unset                |
+| `AUTH_MODE`                  | never set               | —                               | —                                 |
 
 Notes on the variables:
 
@@ -94,28 +119,26 @@ Notes on the variables:
 - **`SENTRY_DSN`** is not sensitive (the browser receives it too), but it is kept out of the repository as a secret. Without it, nothing is sent to Sentry.
 - **`AUTH_MODE`** must never be set. Production and preview builds don't contain stub sign-in, and they ignore `AUTH_MODE=stub` with a logged error.
 
-Every request validates these variables (`app/server/env.server.ts`). If one is missing or malformed, or is still a placeholder starting `replace-with` (as `AUTH0_CLIENT_ID` is in `wrangler.toml` until step 1 of §1 is done), every page is a plain **"Site configuration error"** page with status 500. The variable's name, never its value, is logged ("Invalid environment: …"), and shows in the Function's real-time logs (Deployments → the deployment → Functions → Real-time logs).
+Every request validates these variables (`app/server/env.server.ts`). If one is missing or malformed, or is still a placeholder starting `replace-with` (as `AUTH0_CLIENT_ID` is in `wrangler.jsonc` until step 1 of §1 is done), every page is a plain **"Site configuration error"** page with status 500. The variable's name, never its value, is logged ("Invalid environment: …"), and shows in Workers Logs (the Worker → Observability → Logs).
 
-Variable changes apply only to **new** deployments. Retry the latest deployment after changing one.
+A plain-text variable changes with the next deploy of the commit that changes it. A secret set with `wrangler secret put` deploys a new version of the Worker straight away.
 
 ## 3. DNS and custom domains
 
 The `bardictorch.org` zone is on Cloudflare: the registrar's nameservers point at the zone's assigned Cloudflare nameservers.
 
-### The site: `bardictorch.org` and `www`
+### The site: `bardictorch.org`, `www` and `preview`
 
-1. **Add both custom domains.** In the Pages project → Custom domains → Set up a custom domain, add `bardictorch.org`, then `www.bardictorch.org`. Because the zone is on Cloudflare, Pages creates the records itself, both **proxied** (orange cloud):
-   - `bardictorch.org` → `CNAME bardic-torch-fe.pages.dev`. At the apex this works by Cloudflare's CNAME flattening.
-   - `www` → `CNAME bardic-torch-fe.pages.dev`.
+1. **Custom domains come from `wrangler.jsonc`.** Each Worker's `routes` lists its custom domains: `bardictorch.org` and `www.bardictorch.org` for `bardic-torch-fe`, `preview.bardictorch.org` for `bardic-torch-fe-preview`. On deploy, Cloudflare creates each hostname's DNS record and edge certificate itself, but only if the hostname has no DNS record yet. Don't create these records by hand.
 
-   Don't create these records by hand first. If one already exists, Pages asks to replace it.
+   The hostnames that the FE1 Pages project serves (`bardictorch.org` and `www`) already have records, pointing at Pages, so they must be removed from the Pages project and their records deleted before the Workers can take them. That is a one-off migration; a later stage writes its full runbook. Until then, only `preview.bardictorch.org` is new.
 
-2. **TLS.** Pages issues and renews an edge certificate for each custom domain; wait until both show **Active**. Then, in the zone's SSL/TLS settings:
+2. **TLS.** Cloudflare issues and renews an edge certificate for each custom domain; wait until they show **Active** (the Worker → Settings → Domains & Routes). Then, in the zone's SSL/TLS settings:
    - encryption mode **Full (strict)**;
    - **Always Use HTTPS** on;
    - minimum TLS version 1.2.
 
-   The app's cookies are all `Secure`, so the site is HTTPS-only by design. Turn on HSTS only once both names serve correctly.
+   The app's cookies are all `Secure`, so the site is HTTPS-only by design. Turn on HSTS only once every name serves correctly.
 
 3. **Redirect `www` to the apex.** The session, returnTo and Auth0 state cookies are `__Host-` cookies, which belong to one host. `AUTH0_DEFAULT_REDIRECT_URI` is the apex. So a sign-in started on `www` would lose its state cookie on the way back. Make `www` a permanent redirect: Rules → Redirect Rules → Create rule:
    - **When:** hostname equals `www.bardictorch.org`.
@@ -140,28 +163,28 @@ The API is a separate repository, deployed to the maintainer's dokku host. The f
    - `dokku letsencrypt:cron-job --add` (renewal)
 3. **Check it.** `curl https://api.bardictorch.org/healthz` returns 200 `{"status":"ok"}` (the process is up), and `curl https://api.bardictorch.org/readyz` returns the same once the database answers (503 `unavailable` if it doesn't).
 
-**No CORS set-up is needed.** The browser never calls the API. Loaders and the `/api/*` proxy routes call it from the Pages Function, server to server, with the user's bearer token.
+**No CORS set-up is needed.** The browser never calls the API. Loaders and the `/api/*` proxy routes call it from the Worker, server to server, with the user's bearer token.
 
 ## 4. Auth0
 
-Create one **Regular Web Application** (Applications → Create Application → Regular Web Applications). The server keeps the client secret and does the code exchange. Production and the `preview` branch share the application, which is why only `preview` gets preview builds (§2).
+Create one **Regular Web Application** (Applications → Create Application → Regular Web Applications). The server keeps the client secret and does the code exchange. The production and preview Workers share the application, which is why only the `preview` branch gets a preview build (§2).
 
 **Application settings:**
 
-| setting                             | value                                                                                                                                                |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Application Login URI               | `https://bardictorch.org/auth/login`                                                                                                                 |
-| Allowed Callback URLs               | `https://bardictorch.org/auth/callback`, `https://preview.bardic-torch-fe.pages.dev/auth/callback`                                                   |
-| Allowed Logout URLs                 | `https://bardictorch.org`, `https://preview.bardic-torch-fe.pages.dev`                                                                               |
-| Allowed Web Origins                 | `https://bardictorch.org`, `https://preview.bardic-torch-fe.pages.dev` (the app makes no browser-side Auth0 calls, so this is only for completeness) |
-| Credentials → Authentication Method | **Client Secret (Basic)**: the strategy (remix-auth-auth0 2 on arctic) sends the client credentials in an HTTP Basic header                          |
-| Advanced → Grant Types              | Authorization Code, Refresh Token                                                                                                                    |
+| setting                             | value                                                                                                                                      |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Application Login URI               | `https://bardictorch.org/auth/login`                                                                                                       |
+| Allowed Callback URLs               | `https://bardictorch.org/auth/callback`, `https://preview.bardictorch.org/auth/callback`                                                   |
+| Allowed Logout URLs                 | `https://bardictorch.org`, `https://preview.bardictorch.org`                                                                               |
+| Allowed Web Origins                 | `https://bardictorch.org`, `https://preview.bardictorch.org` (the app makes no browser-side Auth0 calls, so this is only for completeness) |
+| Credentials → Authentication Method | **Client Secret (Basic)**: the strategy (remix-auth-auth0 2 on arctic) sends the client credentials in an HTTP Basic header                |
+| Advanced → Grant Types              | Authorization Code, Refresh Token                                                                                                          |
 
 How these URLs are used:
 
-- **Callback URLs.** `/auth/login` sends Auth0 `redirect_uri = AUTH0_DEFAULT_REDIRECT_URI + "/auth/callback"`, so each environment's value must be listed.
+- **Callback URLs.** `/auth/login` sends Auth0 `redirect_uri = AUTH0_DEFAULT_REDIRECT_URI + "/auth/callback"`, so each Worker's value must be listed.
 - **Logout URLs.** `POST /auth/logout` clears the session and redirects to `https://<AUTH0_DOMAIN>/v2/logout?client_id=…&returnTo=<the request's origin>`, so each origin must be listed. CSP `form-action` already allows the Auth0 domain.
-- **Preview deployments.** Sign-in and log-out work only on the `preview` alias. A preview deployment's per-commit URL (`<hash>.bardic-torch-fe.pages.dev`) can be browsed, but sign-in returns to the alias, where its host-only state cookie doesn't exist.
+- **Preview.** Sign-in and log-out work on `https://preview.bardictorch.org`, the preview Worker's only URL: there are no version or `workers.dev` URLs (§2).
 - **Local development.** Don't add `localhost` URLs to this application. For `npm run dev` against a real tenant, create a second Regular Web Application (e.g. "Bardic Torch (development)") with Allowed Callback URLs `http://localhost:5173/auth/callback`, Allowed Logout URLs `http://localhost:5173`, the same API and connections, and put its client ID and secret in `.dev.vars` (README).
 
 **API** (Applications → APIs → Create API):
@@ -210,36 +233,37 @@ FE4's contact, takedown and opt-out form will be protected by Cloudflare Turnsti
 
 1. Go to Cloudflare dashboard → Turnstile → Add widget.
    - **Name:** "Bardic Torch contact form".
-   - **Hostnames:** `bardictorch.org` and `preview.bardic-torch-fe.pages.dev`.
+   - **Hostnames:** `bardictorch.org` and `preview.bardictorch.org`.
    - **Widget mode:** Managed.
-2. **Site key.** It is public. FE4 will add it to `wrangler.toml` as a plain-text variable per environment, and allow `https://challenges.cloudflare.com` in the CSP.
-3. **Secret key.** It goes to the **API**, not the frontend: set it in the API's dokku config with `dokku config:set <api-app> …`, under the name the backend defines. It is never a Pages variable.
+2. **Site key.** It is public. FE4 will add it to `wrangler.jsonc` as a plain-text variable per Worker, and allow `https://challenges.cloudflare.com` in the CSP.
+3. **Secret key.** It goes to the **API**, not the frontend: set it in the API's dokku config with `dokku config:set <api-app> …`, under the name the backend defines. It is never a Worker variable.
 4. **Local development and e2e** use Cloudflare's published test keys, not the real ones.
 
 Nothing in FE1 reads either key.
 
 ## 6. Sentry (optional)
 
-- **Setting it up.** Create a project for the browser and Workers (JavaScript → Remix), then set its DSN as the `SENTRY_DSN` secret for Production and/or Preview, and redeploy. With a DSN set:
-  - the browser reports errors (`@sentry/remix`, started by `SentryProvider` in the root `Layout`, and by an error page that is the first thing rendered);
-  - the server reports errors with `@sentry/cloudflare`: `functions/_middleware.ts` (the Pages plugin) gives every Function request its own Sentry scope and reports what the Function throws, and `entry.server.tsx` reports what Remix catches: loader and action errors (`handleError`, except abandoned requests) and render errors;
+- **Setting it up.** Create a project for the browser and Workers (JavaScript → React Router or Cloudflare), then set its DSN as the `SENTRY_DSN` secret of the production and/or preview Worker (`npx wrangler secret put SENTRY_DSN`, with `--env preview` for the preview Worker), which deploys it. With a DSN set:
+  - the browser reports errors (`@sentry/react`, started by `SentryProvider` in the root `Layout`, and by an error page that is the first thing rendered), and traces page loads and navigations, with spans named by URL path (Sentry's React Router integration can only name them by route for a router it creates, and React Router's `HydratedRouter` creates its own);
+  - the server reports errors with `@sentry/cloudflare`: `withSentry` in `workers/app.ts` gives every request its own Sentry scope and reports what the Worker throws, and `entry.server.tsx` reports what React Router catches: loader and action errors (`handleError`, except abandoned requests) and render errors;
   - the CSP's `connect-src` gains the DSN's ingest origin;
   - error pages show the Sentry event ID as an error reference.
-- **Runtime flag.** `@sentry/cloudflare` needs AsyncLocalStorage, so `wrangler.toml` sets `compatibility_flags = ["nodejs_als"]` (only that, not `nodejs_compat`; Pages reads it from `wrangler.toml`). Without the flag the Worker doesn't start (`No such module "node:async_hooks"`). Wrangler's build warning that `node:async_hooks` "may throw errors unless you enable nodejs_compat" is expected: the flag provides it.
-- **Always:** every server error is also `console.error`'d, so it shows in the Pages Function's real-time logs (Workers & Pages → the project → Functions → Real-time logs) with or without Sentry.
+- **Privacy.** Both SDKs collect nothing about the reader or the request: `dataCollection` (`app/constants/sentry.ts`, shared by both runtimes) turns off user information and the IP address, cookies, headers, request and response bodies and query strings. On the server, `beforeSend` and `beforeSendSpan` (`app/server/sentry.server.ts`) also strip the query string from events and spans (`/auth/callback?code=…&state=…` carries one-time secrets), and `beforeSendSpan` drops the User-Agent, which the SDK records on spans whatever `dataCollection` says.
+- **Runtime flag.** `@sentry/cloudflare` 11 needs the `nodejs_compat` compatibility flag, which `wrangler.jsonc` sets for both Workers.
+- **Always:** every server error is also `console.error`'d, so it shows in Workers Logs (the Worker → Observability → Logs) with or without Sentry.
 - **Without it,** nothing is initialised, nothing is sent and no reference is shown.
 
 ## 7. Deploying
 
-- **Production:** merge to `main`. The required checks run on the pull request; Pages builds `main` in production mode and serves it on `bardictorch.org`.
-- **Preview:** push to `preview`, e.g. `git push origin HEAD:preview`. It is served on `https://preview.bardic-torch-fe.pages.dev` in preview mode, with `/styleguide`. Sign-in works there against the same Auth0 application and API.
+- **Production:** merge to `main`. The required checks run on the pull request; Workers Builds builds `main` in production mode and deploys it to `bardic-torch-fe`, served on `bardictorch.org`.
+- **Preview:** push to `preview`, e.g. `git push origin HEAD:preview`. Workers Builds builds it in preview mode, with `/styleguide`, and deploys it to `bardic-torch-fe-preview`, served on `https://preview.bardictorch.org`. Sign-in works there against the same Auth0 application and API.
 - **Other branches** are not deployed (§2). CI still runs on their pull requests.
 
-Until production is signed off, deploy FE1 to the `preview` alias only.
+Until production is signed off, deploy to the preview Worker only.
 
 ## 8. Post-deploy smoke checks
 
-Run these against the deployed origin. `SITE=https://bardictorch.org`, or the preview alias.
+Run these against the deployed origin. `SITE=https://bardictorch.org`, or `https://preview.bardictorch.org`.
 
 ```sh
 # 1. The home page renders with the app's headers.
@@ -284,8 +308,8 @@ Then, in a browser:
 
 ## 9. Rollback
 
-- **Fastest:** Pages project → Deployments → find the last good **production** deployment → ⋯ → **Rollback to this deployment**. It is live within seconds. Use it for a bad commit, not for a bad variable.
+- **Fastest:** the Worker → Deployments → find the last good version → **Rollback**, or `npx wrangler rollback` (with `--name bardic-torch-fe-preview` for the preview Worker). It is live within seconds. Use it for a bad commit, not for a bad variable.
 - **Then fix forward:** revert the bad commit on `main` (`git revert <sha>`, via a pull request so the checks run). The next build replaces the rollback.
-- **A bad variable or secret:** don't roll back. Correct the value (a commit for `wrangler.toml` variables, the dashboard for secrets), then retry the latest deployment: variables apply only to new deployments.
+- **A bad variable or secret:** don't roll back. Correct the value (a commit for `wrangler.jsonc` variables, which the next deploy applies; `npx wrangler secret put` for secrets, which deploys at once).
 - **An API change that breaks the frontend:** roll back the frontend as above. Afterwards, `npm run sync:api -- <the backend's openapi/api.yaml>`, fix what `validate` reports, and redeploy.
 - **Auth0 or DNS changes** are not versioned with the site. Undo them in their dashboards: §3 and §4 list every value.

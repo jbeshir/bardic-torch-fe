@@ -1,4 +1,4 @@
-import { useNavigation } from "@remix-run/react";
+import { useNavigation } from "react-router";
 import { useEffect, useState } from "react";
 
 /** Navigations quicker than this show nothing, so the bar never flickers. */

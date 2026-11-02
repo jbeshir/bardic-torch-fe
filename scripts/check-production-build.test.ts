@@ -5,12 +5,16 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { execFile } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { promisify } from "node:util";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { inspectBuild, readStubMarker } from "./check-production-build.mjs";
+import { build } from "./build.mjs";
+import {
+  DEPLOY_CONFIG,
+  inspectBuild,
+  readStubMarker,
+  withDeployConfigRestored,
+} from "./check-production-build.mjs";
 
 const MARKER = "bardic-torch-stub-auth";
 const dirs: string[] = [];
@@ -112,6 +116,25 @@ describe("inspectBuild", () => {
     ]);
   });
 
+  it("flags local variables in the build: a .dev.vars copy, AUTH_MODE as a variable, dev:fixtures values", () => {
+    expect(
+      inspect({
+        "server/.dev.vars": "AUTH_SESSION_SECRET=local",
+        "server/wrangler.json": JSON.stringify({
+          name: "bardic-torch-fe",
+          vars: { AUTH_MODE: "stub" },
+        }),
+        "server/assets/b.js":
+          'const secret = "dev-fixtures-session-secret-not-for-real-use";',
+      })
+    ).toEqual([
+      "production: local variables copied into server/.dev.vars",
+      "production: dev:fixtures value dev-fixtures-session-secret-not-for-real-use in server/assets/b.js",
+      "production: dev:fixtures value dev-fixtures in server/assets/b.js",
+      "production: AUTH_MODE is a variable of the built Worker",
+    ]);
+  });
+
   it("flags an empty or unrecognisable build", () => {
     const dir = mkdtempSync(path.join(tmpdir(), "bt-inspect-"));
     dirs.push(dir);
@@ -128,7 +151,57 @@ describe("inspectBuild", () => {
   });
 });
 
-// The positive control: a real `vite build --mode e2e`, which has stub auth
+describe("withDeployConfigRestored", () => {
+  function fakeRoot(config: string | null) {
+    const root = mkdtempSync(path.join(tmpdir(), "bt-root-"));
+    dirs.push(root);
+    if (config !== null) {
+      mkdirSync(path.dirname(path.join(root, DEPLOY_CONFIG)), {
+        recursive: true,
+      });
+      writeFileSync(path.join(root, DEPLOY_CONFIG), config);
+    }
+    return root;
+  }
+  /** What a build in a temporary directory writes there. */
+  function redirect(root: string) {
+    mkdirSync(path.dirname(path.join(root, DEPLOY_CONFIG)), {
+      recursive: true,
+    });
+    writeFileSync(
+      path.join(root, DEPLOY_CONFIG),
+      '{"configPath":"../../../tmp/bt-prod-build-x/server/wrangler.json"}'
+    );
+  }
+  const ORIGINAL = '{"configPath":"../../build/server/wrangler.json"}\n';
+
+  it("puts the deploy config back byte for byte after a passing run, or removes one that wasn't there", () => {
+    const root = fakeRoot(ORIGINAL);
+    expect(
+      withDeployConfigRestored(root, () => (redirect(root), "built"))
+    ).toBe("built");
+    expect(readFileSync(path.join(root, DEPLOY_CONFIG), "utf8")).toBe(ORIGINAL);
+
+    const bare = fakeRoot(null);
+    withDeployConfigRestored(bare, () => redirect(bare));
+    expect(() => readFileSync(path.join(bare, DEPLOY_CONFIG))).toThrow(
+      /ENOENT/
+    );
+  });
+
+  it("puts the deploy config back after a failing run too", () => {
+    const root = fakeRoot(ORIGINAL);
+    expect(() =>
+      withDeployConfigRestored(root, () => {
+        redirect(root);
+        throw new Error("the build failed");
+      })
+    ).toThrow("the build failed");
+    expect(readFileSync(path.join(root, DEPLOY_CONFIG), "utf8")).toBe(ORIGINAL);
+  });
+});
+
+// The positive control: a real `react-router build --mode e2e`, which has stub auth
 // compiled in, must be caught. The fake directories above can't show that
 // the marker survives bundling and minification as the scan expects. One
 // build (about 10-15 s) for the whole file.
@@ -138,9 +211,8 @@ describe("inspectBuild on a real e2e build", () => {
 
   beforeAll(async () => {
     buildDir = mkdtempSync(path.join(tmpdir(), "bt-e2e-build-"));
-    // vite.config.ts leaves Remix out when it sees VITEST, and vitest's
-    // NODE_ENV=test would change what Vite builds: the child gets the
-    // environment `npm run build:e2e` would have.
+    // Vitest's NODE_ENV=test would change what Vite builds: the child gets
+    // the environment `npm run build:e2e` would have.
     const {
       VITEST: _vitest,
       VITEST_MODE: _mode,
@@ -148,17 +220,14 @@ describe("inspectBuild on a real e2e build", () => {
       VITEST_WORKER_ID: _worker,
       ...env
     } = process.env;
-    await promisify(execFile)(
-      path.resolve("node_modules/.bin/remix"),
-      ["vite:build", "--mode", "e2e"],
-      {
-        env: {
-          ...env,
-          NODE_ENV: "production",
-          REMIX_BUILD_DIRECTORY: buildDir,
-        },
-      }
+    const problems = withDeployConfigRestored(process.cwd(), () =>
+      build("e2e", {
+        buildDir,
+        env: { ...env, NODE_ENV: "production" },
+        stdio: "pipe",
+      })
     );
+    expect(problems).toEqual([]);
   }, BUILD_TIMEOUT);
 
   afterAll(() => {

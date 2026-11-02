@@ -71,10 +71,10 @@ export function Gallery({
   readonly anchorPrefix?: string;
 }) {
   return (
-    <AnchorPrefixContext.Provider value={anchorPrefix}>
+    <AnchorPrefixContext value={anchorPrefix}>
       {SPECIMENS.map(({ id, Block }) => (
         <Block key={id} />
       ))}
-    </AnchorPrefixContext.Provider>
+    </AnchorPrefixContext>
   );
 }

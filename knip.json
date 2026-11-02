@@ -2,22 +2,21 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   // Production entries the plugins don't infer. The `!` marks them as production.
   "entry": [
-    // The Pages Function: Pages routes every request here.
-    "functions/[[path]].ts!",
-    // Pages runs it before every Function request (Sentry).
-    "functions/_middleware.ts!",
-    // The AppLoadContext augmentation, imported by no module.
-    "load-context.ts!",
-    // The route config, which Remix's Vite plugin loads (`v3_routeConfig`).
+    // The Worker (also wrangler.jsonc's `main`).
+    "workers/app.ts!",
+    // The route config, which React Router's Vite plugin loads.
     "app/routes.ts!",
     // npm scripts and the manual tools (font-fallback-metrics, wiki-categories).
     "scripts/*.mjs!",
     // The build: it compiles the help pages and serves dev, so what it
     // imports (the Markdown pipeline, ENV_NAMES, the tokens) is production.
     "vite.config.ts!",
+    "react-router.config.ts!",
     "tailwind.config.ts!",
     // The dev:fixtures and e2e fixture API server.
-    "test/fixture-api/server.ts"
+    "test/fixture-api/server.ts",
+    // What vitest.config.ts resolves virtual:react-router/server-build to.
+    "test/support/server-build-stub.ts"
   ],
   // Test support code is not production: knip's default run still checks it.
   "project": [
@@ -28,8 +27,11 @@
   ],
   // These plugins would treat vite.config.ts and tailwind.config.ts as
   // development-only config files, and drop the production entries above.
+  // React Router's plugin finds the routes from its own config only (its
+  // default includes Vite's).
   "vite": false,
   "tailwind": false,
+  "react-router": { "config": ["react-router.config.ts"] },
   "rules": {
     "files": "error",
     "exports": "error",

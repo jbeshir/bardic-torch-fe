@@ -6,8 +6,9 @@ import { fileURLToPath } from "node:url";
 /**
  * `npm run test:e2e [-- <playwright args>]`: the prod phase, then the stub
  * phase (see playwright.config.ts). They run one after the other because
- * both builds write build/ and functions/ serves whichever is there. Both
- * phases always run; the exit code is non-zero if either failed.
+ * both builds write build/, and `wrangler dev` serves the built Worker in
+ * build/. Both phases always run; the exit code is non-zero if either
+ * failed.
  *
  * A full run starts from an empty e2e/screenshots so the teardown can check
  * the screenshot set; any extra arguments make it a filtered run, which

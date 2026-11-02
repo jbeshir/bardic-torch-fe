@@ -3,8 +3,9 @@ import { FIXTURE_API_PORT, FIXTURE_API_URL } from "./e2e/support/fixture-api";
 
 /**
  * One e2e phase per run, chosen by E2E_PHASE (`npm run test:e2e` runs both
- * in turn; see scripts/e2e.mjs). Both phases serve their build with
- * `wrangler pages dev` against the fixture API, with AUTH_MODE=stub bound:
+ * in turn; see scripts/e2e.mjs). Both phases serve their build, the built
+ * Worker and its static assets, with `wrangler dev` against the fixture
+ * API, with AUTH_MODE=stub bound:
  * - prod: `npm run build`, the real production build (stub auth absent);
  * - stub: `npm run build:e2e`, with stub sign-in for the login journeys.
  */
@@ -24,8 +25,6 @@ const BIND_IP = "127.0.0.1";
  */
 const HOST = "localhost";
 const BASE_URL = `http://${HOST}:${PORT}`;
-const COMPATIBILITY_DATE = "2024-05-12";
-const COMPATIBILITY_FLAGS = "nodejs_als";
 
 const requestedPhase = process.env.E2E_PHASE ?? "prod";
 if (!(requestedPhase in PHASES)) {
@@ -63,7 +62,7 @@ const browser = {
 const NO_JS_SPEC = "no-js.spec.ts";
 
 const bindingFlags = Object.entries(bindings)
-  .map(([name, value]) => `--binding ${name}=${value}`)
+  .map(([name, value]) => `--var ${name}:${value}`)
   .join(" ");
 
 export default defineConfig({
@@ -85,7 +84,7 @@ export default defineConfig({
    */
   expect: { timeout: 15_000 },
   /**
-   * One wrangler (workerd) process serves every worker, and each worker runs
+   * One `wrangler dev` (a single workerd) serves every worker, and each runs
    * axe and full-page screenshots; with the CPU-count default (10 here) workerd
    * drops requests and checkpoints time out. Four keeps runs stable.
    */
@@ -136,15 +135,29 @@ export default defineConfig({
       reuseExistingServer: false,
     },
     {
+      // The build's own config (build/server/wrangler.json, through
+      // .wrangler/deploy/config.json) sets the compatibility date and flags.
+      // The Worker sees the real local origin, not the production one
+      // wrangler would infer from wrangler.jsonc's routes: the stub auth
+      // host lock and the same-origin checks compare against it. Only
+      // these --var bindings apply (scripts/build.mjs deletes the emitted
+      // .dev.vars, and --var beats it anyway).
       command:
         `${PHASES[phase]} && ` +
-        `npx wrangler pages dev build/client --port ${PORT} --ip ${BIND_IP} --live-reload=false ` +
-        `--compatibility-date=${COMPATIBILITY_DATE} ` +
-        `--compatibility-flags=${COMPATIBILITY_FLAGS} ${bindingFlags}`,
+        `npx wrangler dev --port ${PORT} --ip ${BIND_IP} --live-reload=false ` +
+        `--show-interactive-dev-session=false --infer-origin-from-routes=false ` +
+        bindingFlags,
       url: `http://${BIND_IP}:${PORT}`,
       timeout: 300_000,
       reuseExistingServer: false,
-      env: { WRANGLER_SEND_METRICS: "false", CI: "1" },
+      // No network: wrangler's local runtime would fetch a sample
+      // `Request.cf` object from workers.cloudflare.com at start-up, fail,
+      // warn and use its placeholder; this uses the placeholder at once.
+      env: {
+        WRANGLER_SEND_METRICS: "false",
+        CLOUDFLARE_CF_FETCH_ENABLED: "false",
+        CI: "1",
+      },
     },
   ],
 });

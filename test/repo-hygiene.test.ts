@@ -1,8 +1,8 @@
-import { readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, it, expect } from "vitest";
 import { filesUnder } from "./support/files";
-import { parse as parseToml } from "smol-toml";
+import { parseConfigFileTextToJson } from "typescript";
 import { parse as parseYaml } from "yaml";
 import { ENV_NAMES, parseEnv } from "~/server/env.server";
 
@@ -49,7 +49,7 @@ const FEED_ONLY_DEPENDENCIES = [
 const FEED_VOCABULARY =
   /alignment|article|minimax|chat_db|recommend(?!ed)|semantic.search|\bfeed\b/i;
 
-const SCANNED_DIRECTORIES = ["app", "functions", "test", "scripts", "e2e"];
+const SCANNED_DIRECTORIES = ["app", "workers", "test", "scripts", "e2e"];
 
 const SCANNED_FILES = [
   "package.json",
@@ -64,10 +64,10 @@ const SCANNED_FILES = [
   "tailwind.config.ts",
   "vite.config.ts",
   "vitest.config.ts",
+  "react-router.config.ts",
   "playwright.config.ts",
-  "load-context.ts",
   "worker-configuration.d.ts",
-  "wrangler.toml",
+  "wrangler.jsonc",
   ".nvmrc",
   ".github/workflows/ci.yml",
 ];
@@ -96,8 +96,8 @@ describe("every dependency pinned exactly", () => {
 
 /**
  * The one override: TypeScript 6 for the packages that still peer `^5`
- * (openapi-typescript, and the Remix 2 packages until the framework moves;
- * README "Checks" lists them). One entry, so no package gets its own.
+ * (openapi-typescript; README "Checks" lists them). One entry, so no
+ * package gets its own.
  */
 describe("dependency overrides", () => {
   it("overrides only typescript, to the root's version", () => {
@@ -155,8 +155,8 @@ describe("no feed vocabulary in source/config", () => {
   it("scans a meaningful set of files", () => {
     const files = scannedFiles();
     expect(files).toContain("app/root.tsx");
-    expect(files).toContain("wrangler.toml");
-    expect(files).toContain("functions/[[path]].ts");
+    expect(files).toContain("wrangler.jsonc");
+    expect(files).toContain("workers/app.ts");
   });
 
   it("finds no feed vocabulary", () => {
@@ -168,9 +168,9 @@ describe("no feed vocabulary in source/config", () => {
 });
 
 describe("no feed-only bindings", () => {
-  it("wrangler.toml declares no D1 database", () => {
-    const wranglerToml = readFileSync(join(root, "wrangler.toml"), "utf8");
-    expect(wranglerToml).not.toMatch(/d1_databases/);
+  it("wrangler.jsonc declares no D1 database, for either Worker", () => {
+    const source = readFileSync(join(root, "wrangler.jsonc"), "utf8");
+    expect(source).not.toMatch(/d1_databases/);
   });
 });
 
@@ -336,44 +336,82 @@ describe("CI workflow", () => {
 
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 
-/** Set in the Pages dashboard (docs/DEPLOY.md), never in the repo. */
+/**
+ * Set with `wrangler secret put` per Worker (docs/DEPLOY.md), never in the
+ * repo. The first two are `secrets.required`, so a deploy fails without
+ * them; SENTRY_DSN is optional.
+ */
 const SECRET_NAMES = [
   "AUTH_SESSION_SECRET",
   "AUTH0_CLIENT_SECRET",
   "SENTRY_DSN",
 ];
+const REQUIRED_SECRET_NAMES = ["AUTH_SESSION_SECRET", "AUTH0_CLIENT_SECRET"];
 const OPTIONAL_NAMES = ["SENTRY_DSN", "AUTH_MODE"];
 const PLAIN_TEXT_NAMES = ENV_NAMES.filter(
   name => !SECRET_NAMES.includes(name) && !OPTIONAL_NAMES.includes(name)
 );
 
-type WranglerConfig = {
+type WorkerConfig = {
+  readonly name?: string;
+  readonly main?: string;
   readonly compatibility_date?: string;
   readonly compatibility_flags?: readonly string[];
-  readonly pages_build_output_dir?: string;
-  readonly vars?: unknown;
-  readonly env?: Readonly<
-    Record<string, { readonly vars?: Readonly<Record<string, string>> }>
-  >;
+  readonly workers_dev?: boolean;
+  readonly preview_urls?: boolean;
+  readonly routes?: readonly {
+    readonly pattern: string;
+    readonly custom_domain?: boolean;
+  }[];
+  readonly vars?: Readonly<Record<string, string>>;
+  readonly secrets?: { readonly required?: readonly string[] };
+  readonly d1_databases?: unknown;
+  readonly assets?: unknown;
+};
+type WranglerConfig = WorkerConfig & {
+  readonly env?: Readonly<Record<string, WorkerConfig>>;
 };
 
-const wrangler = parseToml(read("wrangler.toml")) as WranglerConfig;
-const varsOf = (environment: string) => wrangler.env?.[environment]?.vars ?? {};
+const wranglerSource = read("wrangler.jsonc");
+const parsedWrangler = parseConfigFileTextToJson(
+  "wrangler.jsonc",
+  wranglerSource
+);
+const wrangler = (parsedWrangler.config ?? {}) as WranglerConfig;
 
-describe("ops: wrangler.toml", () => {
-  it("has exactly a preview and a production environment, and no top-level vars", () => {
-    expect(Object.keys(wrangler.env ?? {}).sort()).toEqual([
-      "preview",
-      "production",
-    ]);
-    expect(wrangler.vars).toBeUndefined();
+/** The production Worker is the top level; the preview Worker `env.preview`. */
+const WORKERS = ["production", "preview"] as const;
+type Worker = (typeof WORKERS)[number];
+const workerConfig = (worker: Worker): WorkerConfig =>
+  worker === "production" ? wrangler : (wrangler.env?.preview ?? {});
+const varsOf = (worker: Worker) => workerConfig(worker).vars ?? {};
+
+describe("ops: wrangler.jsonc", () => {
+  it("parses as JSON with comments", () => {
+    expect(parsedWrangler.error).toBeUndefined();
+    expect(wrangler.main).toBe("./workers/app.ts");
   });
 
-  it.each(["preview", "production"])(
+  it("has the production Worker at the top level and exactly one other environment, the preview Worker", () => {
+    expect(Object.keys(wrangler.env ?? {})).toEqual(["preview"]);
+    expect(workerConfig("production").name).toBe("bardic-torch-fe");
+    expect(workerConfig("preview").name).toBe("bardic-torch-fe-preview");
+  });
+
+  it.each(WORKERS)(
     "%s sets every plain-text variable and no secret",
-    environment => {
-      expect(Object.keys(varsOf(environment)).sort()).toEqual(
+    worker => {
+      expect(Object.keys(varsOf(worker)).sort()).toEqual(
         [...PLAIN_TEXT_NAMES].sort()
+      );
+    }
+  );
+
+  it.each(WORKERS)(
+    "%s requires exactly the two secrets, so a deploy without them fails",
+    worker => {
+      expect(workerConfig(worker).secrets?.required).toEqual(
+        REQUIRED_SECRET_NAMES
       );
     }
   );
@@ -384,16 +422,16 @@ describe("ops: wrangler.toml", () => {
       AUTH_SESSION_SECRET: "a-dashboard-secret-of-at-least-32-characters",
       AUTH0_CLIENT_SECRET: "a-dashboard-secret",
     });
-  const placeholders = (environment: string) =>
-    Object.entries(varsOf(environment))
+  const placeholders = (worker: Worker) =>
+    Object.entries(varsOf(worker))
       .filter(([, value]) => value.startsWith("replace-with"))
       .map(([name]) => name);
 
-  it.each(["preview", "production"])(
+  it.each(WORKERS)(
     "%s vars pass env validation once the secrets are added and every placeholder is replaced",
-    environment => {
+    worker => {
       const filled = Object.fromEntries(
-        Object.entries(varsOf(environment)).map(([name, value]) => [
+        Object.entries(varsOf(worker)).map(([name, value]) => [
           name,
           value.startsWith("replace-with")
             ? `real-${name.toLowerCase()}`
@@ -404,11 +442,11 @@ describe("ops: wrangler.toml", () => {
     }
   );
 
-  it.each(["preview", "production"])(
+  it.each(WORKERS)(
     "%s vars with a placeholder left fail env validation, naming it (the configuration error page)",
-    environment => {
-      const parsed = withSecrets(varsOf(environment));
-      const left = placeholders(environment);
+    worker => {
+      const parsed = withSecrets(varsOf(worker));
+      const left = placeholders(worker);
       if (left.length === 0) {
         expect(parsed.ok).toBe(true);
         return;
@@ -422,53 +460,82 @@ describe("ops: wrangler.toml", () => {
     }
   );
 
-  it("names no secret anywhere, and never sets AUTH_MODE", () => {
-    const source = read("wrangler.toml");
-    const assigned = [...source.matchAll(/^\s*([A-Z0-9_]+)\s*=/gm)].map(
-      match => match[1]
-    );
-    expect(assigned.filter(name => SECRET_NAMES.includes(name!))).toEqual([]);
-    expect(assigned).not.toContain("AUTH_MODE");
+  it("names no secret value anywhere, and never sets AUTH_MODE", () => {
+    for (const worker of WORKERS) {
+      const names = Object.keys(varsOf(worker));
+      expect(names.filter(name => SECRET_NAMES.includes(name))).toEqual([]);
+    }
+    // A secret's name is only ever listed as required, never given a value.
+    const mentions = [
+      ...wranglerSource.matchAll(/"([A-Z0-9_]+)"\s*(:)?/g),
+    ].filter(([, name]) => SECRET_NAMES.includes(name!));
+    expect(mentions.filter(([, , assigned]) => assigned)).toEqual([]);
+    expect(wranglerSource).not.toContain("AUTH_MODE");
   });
 
   it("builds previews from the preview branch only, as DEPLOY.md and the README say", () => {
-    expect(read("wrangler.toml")).toContain(
-      "PREVIEW environment (the `preview` branch only)"
+    expect(wranglerSource).toContain(
+      "// PREVIEW Worker (the `preview` branch only)"
     );
     expect(read("docs/DEPLOY.md")).toContain(
-      "**Preview branches:** **Custom branches**, include `preview` only."
+      "**Production branch:** `preview`; **builds for non-production branches:** off."
     );
     const readme = read("README.md");
     expect(readme).toContain(
-      "`preview` on the `preview` branch; any other branch fails the build"
+      "`preview` on the `preview` branch; any other branch fails the build, and an empty branch fails too"
     );
     expect(readme).not.toMatch(/`preview` otherwise/);
   });
 
-  it("returns production sign-ins to bardictorch.org and preview ones elsewhere", () => {
-    const production = varsOf("production").AUTH0_DEFAULT_REDIRECT_URI;
-    const preview = varsOf("preview").AUTH0_DEFAULT_REDIRECT_URI;
-    expect(production).toBe("https://bardictorch.org");
-    expect(preview).toMatch(
-      /^https:\/\/[a-z0-9-]+\.bardic-torch-fe\.pages\.dev$/
+  it("returns production sign-ins to bardictorch.org and preview ones to preview.bardictorch.org", () => {
+    expect(varsOf("production").AUTH0_DEFAULT_REDIRECT_URI).toBe(
+      "https://bardictorch.org"
     );
-    expect(preview).not.toBe(production);
+    expect(varsOf("preview").AUTH0_DEFAULT_REDIRECT_URI).toBe(
+      "https://preview.bardictorch.org"
+    );
   });
 
-  it("serves build/client with the compatibility date the e2e server uses", () => {
-    expect(wrangler.pages_build_output_dir).toBe("./build/client");
-    const e2eDate = /COMPATIBILITY_DATE = "([\d-]+)"/.exec(
-      read("playwright.config.ts")
-    )?.[1];
-    expect(e2eDate).toBeDefined();
-    expect(wrangler.compatibility_date).toBe(e2eDate);
+  it.each(WORKERS)(
+    "%s is served on its custom domains only: no workers.dev or preview URLs",
+    worker => {
+      const config = workerConfig(worker);
+      expect(config.workers_dev).toBe(false);
+      expect(config.preview_urls).toBe(false);
+      expect(config.routes).toEqual(
+        worker === "production"
+          ? [
+              { pattern: "bardictorch.org", custom_domain: true },
+              { pattern: "www.bardictorch.org", custom_domain: true },
+            ]
+          : [{ pattern: "preview.bardictorch.org", custom_domain: true }]
+      );
+    }
+  );
+
+  it("uses the compatibility date of the bundled workerd, for both Workers", () => {
+    // workerd 1.YYYYMMDD.n supports compatibility dates up to YYYY-MM-DD.
+    const workerd = lockfile.packages["node_modules/workerd"]?.version ?? "";
+    const supported = /^1\.(\d{4})(\d{2})(\d{2})\.\d+$/
+      .exec(workerd)
+      ?.slice(1)
+      .join("-");
+    expect(supported).toBeDefined();
+    expect(wrangler.compatibility_date).toBe(supported);
+    expect(wrangler.env?.preview?.compatibility_date).toBeUndefined();
   });
 
-  it("enables only nodejs_als (for @sentry/cloudflare), as the e2e server does", () => {
-    expect(wrangler.compatibility_flags).toEqual(["nodejs_als"]);
-    expect(read("playwright.config.ts")).toContain(
-      'const COMPATIBILITY_FLAGS = "nodejs_als";'
-    );
+  it("enables only nodejs_compat (for @sentry/cloudflare), for both Workers", () => {
+    expect(wrangler.compatibility_flags).toEqual(["nodejs_compat"]);
+    expect(wrangler.env?.preview?.compatibility_flags).toBeUndefined();
+  });
+
+  it("leaves static assets to the Vite plugin, before the Worker", () => {
+    // The plugin writes `assets` into the built config (build/server), and
+    // a request for a static file never runs the Worker (no
+    // `run_worker_first`).
+    expect(wrangler.assets).toBeUndefined();
+    expect(wranglerSource).not.toContain("run_worker_first");
   });
 });
 
@@ -500,18 +567,22 @@ describe("ops: local variables", () => {
     expect(read(".gitignore").split("\n")).toContain(".dev.vars");
   });
 
-  it("worker-configuration.d.ts declares every variable, only the optional ones optional", () => {
-    const declared = [
-      ...read("worker-configuration.d.ts").matchAll(
-        /^\s*([A-Z0-9_]+)(\?)?: string;$/gm
-      ),
-    ];
-    expect(declared.map(([, name]) => name).sort()).toEqual(
-      [...ENV_NAMES].sort()
+  it("the generated Env declares exactly the plain-text variables and the required secrets; the rest of ENV_NAMES is exactly the optional ones", () => {
+    // worker-configuration.d.ts, generated from wrangler.jsonc (gen:types;
+    // check:types proves it is up to date).
+    const types = read("worker-configuration.d.ts");
+    const env = /^interface __BaseEnv_Env \{\n([\s\S]*?)^\}/m.exec(types)?.[1];
+    expect(env).toBeDefined();
+    const declared = [...(env ?? "").matchAll(/^\s*([A-Z0-9_]+)\??:/gm)].map(
+      ([, name]) => name
     );
-    expect(
-      declared.filter(([, , optional]) => optional).map(([, name]) => name)
-    ).toEqual(OPTIONAL_NAMES);
+    expect(declared.sort()).toEqual(
+      [...PLAIN_TEXT_NAMES, ...REQUIRED_SECRET_NAMES].sort()
+    );
+    expect(ENV_NAMES.filter(name => !declared.includes(name)).sort()).toEqual(
+      [...OPTIONAL_NAMES].sort()
+    );
+    expect(types).toMatch(/^interface Env extends __BaseEnv_Env \{\}$/m);
   });
 });
 
@@ -528,20 +599,11 @@ describe("ops: static files", () => {
     expect(headerNames).toEqual(["Cache-Control"]);
   });
 
-  it("public/_routes.json keeps only static files away from the Pages Function", () => {
-    const routes = JSON.parse(read("public/_routes.json")) as {
-      version: number;
-      include: string[];
-      exclude: string[];
-    };
-    expect(routes.version).toBe(1);
-    expect(routes.include).toEqual(["/*"]);
-    expect(routes.exclude).toContain("/assets/*");
-    const files = routes.exclude.filter(path => path !== "/assets/*");
-    expect(files.length).toBeGreaterThan(0);
-    for (const file of files) {
-      expect(statSync(join(root, "public", file)).isFile()).toBe(true);
-    }
+  it("has no public/_routes.json: Workers static assets keep every static file away from the Worker", () => {
+    expect(existsSync(join(root, "public/_routes.json"))).toBe(false);
+    // What it listed is served as a static file, never by the Worker.
+    expect(statSync(join(root, "public/favicon.svg")).isFile()).toBe(true);
+    expect(statSync(join(root, "public/site.webmanifest")).isFile()).toBe(true);
   });
 });
 
@@ -647,16 +709,13 @@ describe("docs", () => {
   it("DEPLOY.md covers every variable, the build and both sign-in origins", () => {
     const deploy = read("docs/DEPLOY.md");
     for (const name of ENV_NAMES) expect(deploy).toContain(`\`${name}\``);
-    expect(deploy).toContain("`npm run build:pages`");
-    const outputDirectory = wrangler.pages_build_output_dir?.replace(
-      /^\.\//,
-      ""
-    );
+    expect(deploy).toContain("`npm run build:ci`");
+    expect(deploy).toMatch(tableRow(["build command", "`npm run build:ci`"]));
     expect(deploy).toMatch(
-      tableRow(["build output directory", `\`${outputDirectory}\``])
+      tableRow(["deploy command", "`npx wrangler deploy`"])
     );
-    for (const environment of ["production", "preview"]) {
-      const origin = varsOf(environment).AUTH0_DEFAULT_REDIRECT_URI;
+    for (const worker of WORKERS) {
+      const origin = varsOf(worker).AUTH0_DEFAULT_REDIRECT_URI;
       expect(deploy).toContain(`\`${origin}/auth/callback\``);
       expect(deploy).toContain(`\`${origin}\``);
     }

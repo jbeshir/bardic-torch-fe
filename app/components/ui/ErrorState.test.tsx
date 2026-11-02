@@ -3,12 +3,13 @@ import userEvent from "@testing-library/user-event";
 import type { ReactElement } from "react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
-import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import {
+  createMemoryRouter,
   createStaticHandler,
   createStaticRouter,
   StaticRouterProvider,
-} from "react-router-dom/server";
+} from "react-router";
+import { RouterProvider } from "react-router/dom";
 import { describe, expect, it } from "vitest";
 import { renderRoutes, renderWithRouter } from "~/test/router";
 import { expectSameMarkupInBothThemes } from "~/test/themes";

@@ -1,4 +1,4 @@
-import { createCookie } from "@remix-run/cloudflare";
+import { createCookie } from "react-router";
 
 /**
  * Where to send the user after sign-in or a no-JS form post. The only

@@ -3,7 +3,7 @@ import { sessionCookie, sessionTokens } from "~/test/context";
 import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
 import { shouldRevalidate } from "./root";
-import { data } from "@remix-run/cloudflare";
+import { data } from "react-router";
 import { routeData } from "~/test/single-fetch";
 import * as indexModule from "./routes/_index";
 import * as notFoundModule from "./routes/$";
@@ -40,7 +40,7 @@ const contributor = () =>
   sessionCookie(sessionTokens({ accessToken: "fixture:contributor" }));
 
 async function rootData(cookie?: string) {
-  const response = await get("/_root.data?_routes=root", cookie);
+  const response = await get("/_.data?_routes=root", cookie);
   const loaded = (await routeData(response.clone(), "root")) as {
     account: unknown;
   };
@@ -100,7 +100,10 @@ describe("root loader", () => {
     const html = await (await get("/", await contributor())).text();
     expect(html.match(/<details/g)).toHaveLength(2);
     expect(html).toMatch(/Account(<!-- -->)?: Morwen of the Marches/);
-    expect(html).toMatch(/<form method="post" action="\/auth\/logout"[^>]*>/);
+    // React Router 8 writes `action` before `method`; the order is no matter.
+    expect(html).toMatch(
+      /<form(?=[^>]* method="post")(?=[^>]* action="\/auth\/logout")[^>]*>/
+    );
   });
 });
 
@@ -110,7 +113,7 @@ describe("root headers", () => {
       (await get(path, cookie)).headers.get("Cache-Control");
     const signedIn = await contributor();
     // The home page and the 404 route have no `headers` export of their own.
-    for (const path of ["/", "/_root.data", "/nowhere", "/nowhere.data"]) {
+    for (const path of ["/", "/_.data", "/nowhere", "/nowhere.data"]) {
       expect(await cacheControl(path, signedIn), path).toBe("no-store");
       expect(await cacheControl(path), path).toBe("private, no-cache");
     }

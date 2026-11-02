@@ -8,7 +8,7 @@ import {
  * How the browser sends a mutation (the settings forms through the
  * settings route's `clientAction`, the theme toggle directly): a plain
  * `fetch` whose every outcome is a proxy body, so it always ends in
- * feedback on the page. Remix's own fetcher submission would throw a
+ * feedback on the page. React Router's own fetcher submission would throw a
  * response it didn't make (a platform 503, a gateway's 502) or a failed
  * fetch to the route's error boundary instead, replacing the page and the
  * reader's typed input.

@@ -71,12 +71,12 @@ test("the lazy route discovery manifest carries the security headers", async ({
   // page's own route discovery asks for it.
   const version = await page.evaluate(
     () =>
-      (window as { __remixManifest?: { version?: string } }).__remixManifest
-        ?.version
+      (window as { __reactRouterManifest?: { version?: string } })
+        .__reactRouterManifest?.version
   );
   expect(version).toBeTruthy();
   const response = await page.request.get(
-    `/__manifest?p=%2Fhelp%2Flicence&version=${version ?? ""}`
+    `/__manifest?paths=%2Fhelp%2Flicence&version=${version ?? ""}`
   );
   expect(response.status()).toBe(200);
   const headers = response.headers();

@@ -49,7 +49,7 @@ export function Dialog({
   readonly cancelLabel?: string;
   readonly pending?: boolean;
   /** Focus this on open instead of Cancel: a form's first field. */
-  readonly initialFocus?: RefObject<HTMLElement>;
+  readonly initialFocus?: RefObject<HTMLElement | null>;
   /** Where focus goes on close if the opener is gone, e.g. a list heading. */
   readonly fallbackFocus?: () => HTMLElement | null;
 }) {

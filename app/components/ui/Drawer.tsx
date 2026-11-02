@@ -1,4 +1,4 @@
-import { useLocation } from "@remix-run/react";
+import { useLocation } from "react-router";
 import { IconX } from "@tabler/icons-react";
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { Button } from "./Button";

@@ -1,4 +1,4 @@
-import { Link as RemixLink } from "@remix-run/react";
+import { Link as RouterLink } from "react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { SearchBox } from "./SearchBox";
 import { ThemeToggle } from "./ThemeToggle";
@@ -62,13 +62,13 @@ export function Header({
         <div className="mx-auto flex h-full max-w-shell items-center gap-3 px-4 md:px-6 lg:gap-8 xl:gap-10 xl:px-8">
           <div className="flex shrink-0 items-center gap-1 lg:w-60 xl:w-64">
             <div className="hidden md:block lg:hidden">{menu}</div>
-            <RemixLink
+            <RouterLink
               to="/"
               prefetch="intent"
               className="group inline-flex min-h-11 items-center rounded-md px-1"
             >
               <Wordmark flicker />
-            </RemixLink>
+            </RouterLink>
           </div>
           <div className="hidden min-w-0 max-w-md flex-1 md:block">
             <SearchBox size="md" />

@@ -2,17 +2,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { getOrCreateSessionStorage } from "~/server/auth.server";
 import type { AppEnv } from "~/server/env.server";
 import { createReturnToCookie } from "~/server/return-to.server";
-import { loadContext } from "~/test/context";
+import { loadContext, routeArgs, testEnv } from "~/test/context";
 import { loader } from "./auth.login";
 
-const SECRET = loadContext().cloudflare.env.AUTH_SESSION_SECRET;
+const SECRET = testEnv().AUTH_SESSION_SECRET;
 
 function login(url: string, env: Partial<AppEnv> = {}) {
-  return loader({
-    request: new Request(url),
-    params: {},
-    context: loadContext(env),
-  });
+  return loader(routeArgs(new Request(url), { context: loadContext(env) }));
 }
 
 function setCookies(response: Response): string[] {

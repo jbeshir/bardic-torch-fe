@@ -1,4 +1,4 @@
-import { redirect } from "@remix-run/cloudflare";
+import { redirect } from "react-router";
 import { SESSION_MAX_AGE_SECONDS } from "~/constants/auth";
 import { getOrCreateSessionStorage } from "./auth.server";
 import type { AppEnv } from "./env.server";

@@ -1,4 +1,4 @@
-import { useLocation, useRevalidator } from "@remix-run/react";
+import { useLocation, useRevalidator } from "react-router";
 import { IconRefresh } from "@tabler/icons-react";
 import { useEffect, useRef, type ReactNode } from "react";
 import { UnlitMark } from "~/components/LogoMark";

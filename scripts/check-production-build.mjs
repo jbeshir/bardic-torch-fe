@@ -1,20 +1,50 @@
-import { spawnSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { build } from "./build.mjs";
+import { fixtureAppEnv } from "./dev-fixtures.mjs";
 
 /**
  * `npm run check:prod-build`: build the `production` and `preview` modes into
- * temporary directories (leaving `build/` alone) and fail unless neither
- * contains stub auth or fixture hosts, and `/styleguide` is excluded from
- * production and present in preview.
+ * temporary directories (leaving `build/` alone) with scripts/build.mjs, and
+ * fail unless:
+ * - neither contains stub auth, fixture hosts or any of `npm run
+ *   dev:fixtures`' values;
+ * - `/styleguide` is excluded from production and present in preview;
+ * - each deploys to its own Worker (bardic-torch-fe, bardic-torch-fe-preview);
+ * - neither carries a `.dev.vars` copy or an AUTH_MODE variable.
+ *
+ * Building rewrites .wrangler/deploy/config.json, which points `wrangler
+ * dev` and `wrangler deploy` at a build; it is put back as it was.
  */
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const STUB_SOURCE = path.join(ROOT, "app/server/stub-auth.server.ts");
 const FIXTURE_HOSTS = ["fixture.invalid", "127.0.0.1:4010"];
 const STYLEGUIDE_ROUTE_ID = "routes/styleguide";
+export const DEPLOY_CONFIG = ".wrangler/deploy/config.json";
+
+/**
+ * `npm run dev:fixtures`' variable values (default ports): never in a build.
+ * Its AUTH_MODE (`stub`, a word the app's code has) is checked as a
+ * variable of the built Worker instead, and its fixture API URL as a
+ * fixture host.
+ */
+const DEV_VALUES = [
+  ...new Set(
+    Object.entries(fixtureAppEnv("5173", "4010"))
+      .filter(([name]) => name !== "AUTH_MODE")
+      .map(([, value]) => value)
+  ),
+].filter(value => !FIXTURE_HOSTS.some(host => value.includes(host)));
 
 /** The marker string stub-auth.server.ts puts into every build it is in. */
 export function readStubMarker(source) {
@@ -55,6 +85,21 @@ export function inspectBuild({ buildDir, mode, marker }) {
         problems.push(`${mode}: fixture host ${host} in ${name}`);
       }
     }
+    for (const value of DEV_VALUES) {
+      if (content.includes(value)) {
+        problems.push(`${mode}: dev:fixtures value ${value} in ${name}`);
+      }
+    }
+    if (path.basename(name) === ".dev.vars") {
+      problems.push(`${mode}: local variables copied into ${name}`);
+    }
+  }
+
+  const config = files.find(({ name }) =>
+    /^server[\\/]wrangler\.json$/.test(name)
+  );
+  if (config && "AUTH_MODE" in (JSON.parse(config.content).vars ?? {})) {
+    problems.push(`${mode}: AUTH_MODE is a variable of the built Worker`);
   }
 
   const server = files.filter(({ name }) => name.startsWith("server"));
@@ -81,18 +126,23 @@ export function inspectBuild({ buildDir, mode, marker }) {
   return problems;
 }
 
-function build(mode, buildDir) {
-  const result = spawnSync(
-    path.join(ROOT, "node_modules/.bin/remix"),
-    ["vite:build", "--mode", mode],
-    {
-      cwd: ROOT,
-      encoding: "utf8",
-      env: { ...process.env, REMIX_BUILD_DIRECTORY: buildDir },
-    }
-  );
-  if (result.status !== 0) {
-    throw new Error(`${mode} build failed:\n${result.stdout}${result.stderr}`);
+/**
+ * Run `task` and then put `root`'s .wrangler/deploy/config.json back byte
+ * for byte (or remove it if there was none), whether `task` succeeded or
+ * threw.
+ * @template T
+ * @param {string} root
+ * @param {() => T} task
+ * @returns {T}
+ */
+export function withDeployConfigRestored(root, task) {
+  const file = path.join(root, DEPLOY_CONFIG);
+  const saved = existsSync(file) ? readFileSync(file) : null;
+  try {
+    return task();
+  } finally {
+    if (saved === null) rmSync(file, { force: true });
+    else writeFileSync(file, saved);
   }
 }
 
@@ -100,18 +150,21 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const marker = readStubMarker(readFileSync(STUB_SOURCE, "utf8"));
   const tempDir = mkdtempSync(path.join(tmpdir(), "bt-prod-build-"));
   try {
-    const problems = ["production", "preview"].flatMap(mode => {
-      const buildDir = path.join(tempDir, mode);
-      build(mode, buildDir);
-      return inspectBuild({ buildDir, mode, marker });
-    });
+    const problems = withDeployConfigRestored(ROOT, () =>
+      ["production", "preview"].flatMap(mode => {
+        const buildDir = path.join(tempDir, mode);
+        const built = build(mode, { buildDir, stdio: "pipe" });
+        if (!existsSync(path.join(buildDir, "server"))) return built;
+        return [...built, ...inspectBuild({ buildDir, mode, marker })];
+      })
+    );
     if (problems.length > 0) {
       console.error(`check:prod-build failed:\n${problems.join("\n")}`);
       process.exitCode = 1;
     } else {
       console.log(
-        "check:prod-build: production and preview builds are free of stub auth and fixture hosts; " +
-          `${STYLEGUIDE_ROUTE_ID} is only in preview`
+        "check:prod-build: production and preview builds are free of stub auth, fixture hosts and local variables, " +
+          `deploy to their own Workers, and ${STYLEGUIDE_ROUTE_ID} is only in preview`
       );
     }
   } finally {

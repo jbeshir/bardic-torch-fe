@@ -46,7 +46,9 @@ test("checkpoint: server-html, the home page as served, before or without JS", a
     "href",
     "#site-nav"
   );
-  expect(await page.evaluate(() => "__remixRouter" in window)).toBe(false);
+  expect(await page.evaluate(() => "__reactRouterDataRouter" in window)).toBe(
+    false
+  );
   await expect(page.locator("noscript")).toHaveCount(0);
   await checkpoint(page, "server-html");
 });

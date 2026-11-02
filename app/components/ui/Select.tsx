@@ -1,5 +1,5 @@
 import { IconChevronDown } from "@tabler/icons-react";
-import { forwardRef, type Ref, type SelectHTMLAttributes } from "react";
+import type { Ref, SelectHTMLAttributes } from "react";
 import { useFieldControl } from "./Field";
 import { textControlClasses } from "./Input";
 
@@ -8,16 +8,16 @@ import { textControlClasses } from "./Input";
  * system picker, which follows the page's `color-scheme`, so it matches the
  * theme. Inside a Field it takes its id, descriptions and state from there.
  */
-export const Select = forwardRef(function Select(
-  {
-    children,
-    ...rest
-  }: Omit<
-    SelectHTMLAttributes<HTMLSelectElement>,
-    "className" | "style" | "id"
-  >,
-  ref: Ref<HTMLSelectElement>
-) {
+export function Select({
+  children,
+  ref,
+  ...rest
+}: Omit<
+  SelectHTMLAttributes<HTMLSelectElement>,
+  "className" | "style" | "id"
+> & {
+  readonly ref?: Ref<HTMLSelectElement>;
+}) {
   const { invalid, attributes } = useFieldControl();
   return (
     <div className="relative">
@@ -37,4 +37,4 @@ export const Select = forwardRef(function Select(
       />
     </div>
   );
-});
+}

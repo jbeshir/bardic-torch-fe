@@ -20,13 +20,13 @@ const ROOT_FILES = [
   "tailwind.config.ts",
   "vite.config.ts",
   "vitest.config.ts",
+  "react-router.config.ts",
   "playwright.config.ts",
-  "load-context.ts",
   "worker-configuration.d.ts",
 ];
 
 const codeFiles = [
-  ...["app", "functions", "test", "scripts", "e2e"].flatMap(filesUnder),
+  ...["app", "workers", "test", "scripts", "e2e"].flatMap(filesUnder),
   ...ROOT_FILES,
 ].filter(path => CODE_EXTENSIONS.has(extname(path)));
 
@@ -37,7 +37,9 @@ describe("lint coverage", () => {
   it("scans scripts, config files and app code", () => {
     expect(codeFiles).toEqual(
       expect.arrayContaining([
-        "scripts/build-pages.mjs",
+        "scripts/build.mjs",
+        "workers/app.ts",
+        "worker-configuration.d.ts",
         "eslint.config.ts",
         "postcss.config.js",
         "app/root.tsx",

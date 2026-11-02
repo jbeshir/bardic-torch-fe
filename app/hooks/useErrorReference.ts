@@ -1,5 +1,5 @@
-import * as Sentry from "@sentry/remix";
-import { useRouteLoaderData } from "@remix-run/react";
+import * as Sentry from "@sentry/react";
+import { useRouteLoaderData } from "react-router";
 import { useEffect, useState } from "react";
 import { initSentry } from "~/contexts/SentryContext";
 import type { loader as rootLoader } from "~/root";
@@ -20,7 +20,15 @@ export function useErrorReference(
   useEffect(() => {
     if (!report) return;
     initSentry(dsn);
-    const eventId = Sentry.captureRemixErrorBoundaryError(error);
+    // As @sentry/remix's captureRemixErrorBoundaryError did: only errors
+    // are reported, never an error response (a thrown `data()`), which the
+    // server answered on purpose.
+    const eventId =
+      error instanceof Error
+        ? Sentry.captureException(error, {
+            mechanism: { handled: false, type: "react-router.error-boundary" },
+          })
+        : undefined;
     const shown = Sentry.isInitialized() ? eventId : undefined;
     // The reference arrives from Sentry, outside React: shown once the
     // effect is done, unless the error has changed by then.

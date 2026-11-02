@@ -1,4 +1,4 @@
-import { Outlet } from "@remix-run/react";
+import { Outlet } from "react-router";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { URLSearchParams as NodeURLSearchParams } from "node:url";
@@ -15,7 +15,7 @@ import {
 } from "~/schemas/rules";
 import {
   APP_ORIGIN,
-  loadContext,
+  routeArgs,
   sessionCookie,
   sessionTokens,
 } from "~/test/context";
@@ -43,9 +43,9 @@ import Settings, {
 // network at all).
 
 const reportBoundary = vi.hoisted(() => vi.fn(() => "event-id"));
-vi.mock("@sentry/remix", () => ({
+vi.mock("@sentry/react", () => ({
   isInitialized: () => false,
-  captureRemixErrorBoundaryError: reportBoundary,
+  captureException: reportBoundary,
 }));
 
 const fixtures = serveFixtureApi();
@@ -120,15 +120,13 @@ async function asApp(request: Request): Promise<Request> {
 
 type Params = Record<string, string | undefined>;
 type Args = { request: Request; params: Params };
-type Handler<Result = Response> = (args: {
-  request: Request;
-  params: Params;
-  context: ReturnType<typeof loadContext>;
-}) => Promise<Result>;
+type Handler<Result = Response> = (
+  args: ReturnType<typeof routeArgs>
+) => Promise<Result>;
 
 function run<Result>(handler: Handler<Result>) {
   return async ({ request, params }: Args) =>
-    handler({ request: await asApp(request), params, context: loadContext() });
+    handler(routeArgs(await asApp(request), { params }));
 }
 
 function renderSettings() {
@@ -149,12 +147,11 @@ function renderSettings() {
             id: "routes/settings",
             path: "settings",
             loader: run(settingsLoader),
-            // What Remix runs for a route with a clientAction and no
+            // What React Router runs for a route with a clientAction and no
             // server action.
-            action: ({ request, params }) =>
+            action: args =>
               clientAction({
-                request,
-                params,
+                ...args,
                 serverAction: () => {
                   throw new Error("/settings has no server action");
                 },
@@ -864,7 +861,7 @@ describe("a form posted to the settings page without JS", () => {
         {
           path: "/settings",
           loader: () => {
-            // What Remix throws for a POST to a route with no action.
+            // What React Router throws for a POST to a route with no action.
             throw new Response(null, {
               status: 405,
               statusText: "Method Not Allowed",

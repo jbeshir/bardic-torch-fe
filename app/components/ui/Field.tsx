@@ -1,5 +1,5 @@
 import { IconAlertCircle } from "@tabler/icons-react";
-import { createContext, useContext, useId, type ReactNode } from "react";
+import { createContext, use, useId, type ReactNode } from "react";
 
 type FieldControl = {
   readonly id: string;
@@ -18,7 +18,7 @@ FieldContext.displayName = "FieldContext";
  * control needs its own `aria-label`.
  */
 export function useFieldControl() {
-  const field = useContext(FieldContext);
+  const field = use(FieldContext);
   if (!field) return { invalid: false, attributes: {} };
   return {
     invalid: field.invalid,
@@ -128,9 +128,7 @@ export function Field({
       </label>
       {help ? <FieldHelp id={`${id}-help`}>{help}</FieldHelp> : null}
       <div className="mt-2">
-        <FieldContext.Provider value={control}>
-          {children}
-        </FieldContext.Provider>
+        <FieldContext value={control}>{children}</FieldContext>
       </div>
       {error ? <FieldError id={`${id}-error`}>{error}</FieldError> : null}
     </div>

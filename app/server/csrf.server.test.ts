@@ -1,7 +1,5 @@
-import {
-  createRequestHandler,
-  type ActionFunctionArgs,
-} from "@remix-run/cloudflare";
+import { createRequestHandler } from "react-router";
+import type { ActionFunctionArgs } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SETTINGS_INTENT } from "~/constants/account";
 import { action as updateMe } from "~/routes/api.me";
@@ -10,7 +8,7 @@ import { action as revokeToken } from "~/routes/api.tokens.$tokenId";
 import { action as logout } from "~/routes/auth.logout";
 import { action as saveTheme } from "~/routes/resources.theme";
 import * as settingsModule from "~/routes/settings";
-import { APP_ORIGIN, loadContext } from "~/test/context";
+import { APP_ORIGIN, loadContext, routeArgs } from "~/test/context";
 import { runAction } from "~/test/proxy";
 import { testBuild } from "~/test/server-build";
 import { singleFetchResults } from "~/test/single-fetch";
@@ -57,7 +55,7 @@ const ROUTES: ReadonlyArray<{
 
 type RouteModule = Readonly<Record<string, unknown>>;
 
-/** Every route module, as Remix finds them (co-located tests excluded). */
+/** Every route module, as React Router finds them (co-located tests excluded). */
 const ROUTE_MODULES: Readonly<Record<string, RouteModule>> = import.meta.glob(
   ["../routes/**/*.{ts,tsx,js,jsx,md,mdx}", "!../routes/**/*.test.{ts,tsx}"],
   { eager: true }
@@ -118,12 +116,12 @@ describe("/settings submissions", () => {
       sent.push(`${init.method ?? "GET"} ${input}`);
       return Response.json({ ok: true, data: null });
     });
+    const request = new Request(`${APP_ORIGIN}/settings`, {
+      method: "POST",
+      body: new URLSearchParams(form),
+    });
     await settingsModule.clientAction({
-      request: new Request(`${APP_ORIGIN}/settings`, {
-        method: "POST",
-        body: new URLSearchParams(form),
-      }),
-      params: {},
+      ...routeArgs(request),
       serverAction: () => {
         throw new Error("/settings has no server action");
       },
@@ -184,12 +182,12 @@ describe("/settings submissions", () => {
         }),
         loadContext()
       );
-    // The route has no server action: Remix's 405.
+    // The route has no server action: React Router's 405.
     expect((await post(APP_ORIGIN)).status).toBe(405);
-    // Cross-site, single fetch's own Origin check refuses it before any
-    // route runs.
+    // Cross-site, React Router's own Origin check refuses it before any
+    // route runs (and the Worker before React Router: worker.server.ts).
     const crossSite = await post("https://evil.example");
-    expect(crossSite.status).toBe(500);
+    expect(crossSite.status).toBe(400);
     expect(await singleFetchResults(crossSite)).toEqual({
       error: expect.objectContaining({ message: "Unexpected Server Error" }),
     });

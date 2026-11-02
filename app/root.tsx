@@ -1,24 +1,18 @@
 import {
+  data,
+  isRouteErrorResponse,
   Links,
   Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
   useLoaderData,
-  useRouteLoaderData,
   useLocation,
   useRouteError,
-  isRouteErrorResponse,
-} from "@remix-run/react";
+  useRouteLoaderData,
+} from "react-router";
+import type { MetaFunction, ShouldRevalidateFunction } from "react-router";
 import frauncesLatin from "@fontsource-variable/fraunces/files/fraunces-latin-opsz-normal.woff2?url";
-import type {
-  HeadersFunction,
-  LinksFunction,
-  LoaderFunctionArgs,
-  MetaFunction,
-} from "@remix-run/cloudflare";
-import type { ShouldRevalidateFunction } from "@remix-run/react";
-import { data } from "@remix-run/cloudflare";
 import type { ReactNode } from "react";
 import { loadAccount } from "~/server/account.server";
 import { SentryProvider } from "~/contexts/SentryContext";
@@ -49,8 +43,10 @@ import {
   type Account,
 } from "~/constants/account";
 import type { ProxyBody } from "~/schemas/proxy";
+import { appEnvContext } from "~/server/context.server";
+import type { Route } from "./+types/root";
 
-export const links: LinksFunction = () => [
+export const links: Route.LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
   {
     rel: "preload",
@@ -65,7 +61,7 @@ export const links: LinksFunction = () => [
 
 /**
  * Every page titles itself. When the root's error boundary shows instead,
- * Remix renders only the root's meta, so it titles the error page (a
+ * React Router renders only the root's meta, so it titles the error page (a
  * thrown 404 or anything else), on the server and after a client
  * navigation alike.
  */
@@ -148,7 +144,7 @@ type LoaderData = {
   readonly account: Account;
 };
 
-export const loader = async ({ request, context }: LoaderFunctionArgs) => {
+export const loader = async ({ request, context }: Route.LoaderArgs) => {
   // Resolving the session refreshes expiring tokens (and /v1/me can end
   // it); the updated session cookie must be forwarded on the response.
   const { account, headers } = await loadAccount(request, context);
@@ -157,7 +153,7 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
   if (account.state !== "signed-out") headers.set("Cache-Control", "no-store");
 
   const loaded: LoaderData = {
-    sentryDsn: context.cloudflare.env.SENTRY_DSN,
+    sentryDsn: context.get(appEnvContext).SENTRY_DSN,
     theme: readTheme(request),
     account,
   };
@@ -170,10 +166,10 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
  * route's `headers` export, or its parent's headers when it has none. So
  * the root's Cache-Control (`no-store` while signed in) is sent on from its
  * loader, for documents and `.data` answers alike, and the routes without
- * a `headers` export inherit it; without one, Remix drops it. Unset, the
+ * a `headers` export inherit it; without one, React Router drops it. Unset, the
  * response is private and revalidated (entry.server).
  */
-export const headers: HeadersFunction = ({ loaderHeaders }) => {
+export const headers: Route.HeadersFunction = ({ loaderHeaders }) => {
   const cacheControl = loaderHeaders.get("Cache-Control");
   return cacheControl ? { "Cache-Control": cacheControl } : {};
 };

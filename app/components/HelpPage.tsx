@@ -1,4 +1,4 @@
-import type { MetaDescriptor } from "@remix-run/cloudflare";
+import type { MetaDescriptor } from "react-router";
 import { Fragment } from "react";
 import { Link } from "~/components/ui/Link";
 import { HELP_HREF, LICENCE_URL, wikiPageUrl } from "~/constants/navigation";

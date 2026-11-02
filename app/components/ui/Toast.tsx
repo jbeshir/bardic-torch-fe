@@ -2,7 +2,7 @@ import { IconX } from "@tabler/icons-react";
 import {
   createContext,
   useCallback,
-  useContext,
+  use,
   useEffect,
   useRef,
   useState,
@@ -39,7 +39,7 @@ const BELOW_SM = "(max-width: 639px)";
  * gets focus is scrolled clear of the toasts as well as the header (WCAG
  * 2.4.11), since a danger toast stays until it is dismissed.
  */
-function useToastScrollPadding(region: RefObject<HTMLElement>) {
+function useToastScrollPadding(region: RefObject<HTMLElement | null>) {
   useEffect(() => {
     const element = region.current;
     if (!element || typeof ResizeObserver === "undefined") return;
@@ -89,7 +89,7 @@ ShowToastContext.displayName = "ShowToastContext";
  * root.tsx renders around every page.
  */
 export function useToast(): (toast: ToastMessage) => void {
-  const show = useContext(ShowToastContext);
+  const show = use(ShowToastContext);
   if (!show) throw new Error("useToast() needs a ToastProvider around it");
   return show;
 }
@@ -133,10 +133,10 @@ export function ToastProvider({ children }: { readonly children: ReactNode }) {
   }, []);
 
   return (
-    <ShowToastContext.Provider value={show}>
+    <ShowToastContext value={show}>
       {children}
       <ToastRegion toasts={toasts} onDismiss={dismiss} />
-    </ShowToastContext.Provider>
+    </ShowToastContext>
   );
 }
 

@@ -1,4 +1,4 @@
-import { json } from "@remix-run/cloudflare";
+import { jsonResponse } from "./json.server";
 
 /**
  * Reject cross-site requests to state-changing routes. A request passes when
@@ -14,7 +14,7 @@ export function assertSameOrigin(request: Request): void {
       : origin === new URL(request.url).origin;
   if (sameOrigin) return;
 
-  throw json(
+  throw jsonResponse(
     {
       ok: false,
       error: {

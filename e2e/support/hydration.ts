@@ -16,7 +16,7 @@ const HYDRATION_TIMEOUT = 30_000;
  * document load: `goto`, `reload`, or a click that does a full navigation
  * (stub sign-in redirects).
  *
- * Two signals: Remix's client router exists, and the shell's Menu buttons
+ * Two signals: React Router's client router exists, and the shell's Menu buttons
  * (the header's and the app bar's) are rendered. They only exist once
  * `useHydrated` turns true, in the re-render React schedules after the
  * hydration commit, so every event handler in the page is attached by
@@ -24,9 +24,13 @@ const HYDRATION_TIMEOUT = 30_000;
  * for them.
  */
 export async function waitForHydration(page: Page): Promise<void> {
-  await page.waitForFunction(() => "__remixRouter" in window, undefined, {
-    timeout: HYDRATION_TIMEOUT,
-  });
+  await page.waitForFunction(
+    () => "__reactRouterDataRouter" in window,
+    undefined,
+    {
+      timeout: HYDRATION_TIMEOUT,
+    }
+  );
   await expect(
     page.locator('header button[aria-haspopup="dialog"]')
   ).toHaveCount(2, { timeout: HYDRATION_TIMEOUT });

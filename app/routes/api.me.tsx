@@ -1,4 +1,4 @@
-import type { ActionFunctionArgs } from "@remix-run/cloudflare";
+import type { ActionFunctionArgs } from "react-router";
 import { updateMeFormSchema } from "~/schemas/api";
 import { methodNotAllowed, proxyForm, updateMe } from "~/server/api.server";
 import { assertSameOrigin } from "~/server/csrf.server";

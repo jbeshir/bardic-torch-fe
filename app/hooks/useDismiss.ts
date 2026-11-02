@@ -1,4 +1,4 @@
-import { useLocation } from "@remix-run/react";
+import { useLocation } from "react-router";
 import { useEffect, useRef, type RefObject } from "react";
 import { useBrowserLayoutEffect } from "./useBrowserLayoutEffect";
 
@@ -16,7 +16,7 @@ export function useDismiss({
   readonly open: boolean;
   /** Close; `returnFocus` is true when focus should go back to the trigger. */
   readonly close: (returnFocus: boolean) => void;
-  readonly areas: readonly RefObject<HTMLElement>[];
+  readonly areas: readonly RefObject<HTMLElement | null>[];
 }): void {
   const latestRef = useRef({ close, areas });
   useBrowserLayoutEffect(() => {

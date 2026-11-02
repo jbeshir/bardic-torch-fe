@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, use, type ReactNode } from "react";
 
 /**
  * Each forced-theme copy of the gallery prefixes its anchors, so the two
@@ -22,7 +22,7 @@ export function Specimen({
   readonly summary: ReactNode;
   readonly children: ReactNode;
 }) {
-  const prefix = useContext(AnchorPrefixContext);
+  const prefix = use(AnchorPrefixContext);
   return (
     <section
       id={`${prefix}${id}`}

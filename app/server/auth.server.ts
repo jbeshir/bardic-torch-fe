@@ -5,12 +5,13 @@ import {
   UnexpectedErrorResponseBodyError,
   UnexpectedResponseError,
 } from "remix-auth-auth0";
-import type { AppLoadContext } from "@remix-run/cloudflare";
+import type { RouterContextProvider } from "react-router";
 import {
   createSessionStorage,
   type AppSessionStorage,
   type SessionTokens,
 } from "./session.server";
+import { appEnvContext, authCacheContext } from "./context.server";
 import {
   AUTH0_TIMEOUT_MS,
   buildAuthorizationHeader,
@@ -246,14 +247,15 @@ async function refreshTokens(
  * The request's auth state from its session, refreshing an access token
  * that expires within five minutes.
  *
- * All loaders of one request share the first call's result (via
- * `context.authCache`), so a single-use refresh token is spent only once.
+ * All loaders of one request share the first call's result (via the
+ * request's `authCacheContext`), so a single-use refresh token is spent
+ * only once.
  */
 export async function getServerAuthContext(
   request: Request,
-  context: AppLoadContext
+  context: Readonly<RouterContextProvider>
 ): Promise<AuthContextResult> {
-  const { authCache } = context;
+  const authCache = context.get(authCacheContext);
 
   if (authCache.authContextPromise) {
     return authCache.authContextPromise;
@@ -261,7 +263,7 @@ export async function getServerAuthContext(
 
   const resultPromise = computeServerAuthContext(
     request,
-    context.cloudflare.env
+    context.get(appEnvContext)
   );
   authCache.authContextPromise = resultPromise;
   return resultPromise;
@@ -336,7 +338,7 @@ type AuthenticatedFetchResult = {
  */
 export async function createAuthenticatedFetch(
   request: Request,
-  context: AppLoadContext
+  context: Readonly<RouterContextProvider>
 ): Promise<AuthenticatedFetchResult> {
   const { authContext, headers } = await getServerAuthContext(request, context);
 

@@ -1,4 +1,4 @@
-import type { ActionFunctionArgs } from "@remix-run/cloudflare";
+import type { ActionFunctionArgs } from "react-router";
 import { createApiTokenFormSchema } from "~/schemas/api";
 import {
   createApiToken,

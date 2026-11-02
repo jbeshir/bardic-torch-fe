@@ -1,4 +1,4 @@
-import { forwardRef, type Ref, type TextareaHTMLAttributes } from "react";
+import type { Ref, TextareaHTMLAttributes } from "react";
 import { useFieldControl } from "./Field";
 import { textControlClasses } from "./Input";
 
@@ -7,16 +7,14 @@ import { textControlClasses } from "./Input";
  * lines tall and resizable vertically. Inside a Field it takes its id,
  * descriptions and state from there.
  */
-export const Textarea = forwardRef(function Textarea(
-  {
-    readOnly,
-    ...rest
-  }: Omit<
-    TextareaHTMLAttributes<HTMLTextAreaElement>,
-    "className" | "style" | "id"
-  >,
-  ref: Ref<HTMLTextAreaElement>
-) {
+export function Textarea({
+  readOnly,
+  ref,
+  ...rest
+}: Omit<
+  TextareaHTMLAttributes<HTMLTextAreaElement>,
+  "className" | "style" | "id"
+> & { readonly ref?: Ref<HTMLTextAreaElement> }) {
   const { invalid, attributes } = useFieldControl();
   return (
     <textarea
@@ -27,4 +25,4 @@ export const Textarea = forwardRef(function Textarea(
       className={`block min-h-textarea resize-y py-2.5 leading-relaxed ${textControlClasses({ invalid, readOnly })}`}
     />
   );
-});
+}

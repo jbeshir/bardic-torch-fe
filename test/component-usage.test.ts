@@ -9,7 +9,7 @@ import { filesUnder } from "./support/files";
  * check:unused) is the primary check; this one reads the sources itself, as
  * a second, independent check of app/: each name
  * a module under app/ exports must be imported by another non-test module
- * (app/, functions/, scripts/ or a root config file). Modules whose exports
+ * (app/, workers/, scripts/ or a root config file). Modules whose exports
  * the framework reads (routes, root, the entries) and the test helpers in
  * app/test are not checked. Components no FE1 page uses yet are used by
  * the styleguide route, which is app code.
@@ -23,11 +23,10 @@ const isTest = (path: string) =>
 /** Every non-test source file that can use an app module. */
 const sourceFiles = [
   ...filesUnder("app"),
-  ...filesUnder("functions"),
+  ...filesUnder("workers"),
   ...filesUnder("scripts"),
   "vite.config.ts",
   "tailwind.config.ts",
-  "load-context.ts",
 ].filter(
   path => /\.(tsx?|mjs)$/.test(path) && !path.endsWith(".d.ts") && !isTest(path)
 );

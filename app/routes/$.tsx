@@ -1,6 +1,5 @@
-import type { MetaFunction } from "@remix-run/cloudflare";
-import { data } from "@remix-run/cloudflare";
-import { useLocation } from "@remix-run/react";
+import { data, useLocation } from "react-router";
+import type { MetaFunction } from "react-router";
 import { NOT_FOUND_META, NotFound } from "~/components/ErrorPages";
 
 /**

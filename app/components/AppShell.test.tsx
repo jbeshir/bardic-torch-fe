@@ -1,7 +1,7 @@
 import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { useLocation } from "@remix-run/react";
+import { useLocation } from "react-router";
 import { ErrorState } from "~/components/ui/ErrorState";
 import { ToastProvider } from "~/components/ui/Toast";
 import { renderWithRouter } from "~/test/router";

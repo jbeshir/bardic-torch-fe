@@ -1,9 +1,10 @@
-import type { ActionFunctionArgs } from "@remix-run/cloudflare";
-import { redirect } from "@remix-run/cloudflare";
+import { redirect } from "react-router";
+import type { ActionFunctionArgs } from "react-router";
 import {
   getOrCreateSessionStorage,
   revokeRefreshToken,
 } from "~/server/auth.server";
+import { appEnvContext } from "~/server/context.server";
 import { assertSameOrigin } from "~/server/csrf.server";
 
 /**
@@ -18,7 +19,7 @@ import { assertSameOrigin } from "~/server/csrf.server";
  */
 export async function action({ request, context }: ActionFunctionArgs) {
   assertSameOrigin(request);
-  const env = context.cloudflare.env;
+  const env = context.get(appEnvContext);
   const sessionStorage = getOrCreateSessionStorage(env);
   const session = await sessionStorage.getSession(
     request.headers.get("Cookie")

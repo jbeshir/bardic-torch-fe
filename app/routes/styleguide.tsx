@@ -1,4 +1,4 @@
-import type { MetaFunction } from "@remix-run/cloudflare";
+import type { MetaFunction } from "react-router";
 import { Tabs } from "~/components/ui/Tabs";
 import { Gallery, SPECIMENS } from "~/styleguide/Gallery";
 

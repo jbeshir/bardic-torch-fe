@@ -1,4 +1,4 @@
-import { Link as RemixLink } from "@remix-run/react";
+import { Link as RouterLink } from "react-router";
 import { IconArrowUpRight, IconExternalLink } from "@tabler/icons-react";
 import type { ReactNode } from "react";
 import { isWikiUrl } from "~/constants/navigation";
@@ -100,7 +100,7 @@ function withMark(children: ReactNode, mark: ReactNode) {
 }
 
 /**
- * A text link (DESIGN §6.3). Internal paths go through Remix with intent
+ * A text link (DESIGN §6.3). Internal paths go through React Router with intent
  * prefetch; absolute URLs are plain anchors marked as external, in the same
  * tab. There is no disabled link: render plain text instead.
  */
@@ -132,13 +132,13 @@ export function Link({
     );
   }
   return (
-    <RemixLink
+    <RouterLink
       to={to}
       prefetch="intent"
       aria-current={current ? "page" : undefined}
       className={className}
     >
       {children}
-    </RemixLink>
+    </RouterLink>
   );
 }

@@ -51,9 +51,10 @@ function visit(path: string, status = 200) {
 const main = (page: Page) => page.getByRole("main");
 
 /**
- * Remix's `.data` body for the help route's loader throwing `new Error()`,
- * as `encodeViaTurboStream` writes it in production mode (the message
- * replaced, the stack dropped): `{ "routes/help.$slug": { error } }`.
+ * React Router's `.data` body for the help route's loader throwing
+ * `new Error()`, as `encodeViaTurboStream` writes it in production mode
+ * (the message replaced, the stack dropped):
+ * `{ "routes/help.$slug": { error } }`.
  */
 const HELP_LOADER_THREW =
   '[{"_1":2},"routes/help.$slug",{"_3":4},"error",["SanitizedError",5,6,-7],"Error","Unexpected Server Error"]\n';
@@ -63,10 +64,10 @@ const HELP_LOADER_THREW =
  * production bundle. No URL reaches it on purpose (every loader fails
  * soft or into a route boundary), so a client navigation's single fetch
  * (the footer's link to a help page, whose loader reads its content) is
- * answered the way Remix answers a loader that threw in production: 500,
- * and the route's error as a sanitised Error in turbo-stream. The route is
- * the page's own, so it overrides the network guard's only for that
- * request.
+ * answered the way React Router answers a loader that threw in
+ * production: 500, and the route's error as a sanitised Error in
+ * turbo-stream. The route is the page's own, so it overrides the network
+ * guard's only for that request.
  */
 export async function openServerError(page: Page): Promise<void> {
   await visit("/")(page);

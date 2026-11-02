@@ -1,4 +1,4 @@
-import { useLocation } from "@remix-run/react";
+import { useLocation } from "react-router";
 import { IconBook2 } from "@tabler/icons-react";
 import { useId, type ComponentProps, type ReactNode } from "react";
 import { Breadcrumbs } from "~/components/ui/Breadcrumbs";

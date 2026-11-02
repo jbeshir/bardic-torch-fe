@@ -1,5 +1,5 @@
 import { IconArrowUpRight, IconSearch } from "@tabler/icons-react";
-import { forwardRef, useId, type Ref } from "react";
+import { useId, type Ref } from "react";
 import { WIKI_SEARCH } from "~/constants/navigation";
 
 const SIZES = {
@@ -27,10 +27,13 @@ const SIZES = {
  * goes. It works without JS; the submit button means it works without
  * Enter too. No suggestions, no shortcut.
  */
-export const SearchBox = forwardRef(function SearchBox(
-  { size }: { readonly size: keyof typeof SIZES },
-  ref: Ref<HTMLInputElement>
-) {
+export function SearchBox({
+  size,
+  ref,
+}: {
+  readonly size: keyof typeof SIZES;
+  readonly ref?: Ref<HTMLInputElement>;
+}) {
   const inputId = useId();
   const { input, button, placeholder } = SIZES[size];
   const longPlaceholder = SIZES.lg.placeholder;
@@ -81,4 +84,4 @@ export const SearchBox = forwardRef(function SearchBox(
       </div>
     </form>
   );
-});
+}

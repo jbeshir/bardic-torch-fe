@@ -11,7 +11,7 @@ export function SettingsSection({
   children,
 }: {
   readonly title: string;
-  readonly headingRef?: RefObject<HTMLHeadingElement>;
+  readonly headingRef?: RefObject<HTMLHeadingElement | null>;
   readonly children: ReactNode;
 }) {
   const titleId = useId();

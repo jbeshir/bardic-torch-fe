@@ -1,4 +1,4 @@
-import { Link as RemixLink } from "@remix-run/react";
+import { Link as RouterLink } from "react-router";
 import { ExternalMark, externalKind } from "./Link";
 
 type Tag = {
@@ -49,14 +49,14 @@ function Chip({
     );
   }
   return (
-    <RemixLink
+    <RouterLink
       to={to}
       prefetch="intent"
       aria-current={current ? "page" : undefined}
       className={className}
     >
       {text}
-    </RemixLink>
+    </RouterLink>
   );
 }
 

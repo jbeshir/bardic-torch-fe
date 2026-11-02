@@ -2,11 +2,11 @@
 
 Tests come in three layers:
 
-| layer    | what it covers                                                                    | where                                                                      | command                            |
-| -------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------- |
-| unit     | components, hooks, helpers, server modules, loaders and actions                   | next to the code, `app/**/*.test.{ts,tsx}`; scripts in `scripts/*.test.ts` | `npm run test:run` (in `validate`) |
-| contract | the vendored spec, the generated types and the fixture API                        | `test/contract/`                                                           | `npm run test:run` (in `validate`) |
-| e2e      | the built app in Chromium, served by `wrangler pages dev` against the fixture API | `e2e/`                                                                     | `npm run test:e2e`                 |
+| layer    | what it covers                                                                 | where                                                                      | command                            |
+| -------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------- | ---------------------------------- |
+| unit     | components, hooks, helpers, server modules, loaders and actions                | next to the code, `app/**/*.test.{ts,tsx}`; scripts in `scripts/*.test.ts` | `npm run test:run` (in `validate`) |
+| contract | the vendored spec, the generated types and the fixture API                     | `test/contract/`                                                           | `npm run test:run` (in `validate`) |
+| e2e      | the built Worker in Chromium, served by `wrangler dev` against the fixture API | `e2e/`                                                                     | `npm run test:e2e`                 |
 
 `npm run validate` also runs these repository scans, all as vitest tests in `test/`:
 
@@ -16,7 +16,7 @@ Tests come in three layers:
   - no e2e code makes its own Playwright `APIRequestContext`, and no link component takes a `target`;
   - the original wiki's host only in the allowed files;
   - `.prettierignore` holds exactly the expected entries;
-  - the CI workflow, the ops files (`wrangler.toml`, `.dev.vars.example`, `worker-configuration.d.ts`, `public/_headers`, `public/_routes.json`) and these docs.
+  - the CI workflow, the ops files (`wrangler.jsonc`, parsed with TypeScript's JSONC parser: both Workers, their custom domains, variables, required secrets, compatibility date and flags; `.dev.vars.example`; the generated `Env` in `worker-configuration.d.ts`, which `check:types` keeps fresh; `public/_headers`; and no `public/_routes.json`) and these docs.
 - `no-raw-colours.test.ts`: colour only from the tokens.
 - `motion.test.ts`: movement only under `motion-safe:`.
 - `lint-coverage.test.ts`: ESLint (`eslint.config.ts`) lints every code file (`.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`: scripts and config files too) with the import rules at error, and every code file is in knip's project (`knip.json`), which checks unused files, exports and dependencies (`npm run check:unused`).
@@ -25,7 +25,7 @@ Tests come in three layers:
 
 The scans walk the tree with one helper, `filesUnder` (`test/support/files.ts`), which skips the gitignored e2e screenshots.
 
-It also runs the build checks `check:api`, `check:tokens`, `check:contrast` and `check:prod-build`. See CLAUDE.md for what each does.
+It also runs the checks `check:types`, `check:api`, `check:tokens`, `check:contrast` and `check:prod-build`. See CLAUDE.md for what each does.
 
 ## Deviation from the product plan (PLAN §9)
 
@@ -37,13 +37,13 @@ Other FE1 differences from the plan's test list follow from the real API (no rev
 
 ## Unit tests
 
-- **Environment by file name only.** `vitest.config.ts` has two projects: `dom` runs `*.test.tsx` in jsdom, `node` runs every other test in node, like the Workers runtime. A test that needs a DOM is a `.test.tsx` file (e.g. `test/cut-off.test.tsx`), never a per-file pragma; `test/environments.test.ts` proves the split. vitest has its own config, so it never loads the Remix plugin.
+- **Environment by file name only.** `vitest.config.ts` has two projects: `dom` runs `*.test.tsx` in jsdom, `node` runs every other test in node, like the Workers runtime. A test that needs a DOM is a `.test.tsx` file (e.g. `test/cut-off.test.tsx`), never a per-file pragma; `test/environments.test.ts` proves the split. vitest has its own config, so it never loads the React Router or Cloudflare plugins (no dev server, no workerd). It aliases `virtual:react-router/server-build` to `test/support/server-build-stub.ts` (the tests that import the Worker entry `vi.mock` it), and `react-dom/server` to `react-dom/server.edge`, the build Workers resolve, which has `renderToReadableStream`.
 - **The Node versions.** The suite runs on `.nvmrc`'s Node 26.13.0, and the migration gates also ran it on Node 22.23.3 and 24.17.0. Node ≥ 24's fetch (undici ≥ 7) rejects an `AbortSignal` that isn't its own, which broke every router navigation and submission under vitest 1's jsdom environment; vitest ≥ 4 gives jsdom Node's `AbortController`. `app/test/abort-signal.test.tsx` fails if that regresses: a `Request` takes the environment's signal, and a `<Form method="post">` submission reaches its action.
 - **Accessible names in jsdom.** Testing Library's name algorithm trims every child element's text, and only separates children that aren't `display: inline`. jsdom 30 computes HTML's default `display`, so `Moods<span> (optional)</span>` would be named "Moods(optional)", which no browser does. `app/test/setup.ts` gives inline phrasing elements a non-inline display, which is how jsdom up to 29 behaved (it computed none), so names keep the browser's word breaks.
 - **Components** use testing-library and `@testing-library/user-event`.
   - Test every state, and the keyboard.
   - `expectSameMarkupInBothThemes` in `app/test/themes.ts` is a **guard, not theme coverage**: it fails only if a component starts branching on the theme. It says nothing about how either theme looks. The theme evidence is `check:contrast` (every token pair in both themes) and the e2e checkpoints (axe and screenshots in both themes, each asserting that the page paints that theme).
-  - `renderWithRouter` and `renderRoutes` (`app/test/router.tsx`) supply Remix's router context.
+  - `renderWithRouter` and `renderRoutes` (`app/test/router.tsx`) supply React Router's framework context (`UNSAFE_FrameworkContext`).
 - **Loaders and actions** run against the fixture API through msw:
 
   ```ts
@@ -60,9 +60,9 @@ Other FE1 differences from the plan's test list follow from the real API (no rev
   - `loadContext()` gives a validated env whose API base URL is `https://api.test`.
   - `formRequest()` builds a same-origin, form-encoded request.
   - `runAction()` (`app/test/proxy.ts`) runs a proxy action.
-  - `serveApp()` (`app/test/server-build.ts`) renders routes through the real `entry.server` for header and nonce tests. Its build has the runtime future flags of `vite.config.ts`, single fetch included, so a client navigation's data is a `.data` request (`/_root.data` for `/`, `?_routes=` naming the loaders to run). `app/test/single-fetch.ts` decodes its turbo-stream body the way Remix's client does.
+  - `serveApp()` (`app/test/server-build.ts`) renders routes through the real `entry.server` for header and nonce tests. A client navigation's data is a single fetch `.data` request (`/_root.data` for `/`, `?_routes=` naming the loaders to run). `app/test/single-fetch.ts` decodes its turbo-stream body the way React Router's client does.
 
-- **Sentry (R28):** `app/contexts/SentryContext.test.tsx` mocks `@sentry/remix`: no init without a DSN, one init with it across navigations, and an error page that is the first render starts Sentry before reporting. `app/entry.server.test.ts` mocks `@sentry/cloudflare`: loader and render errors are reported (abandoned requests are not), and `sentry.server.test.ts` checks the server gets no DSN when `SENTRY_DSN` is unset or empty. Delivery to a real Sentry is not part of any test run.
+- **Sentry (R28):** `app/contexts/SentryContext.test.tsx` mocks `@sentry/react`: no init without a DSN, one init with it across navigations, and an error page that is the first render starts Sentry before reporting. Two of its tests use the real browser SDK with a recording transport: nothing about the reader is sent (no cookies, headers, body, query string or IP address), and navigations are traced by URL path, without the query string. `app/entry.server.test.ts` mocks `@sentry/cloudflare`: loader and render errors are reported (abandoned requests are not). `app/server/worker.server.test.ts` checks the server's envelopes, with the real `@sentry/cloudflare` `withSentry` and a recording transport: a loader's error is reported once, without the request's query string, cookies, headers or IP address, and spans go without its query string, headers or body. `sentry.server.test.ts` checks the server gets no DSN when `SENTRY_DSN` is unset or empty. Delivery to a real Sentry is not part of any test run.
 - **Cookie bytes:** `app/server/cookie-format.golden.test.ts` pins the exact `Set-Cookie` strings of `__Host-bt_session` and `__Host-bt_return_to` for a fixed secret and payload, and parses them back. Its expected strings are golden: a library change that alters them would sign every reader out, so fix the code, never the strings.
 - **Markdown help pages:** `compileMarkdown` and `FRONTMATTER` (`app/test/markdown.ts`) compile with the real pipeline.
 
@@ -88,7 +88,7 @@ Other FE1 differences from the plan's test list follow from the real API (no rev
 
   In e2e use `createFixtureUser(request, options)` and `failNext(request, {...})` from `e2e/support/fixture-api.ts`.
 
-- **Idle keep-alive sockets stay open.** The server sets `keepAliveTimeout = 0`, so only the client ever ends a keep-alive connection. With Node's default (5 s, plus a 1 s buffer) a client whose event loop runs late, such as a Playwright worker busy with axe and full-page screenshots, or workerd, can send on a socket the server has just closed, and gets `ECONNRESET` ("socket hang up"); a repro with a starved client failed 4/4 with the default and 0/4 with 0. `test/contract/server.test.ts` checks the setting, and that a second request on one socket after 6.5 s idle is answered (about 7 s). Retries would only hide it. The other hop, Playwright to `wrangler pages dev` on 8788, is still exposed: wrangler 3.57's server closes an idle keep-alive socket after about 5 s and sends no `Keep-Alive` hint, and has no setting for it. `test/repo-hygiene.test.ts` checks that every e2e API request uses the per-test `request` fixture or `page.request`, never an API context of its own. Which hop the original "socket hang up" came from is unknown: no trace of it exists, and the FE1 baseline run had none.
+- **Idle keep-alive sockets stay open.** The server sets `keepAliveTimeout = 0`, so only the client ever ends a keep-alive connection. With Node's default (5 s, plus a 1 s buffer) a client whose event loop runs late, such as a Playwright worker busy with axe and full-page screenshots, or workerd, can send on a socket the server has just closed, and gets `ECONNRESET` ("socket hang up"); a repro with a starved client failed 4/4 with the default and 0/4 with 0. `test/contract/server.test.ts` checks the setting, and that a second request on one socket after 6.5 s idle is answered (about 7 s). Retries would only hide it. The other hop, Playwright to `wrangler dev` on 8788, is covered too: wrangler dev 4.156.1 sends no `Keep-Alive` hint and doesn't close an idle socket within a test's lifetime (measured), and `e2e/prod/keepalive.spec.ts` pins it (a raw socket, `GET /favicon.svg`, 6.5 s idle, then a second request on the same socket answered 200). `test/repo-hygiene.test.ts` checks that every e2e API request uses the per-test `request` fixture or `page.request`, never an API context of its own. Which hop the original "socket hang up" came from is unknown: no trace of it exists, and the FE1 baseline run had none.
 - **Contract tests.** `test/contract/scenarios.ts` lists at least one success and one error per operation. They run through the router (`fixtures.test.ts`), over HTTP (`server.test.ts`) and through msw (`app/test/msw.test.ts`). `spec.test.ts` checks that the spec is valid OpenAPI 3.1 and has the FE1 operations; `generated-types.test.ts` pins the generated types FE1 relies on.
 
 ## Stub sign-in: three locks
@@ -112,7 +112,7 @@ If `AUTH_MODE=stub` reaches a build without the flag, it is ignored with a logge
 
 Both phases always run. The command fails if either one does.
 
-**How each phase is served.** Playwright starts the fixture API on port 4010, then the phase's build under `wrangler pages dev build/client` on `127.0.0.1:8788`. It passes an explicit `--compatibility-date` and `--compatibility-flags=nodejs_als` (the same as `wrangler.toml`, which a hygiene test checks), `AUTH0_DOMAIN=auth0.invalid` and `AUTH_MODE=stub`. No phase sets `SENTRY_DSN`. Specs use `http://localhost:8788`, because Playwright's request context only sends Secure cookies over plain HTTP to `localhost`.
+**How each phase is served.** Playwright starts the fixture API on port 4010, then builds the phase and serves the build with `npx wrangler dev --port 8788 --ip 127.0.0.1 --live-reload=false --show-interactive-dev-session=false --infer-origin-from-routes=false --var NAME:VALUE …`. `wrangler dev` reads `.wrangler/deploy/config.json`, which points at the build's `build/server/wrangler.json`, so the compatibility date and flags come from the build. `--infer-origin-from-routes=false` keeps the real local origin, `localhost:8788`, instead of the production host wrangler would infer from `routes`: the stub sign-in host lock and the same-origin checks need it. The build's emitted `.dev.vars` is deleted (`scripts/build.mjs`), so only the `--var` bindings apply, among them `AUTH0_DOMAIN=auth0.invalid` and `AUTH_MODE=stub`. No phase sets `SENTRY_DSN`. The server runs with `CLOUDFLARE_CF_FETCH_ENABLED=false`: otherwise wrangler's local runtime fetches a sample `Request.cf` object from workers.cloudflare.com at start-up, which offline fails, warns and falls back to the same placeholder this uses at once (it was measured to happen at start-up only, never per request). Nothing depends on it. wrangler also warns that the required secrets are missing: they arrive as `--var` bindings, which it doesn't count as secrets, and the Worker sees them. Specs use `http://localhost:8788`, because Playwright's request context only sends Secure cookies over plain HTTP to `localhost`.
 
 **Projects.** Each phase has two:
 
@@ -123,7 +123,7 @@ Both are followed by the `screenshots` teardown project.
 
 **Network isolation.** Every spec imports `test` from `e2e/support/test.ts`. Its automatic network guard aborts, and fails the test on, any request to a host other than this machine. Chromium also gets a host-resolver rule that resolves nothing else. A test that expects a redirect off the machine (logout to Auth0) names the host in `offHostRedirects` and asserts that hop itself. The suite never needs network access or secrets.
 
-**Workers, retries and timeouts.** There are 4 workers (see CLAUDE.md for why), a 90 s test timeout and a 15 s `expect` timeout. Each test gets **one retry**, for the dev runtime's own flakes: `wrangler pages dev` answers a POST or PATCH that was in flight when its workerd restarted with a 503 ("Your worker restarted mid-request"; it retries GETs itself). A test that passes only on its retry is _flaky_. `scripts/e2e.mjs` reads each phase's JSON report (`playwright-report/<phase>.json`) and prints every flaky test by name in a banner after the phase and again at the end, so a retry is never silent. Treat a flaky test as a bug to look into. The server runs with `--live-reload=false`. wrangler 3.57 has no switch for its own file watching (esbuild watch of the Functions bundle and a watch of `functions/`), but nothing writes those files during a run, and the logs show no rebuild. Don't build into `build/` or edit `functions/` while a run is going. Call `waitForHydration(page)` (`e2e/support/hydration.ts`) before any step that needs JS behaviour.
+**Workers, retries and timeouts.** There are 4 workers (see CLAUDE.md for why), a 90 s test timeout and a 15 s `expect` timeout. Each test gets **one retry**, for the dev runtime's own flakes: `wrangler dev`'s proxy answers a POST or PATCH that was in flight when its workerd restarted with a 503 ("Your worker restarted mid-request"; it retries GETs itself). A test that passes only on its retry is _flaky_. `scripts/e2e.mjs` reads each phase's JSON report (`playwright-report/<phase>.json`) and prints every flaky test by name in a banner after the phase and again at the end, so a retry is never silent. Treat a flaky test as a bug to look into. The server runs with `--live-reload=false`, and nothing writes the build it serves during a run. Don't build into `build/` while a run is going. Call `waitForHydration(page)` (`e2e/support/hydration.ts`) before any step that needs JS behaviour.
 
 ### Checkpoints and screenshots
 

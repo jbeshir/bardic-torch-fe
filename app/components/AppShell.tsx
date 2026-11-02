@@ -1,4 +1,4 @@
-import { useLocation } from "@remix-run/react";
+import { useLocation } from "react-router";
 import {
   useCallback,
   useEffect,
@@ -33,7 +33,10 @@ const SIDEBAR_FADE_PX = 24;
  * view clear of the fade, scrolling only itself, and `more` says whether
  * anything is still below its fold (shown as a fade at its foot).
  */
-function useSidebarScroll(nav: RefObject<HTMLElement>, pathname: string) {
+function useSidebarScroll(
+  nav: RefObject<HTMLElement | null>,
+  pathname: string
+) {
   const [more, setMore] = useState(false);
 
   useEffect(() => {
@@ -70,7 +73,10 @@ function useSidebarScroll(nav: RefObject<HTMLElement>, pathname: string) {
  * that put focus inside the main content itself (an error page focuses its
  * heading).
  */
-function useNavigationFocus(main: RefObject<HTMLElement>, pathname: string) {
+function useNavigationFocus(
+  main: RefObject<HTMLElement | null>,
+  pathname: string
+) {
   const previousRef = useRef(pathname);
   const focusedBeforeRef = useRef<Element | null>(null);
   const [announcement, setAnnouncement] = useState("");

@@ -1,14 +1,16 @@
 {
-  "include": ["**/*.ts", "**/*.tsx"],
+  "include": ["**/*.ts", "**/*.tsx", ".react-router/types/**/*"],
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "types": [
-      "@remix-run/cloudflare",
+      "@cloudflare/workers-types",
       "vite/client",
-      "@cloudflare/workers-types/2023-07-01",
       "node",
       "vitest/globals"
     ],
+    // React Router's typegen (`npm run gen:types`) writes each route's
+    // `./+types/<route>` next to it, virtually.
+    "rootDirs": [".", "./.react-router/types"],
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "esModuleInterop": true,
@@ -25,7 +27,11 @@
     "forceConsistentCasingInFileNames": true,
     "paths": {
       "~/*": ["./app/*"],
-      "server-build": ["./build/server/index.js", "./functions/server-build"]
+      // Lint's import resolver finds the build module's typegen declaration
+      // here (tsc reads the declaration itself; vitest aliases a stub).
+      "virtual:react-router/server-build": [
+        "./.react-router/types/+server-build.d.ts"
+      ]
     },
 
     // Vite takes care of building everything, not tsc.

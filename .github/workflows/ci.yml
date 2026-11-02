@@ -1,6 +1,8 @@
 # validate and e2e are required status checks on main (docs/DEPLOY.md, §1
 # "Before the first deploy", step "Protect main"); audit is not required
-# yet, because the Remix 2 packages still carry advisories. None needs
+# yet, because remix-auth (until stage 3's openid-client) and a dev
+# dependency (postcss 8.5.3, until Tailwind 4) still carry advisories or
+# deprecations. None needs
 # secrets: the e2e suite runs the built app against the local fixture API
 # with stub sign-in, and never leaves the runner (see docs/TESTING.md).
 #

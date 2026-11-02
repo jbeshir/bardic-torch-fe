@@ -1,4 +1,4 @@
-import type { AppLoadContext } from "@remix-run/cloudflare";
+import type { RouterContextProvider } from "react-router";
 import type { Account } from "~/constants/account";
 import { getMe } from "./api.server";
 import { getServerAuthContext } from "./auth.server";
@@ -12,7 +12,7 @@ import { getServerAuthContext } from "./auth.server";
  */
 export async function loadAccount(
   request: Request,
-  context: AppLoadContext
+  context: Readonly<RouterContextProvider>
 ): Promise<{ account: Account; headers: Headers }> {
   const auth = await getServerAuthContext(request, context);
   if (!auth.authContext.isAuthenticated) {

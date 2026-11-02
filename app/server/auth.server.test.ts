@@ -14,7 +14,12 @@ import {
   DEFAULT_TOKEN_EXPIRY_SECONDS,
   TOKEN_REFRESH_THRESHOLD_MS,
 } from "~/constants/auth";
-import { loadContext, sessionCookie, sessionTokens } from "~/test/context";
+import {
+  loadContext,
+  sessionCookie,
+  sessionTokens,
+  testEnv,
+} from "~/test/context";
 import { contractResponse } from "~/test/contract";
 import { serveMocks } from "~/test/msw";
 import {
@@ -24,7 +29,7 @@ import {
 } from "./auth.server";
 import { createSessionStorage, type SessionTokens } from "./session.server";
 
-const env = loadContext().cloudflare.env;
+const env = testEnv();
 const TOKEN_ENDPOINT = "https://auth0.test/oauth/token";
 const REVOKE_ENDPOINT = "https://auth0.test/oauth/revoke";
 

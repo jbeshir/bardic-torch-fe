@@ -16,7 +16,7 @@ export type TocEntry = Section & {
 /** Below md the contents start folded, out of the way of the first prose. */
 const MD_QUERY = "(min-width: 768px)";
 
-// An in-page anchor, so a plain <a> with the Link look (no Remix routing).
+// An in-page anchor, so a plain <a> with the Link look (no router).
 const ITEM = `${linkClasses("plain")} inline-flex min-h-6 items-baseline gap-2`;
 
 function Item({

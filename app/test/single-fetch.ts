@@ -1,4 +1,7 @@
-import { decode } from "turbo-stream";
+import {
+  isRouteErrorResponse,
+  UNSAFE_decodeViaTurboStream,
+} from "react-router";
 
 /** An error response, as single fetch sends a thrown `data()` or Response. */
 type DecodedErrorResponse = {
@@ -7,47 +10,40 @@ type DecodedErrorResponse = {
   readonly data: unknown;
 };
 
+/** A decoded route result, with an error response as plain data. */
+function plain(result: object): Readonly<Record<string, unknown>> {
+  if (!("error" in result) || !isRouteErrorResponse(result.error)) {
+    return { ...result };
+  }
+  const { status, statusText, data } = result.error;
+  const error: DecodedErrorResponse = { status, statusText, data };
+  return { ...result, error };
+}
+
 /**
- * The body of a single fetch `.data` answer, decoded the way Remix's client
- * decodes it (turbo-stream with Remix's plugins): a loader answer has
- * `{ data } | { error }` by route id, an action answer one of them. An error
- * is a `DecodedErrorResponse` (for a thrown `data()` or
- * Response) or an `Error` (anything else, sanitised in production).
+ * The body of a single fetch `.data` answer, decoded the way React Router's
+ * client decodes it: a loader answer has `{ data } | { error }` by route id,
+ * an action answer one of them. An error is a `DecodedErrorResponse` (for a
+ * thrown `data()` or Response) or an `Error` (anything else, sanitised in
+ * production).
  */
 export async function singleFetchResults(
   response: Response
 ): Promise<Readonly<Record<string, unknown>>> {
   if (!response.body) throw new Error("A .data answer has a body");
-  const decoded = await decode(response.body, {
-    plugins: [
-      (type, ...values) => {
-        if (type === "SanitizedError") {
-          const [name, message, stack] = values as [string, string, string?];
-          const error = new Error(message);
-          error.name = name;
-          if (stack !== undefined) error.stack = stack;
-          return { value: error };
-        }
-        if (type === "ErrorResponse") {
-          const [data, status, statusText] = values as [
-            unknown,
-            number,
-            string,
-          ];
-          const value: DecodedErrorResponse = { status, statusText, data };
-          return { value };
-        }
-        return undefined;
-      },
-      (type, value) => {
-        if (type === "SingleFetchFallback") return { value: undefined };
-        if (type === "SingleFetchClassInstance") return { value };
-        return undefined;
-      },
-    ],
-  });
+  const decoded = await UNSAFE_decodeViaTurboStream(response.body, globalThis);
   await decoded.done;
-  return decoded.value as Readonly<Record<string, unknown>>;
+  const value = decoded.value;
+  if (typeof value !== "object" || value === null) {
+    throw new Error(`A .data answer decodes to an object: ${String(value)}`);
+  }
+  if ("error" in value || "data" in value) return plain(value);
+  return Object.fromEntries(
+    Object.entries(value).map(([routeId, result]: [string, unknown]) => [
+      routeId,
+      typeof result === "object" && result !== null ? plain(result) : result,
+    ])
+  );
 }
 
 /** One route's loader data from a `.data` answer; fails if it threw. */

@@ -23,7 +23,8 @@ export async function expectSameMarkupInBothThemes(
     document.documentElement.dataset.theme = theme;
     await renderUi();
     // useId() counts up across renders; the ids differ but aren't styling.
-    markup.push(document.body.innerHTML.replace(/:r[0-9a-z]+:/g, ":id:"));
+    // React 19 writes them as `_r_7_`.
+    markup.push(document.body.innerHTML.replace(/_r_[0-9a-z]+_/g, "_id_"));
     cleanup();
   }
   document.documentElement.removeAttribute("data-theme");
