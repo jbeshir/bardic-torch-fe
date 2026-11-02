@@ -139,7 +139,7 @@ describe("stubLogin", () => {
 
   it.each([
     "https://bardictorch.org",
-    "https://preview.bardic-torch-fe.pages.dev",
+    "https://preview.bardictorch.org",
     "http://localhost.evil.example",
     "http://127.0.0.2",
     "http://[::1]",

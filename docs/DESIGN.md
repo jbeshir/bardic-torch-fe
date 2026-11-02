@@ -1,6 +1,6 @@
 # Bardic Torch design system
 
-**Status:** v2, for milestone FE1 (foundation). v2 folds in the design critique (items D1–D32) and aligns routes and names with the FE1 plan. **Owner:** product design. **Applies to:** `bardic-torch-fe` (React Router 8, Tailwind 3.4, Cloudflare Workers).
+**Status:** v2, for milestone FE1 (foundation). v2 folds in the design critique (items D1–D32) and aligns routes and names with the FE1 plan. **Owner:** product design. **Applies to:** `bardic-torch-fe` (React Router 8, Tailwind 4, Cloudflare Workers).
 
 This is the reference for every visual and interaction decision in the frontend. Where it gives a value, use that value. Where it says MUST, a reviewer will check it. If something you need isn't covered, add it here in the same PR as the code. Don't improvise in a component.
 
@@ -1561,7 +1561,7 @@ The pattern is: what happened, then what to do. Don't blame the reader, and don'
 `scripts/build-tokens.mjs` writes the Tailwind 4 theme into `app/styles/tokens.css`, after the per-theme variables, from `app/styles/tokens.ts` and the tables in `scripts/tailwind-theme.mjs`; `npm run check:tokens` byte-checks it. The `@theme` block starts with `--*: initial`, which clears every Tailwind default, so only what is listed here exists: no default palette, size scale, radii, shadows, durations or animations.
 
 - **Spacing** is Tailwind 3's default scale plus `13`, written as named keys (`--spacing-4: 1rem`) with no bare `--spacing`, so `p-17` or `mt-13.5` are not classes.
-- **Every other namespace** of Tailwind 4's theme (read from `tailwindcss/theme.css` when the file is generated) gets the values FE1's Tailwind 3 theme had: `--breakpoint-*` (`sm` 640 px … `2xl` 1536 px), `--font-weight-*`, `--leading-*`, `--tracking-*`, `--container-*` (`max-w-xs` … `max-w-7xl`), `--blur-*`, `--aspect-*`. `--drop-shadow-*` stays empty, because Tailwind 3's drop shadows are raw black (§2.1). `--inset-shadow-*`, `--text-shadow-*` and `--perspective-*` stay empty: Tailwind 3 had none.
+- **Every other namespace** of Tailwind 4's theme (read from `tailwindcss/theme.css` when the file is generated) gets Tailwind 3.4's default values, which the design was drawn on: `--breakpoint-*` (`sm` 640 px … `2xl` 1536 px), `--font-weight-*`, `--leading-*`, `--tracking-*`, `--container-*` (`max-w-xs` … `max-w-7xl`), `--blur-*`, `--aspect-*`. `--drop-shadow-*` stays empty, because Tailwind 3's drop shadows are raw black (§2.1). `--inset-shadow-*`, `--text-shadow-*` and `--perspective-*` stay empty: Tailwind 3 had none.
 - **Utilities on fixed scales.** Tailwind 4 makes a class for any number or fraction after some utilities (`z-37`, `border-5`, `opacity-33`, `w-5/7`). Lint (`better-tailwindcss/no-restricted-classes`) and `test/tailwind-classes.test.ts` allow only FE1's values, listed in `scripts/tailwind-classes.mjs`.
 
 | Theme namespace or utility           | Classes                                                                                                                                                                                                                                                                                                |

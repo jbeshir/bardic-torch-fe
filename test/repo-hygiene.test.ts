@@ -68,6 +68,7 @@ const SCANNED_FILES = [
   "wrangler.jsonc",
   ".nvmrc",
   ".github/workflows/ci.yml",
+  ".github/workflows/audit.yml",
 ];
 
 function scannedFiles(): string[] {
@@ -221,7 +222,7 @@ type WorkflowStep = {
 };
 type Workflow = {
   readonly on: {
-    readonly push?: { readonly branches?: readonly string[] };
+    readonly push?: { readonly branches?: readonly string[] } | null;
     readonly pull_request?: unknown;
   };
   readonly jobs: Readonly<
@@ -229,14 +230,28 @@ type Workflow = {
   >;
 };
 
-const ciWorkflowSource = readFileSync(
-  join(root, ".github/workflows/ci.yml"),
-  "utf8"
+const WORKFLOW_FILES = [
+  ".github/workflows/audit.yml",
+  ".github/workflows/ci.yml",
+] as const;
+
+const workflowSources: Readonly<Record<string, string>> = Object.fromEntries(
+  WORKFLOW_FILES.map(path => [path, readFileSync(join(root, path), "utf8")])
 );
-const ciWorkflow = parseYaml(ciWorkflowSource) as Workflow;
+const workflows: Readonly<Record<string, Workflow>> = Object.fromEntries(
+  WORKFLOW_FILES.map(path => [path, parseYaml(workflowSources[path]!)])
+);
+const ciWorkflow = workflows[".github/workflows/ci.yml"]!;
+const auditWorkflow = workflows[".github/workflows/audit.yml"]!;
+const allWorkflowSources = Object.values(workflowSources).join("\n");
+
+/** Every job of every workflow, by job id (the ids are unique, asserted). */
+const allJobs = Object.fromEntries(
+  Object.values(workflows).flatMap(workflow => Object.entries(workflow.jobs))
+);
 
 function stepsOf(job: string): readonly WorkflowStep[] {
-  return ciWorkflow.jobs[job]?.steps ?? [];
+  return allJobs[job]?.steps ?? [];
 }
 
 function runsOf(job: string): string[] {
@@ -246,13 +261,19 @@ function runsOf(job: string): string[] {
 /** npm 12, as `packageManager` and `allowScripts` assume. */
 const INSTALL_NPM = "npm install --global npm@12.2.1";
 
-describe("CI workflow", () => {
-  it("has exactly the validate, e2e and audit jobs", () => {
-    expect(Object.keys(ciWorkflow.jobs).sort()).toEqual([
-      "audit",
-      "e2e",
-      "validate",
-    ]);
+/** `uses: owner/action@<40-hex commit> # vX.Y.Z`, the only form allowed. */
+const PINNED_USES =
+  /^\s*(?:- )?uses: ([\w-]+\/[\w-]+)@([0-9a-f]{40}) # (v\d+\.\d+\.\d+)$/;
+
+describe("CI workflows", () => {
+  it("are exactly ci.yml and audit.yml", () => {
+    expect(filesUnder(".github/workflows").sort()).toEqual([...WORKFLOW_FILES]);
+  });
+
+  it("ci.yml has the validate and e2e jobs, and audit.yml the audit job", () => {
+    expect(Object.keys(ciWorkflow.jobs).sort()).toEqual(["e2e", "validate"]);
+    expect(Object.keys(auditWorkflow.jobs)).toEqual(["audit"]);
+    expect(Object.keys(allJobs).sort()).toEqual(["audit", "e2e", "validate"]);
   });
 
   it("installs the npm that packageManager names first in every job", () => {
@@ -260,7 +281,7 @@ describe("CI workflow", () => {
       (JSON.parse(read("package.json")) as { packageManager?: string })
         .packageManager
     ).toBe("npm@12.2.1");
-    for (const job of Object.keys(ciWorkflow.jobs)) {
+    for (const job of Object.keys(allJobs)) {
       expect(runsOf(job)[0]).toBe(INSTALL_NPM);
     }
   });
@@ -277,6 +298,16 @@ describe("CI workflow", () => {
   it("runs pull requests once, and pushes only to the deployed branches", () => {
     expect(Object.keys(ciWorkflow.on).sort()).toEqual(["pull_request", "push"]);
     expect(ciWorkflow.on.push?.branches).toEqual(["main", "preview"]);
+  });
+
+  it("audits every push to any branch, and every pull request", () => {
+    expect(Object.keys(auditWorkflow.on).sort()).toEqual([
+      "pull_request",
+      "push",
+    ]);
+    // No branch, tag or path filter: an empty `push:` is every push.
+    expect(auditWorkflow.on.push).toBeNull();
+    expect(auditWorkflow.on.pull_request).toBeNull();
   });
 
   it("validate installs from the lockfile and runs npm run validate", () => {
@@ -310,25 +341,73 @@ describe("CI workflow", () => {
     ]);
   });
 
-  it("pins every action to an exact release tag", () => {
-    const uses = Object.keys(ciWorkflow.jobs).flatMap(job =>
-      stepsOf(job).flatMap(step => (step.uses ? [step.uses] : []))
+  it("pins every action to a release's full commit SHA, with its tag in a comment", () => {
+    const uses = Object.values(workflows).flatMap(workflow =>
+      Object.values(workflow.jobs).flatMap(job =>
+        job.steps.flatMap(step => (step.uses ? [step.uses] : []))
+      )
     );
+    const lines = allWorkflowSources
+      .split("\n")
+      .filter(line => /^\s*(?:- )?uses:/.test(line));
     expect(uses.length).toBeGreaterThan(0);
+    // Every `uses:` line is in the pinned form, and YAML reads each one as
+    // the bare `owner/action@sha` (so the tag is only a comment).
+    expect(lines.filter(line => !PINNED_USES.test(line))).toEqual([]);
+    expect(lines).toHaveLength(uses.length);
     expect(
-      uses.filter(use => !/^[\w-]+\/[\w-]+@v\d+\.\d+\.\d+$/.test(use))
+      uses.filter(use => !/^[\w-]+\/[\w-]+@[0-9a-f]{40}$/.test(use))
     ).toEqual([]);
   });
 
+  it("pins each action to one commit and tag in every job", () => {
+    const pins = new Map<string, Set<string>>();
+    for (const line of allWorkflowSources.split("\n")) {
+      const [, action, sha, tag] = PINNED_USES.exec(line) ?? [];
+      if (action)
+        pins.set(action, (pins.get(action) ?? new Set()).add(`${sha} ${tag}`));
+    }
+    expect([...pins.keys()].sort()).toEqual([
+      "actions/checkout",
+      "actions/setup-node",
+      "actions/upload-artifact",
+    ]);
+    for (const [, pinned] of pins) expect(pinned.size).toBe(1);
+  });
+
+  it("recognises only the pinned form", () => {
+    const sha = "3d3c42e5aac5ba805825da76410c181273ba90b1";
+    expect(
+      PINNED_USES.test(`        uses: actions/checkout@${sha} # v7.0.1`)
+    ).toBe(true);
+    expect(
+      PINNED_USES.test(`      - uses: actions/checkout@${sha} # v7.0.1`)
+    ).toBe(true);
+    expect(PINNED_USES.test("        uses: actions/checkout@v7.0.1")).toBe(
+      false
+    );
+    expect(PINNED_USES.test(`        uses: actions/checkout@${sha}`)).toBe(
+      false
+    );
+    expect(PINNED_USES.test(`        uses: actions/checkout@${sha} # v7`)).toBe(
+      false
+    );
+    expect(
+      PINNED_USES.test(
+        `        uses: actions/checkout@${sha.slice(1)} # v7.0.1`
+      )
+    ).toBe(false);
+  });
+
   it("needs no secrets", () => {
-    expect(ciWorkflowSource).not.toMatch(/secrets\./);
+    expect(allWorkflowSources).not.toMatch(/secrets\./);
   });
 
   it("every job uses the Node version in .nvmrc, which is 26.13.0", () => {
     expect(readFileSync(join(root, ".nvmrc"), "utf8").trim()).toBe("26.13.0");
     expect(
-      ciWorkflowSource.match(/node-version-file: \.nvmrc$/gm)
-    ).toHaveLength(Object.keys(ciWorkflow.jobs).length);
+      allWorkflowSources.match(/node-version-file: \.nvmrc$/gm)
+    ).toHaveLength(Object.keys(allJobs).length);
   });
 });
 

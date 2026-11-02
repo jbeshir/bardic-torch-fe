@@ -1,18 +1,20 @@
-# validate, e2e and audit are required status checks on main (docs/DEPLOY.md,
-# §1 "Before the first deploy", step "Protect main"). None needs secrets:
-# the e2e suite runs the built app against the local fixture API with stub
-# sign-in, and never leaves the runner (see docs/TESTING.md).
+# validate and e2e are required status checks on main, together with audit
+# from .github/workflows/audit.yml (docs/DEPLOY.md, §1 "Before the first
+# deploy", step "Protect main"). Neither job needs secrets: the e2e suite
+# runs the built app against the local fixture API with stub sign-in, and
+# never leaves the runner (see docs/TESTING.md).
 #
-# Actions are pinned to exact release tags. Full commit SHAs (with the tag
-# in a comment) would be stronger, but they were not resolvable when this
-# file was written; pin them with Dependabot or `gh api` when they can be
-# checked against the actions' repositories. These v4 majors run on Node 20,
-# which GitHub is retiring for actions: move to the Node 24 majors
-# (checkout v5, setup-node v5, upload-artifact v5 or later) together.
+# Every action is pinned to the full commit SHA of a release, with its tag in
+# a trailing comment (test/repo-hygiene.test.ts requires both, and one pin per
+# action across the workflows). These are the actions' Node 24 runtime
+# releases (`runs.using: node24`). To bump one, read the new tag's commit
+# (`gh api repos/actions/<name>/git/ref/tags/<tag>`) and change the SHA and
+# the comment together, in every workflow.
 name: CI
 
 # Pull requests run once, as pull_request; pushes only for the two deployed
-# branches, so a pull request's branch isn't tested twice.
+# branches, so a pull request's branch isn't tested twice. The audit runs on
+# every push and pull request instead (audit.yml).
 on:
   push:
     branches: [main, preview]
@@ -32,10 +34,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Check out
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4.4.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -61,10 +63,10 @@ jobs:
       WRANGLER_SEND_METRICS: "false"
     steps:
       - name: Check out
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4.4.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -89,7 +91,7 @@ jobs:
 
       - name: Upload Playwright report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-report
           path: playwright-report/
@@ -97,7 +99,7 @@ jobs:
 
       - name: Upload screenshots
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: screenshots
           path: e2e/screenshots/
@@ -105,39 +107,8 @@ jobs:
 
       - name: Upload test results
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: test-results
           path: test-results/
           retention-days: 14
-
-  # Known advisories in the dependencies: any in a runtime dependency, or a
-  # high or critical one anywhere, fails npm run audit. Then the registry
-  # signatures and provenance of every installed package are checked.
-  audit:
-    name: audit
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - name: Check out
-        uses: actions/checkout@v4.2.2
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4.4.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      # npm 12, which package.json's packageManager names: its allowScripts
-      # approvals decide which install scripts npm ci runs.
-      - name: Set up npm
-        run: npm install --global npm@12.2.1
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Audit dependencies
-        run: npm run audit
-
-      - name: Verify registry signatures
-        run: npm audit signatures

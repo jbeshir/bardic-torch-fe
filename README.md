@@ -94,9 +94,15 @@ To try a build as Cloudflare runs it, run `npm run build` (or `build:preview`), 
 | `npm run test:e2e` | Playwright: the prod phase, then the stub phase; needs Chromium                                                                             |
 | `npm run audit`    | `npm audit`: any runtime advisory, or a high or critical one anywhere; needs the registry                                                   |
 
-CI (`.github/workflows/ci.yml`) runs the first two as the `validate` and `e2e` jobs, and the audit as the `audit` job: all three are required checks on `main`. [docs/TESTING.md](docs/TESTING.md) explains the layers.
+CI runs the first two as the `validate` and `e2e` jobs (`.github/workflows/ci.yml`), and the audit as the `audit` job (`.github/workflows/audit.yml`, on every push and pull request): all three are required checks on `main`. [docs/TESTING.md](docs/TESTING.md) explains the layers.
 
 `package.json` has one override, `"typescript": "$typescript"`: it gives TypeScript 6 to `openapi-typescript`, whose peer range (`^5.x`) still stops at 5. A hygiene test keeps it the only one.
+
+**Versions held back.** Every dependency is pinned to npm's `latest`, except:
+
+- `@playwright/test` and `playwright-core` stay at **1.61.1**, the version of the Playwright browser image the e2e gate runs in (CLAUDE.md, "The e2e recipe"). Move them with the image.
+- `typescript` stays at **6.0.3**. TypeScript 7 has no compiler API yet (it is planned for 7.1), and typescript-eslint (its peer range stops below 6.1), `openapi-typescript` (`npm run gen:api`) and the repository scans in `test/` need it.
+- `wrangler` stays at the version `@cloudflare/vite-plugin` pins exactly, so there is one wrangler and one workerd. Move it with the plugin, and the compatibility date with it (docs/DEPLOY.md §2, "Runtime").
 
 ## Licence
 

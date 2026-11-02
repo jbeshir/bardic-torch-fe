@@ -16,7 +16,7 @@ Tests come in three layers:
   - no e2e code makes its own Playwright `APIRequestContext`, and no link component takes a `target`;
   - the original wiki's host only in the allowed files;
   - `.prettierignore` holds exactly the expected entries;
-  - the CI workflow, the ops files (`wrangler.jsonc`, parsed with TypeScript's JSONC parser: both Workers, their custom domains, variables, required secrets, compatibility date and flags; `.dev.vars.example`; the generated `Env` in `worker-configuration.d.ts`, which `check:types` keeps fresh; `public/_headers`; and no `public/_routes.json`) and these docs.
+  - the CI workflows (`validate` and `e2e` in `ci.yml`, `audit` in `audit.yml` on every push and pull request; every action pinned to a 40-hex commit SHA with its `# vX.Y.Z` tag, one pin per action), the ops files (`wrangler.jsonc`, parsed with TypeScript's JSONC parser: both Workers, their custom domains, variables, required secrets, compatibility date and flags; `.dev.vars.example`; the generated `Env` in `worker-configuration.d.ts`, which `check:types` keeps fresh; `public/_headers`; and no `public/_routes.json`) and these docs.
 - `no-raw-colours.test.ts`: colour only from the tokens.
 - `motion.test.ts`: movement only under `motion-safe:`.
 - `lint-coverage.test.ts`: ESLint (`eslint.config.ts`) lints every code file (`.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`: scripts and config files too) with the import rules at error, and every code file is in knip's project (`knip.json`), which checks unused files, exports and dependencies (`npm run check:unused`).
@@ -31,14 +31,14 @@ It also runs the checks `check:types`, `check:api`, `check:tokens`, `check:contr
 
 The product plan has `npm run validate` cover the Playwright suite too. In FE1 it doesn't. **`npm run test:e2e` is a separate command**, because it needs Chromium and two full builds. Validate stays runnable anywhere Node runs, including sandboxes without browsers.
 
-CI runs both, and both jobs are required on `main`, so nothing merges without e2e. CLAUDE.md has the two-image recipe for sandboxes.
+CI runs both, and both jobs are required on `main` (with `audit`), so nothing merges without e2e. CLAUDE.md has the two-image recipe for sandboxes.
 
 Other FE1 differences from the plan's test list follow from the real API (no revoked or expired tokens to show) and are recorded in the chunk summaries.
 
 ## Unit tests
 
 - **Environment by file name only.** `vitest.config.ts` has two projects: `dom` runs `*.test.tsx` in jsdom, `node` runs every other test in node, like the Workers runtime. A test that needs a DOM is a `.test.tsx` file (e.g. `test/cut-off.test.tsx`), never a per-file pragma; `test/environments.test.ts` proves the split. vitest has its own config, so it never loads the React Router or Cloudflare plugins (no dev server, no workerd). It aliases `virtual:react-router/server-build` to `test/support/server-build-stub.ts` (the tests that import the Worker entry `vi.mock` it), and `react-dom/server` to `react-dom/server.edge`, the build Workers resolve, which has `renderToReadableStream`.
-- **The Node versions.** The suite runs on `.nvmrc`'s Node 26.13.0, and the migration gates also ran it on Node 22.23.3 and 24.17.0. Node ≥ 24's fetch (undici ≥ 7) rejects an `AbortSignal` that isn't its own, which broke every router navigation and submission under vitest 1's jsdom environment; vitest ≥ 4 gives jsdom Node's `AbortController`. `app/test/abort-signal.test.tsx` fails if that regresses: a `Request` takes the environment's signal, and a `<Form method="post">` submission reaches its action.
+- **The Node versions.** The suite runs on `.nvmrc`'s Node 26.13.0, and the migration gates also ran it on Node 22.23.3 and 24.17.0. Node ≥ 24's fetch (undici ≥ 7) rejects an `AbortSignal` that isn't its own, which broke every router navigation and submission in jsdom until vitest 4 gave jsdom Node's `AbortController`. `app/test/abort-signal.test.tsx` fails if that regresses: a `Request` takes the environment's signal, and a `<Form method="post">` submission reaches its action.
 - **Accessible names in jsdom.** Testing Library's name algorithm trims every child element's text, and only separates children that aren't `display: inline`. jsdom 30 computes HTML's default `display`, so `Moods<span> (optional)</span>` would be named "Moods(optional)", which no browser does. `app/test/setup.ts` gives inline phrasing elements a non-inline display, which is how jsdom up to 29 behaved (it computed none), so names keep the browser's word breaks.
 - **Components** use testing-library and `@testing-library/user-event`.
   - Test every state, and the keyboard.
