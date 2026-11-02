@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useLayoutEffect } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { TokenReveal } from "./TokenReveal";
@@ -23,6 +24,27 @@ describe("TokenReveal", () => {
     expect(value).toHaveFocus();
     const box = value as HTMLTextAreaElement;
     expect([box.selectionStart, box.selectionEnd]).toEqual([0, SECRET.length]);
+  });
+
+  it("has focus in the commit that shows it", () => {
+    // A later sibling's layout effect runs in that commit, before any
+    // passive effect: the secret is never shown (or found) unfocused.
+    let focused: Element | null = null;
+    function Probe() {
+      useLayoutEffect(() => {
+        focused = document.activeElement;
+      }, []);
+      return null;
+    }
+    render(
+      <>
+        <TokenReveal secret={SECRET} onDismiss={() => undefined} />
+        <Probe />
+      </>
+    );
+    expect(focused).toBe(
+      screen.getByRole("textbox", { name: "New token value" })
+    );
   });
 
   it("copies with the clipboard and says so, then reads Copied", async () => {

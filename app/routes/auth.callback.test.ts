@@ -1,40 +1,58 @@
 import { http, HttpResponse } from "msw/http";
+import { createCookie } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Auth0Strategy } from "remix-auth-auth0";
-import {
-  AUTH0_TIMEOUT_MS,
-  DEFAULT_TOKEN_EXPIRY_SECONDS,
-} from "~/constants/auth";
+import { DEFAULT_TOKEN_EXPIRY_SECONDS } from "~/constants/auth";
 import { getOrCreateSessionStorage } from "~/server/auth.server";
+import type { AppEnv } from "~/server/env.server";
 import { createReturnToCookie } from "~/server/return-to.server";
-import { routeArgs, testEnv } from "~/test/context";
+import {
+  AUTH0_TOKEN_ENDPOINT,
+  hangingAuth0,
+  idToken,
+  verifiesWithJwks,
+} from "~/test/auth0-fixture";
+import { loadContext, routeArgs, testEnv } from "~/test/context";
 import { loader as callback } from "./auth.callback";
 import { loader as login } from "./auth.login";
 import { serveMocks } from "~/test/msw";
 
 const SECRET = testEnv().AUTH_SESSION_SECRET;
+/** Each sign-in's state cookie is named `${STATE_COOKIE_PREFIX}:<state>`. */
+const STATE_COOKIE_PREFIX = "__Host-bt_auth0";
 
-const ID_TOKEN = "header.payload.signature";
-
+/** What the fake Auth0 token endpoint received. */
+type TokenRequest = {
+  readonly form: URLSearchParams;
+  readonly authorization: string | null;
+};
+const tokenRequests: TokenRequest[] = [];
 /** Codes the fake Auth0 token endpoint received. */
 const exchangedCodes: string[] = [];
 const { server } = serveMocks();
 
-function auth0TokenEndpoint(respond: () => Response) {
+function auth0TokenEndpoint(respond: () => Response | Promise<Response>) {
   server.use(
-    http.post("https://auth0.test/oauth/token", async ({ request }) => {
+    http.post(AUTH0_TOKEN_ENDPOINT, async ({ request }) => {
       const form = new URLSearchParams(await request.text());
+      tokenRequests.push({
+        form,
+        authorization: request.headers.get("Authorization"),
+      });
       exchangedCodes.push(form.get("code") ?? "");
       return respond();
     })
   );
 }
 
+/** Auth0's answer to a code exchange, with a fresh RS256 ID token. */
+async function auth0Tokens(body: Readonly<Record<string, unknown>>) {
+  return HttpResponse.json({ id_token: await idToken(), ...body });
+}
+
 beforeEach(() => {
   auth0TokenEndpoint(() =>
-    HttpResponse.json({
+    auth0Tokens({
       access_token: "access-42",
-      id_token: ID_TOKEN,
       refresh_token: "refresh-42",
       expires_in: 3600,
       token_type: "Bearer",
@@ -43,7 +61,9 @@ beforeEach(() => {
 });
 afterEach(() => {
   exchangedCodes.length = 0;
+  tokenRequests.length = 0;
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 function cookiePairs(response: Response): string[] {
@@ -53,26 +73,67 @@ function cookiePairs(response: Response): string[] {
 }
 
 /** Start a login and return what the browser brings back to the callback. */
-async function startLogin(returnTo?: string) {
+async function startLogin(
+  returnTo?: string,
+  {
+    origin = "https://app.test",
+    env = {},
+  }: { readonly origin?: string; readonly env?: Partial<AppEnv> } = {}
+) {
   const query = returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : "";
   const response = await login(
-    routeArgs(new Request(`https://app.test/auth/login${query}`))
+    routeArgs(new Request(`${origin}/auth/login${query}`), {
+      context: loadContext(env),
+    })
   );
-  const state = new URL(
-    response.headers.get("Location") ?? ""
-  ).searchParams.get("state");
-  return { state: state ?? "", cookies: cookiePairs(response) };
+  const location = new URL(response.headers.get("Location") ?? "");
+  return {
+    state: location.searchParams.get("state") ?? "",
+    redirectUri: location.searchParams.get("redirect_uri"),
+    cookies: cookiePairs(response),
+  };
 }
 
-function runCallback(query: string, cookies: readonly string[]) {
+function runCallback(
+  query: string,
+  cookies: readonly string[],
+  {
+    origin = "https://app.test",
+    env = {},
+  }: { readonly origin?: string; readonly env?: Partial<AppEnv> } = {}
+) {
   return callback(
     routeArgs(
-      new Request(`https://app.test/auth/callback?${query}`, {
+      new Request(`${origin}/auth/callback?${query}`, {
         headers: { Cookie: cookies.join("; ") },
-      })
+      }),
+      { context: loadContext(env) }
     )
   );
 }
+
+/** The sign-in state cookies `response` sets (or clears). */
+function stateCookiesSet(response: Response): string[] {
+  return response.headers
+    .getSetCookie()
+    .filter(value => value.startsWith(`${STATE_COOKIE_PREFIX}:`));
+}
+
+/** A state cookie signed with the session secret, as /auth/login writes one. */
+async function stateCookie(
+  name: string,
+  value: { readonly state: string; readonly codeVerifier: string }
+) {
+  const cookie = createCookie(`${STATE_COOKIE_PREFIX}:${name}`, {
+    secure: true,
+    path: "/",
+    secrets: [SECRET],
+  });
+  return (await cookie.serialize(value)).split(";")[0] ?? "";
+}
+
+/** A state of randomState()'s shape (43 base64url characters). */
+const OTHER_STATE = "A".repeat(43);
 
 async function sessionTokensFrom(response: Response) {
   const session = await getOrCreateSessionStorage({
@@ -110,7 +171,7 @@ describe("/auth/callback", () => {
 
   it("signs in when Auth0 issues no refresh token or expiry (no offline access)", async () => {
     auth0TokenEndpoint(() =>
-      HttpResponse.json({ access_token: "access-42", token_type: "Bearer" })
+      auth0Tokens({ access_token: "access-42", token_type: "Bearer" })
     );
     const before = Date.now();
     const { state, cookies } = await startLogin("/settings");
@@ -128,24 +189,19 @@ describe("/auth/callback", () => {
   });
 
   it("goes back to the page signed out when the code exchange hangs", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const error = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
     const { state, cookies } = await startLogin("/help");
-    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
-    try {
-      const authenticate = vi
-        .spyOn(Auth0Strategy.prototype, "authenticate")
-        .mockReturnValue(new Promise(() => undefined));
-      const pending = runCallback(`code=abc&state=${state}`, cookies);
-      while (authenticate.mock.calls.length === 0) {
-        await new Promise(resolve => setImmediate(resolve));
-      }
-      await vi.advanceTimersByTimeAsync(AUTH0_TIMEOUT_MS);
-      const response = await pending;
-      expect(response.headers.get("Location")).toBe("/help");
-      expect(await sessionTokensFrom(response)).toBeUndefined();
-    } finally {
-      vi.useRealTimers();
-    }
+    const hang = hangingAuth0();
+    const response = await runCallback(`code=abc&state=${state}`, cookies);
+    expect(hang).toHaveBeenCalledWith(AUTH0_TOKEN_ENDPOINT, expect.anything());
+    expect(response.headers.get("Location")).toBe("/help");
+    expect(await sessionTokensFrom(response)).toBeUndefined();
+    expect(error).toHaveBeenCalledWith(
+      "Authentication callback error:",
+      expect.objectContaining({ code: "OAUTH_TIMEOUT" })
+    );
   });
 
   it("ignores a returnTo in the callback's query string", async () => {
@@ -240,5 +296,195 @@ describe("/auth/callback", () => {
     expect(response.headers.get("Location")).toBe("/help");
     expect(await sessionTokensFrom(response)).toBeUndefined();
     expect(error).toHaveBeenCalled();
+  });
+});
+
+describe("/auth/callback state", () => {
+  beforeEach(() => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+  });
+
+  /** The callback failed: back to the page signed out, nothing exchanged. */
+  async function expectSignInRefused(response: Response) {
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toBe("/help");
+    expect(await sessionTokensFrom(response)).toBeUndefined();
+    expect(exchangedCodes).toEqual([]);
+    expectReturnToCleared(response);
+    expect(console.error).toHaveBeenCalledWith(
+      "Authentication callback error:",
+      expect.any(Error)
+    );
+  }
+
+  it("refuses a state containing ;, reading and clearing no cookie under that name", async () => {
+    const { state, cookies } = await startLogin("/help");
+    const response = await runCallback(
+      `code=abc&state=${encodeURIComponent(`${state};x`)}`,
+      cookies
+    );
+    await expectSignInRefused(response);
+    expect(stateCookiesSet(response)).toEqual([]);
+  });
+
+  it("refuses a state of the wrong length, even with a validly signed cookie for it", async () => {
+    const { cookies } = await startLogin("/help");
+    const short = "A".repeat(42);
+    const forged = await stateCookie(short, {
+      state: short,
+      codeVerifier: "v".repeat(43),
+    });
+    const response = await runCallback(`code=abc&state=${short}`, [
+      ...cookies,
+      forged,
+    ]);
+    await expectSignInRefused(response);
+    expect(stateCookiesSet(response)).toEqual([]);
+  });
+
+  it("refuses a state whose sign-in this browser didn't start, though it holds another's cookie", async () => {
+    const { cookies } = await startLogin("/help");
+    const response = await runCallback(
+      `code=abc&state=${OTHER_STATE}`,
+      cookies
+    );
+    await expectSignInRefused(response);
+    expect(stateCookiesSet(response).map(value => value.split("=")[0])).toEqual(
+      [`${STATE_COOKIE_PREFIX}:${OTHER_STATE}`]
+    );
+  });
+
+  it("refuses a state cookie whose signature was tampered with", async () => {
+    const { state, cookies } = await startLogin("/help");
+    // Change the signed value's first character: the signature no longer fits.
+    const tampered = cookies.map(pair => {
+      if (!pair.startsWith(`${STATE_COOKIE_PREFIX}:`)) return pair;
+      const start = pair.indexOf("=") + 1;
+      const changed = pair[start] === "e" ? "f" : "e";
+      return `${pair.slice(0, start)}${changed}${pair.slice(start + 1)}`;
+    });
+    expect(tampered).not.toEqual(cookies);
+    const response = await runCallback(`code=abc&state=${state}`, tampered);
+    await expectSignInRefused(response);
+  });
+
+  it("refuses a state cookie that stores a different state than its name", async () => {
+    const { state, cookies } = await startLogin("/help");
+    const mismatched = await stateCookie(state, {
+      state: OTHER_STATE,
+      codeVerifier: "v".repeat(43),
+    });
+    const response = await runCallback(`code=abc&state=${state}`, [
+      ...cookies.filter(pair => !pair.startsWith(`${STATE_COOKIE_PREFIX}:`)),
+      mismatched,
+    ]);
+    await expectSignInRefused(response);
+  });
+
+  it("clears this sign-in's state cookie", async () => {
+    const { state, cookies } = await startLogin("/help");
+    const response = await runCallback(`code=abc&state=${state}`, cookies);
+    expect(await sessionTokensFrom(response)).toBeDefined();
+    const [cleared, ...others] = stateCookiesSet(response);
+    expect(others).toEqual([]);
+    expect(cleared).toMatch(new RegExp(`^${STATE_COOKIE_PREFIX}:${state}=;`));
+    expect(cleared).toContain("Max-Age=0");
+    expect(cleared?.split("; ")).toEqual(
+      expect.arrayContaining(["HttpOnly", "Secure", "SameSite=Lax", "Path=/"])
+    );
+  });
+});
+
+describe("/auth/callback code exchange", () => {
+  it("sends the code with this sign-in's PKCE verifier and the client's HTTP Basic credentials", async () => {
+    const { state, cookies } = await startLogin("/help");
+    await runCallback(`code=abc&state=${state}`, cookies);
+
+    const [exchange, ...others] = tokenRequests;
+    expect(others).toEqual([]);
+    // RFC 6749 §2.3.1: each credential form-encoded, then Base64.
+    const [scheme, credentials = ""] =
+      exchange?.authorization?.split(" ") ?? [];
+    expect(scheme).toBe("Basic");
+    expect(atob(credentials).split(":").map(decodeURIComponent)).toEqual([
+      "client-id",
+      "client-secret",
+    ]);
+    expect(exchange?.form.get("grant_type")).toBe("authorization_code");
+    expect(exchange?.form.get("code_verifier")).toMatch(/^[\w-]{43,128}$/);
+    expect(exchange?.form.has("client_secret")).toBe(false);
+  });
+
+  it("sends the redirect_uri the authorize request sent", async () => {
+    const { state, cookies, redirectUri } = await startLogin("/help");
+    await runCallback(`code=abc&state=${state}`, cookies);
+    expect(redirectUri).toBe("https://app.test/auth/callback");
+    expect(tokenRequests[0]?.form.get("redirect_uri")).toBe(redirectUri);
+  });
+
+  it("sends the configured redirect_uri when the callback arrives on another host", async () => {
+    const env = { AUTH0_DEFAULT_REDIRECT_URI: "http://localhost:5173" };
+    const { state, cookies, redirectUri } = await startLogin("/help", {
+      origin: "http://127.0.0.1:5173",
+      env,
+    });
+    const response = await runCallback(`code=abc&state=${state}`, cookies, {
+      origin: "http://127.0.0.1:5173",
+      env,
+    });
+    expect(await sessionTokensFrom(response)).toBeDefined();
+    expect(redirectUri).toBe("http://localhost:5173/auth/callback");
+    expect(tokenRequests[0]?.form.get("redirect_uri")).toBe(redirectUri);
+  });
+
+  it("bounds the code exchange by AUTH0_TIMEOUT_MS (5 s)", async () => {
+    const { state, cookies } = await startLogin("/help");
+    const asked = vi.spyOn(AbortSignal, "timeout");
+    const response = await runCallback(`code=abc&state=${state}`, cookies);
+    expect(await sessionTokensFrom(response)).toBeDefined();
+    expect(asked.mock.calls).toEqual([[5_000]]);
+  });
+
+  it("is answered with a real RS256 ID token, whose signature the fixture's JWKS verifies", async () => {
+    const token = await idToken();
+    expect(await verifiesWithJwks(token)).toBe(true);
+    expect(await verifiesWithJwks(`${token.slice(0, -2)}AA`)).toBe(false);
+  });
+
+  it("refuses an HS256 ID token, even one signed with the client secret", async () => {
+    const error = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    auth0TokenEndpoint(async () =>
+      HttpResponse.json({
+        access_token: "access-42",
+        id_token: await idToken({ algorithm: "HS256" }),
+        token_type: "Bearer",
+      })
+    );
+    const { state, cookies } = await startLogin("/help");
+    const response = await runCallback(`code=abc&state=${state}`, cookies);
+    expect(exchangedCodes).toEqual(["abc"]);
+    expect(response.headers.get("Location")).toBe("/help");
+    expect(await sessionTokensFrom(response)).toBeUndefined();
+    expect(error).toHaveBeenCalledWith(
+      "Authentication callback error:",
+      expect.any(Error)
+    );
+  });
+
+  it("refuses an ID token issued for another client", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    auth0TokenEndpoint(async () =>
+      auth0Tokens({
+        access_token: "access-42",
+        id_token: await idToken({ claims: { aud: "another-client" } }),
+        token_type: "Bearer",
+      })
+    );
+    const { state, cookies } = await startLogin("/help");
+    const response = await runCallback(`code=abc&state=${state}`, cookies);
+    expect(exchangedCodes).toEqual(["abc"]);
+    expect(await sessionTokensFrom(response)).toBeUndefined();
   });
 });

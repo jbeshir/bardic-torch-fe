@@ -171,14 +171,14 @@ Create one **Regular Web Application** (Applications → Create Application → 
 
 **Application settings:**
 
-| setting                             | value                                                                                                                                      |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Application Login URI               | `https://bardictorch.org/auth/login`                                                                                                       |
-| Allowed Callback URLs               | `https://bardictorch.org/auth/callback`, `https://preview.bardictorch.org/auth/callback`                                                   |
-| Allowed Logout URLs                 | `https://bardictorch.org`, `https://preview.bardictorch.org`                                                                               |
-| Allowed Web Origins                 | `https://bardictorch.org`, `https://preview.bardictorch.org` (the app makes no browser-side Auth0 calls, so this is only for completeness) |
-| Credentials → Authentication Method | **Client Secret (Basic)**: the strategy (remix-auth-auth0 2 on arctic) sends the client credentials in an HTTP Basic header                |
-| Advanced → Grant Types              | Authorization Code, Refresh Token                                                                                                          |
+| setting                             | value                                                                                                                                                     |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Application Login URI               | `https://bardictorch.org/auth/login`                                                                                                                      |
+| Allowed Callback URLs               | `https://bardictorch.org/auth/callback`, `https://preview.bardictorch.org/auth/callback`                                                                  |
+| Allowed Logout URLs                 | `https://bardictorch.org`, `https://preview.bardictorch.org`                                                                                              |
+| Allowed Web Origins                 | `https://bardictorch.org`, `https://preview.bardictorch.org` (the app makes no browser-side Auth0 calls, so this is only for completeness)                |
+| Credentials → Authentication Method | **Client Secret (Basic)**: openid-client (`ClientSecretBasic`) sends the client credentials in an HTTP Basic header to the token and revocation endpoints |
+| Advanced → Grant Types              | Authorization Code, Refresh Token                                                                                                                         |
 
 How these URLs are used:
 

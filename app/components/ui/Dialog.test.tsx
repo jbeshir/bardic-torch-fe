@@ -1,7 +1,7 @@
 import { IconDeviceFloppy, IconTrash } from "@tabler/icons-react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { Dialog } from "./Dialog";
@@ -97,6 +97,50 @@ describe("Dialog", () => {
     expect(
       screen.getByRole("heading", { level: 2, name: "Revoke this token?" })
     ).toHaveClass("text-h3");
+  });
+
+  it("opens and closes in the same commit as its content", () => {
+    // A later sibling's layout effect runs in that commit, before any
+    // passive effect: what it sees is what the first paint (and a query
+    // made as soon as, say, an alert rendered with the close appears)
+    // sees. A close left to a passive effect showed an open, emptied
+    // dialog there.
+    const seen: { open: boolean; modal: boolean; content: boolean }[] = [];
+    function Probe({ open }: { open: boolean }) {
+      useLayoutEffect(() => {
+        seen.push({
+          open,
+          modal: dialog().open,
+          content: dialog().querySelector("h2") !== null,
+        });
+      }, [open]);
+      return null;
+    }
+    function Page({ open }: { open: boolean }) {
+      return (
+        <>
+          <Dialog
+            open={open}
+            onClose={() => undefined}
+            title="Revoke this token?"
+            confirm={{
+              label: "Revoke token",
+              icon: IconTrash,
+              variant: "danger",
+            }}
+          />
+          <Probe open={open} />
+        </>
+      );
+    }
+    const { rerender } = render(<Page open={false} />);
+    rerender(<Page open />);
+    rerender(<Page open={false} />);
+    expect(seen).toEqual([
+      { open: false, modal: false, content: false },
+      { open: true, modal: true, content: true },
+      { open: false, modal: false, content: false },
+    ]);
   });
 
   it("starts on Cancel, the least destructive control", async () => {

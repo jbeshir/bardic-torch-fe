@@ -1,8 +1,9 @@
 import { IconCheck, IconCopy } from "@tabler/icons-react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Alert } from "~/components/ui/Alert";
 import { Button } from "~/components/ui/Button";
 import { textControlClasses } from "~/components/ui/Input";
+import { useBrowserLayoutEffect } from "~/hooks/useBrowserLayoutEffect";
 
 type CopyState = "idle" | "copied" | "failed";
 
@@ -25,8 +26,9 @@ export function TokenReveal({
   const valueRef = useRef<HTMLTextAreaElement>(null);
   const [copy, setCopy] = useState<CopyState>("idle");
 
-  // Mounted once per new token (the parent keys it by the token).
-  useEffect(() => {
+  // Mounted once per new token (the parent keys it by the token). In the
+  // commit that shows it, so the secret is never on screen unfocused.
+  useBrowserLayoutEffect(() => {
     valueRef.current?.focus();
     valueRef.current?.select();
   }, []);

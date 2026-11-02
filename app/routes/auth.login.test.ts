@@ -1,3 +1,4 @@
+import { createCookie } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getOrCreateSessionStorage } from "~/server/auth.server";
 import type { AppEnv } from "~/server/env.server";
@@ -6,6 +7,8 @@ import { loadContext, routeArgs, testEnv } from "~/test/context";
 import { loader } from "./auth.login";
 
 const SECRET = testEnv().AUTH_SESSION_SECRET;
+/** Each sign-in's state cookie is named `${STATE_COOKIE_PREFIX}:<state>`. */
+const STATE_COOKIE_PREFIX = "__Host-bt_auth0";
 
 function login(url: string, env: Partial<AppEnv> = {}) {
   return loader(routeArgs(new Request(url), { context: loadContext(env) }));
@@ -47,6 +50,75 @@ describe("/auth/login with Auth0", () => {
     expect(location.searchParams.get("audience")).toBe("audience");
     expect(location.searchParams.get("code_challenge_method")).toBe("S256");
     expect(location.searchParams.get("state")).toBeTruthy();
+  });
+
+  it("asks for a code, an access token for the API and a refresh token, and nothing else", async () => {
+    const location = expectAuth0Redirect(
+      await login("https://app.test/auth/login")
+    );
+    expect([...location.searchParams.keys()].sort()).toEqual([
+      "audience",
+      "client_id",
+      "code_challenge",
+      "code_challenge_method",
+      "redirect_uri",
+      "response_type",
+      "scope",
+      "state",
+    ]);
+    expect(location.searchParams.get("response_type")).toBe("code");
+    expect(location.searchParams.get("scope")).toBe("openid offline_access");
+  });
+
+  it("keeps the state and PKCE verifier in a signed cookie named for that state, for 5 minutes", async () => {
+    const response = await login("https://app.test/auth/login");
+    const location = expectAuth0Redirect(response);
+    const state = location.searchParams.get("state") ?? "";
+    expect(state).toMatch(/^[\w-]{43}$/);
+
+    const [stateCookie, ...others] = setCookies(response).filter(value =>
+      value.startsWith(`${STATE_COOKIE_PREFIX}:`)
+    );
+    expect(others).toEqual([]);
+    expect(stateCookie?.split("=")[0]).toBe(`${STATE_COOKIE_PREFIX}:${state}`);
+    expect(stateCookie).toContain("Max-Age=300");
+
+    const stored: unknown = await createCookie(
+      `${STATE_COOKIE_PREFIX}:${state}`,
+      { secrets: [SECRET] }
+    ).parse(stateCookie?.split(";")[0] ?? "");
+    expect(stored).toEqual({ state, codeVerifier: expect.any(String) });
+    const { codeVerifier } = stored as { readonly codeVerifier: string };
+    expect(codeVerifier).toMatch(/^[\w-]{43,128}$/);
+    // S256: the challenge is the verifier's SHA-256, base64url-encoded.
+    const digest = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(codeVerifier)
+    );
+    expect(location.searchParams.get("code_challenge")).toBe(
+      Buffer.from(digest).toString("base64url")
+    );
+    // A signature from another secret doesn't parse.
+    expect(
+      await createCookie(`${STATE_COOKIE_PREFIX}:${state}`, {
+        secrets: ["another-secret-of-at-least-32-chars"],
+      }).parse(stateCookie?.split(";")[0] ?? "")
+    ).toBeNull();
+  });
+
+  it("starts a separate sign-in each time, so two tabs don't share a state", async () => {
+    const first = expectAuth0Redirect(
+      await login("https://app.test/auth/login")
+    );
+    const second = expectAuth0Redirect(
+      await login("https://app.test/auth/login")
+    );
+    expect(first.searchParams.get("state")).not.toBe(
+      second.searchParams.get("state")
+    );
+    expect(first.searchParams.get("code_challenge")).not.toBe(
+      second.searchParams.get("code_challenge")
+    );
   });
 
   it("stores the state in a __Host- cookie that is HttpOnly, Secure and Lax", async () => {

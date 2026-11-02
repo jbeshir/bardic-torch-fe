@@ -119,6 +119,13 @@ async function realSentry(integrations: (real: RealSentry) => unknown[]) {
   return { real, sent };
 }
 type RealSentry = typeof import("@sentry/react");
+/** A streamed span, as the browser SDK sends it (span envelope v2). */
+type SentSpan = {
+  readonly is_segment: boolean;
+  readonly attributes: Readonly<
+    Record<string, { readonly value: unknown; readonly type: string }>
+  >;
+};
 
 describe("the browser SDK's data", () => {
   afterEach(async () => {
@@ -154,6 +161,15 @@ describe("the browser SDK's data", () => {
     );
   });
 
+  // Navigations as a reader makes them: by clicking a link. Sentry treats a
+  // navigation with no click or keypress in the last 1.5 s, made within
+  // 1.5 s of the active span starting, as a redirect. Before this test
+  // clicked, that made the outcome depend on timing (flaky under load). The
+  // click makes each navigation its own segment. The next navigation ends
+  // the previous segment synchronously ("maybeEndActiveSpan" in
+  // browserTracingIntegration). So the /help segment has ended, and is in
+  // the span buffer, before `flush` sends the buffer. No idle timeout is
+  // involved.
   it("traces navigations by URL path, without the query string", async () => {
     const { real, sent } = await realSentry(real => [
       real.browserTracingIntegration(),
@@ -163,27 +179,50 @@ describe("the browser SDK's data", () => {
         path: "/",
         element: <Outlet />,
         children: [
-          { index: true, element: <h1>Home</h1> },
-          { path: "help/:slug", element: <h1>Help</h1> },
+          {
+            index: true,
+            element: <Link to="/help/some-slug?code=secret">Help</Link>,
+          },
+          { path: "help/:slug", element: <Link to="/">Home</Link> },
         ],
       },
     ]);
     await act(async () => {
       render(<RouterProvider router={router} />);
     });
-    await act(() => router.navigate("/help/some-slug?code=secret"));
-    await screen.findByRole("heading", { name: "Help" });
-    await act(() => router.navigate("/"));
-    await screen.findByRole("heading", { name: "Home" });
+    await act(() =>
+      userEvent.click(screen.getByRole("link", { name: "Help" }))
+    );
+    await screen.findByRole("link", { name: "Home" });
+    await act(() =>
+      userEvent.click(screen.getByRole("link", { name: "Home" }))
+    );
+    await screen.findByRole("link", { name: "Help" });
     await real.flush(2000);
 
-    const spans = sent.items.join("");
-    expect(spans).toContain('"sentry.op":{"value":"navigation');
-    expect(spans).toContain('"url.path":{"value":"/help/some-slug"');
-    expect(spans).toContain(
-      '"url.full":{"value":"http://localhost:3000/help/some-slug","type":"string"}'
+    const spans = sent.items.flatMap(item => {
+      const [, envelopeItems] = JSON.parse(item) as [
+        unknown,
+        [unknown, { items?: SentSpan[] }][],
+      ];
+      return envelopeItems.flatMap(([, payload]) => payload.items ?? []);
+    });
+    const help = spans.filter(
+      span => span.attributes["url.path"]?.value === "/help/some-slug"
     );
-    expect(spans).not.toContain("secret");
+    expect(help).toEqual([
+      expect.objectContaining({
+        is_segment: true,
+        attributes: expect.objectContaining({
+          "sentry.op": { value: "navigation", type: "string" },
+          "url.full": {
+            value: "http://localhost:3000/help/some-slug",
+            type: "string",
+          },
+        }),
+      }),
+    ]);
+    expect(sent.items.join("")).not.toContain("secret");
   });
 });
 

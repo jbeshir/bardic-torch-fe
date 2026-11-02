@@ -63,11 +63,43 @@ function setThemeAttribute(theme: string | null) {
     ?.setAttribute("content", theme ?? "light dark");
 }
 
+/**
+ * Waits until no finite CSS transition or animation is running in the
+ * page. A checkpoint changes styles just before axe: the theme switch
+ * (every `transition-colors` element, such as a linked card, eases from
+ * the old theme's colours to the new one's), a resize, focus or hover set
+ * by `atEachViewport`, the pointer moved away, or forced colours turned
+ * off. Axe reads computed colours, so mid-transition it would measure a
+ * blend that is never at rest on the page. Infinite ones (spinners,
+ * skeleton shimmer) never finish and don't change colour pairs, so they
+ * are left running. `getAnimations()` flushes pending style changes, so a
+ * transition the last change starts is already listed; one that a
+ * finishing animation starts is caught by the next pass.
+ */
+async function stylesSettled(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    const running = () =>
+      document
+        .getAnimations()
+        .filter(
+          animation =>
+            animation.playState === "running" &&
+            Number.isFinite(
+              Number(animation.effect?.getComputedTiming().endTime)
+            )
+        );
+    for (let now = running(); now.length > 0; now = running()) {
+      await Promise.allSettled(now.map(({ finished }) => finished));
+    }
+  });
+}
+
 async function expectNoAxeViolations(
   page: Page,
   label: string,
   target: string | undefined
 ) {
+  await stylesSettled(page);
   const builder = new AxeBuilder({ page }).withTags(AXE_TAGS);
   const { violations } = await (
     target ? builder.include(target) : builder
@@ -253,6 +285,7 @@ async function renderedCanvas(page: Page): Promise<string> {
  * each capture it checks the page really paints that theme's canvas, and
  * moves the pointer to the corner, so no hover left by an earlier click
  * shows (hover states can't be captured statically; DESIGN §10.6).
+ * Axe runs once the page's transitions have finished (`stylesSettled`).
  * A page in emulated forced colours is checked by axe in its author
  * colours and captured in forced colours (see `inAuthorColours`).
  *

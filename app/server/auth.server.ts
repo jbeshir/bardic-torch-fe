@@ -1,11 +1,20 @@
-import { Authenticator } from "remix-auth";
 import {
-  Auth0Strategy,
-  OAuth2RequestError,
-  UnexpectedErrorResponseBodyError,
-  UnexpectedResponseError,
-} from "remix-auth-auth0";
-import type { RouterContextProvider } from "react-router";
+  authorizationCodeGrant,
+  buildAuthorizationUrl,
+  calculatePKCECodeChallenge,
+  ClientError,
+  ClientSecretBasic,
+  Configuration,
+  randomPKCECodeVerifier,
+  randomState,
+  refreshTokenGrant,
+  ResponseBodyError,
+  tokenRevocation,
+  WWWAuthenticateChallengeError,
+  type TokenEndpointResponse,
+} from "openid-client";
+import { createCookie, type RouterContextProvider } from "react-router";
+import { z } from "zod";
 import {
   createSessionStorage,
   type AppSessionStorage,
@@ -29,15 +38,30 @@ type AuthEnv = {
   readonly AUTH0_AUDIENCE: string;
 };
 
-/** What Auth0's token endpoint answered, as arctic wraps it. */
-type Auth0Tokens = Awaited<
-  ReturnType<Auth0Strategy<SessionTokens>["refreshToken"]>
->;
+/**
+ * Each sign-in's state and PKCE verifier travel in their own cookie, named
+ * after the state, so sign-ins started in two tabs don't overwrite each
+ * other.
+ */
+const AUTH0_STATE_COOKIE_PREFIX = "__Host-bt_auth0";
+/** How long a sign-in at Auth0 may take (5 minutes). */
+const AUTH0_STATE_MAX_AGE_SECONDS = 5 * 60;
+/**
+ * The shape of `randomState()` (32 random bytes, base64url). A callback
+ * `state` of any other shape is refused before it can name a cookie.
+ */
+const STATE_FORMAT = /^[A-Za-z0-9_-]{43}$/;
 
-// One session storage and authenticator per configuration, built on first
-// use in each isolate.
+/** What the state cookie holds: the state it was issued for, and its PKCE verifier. */
+const auth0StateSchema = z.object({
+  state: z.string(),
+  codeVerifier: z.string(),
+});
+
+// One session storage and Auth0 client configuration per configuration,
+// built on first use in each isolate.
 const sessionStorageCache = new Map<string, AppSessionStorage>();
-const authenticatorCache = new Map<string, Authenticator<SessionTokens>>();
+const auth0ConfigCache = new Map<string, Configuration>();
 
 export function getOrCreateSessionStorage(
   env: Pick<AuthEnv, "AUTH_SESSION_SECRET">
@@ -51,123 +75,210 @@ export function getOrCreateSessionStorage(
 }
 
 /**
- * The session's tokens from an Auth0 token response. arctic's accessors
- * throw for an absent field, so the optional ones are checked first: a
- * response without `refresh_token` (rotation off, or no offline access)
- * keeps `previousRefreshToken`, and one without `expires_in` gets the
- * default lifetime.
+ * The Auth0 client, configured statically: building the authorize URL
+ * makes no network call (no discovery). The client authenticates to the
+ * token and revocation endpoints with HTTP Basic ("Client Secret (Basic)"
+ * in Auth0), and every call to Auth0 is bounded by AUTH0_TIMEOUT_MS.
+ */
+function getAuth0Config(env: AuthEnv): Configuration {
+  const cacheKey = `${env.AUTH0_DOMAIN}:${env.AUTH0_CLIENT_ID}:${env.AUTH0_CLIENT_SECRET}`;
+  const cached = auth0ConfigCache.get(cacheKey);
+  if (cached) return cached;
+
+  const origin = `https://${env.AUTH0_DOMAIN}`;
+  const config = new Configuration(
+    {
+      issuer: `${origin}/`,
+      authorization_endpoint: `${origin}/authorize`,
+      token_endpoint: `${origin}/oauth/token`,
+      revocation_endpoint: `${origin}/oauth/revoke`,
+    },
+    env.AUTH0_CLIENT_ID,
+    // Auth0 signs ID tokens with RS256; `none` and HS256 are refused.
+    { id_token_signed_response_alg: "RS256" },
+    ClientSecretBasic(env.AUTH0_CLIENT_SECRET)
+  );
+  // In seconds. It can only be set here: openid-client reads no timeout
+  // from the client metadata.
+  config.timeout = AUTH0_TIMEOUT_MS / 1000;
+  auth0ConfigCache.set(cacheKey, config);
+  return config;
+}
+
+/** The callback URL this site registers with Auth0, and sends in both requests. */
+function callbackUrl(env: AuthEnv): URL {
+  return new URL(`${env.AUTH0_DEFAULT_REDIRECT_URI}/auth/callback`);
+}
+
+/** The signed cookie for the sign-in with `state` (a validated state). */
+function auth0StateCookie(state: string, env: AuthEnv) {
+  return createCookie(`${AUTH0_STATE_COOKIE_PREFIX}:${state}`, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: AUTH0_STATE_MAX_AGE_SECONDS,
+    secrets: [env.AUTH_SESSION_SECRET],
+  });
+}
+
+/**
+ * The session's tokens from an Auth0 token response. A response without
+ * `refresh_token` (rotation off, or no offline access) keeps
+ * `previousRefreshToken`, and one without `expires_in` gets the default
+ * lifetime.
  */
 function sessionTokensFrom(
-  tokens: Auth0Tokens,
+  tokens: TokenEndpointResponse,
   previousRefreshToken?: string
 ): SessionTokens {
-  const refreshToken = tokens.hasRefreshToken()
-    ? tokens.refreshToken()
-    : previousRefreshToken;
-  const expiresIn =
-    "expires_in" in tokens.data && typeof tokens.data.expires_in === "number"
-      ? tokens.data.expires_in
-      : DEFAULT_TOKEN_EXPIRY_SECONDS;
+  const refreshToken = tokens.refresh_token ?? previousRefreshToken;
+  const expiresIn = tokens.expires_in ?? DEFAULT_TOKEN_EXPIRY_SECONDS;
   return {
-    accessToken: tokens.accessToken(),
+    accessToken: tokens.access_token,
     expiresAt: Date.now() + expiresIn * 1000,
     ...(refreshToken === undefined ? {} : { refreshToken }),
   };
 }
 
-export function getOrCreateAuthenticator(
-  env: AuthEnv
-): Authenticator<SessionTokens> {
-  const cacheKey = `${env.AUTH_SESSION_SECRET}:${env.AUTH0_DOMAIN}:${env.AUTH0_CLIENT_ID}`;
-  const cached = authenticatorCache.get(cacheKey);
-  if (cached) return cached;
-
-  const authenticator = new Authenticator<SessionTokens>();
-  authenticator.use(
-    new Auth0Strategy<SessionTokens>(
-      {
-        domain: env.AUTH0_DOMAIN,
-        clientId: env.AUTH0_CLIENT_ID,
-        clientSecret: env.AUTH0_CLIENT_SECRET,
-        redirectURI: `${env.AUTH0_DEFAULT_REDIRECT_URI}/auth/callback`,
-        // An access token for the API and a refresh token; the site reads
-        // no profile claims, so it asks for none.
-        scopes: ["openid", "offline_access"],
-        audience: env.AUTH0_AUDIENCE,
-        // State and PKCE verifier for the Auth0 round trip (5 minutes).
-        cookie: {
-          name: "__Host-bt_auth0",
-          httpOnly: true,
-          secure: true,
-          sameSite: "Lax",
-          path: "/",
-        },
-      },
-      async ({ tokens }) => sessionTokensFrom(tokens)
-    )
-  );
-  authenticatorCache.set(cacheKey, authenticator);
-  return authenticator;
-}
-
-function getAuth0Strategy(env: AuthEnv): Auth0Strategy<SessionTokens> {
-  const strategy =
-    getOrCreateAuthenticator(env).get<Auth0Strategy<SessionTokens>>("auth0");
-  if (!strategy) throw new Error("The Auth0 strategy is not registered");
-  return strategy;
-}
+/** Where /auth/login sends the reader, and the cookie that goes with it. */
+type Auth0Login = {
+  readonly authorizationUrl: URL;
+  /** Set-Cookie for this sign-in's state and PKCE verifier. */
+  readonly stateCookie: string;
+};
 
 /**
- * `promise`, or a rejection after AUTH0_TIMEOUT_MS. arctic's requests take
- * no AbortSignal, so a hanging Auth0 is raced instead.
+ * Start a sign-in at Auth0: a fresh state and PKCE (S256) verifier, kept
+ * in a signed cookie for /auth/callback, and the authorize URL asking for
+ * an access token for the API and a refresh token. The site reads no
+ * profile claims, so it asks for none. Nothing from the request is
+ * forwarded to Auth0.
  */
-async function withinAuth0Timeout<T>(
-  promise: Promise<T>,
-  what: string
-): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(
-      () => reject(new Error(`Auth0 ${what} timed out`)),
-      AUTH0_TIMEOUT_MS
-    );
+export async function startAuth0Login(env: AuthEnv): Promise<Auth0Login> {
+  const state = randomState();
+  const codeVerifier = randomPKCECodeVerifier();
+  const authorizationUrl = buildAuthorizationUrl(getAuth0Config(env), {
+    redirect_uri: callbackUrl(env).href,
+    scope: "openid offline_access",
+    audience: env.AUTH0_AUDIENCE,
+    code_challenge: await calculatePKCECodeChallenge(codeVerifier),
+    code_challenge_method: "S256",
+    state,
   });
+  return {
+    authorizationUrl,
+    stateCookie: await auth0StateCookie(state, env).serialize({
+      state,
+      codeVerifier,
+    }),
+  };
+}
+
+/** How the Auth0 round trip ended on /auth/callback. */
+type Auth0CallbackOutcome =
+  | { readonly kind: "signed-in"; readonly tokens: SessionTokens }
+  /** The reader cancelled at Auth0, or Auth0 refused them. */
+  | { readonly kind: "cancelled" }
+  /** Anything else: a bad state, a failed code exchange, an Auth0 error. */
+  | { readonly kind: "failed"; readonly error: unknown };
+
+type Auth0Callback = {
+  readonly outcome: Auth0CallbackOutcome;
+  /** Set-Cookie clearing this sign-in's state cookie, when it had a valid state. */
+  readonly clearStateCookie?: string;
+};
+
+/**
+ * Finish the Auth0 round trip on /auth/callback (`url` is the router's
+ * URL of the request).
+ *
+ * The callback's `state` must have `randomState()`'s shape before it names
+ * a cookie, and must equal the state stored in that (signed) cookie. The
+ * code is then exchanged with the cookie's PKCE verifier, bounded by
+ * AUTH0_TIMEOUT_MS, and the ID token's issuer, audience, expiry and RS256
+ * algorithm are checked. Its signature isn't: it comes straight from
+ * Auth0's token endpoint over TLS (OIDC Core 3.1.3.7), and the site reads
+ * none of its claims. There is no nonce: PKCE already binds the code to
+ * this browser's sign-in (RFC 9700 §2.1.1).
+ *
+ * The state cookie is cleared whatever the outcome.
+ */
+export async function completeAuth0Login(
+  request: Request,
+  url: URL,
+  env: AuthEnv
+): Promise<Auth0Callback> {
+  const state = url.searchParams.get("state");
+  const validState = state !== null && STATE_FORMAT.test(state) ? state : null;
+  const cookie = validState === null ? null : auth0StateCookie(validState, env);
+  const clearStateCookie = cookie
+    ? { clearStateCookie: await cookie.serialize("", { maxAge: 0 }) }
+    : {};
+
+  if (url.searchParams.get("error") === "access_denied") {
+    return { outcome: { kind: "cancelled" }, ...clearStateCookie };
+  }
+  if (cookie === null) {
+    return {
+      outcome: {
+        kind: "failed",
+        error: new Error("The callback’s state is missing or malformed"),
+      },
+    };
+  }
+
+  const stored = auth0StateSchema.safeParse(
+    await cookie.parse(request.headers.get("Cookie"))
+  );
+  if (!stored.success || stored.data.state !== validState) {
+    return {
+      outcome: {
+        kind: "failed",
+        error: new Error(
+          "No valid state cookie for the callback’s state (missing, forged or expired)"
+        ),
+      },
+      ...clearStateCookie,
+    };
+  }
+
+  // The token request must send the redirect_uri the authorize request
+  // sent, whatever host the callback arrived on (127.0.0.1 vs localhost,
+  // a proxy): openid-client sends this URL without its query.
+  const currentUrl = callbackUrl(env);
+  currentUrl.search = url.search;
   try {
-    return await Promise.race([promise, timeout]);
-  } finally {
-    clearTimeout(timer);
+    const tokens = await authorizationCodeGrant(
+      getAuth0Config(env),
+      currentUrl,
+      {
+        pkceCodeVerifier: stored.data.codeVerifier,
+        expectedState: stored.data.state,
+      }
+    );
+    return {
+      outcome: { kind: "signed-in", tokens: sessionTokensFrom(tokens) },
+      ...clearStateCookie,
+    };
+  } catch (error) {
+    return { outcome: { kind: "failed", error }, ...clearStateCookie };
   }
 }
 
 /**
- * Finish the Auth0 round trip on /auth/callback: check the state, exchange
- * the code (bounded by AUTH0_TIMEOUT_MS) and return the session's tokens.
- * Throws when sign-in didn't complete.
- */
-export function completeAuth0Login(
-  request: Request,
-  env: AuthEnv
-): Promise<SessionTokens> {
-  return withinAuth0Timeout(
-    getOrCreateAuthenticator(env).authenticate("auth0", request),
-    "code exchange"
-  );
-}
-
-/**
- * Best effort on logout: revoke the refresh token at Auth0, so a copied
- * session cookie can't be renewed. A failure is logged, never shown: the
- * cookie is deleted either way.
+ * Best effort on logout: revoke the refresh token at Auth0 (bounded by
+ * AUTH0_TIMEOUT_MS), so a copied session cookie can't be renewed. A
+ * failure is logged, never shown: the cookie is deleted either way.
  */
 export async function revokeRefreshToken(
   refreshToken: string,
   env: AuthEnv
 ): Promise<void> {
   try {
-    await withinAuth0Timeout(
-      getAuth0Strategy(env).revokeToken(refreshToken),
-      "token revocation"
-    );
+    await tokenRevocation(getAuth0Config(env), refreshToken, {
+      token_type_hint: "refresh_token",
+    });
   } catch (error) {
     console.error("Couldn’t revoke the refresh token at logout:", error);
   }
@@ -198,24 +309,33 @@ type RefreshOutcome =
   /** Auth0 didn't answer usefully (network, 5xx, timeout): try next time. */
   | { readonly kind: "unavailable" };
 
+/** A 4xx that refuses the request itself: not a timeout or a rate limit. */
+function isRefusalStatus(status: number): boolean {
+  return status >= 400 && status < 500 && status !== 408 && status !== 429;
+}
+
 /**
- * Whether Auth0 refused the refresh token itself. arctic reads an OAuth
- * error body only from a 400 or 401; Auth0 answers `invalid_grant` with a
- * 403, which arctic reports by status alone. Any client error but a timeout
- * or rate limit is a refusal; a 5xx, a network failure or a hang is not.
+ * Whether Auth0 refused the refresh token itself: any client error but a
+ * timeout or rate limit, whatever the body (Auth0 answers `invalid_grant`
+ * with a 403). openid-client reports an OAuth error body or a
+ * `WWW-Authenticate` challenge with its status, and an empty, HTML or
+ * error-less body as a `ClientError` whose cause is the response. A 5xx, a
+ * network failure or a timeout is not a refusal.
  */
 function isRefusal(error: unknown): boolean {
-  if (error instanceof OAuth2RequestError) return true;
   if (
-    error instanceof UnexpectedResponseError ||
-    error instanceof UnexpectedErrorResponseBodyError
+    error instanceof ResponseBodyError ||
+    error instanceof WWWAuthenticateChallengeError
   ) {
-    return (
-      error.status >= 400 &&
-      error.status < 500 &&
-      error.status !== 408 &&
-      error.status !== 429
-    );
+    return isRefusalStatus(error.status);
+  }
+  if (
+    error instanceof ClientError &&
+    (error.code === "OAUTH_RESPONSE_IS_NOT_JSON" ||
+      error.code === "OAUTH_RESPONSE_IS_NOT_CONFORM") &&
+    error.cause instanceof Response
+  ) {
+    return isRefusalStatus(error.cause.status);
   }
   return false;
 }
@@ -225,10 +345,7 @@ async function refreshTokens(
   env: AuthEnv
 ): Promise<RefreshOutcome> {
   try {
-    const tokens = await withinAuth0Timeout(
-      getAuth0Strategy(env).refreshToken(refreshToken),
-      "token refresh"
-    );
+    const tokens = await refreshTokenGrant(getAuth0Config(env), refreshToken);
     return {
       kind: "refreshed",
       tokens: sessionTokensFrom(tokens, refreshToken),

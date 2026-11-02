@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useRef, type RefObject } from "react";
 import { useBrowserLayoutEffect } from "./useBrowserLayoutEffect";
 
 /** The page can't scroll behind an open modal (DESIGN §6.21). */
@@ -87,7 +87,11 @@ export function useModalDialog({
     };
   });
 
-  useEffect(() => {
+  // A layout effect, so the native dialog opens and closes in the same
+  // commit as its content. When a result closes it and shows an alert in
+  // one render, the emptied <dialog> is never left modal (or painted)
+  // beside the alert, and focus is back before the next paint.
+  useBrowserLayoutEffect(() => {
     const element = dialogRef.current;
     if (!open || !element) return;
     const opener =
