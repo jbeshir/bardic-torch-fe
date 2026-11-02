@@ -64,34 +64,75 @@ function setThemeAttribute(theme: string | null) {
 }
 
 /**
- * Waits until no finite CSS transition or animation is running in the
- * page. A checkpoint changes styles just before axe: the theme switch
- * (every `transition-colors` element, such as a linked card, eases from
- * the old theme's colours to the new one's), a resize, focus or hover set
- * by `atEachViewport`, the pointer moved away, or forced colours turned
+ * How long `stylesSettled` waits. The longest finite animation is the 600 ms
+ * flicker (`--bt-dur-flicker`); this leaves room for a loaded runner's slow
+ * frames and still fails within seconds when something never finishes.
+ */
+const SETTLE_TIMEOUT_MS = 10_000;
+
+/**
+ * Runs in the page: the finite CSS transitions and animations still running
+ * on rendered elements, each described for the failure message. An
+ * animation whose target is not rendered (`checkVisibility()` false: under
+ * `display: none`, or skipped content such as a closed <details>, which
+ * Chromium keeps as `content-visibility: hidden`) is left out: Chromium
+ * doesn't render it, and axe treats such elements as hidden, so it can't
+ * change what axe measures. One can start there when axe's
+ * `getComputedStyle` forces the skipped styles of a closed account panel
+ * after a theme or forced-colours change, and it never finished: a trace
+ * of forced-colours/error-heading-focus waited 240 s on one with no frame
+ * painted.
+ */
+function unfinishedAnimations(): string[] {
+  return document.getAnimations().flatMap(animation => {
+    const { effect, playState } = animation;
+    const end = Number(effect?.getComputedTiming().endTime);
+    if (playState !== "running" || !Number.isFinite(end)) return [];
+    const target = effect instanceof KeyframeEffect ? effect.target : null;
+    if (target && !target.checkVisibility()) return [];
+    const what =
+      animation instanceof CSSTransition
+        ? `transition ${animation.transitionProperty}`
+        : animation instanceof CSSAnimation
+          ? `animation ${animation.animationName}`
+          : `animation ${animation.id || "(script)"}`;
+    const where = target
+      ? [
+          target.tagName.toLowerCase(),
+          target.id ? `#${target.id}` : "",
+          ...[...target.classList].map(name => `.${name}`),
+          effect instanceof KeyframeEffect ? (effect.pseudoElement ?? "") : "",
+        ].join("")
+      : "no target";
+    return [
+      `${what} on ${where}: ${Math.round(Number(animation.currentTime))} of ${end} ms`,
+    ];
+  });
+}
+
+/**
+ * Waits until no finite CSS transition or animation is running on a
+ * rendered element. A checkpoint changes styles just before axe: the theme
+ * switch (every `transition-colors` element, such as a linked card, eases
+ * from the old theme's colours to the new one's), a resize, focus or hover
+ * set by `atEachViewport`, the pointer moved away, or forced colours turned
  * off. Axe reads computed colours, so mid-transition it would measure a
  * blend that is never at rest on the page. Infinite ones (spinners,
  * skeleton shimmer) never finish and don't change colour pairs, so they
- * are left running. `getAnimations()` flushes pending style changes, so a
- * transition the last change starts is already listed; one that a
- * finishing animation starts is caught by the next pass.
+ * are left running. `getAnimations()` flushes pending style changes, so
+ * each poll lists the transitions the last change started, and those a
+ * finishing animation started. Past `SETTLE_TIMEOUT_MS` it fails, listing
+ * what is still running.
  */
 async function stylesSettled(page: Page): Promise<void> {
-  await page.evaluate(async () => {
-    const running = () =>
-      document
-        .getAnimations()
-        .filter(
-          animation =>
-            animation.playState === "running" &&
-            Number.isFinite(
-              Number(animation.effect?.getComputedTiming().endTime)
-            )
-        );
-    for (let now = running(); now.length > 0; now = running()) {
-      await Promise.allSettled(now.map(({ finished }) => finished));
-    }
-  });
+  await expect
+    .poll(() => page.evaluate(unfinishedAnimations), {
+      message: "CSS transitions and animations still running before axe",
+      // The durations are 80–600 ms, so the poll stays close behind them.
+      intervals: [50, 100, 250],
+      timeout: SETTLE_TIMEOUT_MS,
+    })
+    .toEqual([]);
 }
 
 async function expectNoAxeViolations(

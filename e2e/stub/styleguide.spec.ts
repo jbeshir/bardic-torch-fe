@@ -155,6 +155,11 @@ const BLOCK_STATES: Partial<
     ).toBe(true);
   },
   toast: async page => {
+    // The page clock (installed before the page opened) holds from here
+    // until focus is in the stack: on a loaded runner the three trips and
+    // checks below can take longer than the success toast's 6 s of page
+    // time, and it would leave before its dismiss button is focused.
+    await page.clock.pauseAt(CLOCK_START + CLOCK_PAUSE_OFFSET_MS);
     for (const name of [
       "Show a success toast",
       "Show an info toast",
@@ -172,18 +177,21 @@ const BLOCK_STATES: Partial<
       "Copied the token to the clipboard."
     );
     await expect(region.getByRole("alert")).toContainText("offline");
-    // Focus in the stack holds every toast (Toast.tsx) through the capture,
-    // without holding the page clock (axe runs on timers), and shows the
-    // dismiss button's ring.
+    // Focus in the stack holds every toast (Toast.tsx) through the capture
+    // and shows the dismiss button's ring, so the page clock runs again for
+    // axe, which runs on timers.
     await showFocusRing(
       page,
       region.getByRole("button", { name: "Dismiss notification" }).first()
     );
+    await page.clock.resume();
   },
 };
 
 for (const id of STYLEGUIDE_BLOCKS) {
   test(`checkpoint: ${id}`, async ({ page }) => {
+    // The toast state holds the page clock while it raises its toasts.
+    if (id === "toast") await page.clock.install({ time: CLOCK_START });
     await openStyleguide(page);
     const state = BLOCK_STATES[id];
     if (state) {
