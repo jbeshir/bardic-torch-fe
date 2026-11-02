@@ -8,7 +8,7 @@ import { test } from "../support/test";
 /**
  * Forced colours (Windows High Contrast) replace every colour, transparent
  * included, with the system palette. The three places that hide the
- * browser's focus outline (`focus-visible:outline-none`) rely on that: the
+ * browser's focus outline (`focus-visible:outline-hidden`) rely on that: the
  * main content (focused after a client navigation), an error page's heading
  * (focused when it renders) and a card's link (whose ring is drawn on its
  * ::after). Each is focused from the keyboard here, its outline must still

@@ -3,7 +3,8 @@
  * holds colour values. `npm run gen:tokens` (scripts/build-tokens.mjs) turns
  * this module into app/styles/tokens.css, public/favicon.svg,
  * public/site.webmanifest and app/styles/theme-colour.gen.ts, and
- * tailwind.config.ts maps every group onto Tailwind's theme. Keep this file
+ * build-tokens writes the `@theme` that maps every group onto Tailwind's
+ * theme (scripts/tailwind-theme.mjs). Keep this file
  * free of imports so every one of those consumers can load it directly.
  */
 

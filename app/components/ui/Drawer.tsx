@@ -84,7 +84,7 @@ export function Drawer({
       aria-labelledby={titleId}
       className={
         // Below md: a bottom sheet. From md: the left edge, full height.
-        "bottom-0 left-0 right-0 top-auto m-0 max-h-sheet w-full max-w-none flex-col overflow-hidden rounded-t-xl border-t border-border bg-surface-raised p-0 pb-safe-b text-fg shadow-3 backdrop:bg-scrim/scrim open:flex " +
+        "bottom-0 left-0 right-0 top-auto m-0 max-h-sheet w-full max-w-none flex-col overflow-hidden rounded-t-xl border-t border-border bg-surface-raised p-0 pb-safe-b text-fg shadow-3 backdrop:bg-scrim-scrim open:flex " +
         "md:right-auto md:top-0 md:h-dvh md:max-h-dvh md:w-drawer md:rounded-none md:rounded-r-xl md:border-r md:border-t-0 md:pb-0 " +
         "motion-safe:animate-sheet-in motion-reduce:animate-fade-in motion-safe:backdrop:animate-fade-in md:motion-safe:animate-drawer-in"
       }
@@ -113,7 +113,7 @@ export function Drawer({
           >
             {children}
           </div>
-          <div className="shrink-0 space-y-3 border-t border-border px-4 py-3">
+          <div className="shrink-0 stack-y-3 border-t border-border px-4 py-3">
             {footer}
             <Button variant="secondary" fullWidth onClick={onClose}>
               {closeLabel}

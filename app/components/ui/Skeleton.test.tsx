@@ -47,7 +47,7 @@ describe("Skeleton", () => {
       "hidden",
       "motion-safe:block",
       "motion-safe:animate-shimmer",
-      "via-surface-raised/shimmer"
+      "bg-shimmer"
     );
   });
 

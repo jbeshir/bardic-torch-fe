@@ -272,7 +272,7 @@ async function fontsLoaded(page: Page): Promise<void> {
 async function renderedCanvas(page: Page): Promise<string> {
   return page.evaluate(() =>
     getComputedStyle(document.documentElement)
-      .getPropertyValue("--canvas")
+      .getPropertyValue("--bt-canvas")
       .trim()
   );
 }

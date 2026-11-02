@@ -344,7 +344,7 @@ describe("Dialog", () => {
       "rounded-xl",
       "shadow-3",
       "border-border",
-      "backdrop:bg-scrim/scrim",
+      "backdrop:bg-scrim-scrim",
       "motion-safe:animate-dialog-in",
       "motion-reduce:animate-fade-in"
     );

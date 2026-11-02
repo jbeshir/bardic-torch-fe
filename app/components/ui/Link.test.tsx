@@ -107,10 +107,10 @@ describe("Link", () => {
   });
 
   it.each([
-    ["prose", ["underline", "decoration-link/40", "visited:text-link-visited"]],
+    ["prose", ["underline", "decoration-link-40", "visited:text-link-visited"]],
     ["standalone", ["text-link", "no-underline", "hover:underline"]],
     ["plain", ["text-link", "no-underline", "hover:underline"]],
-    ["muted", ["text-fg-muted", "underline", "decoration-fg-subtle/50"]],
+    ["muted", ["text-fg-muted", "underline", "decoration-fg-subtle-50"]],
     ["inherit", ["text-inherit", "underline"]],
   ] as const)(
     "styles the %s appearance from tokens",

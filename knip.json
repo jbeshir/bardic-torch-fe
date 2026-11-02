@@ -12,7 +12,6 @@
     // imports (the Markdown pipeline, ENV_NAMES, the tokens) is production.
     "vite.config.ts!",
     "react-router.config.ts!",
-    "tailwind.config.ts!",
     // The dev:fixtures and e2e fixture API server.
     "test/fixture-api/server.ts",
     // What vitest.config.ts resolves virtual:react-router/server-build to.
@@ -25,12 +24,10 @@
     "!test/**!",
     "!e2e/**!"
   ],
-  // These plugins would treat vite.config.ts and tailwind.config.ts as
-  // development-only config files, and drop the production entries above.
-  // React Router's plugin finds the routes from its own config only (its
-  // default includes Vite's).
+  // Vite's plugin would treat vite.config.ts as a development-only config
+  // file, and drop the production entry above. React Router's plugin finds
+  // the routes from its own config only (its default includes Vite's).
   "vite": false,
-  "tailwind": false,
   "react-router": { "config": ["react-router.config.ts"] },
   "rules": {
     "files": "error",

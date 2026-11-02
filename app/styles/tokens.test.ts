@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  tailwindNamespaces,
+  writtenNamespaces,
+} from "../../scripts/tailwind-theme.mjs";
+import {
   channelString,
   COLOURS,
   resolveColour,
@@ -113,12 +117,12 @@ describe("generated tokens.css", () => {
       const value = COLOURS[theme][name];
       const expected =
         typeof value === "string"
-          ? `--${name}: ${channelString(value)};`
-          : `--${name}: var(--${value.alias});`;
+          ? `--bt-${name}: ${channelString(value)};`
+          : `--bt-${name}: var(--bt-${value.alias});`;
       expect(declarations, name).toContain(expected);
     }
     for (const [name, value] of Object.entries(THEME_EFFECTS[theme])) {
-      expect(declarations, name).toContain(`--${name}: ${value};`);
+      expect(declarations, name).toContain(`--bt-${name}: ${value};`);
     }
   });
 
@@ -131,5 +135,20 @@ describe("generated tokens.css", () => {
   it("lets a [data-theme] wrapper on any element force its theme", () => {
     expect(css).toContain(':root,\n[data-theme="light"] {');
     expect(css).toContain(':root[data-theme="dark"],\n[data-theme="dark"] {');
+  });
+});
+
+describe("the Tailwind theme in tokens.css", () => {
+  it("writes every namespace of Tailwind's own theme, and clears only those FE1 had no keys for", async () => {
+    const written = writtenNamespaces();
+    for (const namespace of await tailwindNamespaces()) {
+      expect(written, namespace).toHaveProperty(namespace);
+    }
+    expect(
+      Object.entries(written)
+        .filter(([, keys]) => keys === 0)
+        .map(([namespace]) => namespace)
+        .sort()
+    ).toEqual(["drop-shadow", "inset-shadow", "perspective", "text-shadow"]);
   });
 });

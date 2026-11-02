@@ -47,7 +47,7 @@ export function Skeleton({
 function Block({ className }: { readonly className: string }) {
   return (
     <span className={`relative overflow-hidden bg-surface-sunken ${className}`}>
-      <span className="absolute inset-0 hidden bg-gradient-to-r from-transparent via-surface-raised/shimmer to-transparent motion-safe:block motion-safe:animate-shimmer" />
+      <span className="absolute inset-0 hidden bg-shimmer motion-safe:block motion-safe:animate-shimmer" />
     </span>
   );
 }

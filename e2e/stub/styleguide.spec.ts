@@ -260,7 +260,7 @@ test("the preview forces a theme on its panel, whatever the device prefers", asy
   await expect(light).toBeVisible();
   expect(
     await light.evaluate(element =>
-      getComputedStyle(element).getPropertyValue("--canvas").trim()
+      getComputedStyle(element).getPropertyValue("--bt-canvas").trim()
     )
   ).toBe(channelString(resolveColour("light", "canvas")));
 
@@ -274,7 +274,7 @@ test("the preview forces a theme on its panel, whatever the device prefers", asy
   await expect(dark).toBeVisible();
   expect(
     await dark.evaluate(element =>
-      getComputedStyle(element).getPropertyValue("--canvas").trim()
+      getComputedStyle(element).getPropertyValue("--bt-canvas").trim()
     )
   ).toBe(channelString(resolveColour("dark", "canvas")));
 

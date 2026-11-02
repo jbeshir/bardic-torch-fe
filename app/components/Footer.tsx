@@ -10,7 +10,7 @@ import { LogoMark } from "./LogoMark";
 export function Footer() {
   return (
     <footer className="border-t border-border bg-canvas py-10 text-body-sm text-fg-muted">
-      <div className="space-y-3 px-4 md:px-6 lg:px-0">
+      <div className="stack-y-3 px-4 md:px-6 lg:px-0">
         <p className="flex items-center gap-2">
           <LogoMark className="h-5 w-5 text-fg" />
           Bardic Torch: an index of bardic pieces, kept by the community.

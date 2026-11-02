@@ -34,7 +34,7 @@ const AUTO_DISMISS_MS = 6000;
 const BELOW_SM = "(max-width: 639px)";
 
 /**
- * Below sm, while toasts are shown, `--toast-stack-h` holds the stack's
+ * Below sm, while toasts are shown, `--bt-toast-stack-h` holds the stack's
  * height, which base.css adds to `scroll-padding-top`: a control that
  * gets focus is scrolled clear of the toasts as well as the header (WCAG
  * 2.4.11), since a danger toast stays until it is dismissed.
@@ -51,9 +51,12 @@ function useToastScrollPadding(region: RefObject<HTMLElement | null>) {
       const shown = element.querySelector(":scope > * > *") !== null;
       const height = element.getBoundingClientRect().height;
       if (narrow.matches && shown) {
-        root.style.setProperty("--toast-stack-h", `${Math.ceil(height) + 8}px`);
+        root.style.setProperty(
+          "--bt-toast-stack-h",
+          `${Math.ceil(height) + 8}px`
+        );
       } else {
-        root.style.removeProperty("--toast-stack-h");
+        root.style.removeProperty("--bt-toast-stack-h");
       }
     };
     const observer = new ResizeObserver(update);
@@ -63,7 +66,7 @@ function useToastScrollPadding(region: RefObject<HTMLElement | null>) {
     return () => {
       observer.disconnect();
       narrow.removeEventListener("change", update);
-      root.style.removeProperty("--toast-stack-h");
+      root.style.removeProperty("--bt-toast-stack-h");
     };
   }, [region]);
 }

@@ -26,7 +26,6 @@ const sourceFiles = [
   ...filesUnder("workers"),
   ...filesUnder("scripts"),
   "vite.config.ts",
-  "tailwind.config.ts",
 ].filter(
   path => /\.(tsx?|mjs)$/.test(path) && !path.endsWith(".d.ts") && !isTest(path)
 );

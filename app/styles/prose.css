@@ -16,7 +16,7 @@
     @apply text-h2;
     margin-block: 2em 0.5em;
     padding-bottom: 0.25em;
-    border-bottom: 1px solid rgb(var(--border));
+    border-bottom: 1px solid rgb(var(--bt-border));
   }
 
   .prose-bt :where(h3):not(:where(.not-prose, .not-prose *)) {
@@ -30,11 +30,11 @@
   }
 
   .prose-bt :where(a):not(:where(.not-prose, .not-prose *)) {
-    @apply text-link underline decoration-link/40 decoration-1 underline-offset-prose;
+    @apply text-link underline decoration-link-40 decoration-1 underline-offset-prose;
   }
 
   .prose-bt :where(a:visited):not(:where(.not-prose, .not-prose *)) {
-    @apply text-link-visited decoration-link-visited/40;
+    @apply text-link-visited decoration-link-visited-40;
   }
 
   .prose-bt :where(a:hover, a:active):not(:where(.not-prose, .not-prose *)) {
@@ -62,11 +62,11 @@
   }
 
   .prose-bt :where(ul > li):not(:where(.not-prose, .not-prose *))::marker {
-    color: rgb(var(--fg-subtle));
+    color: rgb(var(--bt-fg-subtle));
   }
 
   .prose-bt :where(ol > li):not(:where(.not-prose, .not-prose *))::marker {
-    color: rgb(var(--fg-muted));
+    color: rgb(var(--bt-fg-muted));
   }
 
   .prose-bt :where(li + li):not(:where(.not-prose, .not-prose *)) {
@@ -75,7 +75,7 @@
 
   .prose-bt :where(blockquote):not(:where(.not-prose, .not-prose *)) {
     @apply text-fg-muted;
-    border-left: 3px solid rgb(var(--border-strong));
+    border-left: 3px solid rgb(var(--bt-border-strong));
     padding: 0.25em 0 0.25em 1em;
     font-style: normal;
   }
@@ -106,13 +106,13 @@
 
   .prose-bt :where(th, td):not(:where(.not-prose, .not-prose *)) {
     padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid rgb(var(--border));
+    border-bottom: 1px solid rgb(var(--bt-border));
     vertical-align: top;
   }
 
   /* A table row is a link target too (a help page's status table). */
   .prose-bt :where(tr[id]):not(:where(.not-prose, .not-prose *)) {
-    scroll-margin-top: calc(var(--header-h) + 0.5rem);
+    scroll-margin-top: calc(var(--bt-header-h) + 0.5rem);
   }
 
   .prose-bt :where(dl):not(:where(.not-prose, .not-prose *)) {
@@ -150,7 +150,7 @@
     position: relative;
     margin: 2em auto;
     border: 0;
-    border-top: 1px solid rgb(var(--border));
+    border-top: 1px solid rgb(var(--bt-border));
     overflow: visible;
   }
 
@@ -162,7 +162,7 @@
     left: 50%;
     width: 0.5rem;
     height: 0.5rem;
-    background-color: rgb(var(--border-strong));
+    background-color: rgb(var(--bt-border-strong));
     transform: translateX(-50%) rotate(45deg);
   }
 

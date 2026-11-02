@@ -57,7 +57,7 @@ describe("SearchBox", () => {
 
   it("washes the submit on hover with a see-through tint, visible on either theme's field", async () => {
     await renderWithRouter(<SearchBox size="lg" />);
-    expect(screen.getByRole("button")).toHaveClass("hover:bg-fg/10");
+    expect(screen.getByRole("button")).toHaveClass("hover:bg-fg-10");
     expect(screen.getByRole("button")).not.toHaveClass(
       "hover:bg-surface-sunken"
     );

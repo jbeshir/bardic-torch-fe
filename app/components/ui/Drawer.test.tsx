@@ -222,7 +222,7 @@ describe("Drawer", () => {
       "md:h-dvh",
       "md:w-drawer",
       "md:rounded-r-xl",
-      "backdrop:bg-scrim/scrim",
+      "backdrop:bg-scrim-scrim",
       "motion-safe:animate-sheet-in",
       "md:motion-safe:animate-drawer-in",
       "motion-reduce:animate-fade-in"

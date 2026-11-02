@@ -16,8 +16,6 @@ import { filesUnder } from "./support/files";
 const CODE_EXTENSIONS = new Set([".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx"]);
 const ROOT_FILES = [
   "eslint.config.ts",
-  "postcss.config.js",
-  "tailwind.config.ts",
   "vite.config.ts",
   "vitest.config.ts",
   "react-router.config.ts",
@@ -41,7 +39,7 @@ describe("lint coverage", () => {
         "workers/app.ts",
         "worker-configuration.d.ts",
         "eslint.config.ts",
-        "postcss.config.js",
+        "vite.config.ts",
         "app/root.tsx",
       ])
     );

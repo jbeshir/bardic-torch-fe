@@ -60,8 +60,6 @@ const SCANNED_FILES = [
   ".prettierignore",
   ".gitignore",
   ".dev.vars.example",
-  "postcss.config.js",
-  "tailwind.config.ts",
   "vite.config.ts",
   "vitest.config.ts",
   "react-router.config.ts",

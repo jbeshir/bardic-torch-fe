@@ -15,7 +15,7 @@ const GroupInvalidContext = createContext(false);
 GroupInvalidContext.displayName = "GroupInvalidContext";
 
 const MARK =
-  "pointer-events-none absolute inset-0 m-auto hidden text-accent-fg peer-disabled:text-fg-subtle forced-colors:!hidden";
+  "pointer-events-none absolute inset-0 m-auto hidden text-accent-fg peer-disabled:text-fg-subtle forced-colors:hidden!";
 
 /**
  * A native checkbox drawn from tokens (DESIGN §6.8). The whole row is the

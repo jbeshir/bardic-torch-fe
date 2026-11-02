@@ -70,7 +70,7 @@ export function Dialog({
       ref={dialog}
       aria-labelledby={titleId}
       aria-describedby={description ? descriptionId : undefined}
-      className="m-auto w-dialog max-w-none rounded-xl border border-border bg-surface-raised p-0 text-fg shadow-3 backdrop:bg-scrim/scrim motion-safe:animate-dialog-in motion-reduce:animate-fade-in motion-safe:backdrop:animate-fade-in"
+      className="m-auto w-dialog max-w-none rounded-xl border border-border bg-surface-raised p-0 text-fg shadow-3 backdrop:bg-scrim-scrim motion-safe:animate-dialog-in motion-reduce:animate-fade-in motion-safe:backdrop:animate-fade-in"
     >
       {open ? (
         <div className="p-6">

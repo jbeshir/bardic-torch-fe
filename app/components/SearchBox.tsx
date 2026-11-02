@@ -74,7 +74,7 @@ export function SearchBox({
             fill in both themes (surface-sunken would vanish on dark's well). */}
         <button
           type="submit"
-          className={`${button} absolute top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-fg/10 hover:text-fg`}
+          className={`${button} absolute top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-fg-10 hover:text-fg`}
         >
           <IconArrowUpRight size={18} stroke={1.75} aria-hidden="true" />
           <span className="sr-only">

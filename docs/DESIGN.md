@@ -43,15 +43,15 @@ A component tagged FE1 can still have individual states or variants tagged SG or
   - `public/site.webmanifest` (`theme_color` and `background_color` = `canvas`);
   - `app/styles/theme-colour.gen.ts`: the `<meta name="theme-color">` values, which `root.tsx` imports.
 - Every generated file starts with an `@generated` header naming the generator. `npm run check:tokens` (part of `validate`) fails if any generated file differs from what the generator would write now.
-- Colour tokens are CSS custom properties holding **space-separated RGB channels** (for example, `--fg: 43 33 24`). Tailwind consumes them as `rgb(var(--fg) / <alpha-value>)`, so alpha modifiers work.
+- Colour tokens are CSS custom properties holding **space-separated RGB channels** (for example, `--bt-fg: 43 33 24`). The generated Tailwind theme reads them as `rgb(var(--bt-fg))`, and a colour at an alpha is a named utility that writes `rgb(var(--bt-fg) / 0.1)` (Appendix A). The variables carry a `--bt-` prefix so they don't clash with Tailwind's own theme variables (`--color-*`, `--text-*`, `--shadow-*`).
 - `tokens.css` has three colour blocks, all generated from the same two maps:
   - `:root, [data-theme="light"]` holds the light values and `color-scheme: light`.
   - `:root[data-theme="dark"], [data-theme="dark"]` holds the dark values and `color-scheme: dark`.
   - `@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { … } }` holds the dark values and `color-scheme: dark`.
   - Because the blocks also match `[data-theme]` on any element, a wrapper can force a theme for its subtree (the styleguide previews do this). A `[data-theme="light"]` wrapper under an OS-dark page resolves to the light tokens, because the wrapper declares them itself.
 - Components use semantic classes only, for example `bg-surface`, `text-fg-muted`, `border-border-strong`, `text-link` and `bg-accent`.
-- **Tailwind's palette doesn't exist here.** `tailwind.config.ts` _replaces_ `theme.colors` (it doesn't extend it) with `{ transparent, current: "currentColor", inherit: "inherit", …tokens }`. So `bg-amber-600` and `text-white` don't compile to anything.
-- **No arbitrary values** (`bg-[#fff]`, `text-[0.875em]`, `w-[min(…)]`). Every value a component needs is a named config value (Appendix A). If one is missing, add it to the config and to this document.
+- **Tailwind's palette doesn't exist here.** The generated `@theme` starts with `--*: initial`, which clears every Tailwind default, and then defines `transparent`, `current`, `inherit` and the tokens as colours. So `bg-amber-600` and `text-white` don't compile to anything.
+- **No arbitrary values** (`bg-[#fff]`, `text-[0.875em]`, `w-[min(…)]`). Every value a component needs is a named theme value or utility (Appendix A). If one is missing, add it to `app/styles/tokens.ts` or `scripts/tailwind-theme.mjs` and to this document.
 - `test/no-raw-colours.test.ts` scans `app/`, `public/`, `e2e/` and the config files. It fails on hex, `rgb()`/`hsl()` (and similar) literals, CSS named colours, Tailwind palette classes and arbitrary values. Only `app/styles/tokens.ts` and the generated files may contain colour literals, and the test checks that each generated file is exactly the generator's output.
 - **`dark:` is never used.** Tailwind's `dark:` variant would follow the OS setting and ignore the user's explicit choice. Every difference between the themes, including shadows, is a token. The scan test also rejects `dark:` classes.
 
@@ -71,33 +71,33 @@ A component tagged FE1 can still have individual states or variants tagged SG or
 
 ### 2.3 Core tokens
 
-| Token (CSS var / Tailwind)                 | Light              | Dark               | Use                                                                                                                                                                                                                                                                    |
-| ------------------------------------------ | ------------------ | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--canvas` / `bg-canvas`                   | `#F7F2E8`          | `#16120E`          | Page background behind everything. Header and sidebar sit on canvas.                                                                                                                                                                                                   |
-| `--surface` / `bg-surface`                 | `#FFFCF6`          | `#1D1814`          | Main content sheet (article column), cards.                                                                                                                                                                                                                            |
-| `--surface-raised` / `bg-surface-raised`   | `#FFFFFF`          | `#27211B`          | Infobox, inputs, dialogs, drawer, menus, toasts.                                                                                                                                                                                                                       |
-| `--surface-sunken` / `bg-surface-sunken`   | `#EFE7D8`          | `#110E0B`          | Chips, code, table header rows, skeletons, segmented-control track.                                                                                                                                                                                                    |
-| `--border` / `border-border`               | `#E0D5C2`          | `#3A3129`          | Decorative hairlines: rules, card edges, dividers. **Not** for control boundaries.                                                                                                                                                                                     |
-| `--border-strong` / `border-border-strong` | `#8A7A64`          | `#7D6E5C`          | Boundaries of interactive controls (inputs, checkboxes, secondary buttons): ≥3:1.                                                                                                                                                                                      |
-| `--fg` / `text-fg`                         | `#2B2118`          | `#E4D9C6`          | Body text, headings.                                                                                                                                                                                                                                                   |
-| `--fg-muted` / `text-fg-muted`             | `#55483A`          | `#C7BAA7`          | Secondary text, labels, inactive tabs, infobox labels.                                                                                                                                                                                                                 |
-| `--fg-subtle` / `text-fg-subtle`           | `#6E6152`          | `#A69885`          | Meta text, captions, placeholders, external-link icons. Still ≥4.5:1 on every surface.                                                                                                                                                                                 |
-| `--link` / `text-link`                     | `#1F4F8F`          | `#93B8EE`          | Unvisited links (lapis).                                                                                                                                                                                                                                               |
-| `--link-visited` / `text-link-visited`     | `#6A3B80`          | `#C9A6E0`          | Visited links in prose only (murrey/purple).                                                                                                                                                                                                                           |
-| `--link-hover` / `text-link-hover`         | `#153A6D`          | `#BBD3F6`          | Hover and active link colour (together with the underline change).                                                                                                                                                                                                     |
-| `--accent` / `bg-accent`                   | `#A8470C`          | `#E9A440`          | Torch amber: primary button fill, current-tab bar, current-nav inset bar, infobox cap, logo flame outer, progress bar.                                                                                                                                                 |
-| `--accent-hover` / `bg-accent-hover`       | `#8C3B0A`          | `#F4BA62`          | Primary button hover and active.                                                                                                                                                                                                                                       |
-| `--accent-fg` / `text-accent-fg`           | `#FFFCF6`          | `#1F1407`          | Text and icons on `accent` fills.                                                                                                                                                                                                                                      |
-| `--accent-text` / `text-accent-text`       | `#9A410B`          | `#EDB25A`          | Amber used _as text_: wordmark "Torch", current nav item, small highlights.                                                                                                                                                                                            |
-| `--accent-subtle` / `bg-accent-subtle`     | `#FBEBD6`          | `#33240F`          | Tinted backgrounds: current nav item, chip hover, avatar initials.                                                                                                                                                                                                     |
-| `--accent-glow` / `from-accent-glow`       | `#E8A33D`          | `#E9A440`          | **Decorative only.** Source colour of the hero glow. Never used for text or as the only boundary of anything.                                                                                                                                                          |
-| `--hero-glow` / `bg-hero-glow`             | `#FBECD5`          | `#2D2318`          | **Derived**, not hand-picked: `accent-glow` composited over `surface` at 18 % (light) or 8 % (dark), computed in `tokens.ts`. It is the strongest point of the home hero's radial glow, which always sits on `surface`. Text on the hero is checked against it (§2.7). |
-| `--focus` / `outline-focus`                | `#1F5FC4`          | `#8DB6FF`          | Focus ring. Blue, so it is distinct from amber selection and current-state marks.                                                                                                                                                                                      |
-| `--selection` / `bg-selection`             | `#F5D9A6`          | `#5C4322`          | `::selection` background. Text stays `fg`.                                                                                                                                                                                                                             |
-| `--scrim` / `bg-scrim`                     | `#2B2118`          | `#000000`          | Backdrop behind dialogs and the drawer, always used with an alpha (§4.4). The dark value is the only use of black, and it is never a surface.                                                                                                                          |
-| `--input-bg-locked` / `bg-input-bg-locked` | = `surface-sunken` | = `surface`        | Read-only and disabled fields (and the disabled checkbox box). An alias one step away from `input-bg` in each theme, so a locked field never looks like an editable one in dark, where `input-bg` is itself `surface-sunken`.                                          |
-| `--input-bg` / `bg-input-bg`               | = `surface-raised` | = `surface-sunken` | Text-control background at rest. An alias, so inputs sit in a well in dark mode without a `dark:` class.                                                                                                                                                               |
-| `--logo-core` / `fill-logo-core`           | `#E8A33D`          | `#F4BA62`          | **Decorative only.** Inner core of the logo flame (§5.9).                                                                                                                                                                                                              |
+| Token (CSS var / Tailwind)                    | Light              | Dark               | Use                                                                                                                                                                                                                                                                    |
+| --------------------------------------------- | ------------------ | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--bt-canvas` / `bg-canvas`                   | `#F7F2E8`          | `#16120E`          | Page background behind everything. Header and sidebar sit on canvas.                                                                                                                                                                                                   |
+| `--bt-surface` / `bg-surface`                 | `#FFFCF6`          | `#1D1814`          | Main content sheet (article column), cards.                                                                                                                                                                                                                            |
+| `--bt-surface-raised` / `bg-surface-raised`   | `#FFFFFF`          | `#27211B`          | Infobox, inputs, dialogs, drawer, menus, toasts.                                                                                                                                                                                                                       |
+| `--bt-surface-sunken` / `bg-surface-sunken`   | `#EFE7D8`          | `#110E0B`          | Chips, code, table header rows, skeletons, segmented-control track.                                                                                                                                                                                                    |
+| `--bt-border` / `border-border`               | `#E0D5C2`          | `#3A3129`          | Decorative hairlines: rules, card edges, dividers. **Not** for control boundaries.                                                                                                                                                                                     |
+| `--bt-border-strong` / `border-border-strong` | `#8A7A64`          | `#7D6E5C`          | Boundaries of interactive controls (inputs, checkboxes, secondary buttons): ≥3:1.                                                                                                                                                                                      |
+| `--bt-fg` / `text-fg`                         | `#2B2118`          | `#E4D9C6`          | Body text, headings.                                                                                                                                                                                                                                                   |
+| `--bt-fg-muted` / `text-fg-muted`             | `#55483A`          | `#C7BAA7`          | Secondary text, labels, inactive tabs, infobox labels.                                                                                                                                                                                                                 |
+| `--bt-fg-subtle` / `text-fg-subtle`           | `#6E6152`          | `#A69885`          | Meta text, captions, placeholders, external-link icons. Still ≥4.5:1 on every surface.                                                                                                                                                                                 |
+| `--bt-link` / `text-link`                     | `#1F4F8F`          | `#93B8EE`          | Unvisited links (lapis).                                                                                                                                                                                                                                               |
+| `--bt-link-visited` / `text-link-visited`     | `#6A3B80`          | `#C9A6E0`          | Visited links in prose only (murrey/purple).                                                                                                                                                                                                                           |
+| `--bt-link-hover` / `text-link-hover`         | `#153A6D`          | `#BBD3F6`          | Hover and active link colour (together with the underline change).                                                                                                                                                                                                     |
+| `--bt-accent` / `bg-accent`                   | `#A8470C`          | `#E9A440`          | Torch amber: primary button fill, current-tab bar, current-nav inset bar, infobox cap, logo flame outer, progress bar.                                                                                                                                                 |
+| `--bt-accent-hover` / `bg-accent-hover`       | `#8C3B0A`          | `#F4BA62`          | Primary button hover and active.                                                                                                                                                                                                                                       |
+| `--bt-accent-fg` / `text-accent-fg`           | `#FFFCF6`          | `#1F1407`          | Text and icons on `accent` fills.                                                                                                                                                                                                                                      |
+| `--bt-accent-text` / `text-accent-text`       | `#9A410B`          | `#EDB25A`          | Amber used _as text_: wordmark "Torch", current nav item, small highlights.                                                                                                                                                                                            |
+| `--bt-accent-subtle` / `bg-accent-subtle`     | `#FBEBD6`          | `#33240F`          | Tinted backgrounds: current nav item, chip hover, avatar initials.                                                                                                                                                                                                     |
+| `--bt-accent-glow` / `bg-accent-glow`         | `#E8A33D`          | `#E9A440`          | **Decorative only.** Source colour of the hero glow. Never used for text or as the only boundary of anything.                                                                                                                                                          |
+| `--bt-hero-glow` / `bg-hero-glow`             | `#FBECD5`          | `#2D2318`          | **Derived**, not hand-picked: `accent-glow` composited over `surface` at 18 % (light) or 8 % (dark), computed in `tokens.ts`. It is the strongest point of the home hero's radial glow, which always sits on `surface`. Text on the hero is checked against it (§2.7). |
+| `--bt-focus` / `outline-focus`                | `#1F5FC4`          | `#8DB6FF`          | Focus ring. Blue, so it is distinct from amber selection and current-state marks.                                                                                                                                                                                      |
+| `--bt-selection` / `bg-selection`             | `#F5D9A6`          | `#5C4322`          | `::selection` background. Text stays `fg`.                                                                                                                                                                                                                             |
+| `--bt-scrim` / `bg-scrim`                     | `#2B2118`          | `#000000`          | Backdrop behind dialogs and the drawer, always used with an alpha (§4.4). The dark value is the only use of black, and it is never a surface.                                                                                                                          |
+| `--bt-input-bg-locked` / `bg-input-bg-locked` | = `surface-sunken` | = `surface`        | Read-only and disabled fields (and the disabled checkbox box). An alias one step away from `input-bg` in each theme, so a locked field never looks like an editable one in dark, where `input-bg` is itself `surface-sunken`.                                          |
+| `--bt-input-bg` / `bg-input-bg`               | = `surface-raised` | = `surface-sunken` | Text-control background at rest. An alias, so inputs sit in a well in dark mode without a `dark:` class.                                                                                                                                                               |
+| `--bt-logo-core` / `fill-logo-core`           | `#E8A33D`          | `#F4BA62`          | **Decorative only.** Inner core of the logo flame (§5.9).                                                                                                                                                                                                              |
 
 ### 2.4 Status tokens (alerts, banners, inline messages, toasts)
 
@@ -119,11 +119,11 @@ Pending approval uses a wax-seal purple on purpose. It is not a warning: nothing
 
 **Destructive fills** (danger button):
 
-| Token                               | Light     | Dark      |
-| ----------------------------------- | --------- | --------- |
-| `--danger`                          | `#A3123A` | `#F28BA0` |
-| `--danger-hover`                    | `#850E2F` | `#F7A9B9` |
-| `--danger-on` (text on danger fill) | `#FFFFFF` | `#2A0A12` |
+| Token                                  | Light     | Dark      |
+| -------------------------------------- | --------- | --------- |
+| `--bt-danger`                          | `#A3123A` | `#F28BA0` |
+| `--bt-danger-hover`                    | `#850E2F` | `#F7A9B9` |
+| `--bt-danger-on` (text on danger fill) | `#FFFFFF` | `#2A0A12` |
 
 **Danger is crimson, not red-orange.** The amber primary and a red-orange danger had a luminance ratio of about 1.1:1, so the two filled buttons looked the same. Danger therefore sits at a cooler crimson hue: 343° light and 348° dark, against amber's 23° and 36°. `npm run check:contrast` asserts that `accent` and `danger` (and their hover fills) differ by **at least 30° of hue** in both themes; today the gaps are 39° and 48°. Hue alone isn't enough, so a danger button also **always** carries an icon (`IconTrash` or `IconAlertTriangle`) and a verb ("Revoke token"). The danger status family (`danger-bg` … `danger-icon`) uses the same crimson hue, so error text and destructive buttons read as one family.
 
@@ -325,7 +325,7 @@ Tailwind `fontFamily` (replaced, not extended): `display: ['"Fraunces Variable"'
 
 The base is 16 px (1 rem). The scale is about a 1.2 minor third, rounded to 4 px-friendly line heights. Mobile sizes apply below `md` (768 px). Fraunces uses `font-optical-sizing: auto`, so `opsz` follows the size.
 
-**Implementation:** each size is a CSS variable (`--text-h1` and so on) in the generated `tokens.css`. It holds the mobile value, and an `@media (min-width: 768px)` block switches it to the desktop value. Each Tailwind `text-*` class sets the size, line height, letter-spacing and weight together, so `text-h1` is the whole style at every width, with no `md:` prefix. The family is a separate class (`font-display` or `font-sans`). Tailwind's default size scale (`text-sm`, `text-xl` …) is replaced and doesn't exist.
+**Implementation:** each size is a CSS variable (`--bt-text-h1` and so on) in the generated `tokens.css`. It holds the mobile value, and an `@media (min-width: 768px)` block switches it to the desktop value. Each Tailwind `text-*` class sets the size, line height, letter-spacing and weight together, so `text-h1` is the whole style at every width, with no `md:` prefix. The family is a separate class (`font-display` or `font-sans`). Tailwind's default size scale (`text-sm`, `text-xl` …) is replaced and doesn't exist.
 
 | Token (Tailwind `text-*`) | Family  | Size (≥md)         | Size (<md)        | Line height | Weight                 | Letter-spacing                      | Use                                                                          |
 | ------------------------- | ------- | ------------------ | ----------------- | ----------- | ---------------------- | ----------------------------------- | ---------------------------------------------------------------------------- |
@@ -349,16 +349,16 @@ The base is 16 px (1 rem). The scale is about a 1.2 minor third, rounded to 4 px
 ### 3.3 Measure and prose
 
 - Prose container is `.prose-bt`: `max-width: 68ch` (about 700 px at 17 px). Infobox floats sit inside the container, but text beside them never goes below `20ch`. When it would, the infobox stacks instead, via a container query on the main column: `@container (max-width: 36rem)`.
-- **Vertical rhythm:** paragraphs have `margin-block: 0 1em`. Headings have `scroll-margin-top: calc(var(--header-h) + 0.5rem)`, so TOC and anchor jumps don't land under the sticky header (§6.1, WCAG 2.4.11). h2 has `margin-top: 2em; margin-bottom: 0.5em; padding-bottom: 0.25em; border-bottom: 1px solid rgb(var(--border))` (this is the wiki rule, in warm hairline). h3 has `margin-top: 1.5em; margin-bottom: 0.4em`.
-- **Links:** `text-link underline decoration-1 underline-offset-prose decoration-link/40` (`underline-offset-prose` = 0.2em).
+- **Vertical rhythm:** paragraphs have `margin-block: 0 1em`. Headings have `scroll-margin-top: calc(var(--bt-header-h) + 0.5rem)`, so TOC and anchor jumps don't land under the sticky header (§6.1, WCAG 2.4.11). h2 has `margin-top: 2em; margin-bottom: 0.5em; padding-bottom: 0.25em; border-bottom: 1px solid rgb(var(--bt-border))` (this is the wiki rule, in warm hairline). h3 has `margin-top: 1.5em; margin-bottom: 0.4em`.
+- **Links:** `text-link underline decoration-1 underline-offset-prose decoration-link-40` (`underline-offset-prose` = 0.2em).
   - On hover: `text-link-hover decoration-2 decoration-link-hover`.
-  - Visited: `text-link-visited decoration-link-visited/40`.
+  - Visited: `text-link-visited decoration-link-visited-40`.
   - External prose links get a trailing `IconExternalLink` at 0.85em, `text-fg-subtle`, `aria-hidden`, plus visually hidden "(external link)". The icon is wrapped with the last word in `white-space: nowrap` so it never orphans.
 - **Lists:** `padding-left: 1.5em`.
   - `ul` markers are `fg-subtle`. Amber is kept for signals (§1.4), and help pages are mostly lists. `::marker` is the default disc, and nested lists use `circle`.
   - `ol` uses `decimal`, then `lower-alpha` for nested lists, with markers in `fg-muted`.
   - `li + li` has `margin-top: 0.25em`.
-- **Blockquote:** `border-left: 3px solid rgb(var(--border-strong))`, `padding: 0.25em 0 0.25em 1em`, `color: fg-muted`, Fraunces 400 italic is **not** used (no italic face loaded). Use sans 1.0625rem with `font-style: normal`.
+- **Blockquote:** `border-left: 3px solid rgb(var(--bt-border-strong))`, `padding: 0.25em 0 0.25em 1em`, `color: fg-muted`, Fraunces 400 italic is **not** used (no italic face loaded). Use sans 1.0625rem with `font-style: normal`.
   - The attribution sits in a `<footer>` with `caption` styling, prefixed with "— ".
 - The prose styles live in `app/styles/prose.css` as the `.prose-bt` component class. Markdown help content (FE1) is rendered inside it. Every rule is written `:where(…):not(:where(.not-prose, .not-prose *))`: a component placed in prose that draws its own lists, headings or links (CardList) puts `not-prose` on its root, and nothing inside it is restyled.
 - **Tables:**
@@ -381,19 +381,19 @@ The base is 16 px (1 rem). The scale is about a 1.2 minor third, rounded to 4 px
 
 ### 4.1 Spacing
 
-Use the Tailwind default 4 px scale only. **No arbitrary spacing values.** Sizes that aren't on the scale (header height, infobox and drawer widths, the textarea minimum and so on) are named config values, listed in Appendix A. Use these steps: `0.5` = 2 px, `1` = 4 px, `1.5` = 6 px, `2` = 8 px, `3` = 12 px, `4` = 16 px, `5` = 20 px, `6` = 24 px, `8` = 32 px, `10` = 40 px, `12` = 48 px, `16` = 64 px, `20` = 80 px, `24` = 96 px.
+Use the 4 px scale (Tailwind 3's default steps, kept as named keys) only. **No arbitrary spacing values.** Sizes that aren't on the scale (header height, infobox and drawer widths, the textarea minimum and so on) are named theme values or utilities, listed in Appendix A. Use these steps: `0.5` = 2 px, `1` = 4 px, `1.5` = 6 px, `2` = 8 px, `3` = 12 px, `4` = 16 px, `5` = 20 px, `6` = 24 px, `8` = 32 px, `10` = 40 px, `12` = 48 px, `16` = 64 px, `20` = 80 px, `24` = 96 px.
 
-| Semantic use                             | Value                                                    |
-| ---------------------------------------- | -------------------------------------------------------- |
-| Icon–label gap in controls               | 2 (8 px), or 1.5 (6 px) in `sm` controls                 |
-| Control internal padding x               | sm 3 (12 px), md 4 (16 px), lg 5 (20 px)                 |
-| Stack gap between form fields            | 5 (20 px)                                                |
-| Card padding                             | 4 (16 px) mobile, 5 (20 px) ≥md                          |
-| Page gutter (horizontal)                 | 4 (16 px) <md, 6 (24 px) md, 8 (32 px) lg, 10 (40 px) xl |
-| Section gap (between page sections)      | 10 (40 px) <md, 12 (48 px) ≥md                           |
-| Gap between chips                        | 2 (8 px)                                                 |
-| Header height (`--header-h`, `h-header`) | 56 px <md, 64 px ≥md                                     |
-| Bottom app bar (`h-app-bar`)             | 56 px plus `env(safe-area-inset-bottom)`, <md only       |
+| Semantic use                                | Value                                                    |
+| ------------------------------------------- | -------------------------------------------------------- |
+| Icon–label gap in controls                  | 2 (8 px), or 1.5 (6 px) in `sm` controls                 |
+| Control internal padding x                  | sm 3 (12 px), md 4 (16 px), lg 5 (20 px)                 |
+| Stack gap between form fields               | 5 (20 px)                                                |
+| Card padding                                | 4 (16 px) mobile, 5 (20 px) ≥md                          |
+| Page gutter (horizontal)                    | 4 (16 px) <md, 6 (24 px) md, 8 (32 px) lg, 10 (40 px) xl |
+| Section gap (between page sections)         | 10 (40 px) <md, 12 (48 px) ≥md                           |
+| Gap between chips                           | 2 (8 px)                                                 |
+| Header height (`--bt-header-h`, `h-header`) | 56 px <md, 64 px ≥md                                     |
+| Bottom app bar (`h-app-bar`)                | 56 px plus `env(safe-area-inset-bottom)`, <md only       |
 
 ### 4.2 Radii
 
@@ -416,7 +416,7 @@ These replace Tailwind's default radii, so `rounded-2xl` and friends don't exist
 
 ### 4.4 Elevation
 
-Shadows are tokens, defined per theme in `tokens.ts` as `--shadow-1…3` (full `box-shadow` values, not channels) and exposed as `shadow-1`, `shadow-2` and `shadow-3` (plus `shadow-none`). They replace Tailwind's default shadows. The light shadows are tinted warm brown and the dark ones are mostly an inner highlight, so no `dark:` class is ever needed.
+Shadows are tokens, defined per theme in `tokens.ts` as `--bt-shadow-1…3` (full `box-shadow` values, not channels) and exposed as `shadow-1`, `shadow-2` and `shadow-3` (plus `shadow-none`). They replace Tailwind's default shadows. The light shadows are tinted warm brown and the dark ones are mostly an inner highlight, so no `dark:` class is ever needed.
 
 | Level | Used by                            | Light                                                                        | Dark                                                                                      |
 | ----- | ---------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
@@ -425,8 +425,8 @@ Shadows are tokens, defined per theme in `tokens.ts` as `--shadow-1…3` (full `
 | 2     | Menus, popovers, toasts            | `0 4px 8px -2px rgb(60 40 20 / 0.10), 0 2px 4px -2px rgb(60 40 20 / 0.06)`   | `0 4px 12px rgb(0 0 0 / 0.45), inset 0 1px 0 rgb(255 236 210 / 0.05)` on `surface-raised` |
 | 3     | Dialog, drawer                     | `0 16px 32px -8px rgb(60 40 20 / 0.20), 0 4px 8px -4px rgb(60 40 20 / 0.10)` | `0 16px 40px rgb(0 0 0 / 0.6), inset 0 1px 0 rgb(255 236 210 / 0.06)` on `surface-raised` |
 
-- **Scrim** (behind dialogs and the drawer) is `rgb(var(--scrim) / 0.5)` in light and `/ 0.65` in dark. The alpha is the per-theme effect token `--scrim-alpha`, used as `backdrop:bg-scrim/scrim`, so no `dark:` class is needed.
-  - `--scrim` is `#2B2118` in light and `#000000` in dark. The dark value is the only use of black, and it is never a surface.
+- **Scrim** (behind dialogs and the drawer) is `rgb(var(--bt-scrim) / 0.5)` in light and `/ 0.65` in dark. The alpha is the per-theme effect token `--bt-scrim-alpha`, used as `backdrop:bg-scrim-scrim`, so no `dark:` class is needed.
+  - `--bt-scrim` is `#2B2118` in light and `#000000` in dark. The dark value is the only use of black, and it is never a surface.
 - In dark mode, every elevated element MUST also have `border border-border`, because shadows are nearly invisible on charcoal.
 
 ---
@@ -451,7 +451,7 @@ The app shell has `max-width: 90rem` (1440 px) and is centred. The canvas extend
 
 - The header is a `<header>` landmark, `bg-canvas`, with a bottom border `border-border`.
 - It is sticky (`top: 0`), and gets `shadow-1` once the page has scrolled more than 8 px (an IntersectionObserver sentinel). Without JS it simply has no shadow.
-- Height is `--header-h`: 56 px below `md` and 64 px from `md` up, its bottom border included (the `header` element is `h-header`), so the sticky sidebar's `max-height: calc(100dvh - var(--header-h))` adds up to the window exactly and a short page doesn't overflow by 1 px. `html` has `scroll-padding-top: calc(var(--header-h) + 0.5rem)`, so an element that receives focus by Tab or by an anchor jump is never hidden under the sticky header (WCAG 2.4.11).
+- Height is `--bt-header-h`: 56 px below `md` and 64 px from `md` up, its bottom border included (the `header` element is `h-header`), so the sticky sidebar's `max-height: calc(100dvh - var(--bt-header-h))` adds up to the window exactly and a short page doesn't overflow by 1 px. `html` has `scroll-padding-top: calc(var(--bt-header-h) + 0.5rem)`, so an element that receives focus by Tab or by an anchor jump is never hidden under the sticky header (WCAG 2.4.11).
 - The first focusable element is a **skip link**, "Skip to content", which is visually hidden until focused and then appears as a primary `sm` button at top-left. Its padding is applied only on focus (`focus:px-3 focus:py-2`), so the hidden link stays a 1 px box rather than a padded 24 × 16 one.
 
 **Below `md`, the header's controls move to a bottom app bar** (one-handed use). The top header then holds only the logo and wordmark, so nothing in it can overflow at 360 px. An e2e check asserts no horizontal overflow at 360 (and 320) px, signed out and signed in.
@@ -514,9 +514,9 @@ CONTRIBUTE                               ← ContributeCard (see below)
   - Layout: `flex items-center gap-2 min-h-11 (44px) <lg / min-h-8 (32px) ≥lg`, `px-3`, `rounded-md`, `text-fg-muted`. Focus ring inset (`-outline-offset-2`). The tighter ≥lg rhythm (and the note's `p-2.5`) lets Browse, Facets and the whole Help group fit in an 800 px tall window.
   - Hover: `bg-surface-sunken text-fg`.
   - Focus-visible: standard ring.
-  - Current (`aria-current="page"`): `bg-accent-subtle text-accent-text font-semibold`, plus a 3 px `accent` bar on the left inset (`box-shadow: inset 3px 0 0 rgb(var(--accent))`).
+  - Current (`aria-current="page"`): `bg-accent-subtle text-accent-text font-semibold`, plus a 3 px `accent` bar on the left inset (`box-shadow: inset 3px 0 0 rgb(var(--bt-accent))`).
   - On desktop the 32 px height is above the 24 px minimum (WCAG 2.5.8; ≥lg is a pointer layout).
-- **Taller than the window:** the sidebar scrolls on its own. On each page it scrolls itself (never the page) so the current item is in view and clear of the fade, and while anything is below its fold a 24 px `from-canvas` fade sits at its foot (sticky, `aria-hidden`), so the ContributeCard's existence is signalled. The sidebar's end space is padding on an inner wrapper, not on the scroller, so the fade's solid end meets the sidebar's visible foot (a sticky element stops at its scroller's padding edge). The navigation Drawer likewise scrolls its body to the current page's link when it opens.
+- **Taller than the window:** the sidebar scrolls on its own. On each page it scrolls itself (never the page) so the current item is in view and clear of the fade, and while anything is below its fold a 24 px `bg-fade-up` fade sits at its foot (sticky, `aria-hidden`), so the ContributeCard's existence is signalled. The sidebar's end space is padding on an inner wrapper, not on the scroller, so the fade's solid end meets the sidebar's visible foot (a sticky element stops at its scroller's padding edge). The navigation Drawer likewise scrolls its body to the current page's link when it opens.
 - **External nav item:**
   - Label, then `IconArrowUpRight` 14 px `text-fg-subtle`, pushed to the right with `ml-auto`, `aria-hidden`.
   - Then `<span class="sr-only"> (opens original wiki)</span>`.
@@ -685,7 +685,7 @@ Drawer (open, bottom sheet from the bar, max-height 85dvh):
 - **Cresset (the bound head):** `fill="currentColor"`: `<rect x="8.75" y="10" width="6.5" height="2.75" rx="1.1"/>`, plus one binding ring on the shaft, `<rect x="10.1" y="15.25" width="3.8" height="1.1" rx="0.55"/>` (also currentColor).
 - **Flame outer:** `class="fill-accent"`: `M12 1.25c2.9 2.6 4.6 4.75 4.6 6.75 0 1.3-0.95 2-2 2H9.4c-1.05 0-2-0.7-2-2 0-1.7 1.1-2.95 2.15-3.75 0.1 1.2 0.65 2.05 1.4 2.4C10.75 4.7 11.15 2.85 12 1.25z`.
 - **Flame core:** `class="fill-logo-core"`: `M12.2 4.9c1.35 1.35 2.1 2.45 2.1 3.4 0 0.9-0.95 1.45-2.3 1.45s-2.2-0.6-2.2-1.35c0-0.8 0.55-1.4 1.15-1.7 0.2 0.7 0.6 1.1 1.1 1.2-0.3-1-0.25-2 0.15-3z`.
-- `--logo-core` is a decorative token: `#E8A33D` (= accent-glow) in light, where it reads as a bright core inside the burnt-orange outer, and `#F4BA62` (= accent-hover) in dark, a hotter centre inside the bright amber outer.
+- `--bt-logo-core` is a decorative token: `#E8A33D` (= accent-glow) in light, where it reads as a bright core inside the burnt-orange outer, and `#F4BA62` (= accent-hover) in dark, a hotter centre inside the bright amber outer.
 - The outer flame meets ≥3:1 on every surface in both themes (rows `accent` on `canvas`/`surface`/`surface-raised`/`surface-sunken`).
 - At 20 px the core may merge visually; that is fine, because the silhouette carries the mark.
 - **Favicon:** `public/favicon.svg` is **generated** by `scripts/build-tokens.mjs` from the same paths and the `tokens.ts` values. Inside the SVG, a `<style>` with a `prefers-color-scheme: dark` block switches the handle between light and dark `fg`, the outer flame between light and dark `accent`, and the core between light and dark `logo-core`. No colour is typed by hand. `site.webmanifest` lists it as the icon (`sizes: "any"`). FE1 ships no raster icons (`favicon.ico`, `apple-touch-icon.png`), because generating them from tokens needs a rasteriser in the toolchain. They are FE2+ work, and browsers without SVG favicon support show their default icon until then.
@@ -733,17 +733,17 @@ Generic components live in `app/components/ui/`. App-specific ones (ThemeToggle,
 ### 6.1 Shared rules
 
 - **Focus ring (all interactive elements):**
-  - `outline: 2px solid rgb(var(--focus)); outline-offset: 2px`, applied on `:focus-visible` only. `app/styles/base.css` applies it to **every** `:focus-visible` element, so components get it without a class; they only adjust the offset (`focus-visible:-outline-offset-2` in dense containers).
+  - `outline: 2px solid rgb(var(--bt-focus)); outline-offset: 2px`, applied on `:focus-visible` only. `app/styles/base.css` applies it to **every** `:focus-visible` element, so components get it without a class; they only adjust the offset (`focus-visible:-outline-offset-2` in dense containers).
   - The ring encloses the whole control: at least a 2 px perimeter at ≥3:1 against the adjacent surface (WCAG 2.4.11 and 2.4.13 friendly). Never set `outline: none` without this replacement.
   - Inside dense containers (tabs, chip rows, nav), use `outline-offset: -2px` so the ring can't be clipped. The inset ring sits on the item's own fill; every such pair is in §2.7. It is never inset on an `accent` or `danger` fill (§2.6).
   - In Windows forced-colours mode, outlines survive. `app/styles/base.css` also has `@media (forced-colors: active)` rules: buttons get `border: 1px solid ButtonText`, the current tab and current nav item (`[aria-current]`) get `outline: 2px solid Highlight`, `aria-pressed="true"` toggles get `outline: 2px solid Highlight`, and checkboxes go back to `appearance: auto` (§6.8). Focus there is a 3 px `CanvasText` outline, and the state outline is `:not(:focus-visible)`, so focusing a pressed, current or selected control visibly changes it (WCAG 2.4.7); without that, the state rule (same specificity, later) drew the same outline focused or not.
 - **Faux bold:** `font-synthesis: none` applies only where Fraunces is the face (`h1`–`h3` not set in `font-sans`/`font-mono`, and `.font-display`). Sans text, including headings set in the sans (alert titles, sidebar group headings), keeps the browser's synthesis, so labels and titles at 600 stay bold even where the system sans has no 600 face. Decorative SVG fills (the logo) keep their colours with `forced-color-adjust: auto` defaults, because the mark is `aria-hidden` and the wordmark text carries the meaning.
 - **Ids:** every `id` used by `aria-labelledby`, `aria-describedby`, `aria-controls` or `htmlFor` comes from React `useId()`. Never hard-code an id in a component: the styleguide renders many instances on one page, and duplicate ids break the references.
-- **Focus not obscured (WCAG 2.4.11):** `html` has `scroll-padding-top: calc(var(--header-h) + 0.5rem)`, and below `md` also `scroll-padding-bottom` for the bottom app bar (§5.2). Scroll containers with a sticky footer (the drawer) set `scroll-padding-bottom` to that footer's height. Toasts never cover the control that triggered them (§6.23). The e2e helper `expectFocusNotObscured` tabs through every journey page and checks this.
+- **Focus not obscured (WCAG 2.4.11):** `html` has `scroll-padding-top: calc(var(--bt-header-h) + 0.5rem)`, and below `md` also `scroll-padding-bottom` for the bottom app bar (§5.2). Scroll containers with a sticky footer (the drawer) set `scroll-padding-bottom` to that footer's height. Toasts never cover the control that triggered them (§6.23). The e2e helper `expectFocusNotObscured` tabs through every journey page and checks this.
 - **Tap targets:**
   - Primary touch targets are ≥44 × 44 px below `lg`: header buttons, bottom-bar cells, nav items, buttons `md`/`lg`, tabs, pagination, drawer close, form controls.
   - Every other target meets WCAG 2.5.8: it is **either** at least 24 × 24 px, **or** a 24 px circle centred on it doesn't overlap any other target or its circle. Links inside running text are exempt. Small text links that aren't in a sentence (footer, breadcrumbs, TOC) are **not** exempt, so they get `inline-flex min-h-6 items-center` and `gap-y-2` when they wrap.
-- **Hover** uses `@media (hover: hover)` only (Tailwind `hoverOnlyWhenSupported: true`), so touch devices don't get sticky hover.
+- **Hover** applies only under `@media (hover: hover) and (pointer: fine)` (the `hover` variant in `app/styles/app.css`), so touch devices don't get sticky hover.
 - **Disabled:** use the native `disabled` attribute on buttons and inputs, with `cursor: not-allowed`. Prefer `aria-disabled="true"` plus a click guard when the control must stay focusable to explain _why_, for example a Save button with a tooltip-free help line.
 - **No-JS first:** every action is a `<Form method="post">` or a link. JS adds optimistic UI, `useFetcher` and focus management. The one exception in FE1 is Settings (§10.3): its mutations need JS, and without JS a `<noscript>` Alert says so.
 - **Motion:** every transform-based transition or animation class carries the `motion-safe:` variant (§8.3).
@@ -791,7 +791,7 @@ Generic components live in `app/components/ui/`. App-specific ones (ThemeToggle,
 | Internal, in prose                                  | §3.3 prose link (underlined, lapis, visited purple)                                                                                                                                                               | React Router `<Link prefetch="intent">`                                                                                   |
 | Internal, standalone / UI (card titles, "View all") | `text-link font-medium`, no underline at rest, underline on hover and focus-visible                                                                                                                               | Only in navigational containers (§2.6)                                                                                    |
 | External                                            | As above, plus trailing `IconExternalLink` 0.85em `text-fg-subtle` (`aria-hidden`) plus `<span class="sr-only"> (external link)</span>`. Or, for old-wiki links, `IconArrowUpRight` plus "(opens original wiki)". | `rel="noopener"`, no `target="_blank"` by default. User-supplied URLs also get `rel="nofollow ugc"` (FE2+; FE1 has none). |
-| Muted                                               | `text-fg-muted underline decoration-fg-subtle/50`                                                                                                                                                                 | Footer, meta lines                                                                                                        |
+| Muted                                               | `text-fg-muted underline decoration-fg-subtle-50`                                                                                                                                                                 | Footer, meta lines                                                                                                        |
 
 - **States:** hover is `text-link-hover` with a 2 px decoration. Focus-visible is the shared ring with `rounded-sm` and `outline-offset: 2px`. Active (pressed) matches hover. There is no disabled link: render plain text instead.
 - **Current page** links in body text (rare) get `aria-current="page"` and `font-semibold text-fg no-underline`.
@@ -866,7 +866,7 @@ Help text that explains format.       ← caption text-fg-muted, id="{id}-help"
   - Disabled: `bg-input-bg-locked border-border-strong`, check `fg-subtle`, label `fg-subtle`.
   - Error: border `danger-icon`, plus the field error message below the group.
 - **Groups:** `<fieldset>` with `<legend>` styled as a field label.
-- **Forced colours:** a token-drawn check is not reliable in Windows High Contrast, which would make checked and unchecked look the same. So the box carries `forced-colors:appearance-auto`, handing it back to the system control, and the overlaid marks carry `forced-colors:!hidden` (important, because `peer-checked:block` is more specific than a media-query utility). (A utility, not only the `base.css` rule: `appearance-none` is a utility, and the base layer can't override it.)
+- **Forced colours:** a token-drawn check is not reliable in Windows High Contrast, which would make checked and unchecked look the same. So the box carries `forced-colors:appearance-auto`, handing it back to the system control, and the overlaid marks carry `forced-colors:hidden!` (important, because `peer-checked:block` is more specific than a media-query utility). (A utility, not only the `base.css` rule: `appearance-none` is a utility, and the base layer can't override it.)
 
 ### 6.9 Tabs
 
@@ -1025,7 +1025,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
 **Tag: SG.**
 
 - Blocks of `bg-surface-sunken rounded-md`. Text lines are `h-text-line` (a named value, 0.75em) at their text style, so line height is preserved, with widths 100 %, 92 % and 60 % for the last line. The heading line is `h-8 w-2/3`, and chips are `h-8 w-20 rounded-full`.
-- **Shimmer:** a 1.6 s linear gradient sweep, `linear-gradient(90deg, transparent, rgb(var(--surface-raised) / var(--shimmer-alpha)), transparent)`, where `--shimmer-alpha` is a token (0.6 light, 0.35 dark). It runs only under `motion-safe:`; under reduced motion it is static.
+- **Shimmer:** a 1.6 s linear gradient sweep, `linear-gradient(90deg, transparent, rgb(var(--bt-surface-raised) / var(--bt-shimmer-alpha)), transparent)`, where `--bt-shimmer-alpha` is a token (0.6 light, 0.35 dark). It runs only under `motion-safe:`; under reduced motion it is static.
 - **Semantics:** the region wrapper has `aria-busy="true"`, and one `sr-only` "Loading {thing}…". Skeleton blocks are `aria-hidden`.
 - It must reserve the **exact** final dimensions (no CLS on swap). Skeletons exist only for client transitions. SSR pages render real content.
 
@@ -1069,7 +1069,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
   - On close (Escape, either close button, backdrop click, or navigation), focus returns to the menu button.
   - Body scroll is locked (`overflow: hidden` on `html`) while it is open.
   - It closes automatically on route change, and when the viewport reaches `lg`.
-- **Motion:** the bottom sheet slides up from `translateY(100%)` and the side drawer from `translateX(-100%)`, over 240 ms with `--ease-out`. The scrim fades over 180 ms. Movement is `motion-safe:` only; under reduced motion it fades, 120 ms. **Closing is instant in FE1** (no exit animation): a native `<dialog>` leaves the top layer as soon as `close()` runs, and delaying that to animate would delay the focus return as well.
+- **Motion:** the bottom sheet slides up from `translateY(100%)` and the side drawer from `translateX(-100%)`, over 240 ms with `--bt-ease-out`. The scrim fades over 180 ms. Movement is `motion-safe:` only; under reduced motion it fades, 120 ms. **Closing is instant in FE1** (no exit animation): a native `<dialog>` leaves the top layer as soon as `close()` runs, and delaying that to animate would delay the focus return as well.
 - **No-JS:** the menu button is `<a href="#site-nav">`. The fallback navigation renders **after `</main>` and before `<footer>`**, not inside main, so it doesn't pollute the skip-link target. It is the same single `<nav aria-label="Site" id="site-nav">` that the persistent sidebar uses at ≥lg (one element, placed by CSS), headed by the SearchBox and an h2 "Site menu", so there is never a second Site landmark. With JS, that fallback copy below lg is `hidden`, and the button becomes a `<button>`.
 - **Component:** `Drawer` (`app/components/ui/Drawer.tsx`; `open`, `onClose`, `title`, `closeLabel` "Close menu", body, `footer`, `closeFrom="lg"`), built on `useModalDialog` (shared with Dialog).
   - The dialog is a flex column: grab bar (<md, decorative `bg-border-strong`), title row, a scrolling body (`min-h-0 flex-1 overflow-y-auto`) and the footer. The footer sits **outside** the scroller rather than over it, so nothing in the body can scroll under it and no `scroll-padding-bottom` is needed.
@@ -1095,9 +1095,9 @@ Read   Edit   History                         Last edited 3 Oct 2026
   - Body: "Anything using 'Laptop MCP' will stop working straight away. This can't be undone." (A token with no name is called "token {prefix}…" here, as in the list.)
   - Buttons: "Cancel" / "Revoke token" (danger, with `IconTrash`).
 - **No-JS:** there is no confirm route. In FE1 the only Dialog is on Settings, whose mutations need JS (§10.3), so the no-JS path is the `<noscript>` notice.
-- **Motion:** fades in and scales from 0.98 to 1 over 180 ms `--ease-out` (`motion-safe:` only). Under reduced motion it fades only. Closing is instant, as for the Drawer.
+- **Motion:** fades in and scales from 0.98 to 1 over 180 ms `--bt-ease-out` (`motion-safe:` only). Under reduced motion it fades only. Closing is instant, as for the Drawer.
 - **Component:** `Dialog` (`app/components/ui/Dialog.tsx`; `open`, `onClose`, `title`, `description`, body, `confirm: {label, icon, variant: primary|danger, onConfirm | form}`, `cancelLabel`, `pending`, `initialFocus`, `fallbackFocus`). A `danger` confirm makes it destructive, so the backdrop doesn't close it. With `form`, the confirm is a submit button for that form id.
-- **Shared behaviour** (`useModalDialog`): `open` drives `showModal()`/`close()`; Escape (`cancel`, prevented and handled), the backdrop and a browser-initiated close all call `onClose`. A backdrop click must start and end on the `<dialog>` itself, so a text selection dragged out of the content doesn't close it. `html` gets `overflow-hidden` while open. The backdrop is `backdrop:bg-scrim/scrim`, which needs `::backdrop` to inherit custom properties (Chromium 122+, Firefox 120+, Safari 17.4+).
+- **Shared behaviour** (`useModalDialog`): `open` drives `showModal()`/`close()`; Escape (`cancel`, prevented and handled), the backdrop and a browser-initiated close all call `onClose`. A backdrop click must start and end on the `<dialog>` itself, so a text selection dragged out of the content doesn't close it. `html` gets `overflow-hidden` while open. The backdrop is `backdrop:bg-scrim-scrim`, which needs `::backdrop` to inherit custom properties (Chromium 122+, Firefox 120+, Safari 17.4+).
 
 ### 6.23 Toast
 
@@ -1107,7 +1107,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
   - `<div role="status" aria-live="polite" aria-atomic="false">` for success and info
   - `<div role="alert" aria-live="assertive">` for errors that need immediate attention
 - **Placement:**
-  - **Below sm: at the top**, under the header (`top: calc(var(--header-h) + 8px)`, width `calc(100vw - 32px)`). At the bottom they would cover the bottom app bar and the controls near the thumb, often the very button that triggered them (WCAG 2.4.11). While toasts are shown there, the stack's height is set on `html` as `--toast-stack-h`, which `scroll-padding-top` adds, so a control that gets focus scrolls clear of a toast (danger toasts stay until dismissed) as well as of the header.
+  - **Below sm: at the top**, under the header (`top: calc(var(--bt-header-h) + 8px)`, width `calc(100vw - 32px)`). At the bottom they would cover the bottom app bar and the controls near the thumb, often the very button that triggered them (WCAG 2.4.11). While toasts are shown there, the stack's height is set on `html` as `--bt-toast-stack-h`, which `scroll-padding-top` adds, so a control that gets focus scrolls clear of a toast (danger toasts stay until dismissed) as well as of the header.
   - **At ≥sm: bottom right** (`right: 24px; width: 24rem`), clear of the main column's controls: `bottom: 24px` from md, and from sm to md (where the bottom app bar still shows) 16 px above the bar (`bottom-above-app-bar`).
   - At most 3 toasts, with the newest nearest the edge.
 - **Toast:** `bg-surface-raised border border-border rounded-lg shadow-2 p-4 flex gap-3`, with a status icon (`{s}-icon`), message (body-sm `text-fg`) and a close button (36 px, "Dismiss notification").
@@ -1188,7 +1188,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
 **Tag: FE1.** In FE1 it searches **the original wiki**.
 
 - **Markup:** `<form role="search" method="get" action="https://bardictorch.miraheze.org/w/index.php">` (target and parameter name from `app/constants/navigation.ts`), with `<label for={inputId} class="sr-only">Search the original wiki</label>` and `<input type="search" id={inputId} name="search" autocomplete="off" enterkeyhint="search">`. The placeholder is "Search the original wiki…" at `lg` size, and "Search the wiki…" in the header field while it is narrow (md), so it is never cut mid-word; from the lg breakpoint, where the header field is wide, the long text is drawn over the field instead (an `aria-hidden` hint shown while the field is empty). The label and the submit's name always say "original wiki". The form is marked external like any wiki link: the submit button's icon is the wiki mark `IconArrowUpRight`, with `sr-only` "(opens original wiki)" in its name.
-- **Visual:** Input styling at `h-10` (40 px, header md+) or `h-11` (drawer, search sheet and home hero), `rounded-full`, with a leading `IconSearch` 18 `fg-subtle`. The submit button is a trailing ghost icon button (`IconArrowUpRight`, "Search the original wiki"), always present so the form works without Enter: 44 × 44 px at `lg` size (the input is `pr-12`), and 32 px in the 40 px header field with its hit area padded to 44 px below lg (`before:-inset-1.5`, as Button `sm`). Its hover wash is `bg-fg/10`, a decorative see-through tint (§2.6), because a `surface-sunken` wash would vanish on the dark field, which is itself `surface-sunken`.
+- **Visual:** Input styling at `h-10` (40 px, header md+) or `h-11` (drawer, search sheet and home hero), `rounded-full`, with a leading `IconSearch` 18 `fg-subtle`. The submit button is a trailing ghost icon button (`IconArrowUpRight`, "Search the original wiki"), always present so the form works without Enter: 44 × 44 px at `lg` size (the input is `pr-12`), and 32 px in the 40 px header field with its hit area padded to 44 px below lg (`before:-inset-1.5`, as Button `sm`). Its hover wash is `bg-fg-10`, a decorative see-through tint (§2.6), because a `surface-sunken` wash would vanish on the dark field, which is itself `surface-sunken`.
 - **Bottom-bar Search cell (<md):** see §5.2. It opens the search sheet above the bar.
 - **States:** focus shows the ring. There are no suggestions and no loading state; the wiki owns its results page.
 - **No keyboard shortcut.** A single-key `/` shortcut would break WCAG 2.1.4 (it fires for speech-input users too), and none is provided.
@@ -1201,7 +1201,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
 - Shown when a page has **≥4 h2s**. It is `<nav aria-labelledby={titleId}>`, with the title "Contents" in `label-caps`. Items are an `<ol>` of h2s and h3s, each with its number (e.g. "2.1") in `text-fg-subtle tabular-nums`, right-aligned in a `min-w-6` column so "10" lines up with "9".
 - The box is `flow-root` (its own block formatting context): beside the floated infobox the whole sunken box narrows, instead of its background running under the float while only its lines wrap. Each item link is `inline-flex min-h-6 items-center` (WCAG 2.5.8).
 - **<xl, and in FE1 at every width:** inline after the intro paragraph, as `<details open>` on md+ and `<details>` (closed) on mobile, with `bg-surface-sunken rounded-lg p-4`.
-- **≥xl with no infobox (FE2+):** sticky in the right rail (`top: calc(var(--header-h) + 24px)`, width 14rem). The current section is highlighted with an IntersectionObserver: `aria-current="true"`, `text-accent-text font-semibold` and an inset left bar. With no JS, there is no highlight.
+- **≥xl with no infobox (FE2+):** sticky in the right rail (`top: calc(var(--bt-header-h) + 24px)`, width 14rem). The current section is highlighted with an IntersectionObserver: `aria-current="true"`, `text-accent-text font-semibold` and an inset left bar. With no JS, there is no highlight.
 - **Built as (FE1):** `TableOfContents({ entries: [{ id, label, children? }] })`. It server-renders `<details open>` (so it is open without JS) and folds itself after hydration below md. That happens once, on mount: resizing or rotating later leaves it as the reader has it (unit-tested; e2e checks it folded at 360 on load). `WikiPage` shows it after `intro` when `contents` has four or more entries.
 - Headings get `id`s (and `scroll-margin-top`, §3.3). FE2+ adds a hover "§" anchor link, 24 × 24 px, `aria-label="Link to this section"`.
 
@@ -1271,16 +1271,16 @@ The pattern is: **what state it is in** (bold, ≤7 words), then **what it means
 
 ### 8.1 Tokens (CSS vars from `tokens.ts`, also in Tailwind `transitionDuration` / `transitionTimingFunction`)
 
-| Token             | Tailwind           | Value                        | Use                                                |
-| ----------------- | ------------------ | ---------------------------- | -------------------------------------------------- |
-| `--dur-instant`   | `duration-instant` | 80 ms                        | Colour and background changes on hover             |
-| `--dur-fast`      | `duration-fast`    | 120 ms                       | Focus/press feedback, link arrow nudge, toast exit |
-| `--dur-base`      | `duration-base`    | 180 ms                       | Dialog, menu and toast enter, scrim fade           |
-| `--dur-slow`      | `duration-slow`    | 240 ms                       | Drawer slide, disclosure height                    |
-| `--dur-flicker`   | `duration-flicker` | 600 ms                       | Logo flame (one-shot)                              |
-| `--ease-standard` | `ease-standard`    | `cubic-bezier(0.2, 0, 0, 1)` | Default                                            |
-| `--ease-out`      | `ease-out`         | `cubic-bezier(0, 0, 0.2, 1)` | Entering                                           |
-| `--ease-in`       | `ease-in`          | `cubic-bezier(0.4, 0, 1, 1)` | Leaving                                            |
+| Token                | Tailwind           | Value                        | Use                                                |
+| -------------------- | ------------------ | ---------------------------- | -------------------------------------------------- |
+| `--bt-dur-instant`   | `duration-instant` | 80 ms                        | Colour and background changes on hover             |
+| `--bt-dur-fast`      | `duration-fast`    | 120 ms                       | Focus/press feedback, link arrow nudge, toast exit |
+| `--bt-dur-base`      | `duration-base`    | 180 ms                       | Dialog, menu and toast enter, scrim fade           |
+| `--bt-dur-slow`      | `duration-slow`    | 240 ms                       | Drawer slide, disclosure height                    |
+| `--bt-dur-flicker`   | `duration-flicker` | 600 ms                       | Logo flame (one-shot)                              |
+| `--bt-ease-standard` | `ease-standard`    | `cubic-bezier(0.2, 0, 0, 1)` | Default                                            |
+| `--bt-ease-out`      | `ease-out`         | `cubic-bezier(0, 0, 0.2, 1)` | Entering                                           |
+| `--bt-ease-in`       | `ease-in`          | `cubic-bezier(0.4, 0, 1, 1)` | Leaving                                            |
 
 These replace Tailwind's default durations and easings. The keyframe animations are `animate-spin` (spinner), `animate-pulse-soft` (opacity 1 → 0.4, the reduced-motion spinner), `animate-shimmer` (skeleton), `animate-progress` (progress bar), `animate-flicker` (logo), `animate-dialog-in` (fade + scale 0.98 → 1), `animate-toast-in` (fade + 8 px rise), `animate-sheet-in` / `animate-drawer-in` (slide from the bottom / left) and `animate-fade-in` (opacity only, 120 ms: the reduced-motion entrance for all of them, and the scrim).
 
@@ -1489,7 +1489,7 @@ The head is the h1 "Settings" with no tab row. Sections are separated by h2 plus
 
 - Its sections follow this document: Colour (swatches showing name, hex for both themes and the contrast ratio, read from `tokens.ts`), Type scale, Spacing, Radii and elevation, Logo at 20/24/28/32 on all surfaces, then every §6 component with every state in a grid, including the SG and FE1-only states.
 - A page-level in-page tablist, "Preview: Current / Light / Dark / Side by side", forces a `data-theme` on a wrapper.
-  - This works because the token blocks also match `[data-theme]` on any element (§2.1). An e2e assertion checks that a forced-light panel under an OS-dark page has a computed `--canvas` equal to the light value from `tokens.ts`.
+  - This works because the token blocks also match `[data-theme]` on any element (§2.1). An e2e assertion checks that a forced-light panel under an OS-dark page has a computed `--bt-canvas` equal to the light value from `tokens.ts`.
   - Side-by-side renders both themes in two columns at ≥xl.
 - Each component block has an anchor (`/styleguide#button`), which the screenshot checkpoints target one by one.
 - **How it is built** (`app/routes/styleguide.tsx`, blocks in `app/styleguide/`):
@@ -1556,76 +1556,81 @@ The pattern is: what happened, then what to do. Don't blame the reader, and don'
 
 ---
 
-## Appendix A: Tailwind config
+## Appendix A: Tailwind theme
 
-`tailwind.config.ts` takes every value from `app/styles/tokens.ts`; it has no literals of its own. Keys under `theme` (not `extend`) **replace** Tailwind's defaults, so the default palette, size scale, radii, shadows, durations and animations don't exist. The default spacing scale and breakpoints are kept.
+`scripts/build-tokens.mjs` writes the Tailwind 4 theme into `app/styles/tokens.css`, after the per-theme variables, from `app/styles/tokens.ts` and the tables in `scripts/tailwind-theme.mjs`; `npm run check:tokens` byte-checks it. There is no `tailwind.config.ts`. The `@theme` block starts with `--*: initial`, which clears every Tailwind default, so only what is listed here exists: no default palette, size scale, radii, shadows, durations or animations.
 
-| Theme key                  | Replaced or extended | Classes                                                                                                                                                                                                                                                                                                |
-| -------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `colors`                   | replaced             | `transparent`, `current`, `inherit`, plus every token in §2.3–2.5: `bg-canvas`, `text-fg-muted`, `border-border-strong`, `outline-focus`, `fill-accent`, `bg-info-bg`, `text-cons-low-fg` … Each maps to `rgb(var(--name) / <alpha-value>)`.                                                           |
-| `fontFamily`               | replaced             | `font-display`, `font-sans`, `font-mono`                                                                                                                                                                                                                                                               |
-| `fontSize`                 | replaced             | `text-display`, `text-h1`, `text-h2`, `text-h3`, `text-h4`, `text-body-lg`, `text-body`, `text-body-sm`, `text-caption`, `text-label-caps` (always used with `uppercase`), `text-code`, `text-wordmark`. Each sets size (a CSS variable that changes at `md`), line height, letter-spacing and weight. |
-| `borderRadius`             | replaced             | `rounded-none`, `rounded-sm` (4 px), `rounded-md` (6 px), `rounded-lg` (10 px), `rounded-xl` (16 px), `rounded-full`                                                                                                                                                                                   |
-| `borderWidth`              | replaced             | `border` (1 px), `border-0`, `border-2`, `border-3`                                                                                                                                                                                                                                                    |
-| `boxShadow`                | replaced             | `shadow-none`, `shadow-1`, `shadow-2`, `shadow-3` (`var(--shadow-n)`), `shadow-current-bar` (the current nav item's inset 3 px `accent` bar, §5.3)                                                                                                                                                     |
-| `transitionDuration`       | replaced             | `duration-instant`, `duration-fast`, `duration-base`, `duration-slow`, `duration-flicker` (default: instant)                                                                                                                                                                                           |
-| `transitionTimingFunction` | replaced             | `ease-standard`, `ease-out`, `ease-in` (default: standard)                                                                                                                                                                                                                                             |
-| `keyframes`, `animation`   | replaced             | `animate-spin`, `animate-pulse-soft`, `animate-shimmer`, `animate-progress`, `animate-flicker`, `animate-fade-in` (120 ms, the reduced-motion entrance), `animate-dialog-in`, `animate-toast-in` (180 ms), `animate-sheet-in`, `animate-drawer-in` (240 ms)                                            |
-| `spacing`                  | extended             | `13` (3.25rem, 52 px): `min-h-13`, `w-13` for `lg` buttons                                                                                                                                                                                                                                             |
-| `maxHeight`                | extended             | `max-h-sheet` (85dvh, the bottom-sheet drawer), `max-h-below-header` (`calc(100dvh - var(--header-h))`, the sticky sidebar)                                                                                                                                                                            |
-| `inset`                    | extended             | `top-toast` (`calc(var(--header-h) + 0.5rem)`, toasts below sm), `top-header` (`var(--header-h)`, the sticky sidebar), `bottom-above-app-bar` (`calc(var(--app-bar-h) + env(safe-area-inset-bottom) + 1rem)`, toasts from sm to md)                                                                    |
-| `gridTemplateColumns`      | extended             | `grid-cols-infobox` (`7rem 1fr`, infobox rows), `grid-cols-shell` (`15rem minmax(0, 1fr)`, sidebar and main at lg), `grid-cols-shell-xl` (`16rem minmax(0, 1fr)`)                                                                                                                                      |
-| `opacity`                  | extended             | `/shimmer` (`var(--shimmer-alpha)`) and `/scrim` (`var(--scrim-alpha)`) as colour modifiers: `via-surface-raised/shimmer`, `backdrop:bg-scrim/scrim`. Both alphas are per-theme effect tokens.                                                                                                         |
-| `maxWidth`                 | extended             | `max-w-prose` (68ch), `max-w-form` (42rem), `max-w-shell` (90rem)                                                                                                                                                                                                                                      |
-| `height`                   | extended             | `h-header` (`var(--header-h)`), `h-app-bar` (3.5rem), `h-text-line` (0.75em), `h-progress` (3 px, the navigation progress bar)                                                                                                                                                                         |
-| `minHeight`                | extended             | `min-h-textarea` (7.5rem)                                                                                                                                                                                                                                                                              |
-| `width`                    | extended             | `w-dialog` (`min(32rem, calc(100vw - 2rem))`), `w-drawer` (`min(20rem, 85vw)`), `w-infobox` (16.5rem), `w-infobox-xl` (18rem)                                                                                                                                                                          |
-| `textUnderlineOffset`      | extended             | `underline-offset-prose` (0.2em)                                                                                                                                                                                                                                                                       |
-| `backgroundImage`          | extended             | `bg-hero`: the home hero's radial glow, `hero-glow` at the top left fading to transparent over `surface` (§10.1)                                                                                                                                                                                       |
-| `padding`                  | extended             | `pb-safe-b` (`env(safe-area-inset-bottom, 0px)`, bottom sheets), `pb-app-bar` (`calc(var(--app-bar-h) + env(safe-area-inset-bottom, 0px))`, room for the bottom app bar under the page below md)                                                                                                       |
-| `transformOrigin`          | extended             | `origin-flame` (`50% 90%`, the logo flicker; with the `.transform-box-fill` utility in `base.css` so it is measured on the flame, not the viewBox)                                                                                                                                                     |
-| `zIndex`                   | extended             | `z-header` (30), `z-progress` (40), `z-toast` (50)                                                                                                                                                                                                                                                     |
+- **Spacing** is Tailwind 3's default scale plus `13`, written as named keys (`--spacing-4: 1rem`) with no bare `--spacing`, so `p-17` or `mt-13.5` are not classes.
+- **Every other namespace** of Tailwind 4's theme (read from `tailwindcss/theme.css` when the file is generated) gets the values FE1's Tailwind 3 theme had: `--breakpoint-*` (`sm` 640 px … `2xl` 1536 px), `--font-weight-*`, `--leading-*`, `--tracking-*`, `--container-*` (`max-w-xs` … `max-w-7xl`), `--blur-*`, `--aspect-*`. `--drop-shadow-*` stays empty, because Tailwind 3's drop shadows are raw black (§2.1). `--inset-shadow-*`, `--text-shadow-*` and `--perspective-*` stay empty: Tailwind 3 had none.
+- **Utilities on fixed scales.** Tailwind 4 makes a class for any number or fraction after some utilities (`z-37`, `border-5`, `opacity-33`, `w-5/7`). Lint (`better-tailwindcss/no-restricted-classes`) and `test/tailwind-classes.test.ts` allow only FE1's values, listed in `scripts/tailwind-classes.mjs`.
 
-Other config: `future.hoverOnlyWhenSupported: true` (hover styles only for devices that can hover). `darkMode` is left at Tailwind's default and the `dark:` variant is never used (§2.1; `test/no-raw-colours.test.ts` rejects it).
+| Theme namespace or utility           | Classes                                                                                                                                                                                                                                                                                                |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--color-*` (inline)                 | `transparent`, `current`, `inherit`, plus every token in §2.3–2.5: `bg-canvas`, `text-fg-muted`, `border-border-strong`, `outline-focus`, `fill-accent`, `bg-info-bg`, `text-cons-low-fg` … Each is `rgb(var(--bt-name))`.                                                                             |
+| `--font-*`                           | `font-display`, `font-sans`, `font-mono`. `--default-font-family` is the sans stack and `--default-mono-font-family` the mono stack.                                                                                                                                                                   |
+| `--text-*` (inline)                  | `text-display`, `text-h1`, `text-h2`, `text-h3`, `text-h4`, `text-body-lg`, `text-body`, `text-body-sm`, `text-caption`, `text-label-caps` (always used with `uppercase`), `text-code`, `text-wordmark`. Each sets size (a CSS variable that changes at `md`), line height, letter-spacing and weight. |
+| `--radius-*`                         | `rounded` (= `md`), `rounded-none`, `rounded-sm` (4 px), `rounded-md` (6 px), `rounded-lg` (10 px), `rounded-xl` (16 px), `rounded-full`                                                                                                                                                               |
+| border widths (fixed scale)          | `border` (1 px), `border-0`, `border-2`, `border-3`                                                                                                                                                                                                                                                    |
+| `--shadow-*` (inline)                | `shadow-none`, `shadow-1`, `shadow-2`, `shadow-3` (`var(--bt-shadow-n)`), `shadow-current-bar` (the current nav item's inset 3 px `accent` bar, §5.3)                                                                                                                                                  |
+| `--transition-duration-*` (inline)   | `duration-instant`, `duration-fast`, `duration-base`, `duration-slow`, `duration-flicker` (default: instant)                                                                                                                                                                                           |
+| `--ease-*` (inline)                  | `ease-standard`, `ease-out`, `ease-in` (default: standard)                                                                                                                                                                                                                                             |
+| `--animate-*` and their `@keyframes` | `animate-spin`, `animate-pulse-soft`, `animate-shimmer`, `animate-progress`, `animate-flicker`, `animate-fade-in` (120 ms, the reduced-motion entrance), `animate-dialog-in`, `animate-toast-in` (180 ms), `animate-sheet-in`, `animate-drawer-in` (240 ms)                                            |
+| `--spacing-*`                        | the scale above; `13` (3.25rem, 52 px): `min-h-13`, `w-13` for `lg` buttons                                                                                                                                                                                                                            |
+| `--max-width-*`                      | `max-w-prose` (68ch), `max-w-form` (42rem), `max-w-shell` (90rem)                                                                                                                                                                                                                                      |
+| `@utility` (max height)              | `max-h-sheet` (85dvh, the bottom-sheet drawer), `max-h-below-header` (`calc(100dvh - var(--bt-header-h))`, the sticky sidebar)                                                                                                                                                                         |
+| `@utility` (inset)                   | `top-toast` (`calc(var(--bt-header-h) + 0.5rem)`, toasts below sm), `top-header` (`var(--bt-header-h)`, the sticky sidebar), `bottom-above-app-bar` (`calc(var(--bt-app-bar-h) + env(safe-area-inset-bottom) + 1rem)`, toasts from sm to md)                                                           |
+| `@utility` (grid)                    | `grid-cols-infobox` (`7rem 1fr`, infobox rows), `grid-cols-shell` (`15rem minmax(0, 1fr)`, sidebar and main at lg), `grid-cols-shell-xl` (`16rem minmax(0, 1fr)`), `grid-rows-shell` (`1fr auto`)                                                                                                      |
+| `@utility` (height)                  | `h-header` (`var(--bt-header-h)`), `h-app-bar` (3.5rem), `h-text-line` (0.75em), `h-progress` (3 px, the navigation progress bar)                                                                                                                                                                      |
+| `@utility` (min height)              | `min-h-textarea` (7.5rem)                                                                                                                                                                                                                                                                              |
+| `@utility` (width)                   | `w-dialog` (`min(32rem, calc(100vw - 2rem))`), `w-drawer` (`min(20rem, 85vw)`), `w-infobox` (16.5rem), `w-infobox-xl` (18rem)                                                                                                                                                                          |
+| `@utility` (underline offset)        | `underline-offset-prose` (0.2em)                                                                                                                                                                                                                                                                       |
+| `@utility` (background image)        | `bg-hero`: the home hero's radial glow, `hero-glow` at the top left fading to transparent over `surface` (§10.1); `bg-shimmer`: the skeleton sweep (§6.18); `bg-fade-up`: `canvas` clearing upwards, the sidebar's "more below" fade (§5.3)                                                            |
+| `@utility` (padding)                 | `pb-safe-b` (`env(safe-area-inset-bottom, 0px)`, bottom sheets), `pb-app-bar` (`calc(var(--bt-app-bar-h) + env(safe-area-inset-bottom, 0px))`, room for the bottom app bar under the page below md)                                                                                                    |
+| `@utility` (transform origin)        | `origin-flame` (`50% 90%`, the logo flicker; with the `transform-box-fill` utility in `base.css` so it is measured on the flame, not the viewBox)                                                                                                                                                      |
+| `@utility` (z-index)                 | `z-header` (30), `z-progress` (40), `z-toast` (50)                                                                                                                                                                                                                                                     |
+| `@utility` (colour at an alpha)      | `bg-fg-10`, `bg-scrim-scrim` (the scrim at `--bt-scrim-alpha`), `decoration-link-40`, `decoration-link-visited-40`, `decoration-fg-subtle-50`: `<utility>-<colour>-<alpha>`, writing `rgb(var(--bt-colour) / alpha)`. Tailwind 4's `/40` modifier would mix the colours in oklab instead.              |
+| `@utility` (stacks)                  | `stack-y-1`, `stack-y-3`, `stack-y-4`, `stack-y-6`: a top margin on every child after the first without a `hidden` attribute, as Tailwind 3's `space-y-*` (Tailwind 4's puts the margin on the other side).                                                                                            |
 
-In this config, the colour named `border` gives `border-border`. That is intended and is the documented class.
+Other theme settings: hover styles apply only where the primary pointer can hover precisely (`@custom-variant hover` in `app/styles/app.css`: `(hover: hover) and (pointer: fine)`). `transition-colors` leaves out the outline colour, so a focus ring is drawn at once. `--default-ring-width` is 3 px. The `dark:` variant is never used, and no stylesheet may define one (§2.1; `test/no-raw-colours.test.ts` rejects both). Gradient utilities (`bg-linear-*`, `from-*`, `via-*`, `to-*`), which interpolate in oklab, and `space-*`/`divide-*` are refused by lint: each gradient is a named background image above.
+
+In this theme, the colour named `border` gives `border-border`. That is intended and is the documented class.
 
 **Where the styles live:**
 
 - `app/styles/tokens.ts`: the token source (hand-written).
-- `app/styles/tokens.css`: generated custom properties (colours per theme, shadows, type sizes, motion, layout).
+- `app/styles/tokens.css`: generated: the `--bt-*` custom properties (colours per theme, shadows, type sizes, motion, layout), then the `@theme` and the `@utility` rules above.
 - `app/styles/fonts.css`: the Fraunces `@font-face` rules and the metric-matched fallback faces.
-- `app/styles/base.css`: element defaults (`html`, `body`, `::selection`, headings), `scroll-padding`, the global `:focus-visible` ring, the `.opsz-32` utility (wordmark), the `.transform-box-fill` utility (logo flicker), the `.wrap-anywhere` utility (`overflow-wrap: anywhere`, for token names and secrets on Settings), `scroll-padding-bottom` below md (bottom app bar), forced-colours rules and the smooth-scroll rule (inside `prefers-reduced-motion: no-preference`).
+- `app/styles/base.css`: element defaults (`html`, `body`, `::selection`, `::placeholder`, button cursors, table-cell padding, the search field, headings), `scroll-padding`, the global `:focus-visible` ring, the `opsz-32` utility (wordmark), the `summary-plain` and `transform-box-fill` utilities (logo flicker), `scroll-padding-bottom` below md (bottom app bar), forced-colours rules and the smooth-scroll rule (inside `prefers-reduced-motion: no-preference`). `wrap-anywhere` (`overflow-wrap: anywhere`, for token names and secrets on Settings) and `field-sizing-content` are Tailwind's own.
 - `app/styles/prose.css`: the `.prose-bt` component class (§3.3).
-- `app/styles/app.css`: the entry. It `@import`s the files above, then the Tailwind layers. `root.tsx` links it with `links()` as a render-blocking stylesheet.
+- `app/styles/app.css`: the entry. It `@import`s Tailwind (with sources limited to `app/`), then the files above, and defines the `hover` variant. `root.tsx` links it with `links()` as a render-blocking stylesheet.
 
 ## Appendix B: Token CSS shape
 
-This is the shape of `app/styles/tokens.css` as `scripts/build-tokens.mjs` writes it from `app/styles/tokens.ts`. Colour values are channel triplets, so alpha modifiers work.
+This is the shape of `app/styles/tokens.css` as `scripts/build-tokens.mjs` writes it from `app/styles/tokens.ts` (the `@theme` and `@utility` rules that follow are Appendix A). Colour values are channel triplets, so a colour can be written at any alpha.
 
 ```css
 /* @generated by scripts/build-tokens.mjs from app/styles/tokens.ts — do not edit. Run `npm run gen:tokens`. */
 :root,
 [data-theme="light"] {
   color-scheme: light;
-  --canvas: 247 242 232; /* #F7F2E8 */
-  --fg: 43 33 24; /* #2B2118 */
-  --accent: 168 71 12; /* #A8470C */
+  --bt-canvas: 247 242 232; /* #F7F2E8 */
+  --bt-fg: 43 33 24; /* #2B2118 */
+  --bt-accent: 168 71 12; /* #A8470C */
   /* …every colour token in §2.3–2.5… */
-  --input-bg: var(--surface-raised);
-  --shadow-1: 0 1px 2px rgb(60 40 20 / 0.06), 0 1px 3px rgb(60 40 20 / 0.08);
-  --shimmer-alpha: 0.6;
+  --bt-input-bg: var(--bt-surface-raised);
+  --bt-shadow-1: 0 1px 2px rgb(60 40 20 / 0.06), 0 1px 3px rgb(60 40 20 / 0.08);
+  --bt-shimmer-alpha: 0.6;
 }
 :root[data-theme="dark"],
 [data-theme="dark"] {
   color-scheme: dark;
-  --canvas: 22 18 14; /* #16120E */
-  --fg: 228 217 198; /* #E4D9C6 */
-  --accent: 233 164 64; /* #E9A440 */
+  --bt-canvas: 22 18 14; /* #16120E */
+  --bt-fg: 228 217 198; /* #E4D9C6 */
+  --bt-accent: 233 164 64; /* #E9A440 */
   /* … */
-  --input-bg: var(--surface-sunken);
-  --shadow-1: inset 0 1px 0 rgb(255 236 210 / 0.04);
-  --shimmer-alpha: 0.35;
+  --bt-input-bg: var(--bt-surface-sunken);
+  --bt-shadow-1: inset 0 1px 0 rgb(255 236 210 / 0.04);
+  --bt-shimmer-alpha: 0.35;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -1633,18 +1638,18 @@ This is the shape of `app/styles/tokens.css` as `scripts/build-tokens.mjs` write
   }
 }
 :root {
-  --header-h: 3.5rem;
-  --text-h1: 1.875rem;
-  --dur-fast: 120ms;
+  --bt-header-h: 3.5rem;
+  --bt-text-h1: 1.875rem;
+  --bt-dur-fast: 120ms;
   /* …type sizes, motion, layout… */
 }
 @media (min-width: 768px) {
   :root {
-    --header-h: 4rem;
-    --text-h1: 2.25rem;
+    --bt-header-h: 4rem;
+    --bt-text-h1: 2.25rem;
     /* … */
   }
 }
 ```
 
-`base.css` then sets `html { background: rgb(var(--canvas)); color: rgb(var(--fg)); }` and `::selection { background: rgb(var(--selection)); color: rgb(var(--fg)); }`.
+`base.css` then sets `html { background: rgb(var(--bt-canvas)); color: rgb(var(--bt-fg)); }` and `::selection { background: rgb(var(--bt-selection)); color: rgb(var(--bt-fg)); }`.

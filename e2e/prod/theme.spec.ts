@@ -134,7 +134,7 @@ test.describe("server-rendered theme", () => {
       const element = document.createElement("div");
       element.setAttribute("data-theme", "light");
       document.body.appendChild(element);
-      const value = getComputedStyle(element).getPropertyValue("--canvas");
+      const value = getComputedStyle(element).getPropertyValue("--bt-canvas");
       element.remove();
       return value.trim();
     });

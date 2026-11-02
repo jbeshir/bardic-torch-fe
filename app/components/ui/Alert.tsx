@@ -104,7 +104,7 @@ export function Alert({
           </Title>
         ) : null}
         {children ? (
-          <div className={`text-body-sm${title ? " mt-1" : ""}`}>
+          <div className={title ? "text-body-sm mt-1" : "text-body-sm"}>
             {title ? null : toneName}
             {children}
           </div>

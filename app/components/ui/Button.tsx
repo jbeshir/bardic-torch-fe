@@ -120,7 +120,11 @@ function Inside({
             size={iconSize}
             stroke={1.75}
             aria-hidden="true"
-            className={`col-start-1 row-start-1${loading ? " invisible" : ""}`}
+            className={
+              loading
+                ? "col-start-1 row-start-1 invisible"
+                : "col-start-1 row-start-1"
+            }
           />
           {loading ? (
             <span className="col-start-1 row-start-1 inline-flex">

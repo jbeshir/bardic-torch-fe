@@ -1,5 +1,6 @@
 // Generates every file derived from app/styles/tokens.ts (DESIGN §2.1):
-// the CSS custom properties, the favicon, the web manifest and the
+// the CSS custom properties with the Tailwind theme over them
+// (scripts/tailwind-theme.mjs), the favicon, the web manifest and the
 // theme-color values. `npm run gen:tokens` writes them; `npm run check:tokens`
 // (in validate) fails if any of them differs from what would be written now.
 // Run through tsx, which loads the TypeScript token module.
@@ -18,6 +19,7 @@ import {
   TYPE_SCALE,
 } from "../app/styles/tokens.ts";
 import { LOGO_MARK_PATHS } from "../app/components/logo-mark-paths.ts";
+import { runtimeVariable, tailwindThemeCss } from "./tailwind-theme.mjs";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const NOTICE =
@@ -26,11 +28,11 @@ const NOTICE =
 function colourDeclarations(theme) {
   const colours = Object.entries(COLOURS[theme]).map(([name, value]) =>
     typeof value === "string"
-      ? `--${name}: ${channelString(value)}; /* ${value} */`
-      : `--${name}: var(--${value.alias});`
+      ? `${runtimeVariable(name)}: ${channelString(value)}; /* ${value} */`
+      : `${runtimeVariable(name)}: var(${runtimeVariable(value.alias)});`
   );
   const effects = Object.entries(THEME_EFFECTS[theme]).map(
-    ([name, value]) => `--${name}: ${value};`
+    ([name, value]) => `${runtimeVariable(name)}: ${value};`
   );
   return [`color-scheme: ${theme};`, ...colours, ...effects].join("\n");
 }
@@ -46,18 +48,22 @@ function responsiveDeclarations(pick) {
   return entries
     .flatMap(([name, sizes]) => {
       const value = pick(sizes);
-      return value === undefined ? [] : [`--${name}: ${value};`];
+      return value === undefined ? [] : [`${runtimeVariable(name)}: ${value};`];
     })
     .join("\n");
 }
 
-function tokensCss() {
+/**
+ * The per-theme and responsive variables (`--bt-*`, read at run time), then
+ * the Tailwind `@theme` over them and the named utilities.
+ */
+async function tokensCss() {
   const motion = [
     ...Object.entries(DURATIONS).map(
-      ([name, value]) => `--dur-${name}: ${value};`
+      ([name, value]) => `${runtimeVariable(`dur-${name}`)}: ${value};`
     ),
     ...Object.entries(EASINGS).map(
-      ([name, value]) => `--ease-${name}: ${value};`
+      ([name, value]) => `${runtimeVariable(`ease-${name}`)}: ${value};`
     ),
   ].join("\n");
   return `/* ${NOTICE} */
@@ -81,7 +87,7 @@ ${motion}
 ${responsiveDeclarations(sizes => sizes[1])}
   }
 }
-`;
+${await tailwindThemeCss()}`;
 }
 
 function faviconSvg() {
@@ -148,7 +154,7 @@ async function formatted(path, source) {
 export async function renderTokenFiles() {
   /** @type {[string, string][]} */
   const sources = [
-    ["app/styles/tokens.css", tokensCss()],
+    ["app/styles/tokens.css", await tokensCss()],
     ["app/styles/theme-colour.gen.ts", themeColourModule()],
     ["public/favicon.svg", faviconSvg()],
     ["public/site.webmanifest", webManifest()],

@@ -69,8 +69,8 @@ describe("Card", () => {
     const link = screen.getByRole("link");
     expect(link).toHaveFocus();
     expect(link).toHaveClass(
-      "focus-visible:outline-none",
-      "focus-visible:after:outline",
+      "focus-visible:outline-hidden",
+      "focus-visible:after:outline-solid",
       "focus-visible:after:outline-focus",
       "focus-visible:after:outline-offset-2"
     );

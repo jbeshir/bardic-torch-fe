@@ -1,11 +1,11 @@
 /* Element defaults and global accessibility rules (DESIGN §2, §3, §6.1, §8). */
 @layer base {
   html {
-    background-color: rgb(var(--canvas));
-    color: rgb(var(--fg));
+    background-color: rgb(var(--bt-canvas));
+    color: rgb(var(--bt-fg));
     /* Focus and anchor targets never land under the sticky header (WCAG 2.4.11). */
     scroll-padding-top: calc(
-      var(--header-h) + var(--toast-stack-h, 0px) + 0.5rem
+      var(--bt-header-h) + var(--bt-toast-stack-h, 0px) + 0.5rem
     );
     -webkit-text-size-adjust: 100%;
   }
@@ -18,13 +18,13 @@
   h2,
   h3 {
     /*
-     * The display stack by theme(), not `@apply font-display`: @apply also
-     * copies the rule below that names .font-display, and with it
-     * font-synthesis: none onto every heading, sans ones included.
+     * The display stack by its variable, not `@apply font-display`, so the
+     * rule below that names .font-display (font-synthesis: none) stays off
+     * the sans headings.
      */
-    font-family: theme("fontFamily.display");
+    font-family: var(--font-display);
     text-wrap: balance;
-    scroll-margin-top: calc(var(--header-h) + 0.5rem);
+    scroll-margin-top: calc(var(--bt-header-h) + 0.5rem);
   }
 
   /*
@@ -39,14 +39,57 @@
     font-synthesis: none;
   }
 
+  /*
+   * What FE1's Tailwind 3 preflight left as the browser had it, and Tailwind
+   * 4's resets: a table cell's 1px padding (on the sides its classes don't
+   * set), and a search field drawn as a text field.
+   */
+  th,
+  td {
+    padding: 1px;
+  }
+
+  [type="search"] {
+    -webkit-appearance: textfield;
+    outline-offset: -2px;
+  }
+
+  /*
+   * Tailwind 4's preflight gives controls `opacity: 1`; Tailwind 3's left the
+   * browser's, which fades a disabled select (Chromium: 0.7).
+   */
+  button,
+  input,
+  select,
+  optgroup,
+  textarea,
+  ::file-selector-button {
+    opacity: revert;
+  }
+
+  /* A placeholder without its own colour class still gets a token. */
+  ::placeholder {
+    color: rgb(var(--bt-fg-subtle));
+  }
+
+  /* Buttons show the pointer, and disabled controls don't (FE1's Tailwind 3 preflight). */
+  button,
+  [role="button"] {
+    cursor: pointer;
+  }
+
+  :disabled {
+    cursor: default;
+  }
+
   ::selection {
-    background-color: rgb(var(--selection));
-    color: rgb(var(--fg));
+    background-color: rgb(var(--bt-selection));
+    color: rgb(var(--bt-fg));
   }
 
   /* The shared focus ring; dense containers inset it per component. */
   :focus-visible {
-    outline: 2px solid rgb(var(--focus));
+    outline: 2px solid rgb(var(--bt-focus));
     outline-offset: 2px;
   }
 
@@ -54,7 +97,7 @@
   @media not all and (min-width: 768px) {
     html {
       scroll-padding-bottom: calc(
-        var(--app-bar-h) + env(safe-area-inset-bottom, 0px) + 0.5rem
+        var(--bt-app-bar-h) + env(safe-area-inset-bottom, 0px) + 0.5rem
       );
     }
   }
@@ -126,37 +169,31 @@
     justify-content: center;
     width: 1rem;
     margin-inline-end: var(--separator-space);
-    color: rgb(var(--fg-subtle));
+    color: rgb(var(--bt-fg-subtle));
   }
 }
 
-@layer utilities {
-  /* The wordmark's fixed optical size (DESIGN §3.2). */
-  .opsz-32 {
-    font-variation-settings: "opsz" 32;
-  }
+/* The wordmark's fixed optical size (DESIGN §3.2). */
+@utility opsz-32 {
+  font-variation-settings: "opsz" 32;
+}
 
-  /* A <summary> drawn as a control: no disclosure triangle. */
-  .summary-plain {
-    list-style: none;
-  }
+/* A <summary> drawn as a control: no disclosure triangle. */
+@utility summary-plain {
+  list-style: none;
 
-  .summary-plain::-webkit-details-marker {
+  &::-webkit-details-marker {
     display: none;
   }
-
-  /* Transform an SVG part around its own box (the logo's flame), not the viewBox. */
-  .transform-box-fill {
-    transform-box: fill-box;
-  }
-
-  /* A text area as tall as its content (where supported; `rows` otherwise). */
-  .field-sizing-content {
-    field-sizing: content;
-  }
-
-  /* Break a long unspaced value (a token name, a secret) anywhere, even in a table cell. */
-  .wrap-anywhere {
-    overflow-wrap: anywhere;
-  }
 }
+
+/* Transform an SVG part around its own box (the logo's flame), not the viewBox. */
+@utility transform-box-fill {
+  transform-box: fill-box;
+}
+
+/*
+ * `field-sizing-content` (a text area as tall as its content, where
+ * supported) and `wrap-anywhere` (break a long unspaced value anywhere,
+ * even in a table cell) are Tailwind 4's own utilities now.
+ */

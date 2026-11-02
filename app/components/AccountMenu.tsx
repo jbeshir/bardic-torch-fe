@@ -74,7 +74,7 @@ function AccountPanel({
   readonly account: Exclude<Account, { state: "signed-out" }>;
 }) {
   return (
-    <div className="space-y-1">
+    <div className="stack-y-1">
       {account.state === "signed-in" ? (
         <div className="px-3 py-2">
           <p className="text-body font-semibold text-fg">

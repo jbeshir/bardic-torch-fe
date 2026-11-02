@@ -1,6 +1,7 @@
 import { cloudflare } from "@cloudflare/vite-plugin";
 import mdx from "@mdx-js/rollup";
 import { reactRouter } from "@react-router/dev/vite";
+import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 import { MARKDOWN_OPTIONS } from "./app/content/markdown/options";
 import { ENV_NAMES } from "./app/server/env.server";
@@ -55,6 +56,11 @@ export default defineConfig(({ command, mode }) => ({
           }
         : {}),
     }),
+    // Tailwind's own Lightning CSS pass is off for the same reason: it
+    // rewrites the shadow tokens' colours as 8-bit hex, so an alpha of 0.06
+    // becomes 15/255, which can paint a shadow pixel one step off. esbuild
+    // (above) minifies and prefixes the CSS instead.
+    tailwindcss({ optimize: false }),
     reactRouter(),
   ],
 }));

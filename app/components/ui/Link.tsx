@@ -51,14 +51,14 @@ type Appearance = "prose" | "standalone" | "plain" | "muted" | "inherit";
 
 const APPEARANCES: Readonly<Record<Appearance, string>> = {
   prose:
-    "text-link underline decoration-link/40 decoration-1 underline-offset-prose visited:text-link-visited visited:decoration-link-visited/40 hover:text-link-hover hover:decoration-link-hover hover:decoration-2 active:text-link-hover",
+    "text-link underline decoration-link-40 decoration-1 underline-offset-prose visited:text-link-visited visited:decoration-link-visited-40 hover:text-link-hover hover:decoration-link-hover hover:decoration-2 active:text-link-hover",
   standalone:
     "font-medium text-link no-underline underline-offset-prose hover:text-link-hover hover:underline hover:decoration-2 focus-visible:underline active:text-link-hover",
   // Standalone at the surrounding weight: breadcrumbs, the contents list.
   plain:
     "text-link no-underline underline-offset-prose hover:text-link-hover hover:underline focus-visible:underline active:text-link-hover",
   muted:
-    "text-fg-muted underline decoration-fg-subtle/50 underline-offset-prose hover:text-link-hover hover:decoration-2 active:text-link-hover",
+    "text-fg-muted underline decoration-fg-subtle-50 underline-offset-prose hover:text-link-hover hover:decoration-2 active:text-link-hover",
   // Links inside alerts take the alert's own text colour (DESIGN §6.14).
   inherit:
     "text-inherit underline underline-offset-prose hover:decoration-2 active:decoration-2",

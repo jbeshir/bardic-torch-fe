@@ -235,19 +235,19 @@ describe("Toast region", () => {
     try {
       const { unmount } = render(<Page />);
       act(() => observed?.());
-      expect(root.style.getPropertyValue("--toast-stack-h")).toBe("");
+      expect(root.style.getPropertyValue("--bt-toast-stack-h")).toBe("");
       height = 71.5;
       raise("You seem to be offline. Your changes haven’t been saved yet.");
       act(() => observed?.());
-      expect(root.style.getPropertyValue("--toast-stack-h")).toBe("80px");
+      expect(root.style.getPropertyValue("--bt-toast-stack-h")).toBe("80px");
       // From sm the stack is bottom right, out of the way: no padding.
       narrow.matches = false;
       act(() => observed?.());
-      expect(root.style.getPropertyValue("--toast-stack-h")).toBe("");
+      expect(root.style.getPropertyValue("--bt-toast-stack-h")).toBe("");
       narrow.matches = true;
       act(() => observed?.());
       unmount();
-      expect(root.style.getPropertyValue("--toast-stack-h")).toBe("");
+      expect(root.style.getPropertyValue("--bt-toast-stack-h")).toBe("");
     } finally {
       vi.unstubAllGlobals();
       vi.restoreAllMocks();

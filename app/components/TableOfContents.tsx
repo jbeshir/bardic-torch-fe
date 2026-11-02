@@ -80,13 +80,13 @@ export function TableOfContents({
         </summary>
         <ol
           role="list"
-          className="mb-0 mt-3 list-none space-y-1 pl-0 text-body-sm"
+          className="mb-0 mt-3 list-none stack-y-1 pl-0 text-body-sm"
         >
           {entries.map((entry, index) => (
             <li key={entry.id}>
               <Item number={`${index + 1}`} section={entry} />
               {entry.children && entry.children.length > 0 ? (
-                <ol role="list" className="mb-0 mt-1 list-none space-y-1 pl-6">
+                <ol role="list" className="mb-0 mt-1 list-none stack-y-1 pl-6">
                   {entry.children.map((child, childIndex) => (
                     <li key={child.id}>
                       <Item

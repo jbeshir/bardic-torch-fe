@@ -181,7 +181,7 @@ export function AppShell({
           id="content"
           tabIndex={-1}
           aria-busy={busy || undefined}
-          className="min-w-0 flex-1 bg-surface px-4 py-6 focus-visible:outline-none md:p-6 lg:col-start-2 lg:row-start-1 lg:mb-10 lg:mt-6 lg:self-start lg:rounded-xl lg:border lg:border-border lg:p-8 lg:shadow-1 xl:p-10"
+          className="min-w-0 flex-1 bg-surface px-4 py-6 focus-visible:outline-hidden md:p-6 lg:col-start-2 lg:row-start-1 lg:mb-10 lg:mt-6 lg:self-start lg:rounded-xl lg:border lg:border-border lg:p-8 lg:shadow-1 xl:p-10"
         >
           {children}
         </main>
@@ -198,7 +198,7 @@ export function AppShell({
             {/* The heading stays for screen readers at lg, so the sidebar's
               group headings (h3) sit under an h2 there too. */}
             <h2 className="pb-4 text-h3 text-fg lg:sr-only">Site menu</h2>
-            <div className="space-y-4 pb-6 md:hidden">
+            <div className="stack-y-4 pb-6 md:hidden">
               <SearchBox size="lg" />
               <ThemeToggle placement="drawer" />
             </div>
@@ -207,7 +207,7 @@ export function AppShell({
           <div
             aria-hidden="true"
             data-testid="sidebar-more"
-            className={`pointer-events-none sticky bottom-0 -mt-6 hidden h-6 bg-gradient-to-t from-canvas ${moreBelow ? "lg:block" : ""}`}
+            className={`pointer-events-none sticky bottom-0 -mt-6 hidden h-6 bg-fade-up ${moreBelow ? "lg:block" : ""}`}
           />
         </nav>
         <div className="lg:col-start-2 lg:row-start-2">
@@ -227,7 +227,7 @@ export function AppShell({
           </div>
         }
       >
-        <div className="space-y-6">
+        <div className="stack-y-6">
           <SearchBox size="lg" />
           <nav aria-label="Site">
             <Sidebar />

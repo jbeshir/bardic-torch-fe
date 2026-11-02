@@ -106,7 +106,7 @@ export function ErrorState({
       <h1
         ref={headingRef}
         tabIndex={-1}
-        className="mt-6 text-h1 text-fg focus-visible:outline-none"
+        className="mt-6 text-h1 text-fg focus-visible:outline-hidden"
       >
         {title}
       </h1>

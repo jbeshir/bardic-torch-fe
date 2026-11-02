@@ -56,7 +56,7 @@ export function ErrorSummary({
         headingLevel={2}
         title={`Check ${count} ${count === 1 ? "thing" : "things"} below`}
       >
-        <ul className="list-disc space-y-1 pl-5">
+        <ul className="list-disc stack-y-1 pl-5">
           {problems.map(({ fieldId, message }) => (
             <li key={fieldId}>
               <a

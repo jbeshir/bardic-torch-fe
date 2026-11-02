@@ -63,8 +63,8 @@ describe("Checkbox", () => {
     const box = screen.getByRole("checkbox");
     expect(box).toHaveClass("forced-colors:appearance-auto");
     const { check, minus } = marks(box);
-    expect(check).toHaveClass("forced-colors:!hidden");
-    expect(minus).toHaveClass("forced-colors:!hidden");
+    expect(check).toHaveClass("forced-colors:hidden!");
+    expect(minus).toHaveClass("forced-colors:hidden!");
   });
 
   it("has an indeterminate state with a bar instead of the tick", () => {
