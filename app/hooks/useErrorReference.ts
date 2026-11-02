@@ -20,9 +20,8 @@ export function useErrorReference(
   useEffect(() => {
     if (!report) return;
     initSentry(dsn);
-    // As @sentry/remix's captureRemixErrorBoundaryError did: only errors
-    // are reported, never an error response (a thrown `data()`), which the
-    // server answered on purpose.
+    // Only errors are reported, never an error response (a thrown
+    // `data()`), which the server answered on purpose.
     const eventId =
       error instanceof Error
         ? Sentry.captureException(error, {

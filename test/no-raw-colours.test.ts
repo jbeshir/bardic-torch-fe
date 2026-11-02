@@ -11,7 +11,7 @@ import { RESTRICTED_CLASSES } from "../scripts/tailwind-classes.mjs";
  * files are allowed too, but only while they are byte-for-byte what
  * scripts/build-tokens.mjs writes, so the allowance can't be abused.
  * Tailwind classes stay on the theme the generator writes: no arbitrary
- * values or properties, no `dark:`, and FE1's scales
+ * values or properties, no `dark:`, and the project's fixed scales
  * (scripts/tailwind-classes.mjs, which lint applies to the app too).
  */
 
@@ -104,9 +104,10 @@ const PATTERNS: readonly { readonly kind: string; readonly pattern: RegExp }[] =
       pattern: /(?<![\w-])-?[a-z][a-z0-9]*(?:-[a-z0-9]+)*-\[[^\]\s]+\]/g,
     },
     {
-      // Tailwind 4's `bg-(--name)` shorthand for `bg-[var(--name)]`.
+      // Tailwind 4's `bg-(--name)` shorthand for `bg-[var(--name)]`, also
+      // with a type hint: `bg-(color:--name)`.
       kind: "Tailwind arbitrary value",
-      pattern: /(?<![\w-])-?[a-z][a-z0-9-]*-\(--[\w-]+\)/g,
+      pattern: /(?<![\w-])-?[a-z][a-z0-9-]*-\((?:[a-z-]+:)?--[\w-]+\)/g,
     },
     {
       // `[mask-type:luminance]`: a whole declaration as a class.
@@ -177,6 +178,8 @@ describe("token-only styles", () => {
     ["Tailwind arbitrary value", 'className="w-[min(32rem,100vw)]"'],
     ["Tailwind arbitrary value", 'className="bg-(--bt-canvas)"'],
     ["Tailwind arbitrary value", 'className="hover:-mt-(--gap)"'],
+    ["Tailwind arbitrary value", 'className="bg-(color:--bt-canvas)"'],
+    ["Tailwind arbitrary value", 'className="hover:p-(length:--gap)"'],
     ["Tailwind arbitrary property", 'className="[mask-type:luminance]"'],
     ["Tailwind arbitrary property", 'className="md:[color:red]"'],
     ["dark: variant", 'className="dark:bg-canvas"'],
@@ -217,7 +220,7 @@ describe("token-only styles", () => {
   });
 });
 
-describe("FE1's scales and Tailwind 4 differences (RESTRICTED_CLASSES)", () => {
+describe("the fixed scales and Tailwind 4 differences (RESTRICTED_CLASSES)", () => {
   const restricted = (name: string) =>
     RESTRICTED_CLASSES.some(({ pattern }) => new RegExp(pattern).test(name));
 
@@ -244,6 +247,8 @@ describe("FE1's scales and Tailwind 4 differences (RESTRICTED_CLASSES)", () => {
     "bg-[#fff]",
     "[mask-type:luminance]",
     "bg-(--bt-canvas)",
+    "bg-(color:--bt-canvas)",
+    "hover:p-(length:--gap)",
     "dark:bg-canvas",
   ])("restricts %s", name => {
     expect(restricted(name)).toBe(true);

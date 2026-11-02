@@ -41,7 +41,7 @@ test("the app server answers a second request on the same socket after 6.5 s idl
     }
     return statuses();
   };
-  // A static file FE1 ships: the request needs no fixture data.
+  // A static file the app ships: the request needs no fixture data.
   const request = `GET /favicon.svg HTTP/1.1\r\nHost: ${host}\r\nConnection: keep-alive\r\n\r\n`;
   try {
     socket.write(request);

@@ -1,10 +1,7 @@
-# validate and e2e are required status checks on main (docs/DEPLOY.md, §1
-# "Before the first deploy", step "Protect main"); audit is not required
-# yet, because remix-auth (until stage 3's openid-client) and a dev
-# dependency (postcss 8.5.3, until Tailwind 4) still carry advisories or
-# deprecations. None needs
-# secrets: the e2e suite runs the built app against the local fixture API
-# with stub sign-in, and never leaves the runner (see docs/TESTING.md).
+# validate, e2e and audit are required status checks on main (docs/DEPLOY.md,
+# §1 "Before the first deploy", step "Protect main"). None needs secrets:
+# the e2e suite runs the built app against the local fixture API with stub
+# sign-in, and never leaves the runner (see docs/TESTING.md).
 #
 # Actions are pinned to exact release tags. Full commit SHAs (with the tag
 # in a comment) would be stronger, but they were not resolvable when this
@@ -51,8 +48,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # format:check, lint, typecheck, check:api, check:tokens,
-      # check:contrast, vitest (unit, contract, scans) and check:prod-build.
+      # Every static check and vitest: the chain is package.json's
+      # `validate` script (CLAUDE.md, "Validation").
       - name: Validate
         run: npm run validate
 

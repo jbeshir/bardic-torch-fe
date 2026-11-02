@@ -138,10 +138,13 @@ async function stylesSettled(page: Page): Promise<void> {
 async function expectNoAxeViolations(
   page: Page,
   label: string,
-  target: string | undefined
+  target: string | undefined,
+  { disabledRules = [] }: { readonly disabledRules?: readonly string[] } = {}
 ) {
   await stylesSettled(page);
-  const builder = new AxeBuilder({ page }).withTags(AXE_TAGS);
+  const builder = new AxeBuilder({ page })
+    .withTags(AXE_TAGS)
+    .disableRules([...disabledRules]);
   const { violations } = await (
     target ? builder.include(target) : builder
   ).analyze();
@@ -154,19 +157,25 @@ async function expectNoAxeViolations(
 }
 
 /**
- * Runs `check` on the page in its author colours. Under emulated forced
- * colours Chromium paints text in the system palette, but getComputedStyle
- * reports the author `color` next to the forced `background-color`, and axe
- * has no forced-colours mode. So its contrast rule would compare two colours
- * that are never painted together (a primary button's `accent-fg` text on
- * the system Canvas: 1.02:1, while the button is drawn black on white). A
- * page in forced colours has them turned off for the check, so every rule
- * runs on the same DOM, focus and theme, with contrast measured as FE1's
- * checkpoints measure it, and turned back on before the screenshot.
+ * The checks of a page in emulated forced colours, which run `check` twice.
+ *
+ * First in forced colours, as the page is captured, with every rule but
+ * `color-contrast`: forced colours change what is rendered (the
+ * forced-colours-only CSS, such as Checkbox's native box, and outlines),
+ * so axe's other rules must see that page. axe-core has no forced-colours
+ * support: Chromium paints text in the system palette, but getComputedStyle
+ * reports the author `color` next to the forced `background-color`, so the
+ * contrast rule would compare two colours that are never painted together
+ * (a primary button's `accent-fg` text on the system Canvas: 1.02:1, while
+ * the button is drawn black on white).
+ *
+ * Then in the author colours, with every rule, contrast included, on the
+ * same DOM, focus and theme. Forced colours are turned back on before the
+ * screenshot. A page in author colours gets the second pass only.
  */
-async function inAuthorColours(
+async function inForcedAndAuthorColours(
   page: Page,
-  check: () => Promise<void>
+  check: (disabledRules?: readonly string[]) => Promise<void>
 ): Promise<void> {
   const forced = await page.evaluate(
     () => matchMedia("(forced-colors: active)").matches
@@ -175,6 +184,8 @@ async function inAuthorColours(
     await check();
     return;
   }
+  // The one rule axe-core can't evaluate under forced colours (above).
+  await check(["color-contrast"]);
   await page.emulateMedia({ forcedColors: "none" });
   try {
     await check();
@@ -327,8 +338,9 @@ async function renderedCanvas(page: Page): Promise<string> {
  * moves the pointer to the corner, so no hover left by an earlier click
  * shows (hover states can't be captured statically; DESIGN §10.6).
  * Axe runs once the page's transitions have finished (`stylesSettled`).
- * A page in emulated forced colours is checked by axe in its author
- * colours and captured in forced colours (see `inAuthorColours`).
+ * A page in emulated forced colours is checked by axe in forced colours
+ * (contrast aside) and in its author colours, and captured in forced
+ * colours (see `inForcedAndAuthorColours`).
  *
  * With `target` (a CSS selector, e.g. one styleguide block or an open
  * dialog), axe and the screenshot cover that element only; with `target`
@@ -385,11 +397,12 @@ export async function checkpoint(
           channelString(resolveColour(theme, "canvas"))
         );
         if (AXE_WIDTHS.includes(viewport.width)) {
-          await inAuthorColours(page, () =>
+          await inForcedAndAuthorColours(page, disabledRules =>
             expectNoAxeViolations(
               page,
-              `${theme} at ${viewport.width}px`,
-              target
+              `${theme} at ${viewport.width}px${disabledRules ? " in forced colours" : ""}`,
+              target,
+              disabledRules ? { disabledRules } : {}
             )
           );
         }

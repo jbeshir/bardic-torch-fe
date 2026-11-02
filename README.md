@@ -84,15 +84,17 @@ Then open http://localhost:5173/auth/login?as=contributor. You are signed in as 
 
 To run against a real Auth0 tenant and the API, copy `.dev.vars.example` to `.dev.vars`, fill it in, then run `npm run dev`. Use a separate Auth0 development application whose Allowed Callback URLs include `http://localhost:5173/auth/callback` and whose Allowed Logout URLs include `http://localhost:5173` (docs/DEPLOY.md §4, Local development); the production application doesn't list `localhost`.
 
+To try a build as Cloudflare runs it, run `npm run build` (or `build:preview`), then `npm run serve`: `wrangler dev` serves that build's Worker and static files in workerd, on http://localhost:8787. It reads the production (or preview) `vars` from the build, with your `.dev.vars` laid over them, so fill in `.dev.vars` first (until then every page is the "Site configuration error" page). Requests keep their local origin (`--infer-origin-from-routes=false`), not the production host wrangler would infer from `routes`, so the same-origin checks accept local form posts. To sign in, set `AUTH0_DEFAULT_REDIRECT_URI=http://localhost:8787` in `.dev.vars` and add `http://localhost:8787/auth/callback` and `http://localhost:8787` to the Auth0 development application's callback and logout URLs.
+
 ## Checks
 
-| command            | what it runs                                                                                                                                      |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run validate` | check:types, gen:types, format:check, lint, typecheck, check:unused, check:api, check:tokens, check:contrast, every vitest test, check:prod-build |
-| `npm run test:e2e` | Playwright: the prod phase, then the stub phase; needs Chromium                                                                                   |
-| `npm run audit`    | `npm audit`: any runtime advisory, or a high or critical one anywhere; needs the registry                                                         |
+| command            | what it runs                                                                                                                                |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run validate` | check:types, gen:types, format:check, lint, tsc, check:unused, check:api, check:tokens, check:contrast, every vitest test, check:prod-build |
+| `npm run test:e2e` | Playwright: the prod phase, then the stub phase; needs Chromium                                                                             |
+| `npm run audit`    | `npm audit`: any runtime advisory, or a high or critical one anywhere; needs the registry                                                   |
 
-CI (`.github/workflows/ci.yml`) runs the first two as the required `validate` and `e2e` jobs, and the audit as the `audit` job. [docs/TESTING.md](docs/TESTING.md) explains the layers.
+CI (`.github/workflows/ci.yml`) runs the first two as the `validate` and `e2e` jobs, and the audit as the `audit` job: all three are required checks on `main`. [docs/TESTING.md](docs/TESTING.md) explains the layers.
 
 `package.json` has one override, `"typescript": "$typescript"`: it gives TypeScript 6 to `openapi-typescript`, whose peer range (`^5.x`) still stops at 5. A hygiene test keeps it the only one.
 

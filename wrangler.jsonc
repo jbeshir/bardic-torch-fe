@@ -7,8 +7,10 @@
   // `npx wrangler secret put` per Worker, or in .dev.vars locally. See
   // docs/DEPLOY.md.
   //
-  // PRODUCTION Worker (main). Environments don't inherit, so the preview
-  // block below is complete too.
+  // PRODUCTION Worker (main). The preview environment below inherits `main`,
+  // the compatibility settings and `upload_source_maps` from here, but not
+  // `vars` or `secrets`, so it repeats them. It also repeats the URL and
+  // observability switches, explicitly.
   "name": "bardic-torch-fe",
   "main": "./workers/app.ts",
   // Bump with wrangler: it must be a date the bundled workerd supports
@@ -25,7 +27,16 @@
     // Redirected to the apex by a zone Redirect Rule (docs/DEPLOY.md §3).
     { "pattern": "www.bardictorch.org", "custom_domain": true },
   ],
-  "observability": { "enabled": true },
+  // Workers Logs keeps the Worker's console logs. Not the per-request
+  // invocation logs: they record every request URL, and a query string can
+  // carry one-time secrets (/auth/callback?code=…&state=…), which no log or
+  // error report may keep (app/server/sentry.server.ts). Query strings are
+  // also redacted from whatever else Workers Logs records.
+  "observability": {
+    "enabled": true,
+    "redact_query_string": true,
+    "logs": { "invocation_logs": false },
+  },
   "upload_source_maps": true,
   "vars": {
     "BARDIC_TORCH_API_BASE_URL": "https://api.bardictorch.org",
@@ -46,7 +57,11 @@
       "routes": [
         { "pattern": "preview.bardictorch.org", "custom_domain": true },
       ],
-      "observability": { "enabled": true },
+      "observability": {
+        "enabled": true,
+        "redact_query_string": true,
+        "logs": { "invocation_logs": false },
+      },
       "vars": {
         "BARDIC_TORCH_API_BASE_URL": "https://api.bardictorch.org",
         "AUTH0_DOMAIN": "bardictorch.us.auth0.com",

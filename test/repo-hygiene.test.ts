@@ -365,6 +365,7 @@ type WorkerConfig = {
   readonly secrets?: { readonly required?: readonly string[] };
   readonly d1_databases?: unknown;
   readonly assets?: unknown;
+  readonly observability?: unknown;
 };
 type WranglerConfig = WorkerConfig & {
   readonly env?: Readonly<Record<string, WorkerConfig>>;
@@ -508,6 +509,18 @@ describe("ops: wrangler.jsonc", () => {
             ]
           : [{ pattern: "preview.bardictorch.org", custom_domain: true }]
       );
+    }
+  );
+
+  it.each(WORKERS)(
+    "%s keeps console logs in Workers Logs, but no request URL: no invocation logs, query strings redacted",
+    worker => {
+      // A query string can carry one-time secrets (/auth/callback?code=…).
+      expect(workerConfig(worker).observability).toEqual({
+        enabled: true,
+        redact_query_string: true,
+        logs: { invocation_logs: false },
+      });
     }
   );
 

@@ -1,5 +1,21 @@
 import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import {
+  createSourceFile,
+  getModifiers,
+  isClassDeclaration,
+  isExportAssignment,
+  isExportDeclaration,
+  isFunctionDeclaration,
+  isIdentifier,
+  isInterfaceDeclaration,
+  isNamedExports,
+  isTypeAliasDeclaration,
+  isVariableStatement,
+  ScriptTarget,
+  SyntaxKind,
+  type Statement,
+} from "typescript";
 import { describe, expect, it } from "vitest";
 import { filesUnder } from "./support/files";
 
@@ -118,5 +134,125 @@ describe("app modules", () => {
     }
     expect(checkedModules.length).toBeGreaterThan(60);
     expect(unused).toEqual([]);
+  });
+});
+
+/**
+ * The exports React Router reads from a route module (the root included)
+ * and from the server entry. knip makes these modules entries and checks
+ * none of their exports, so this is the check: any other export is unused.
+ */
+const ROUTE_MODULE_EXPORTS = new Set([
+  "default",
+  "loader",
+  "action",
+  "clientLoader",
+  "clientAction",
+  "middleware",
+  "clientMiddleware",
+  "meta",
+  "links",
+  "headers",
+  "handle",
+  "shouldRevalidate",
+  "ErrorBoundary",
+  "HydrateFallback",
+  "Layout",
+]);
+const SERVER_ENTRY_EXPORTS = new Set([
+  "default",
+  "handleError",
+  "handleDataRequest",
+  "streamTimeout",
+]);
+
+/** The names one top-level statement exports. */
+function statementExports(statement: Statement): string[] {
+  if (isExportAssignment(statement)) return ["default"];
+  if (isExportDeclaration(statement)) {
+    return statement.exportClause && isNamedExports(statement.exportClause)
+      ? statement.exportClause.elements.map(element => element.name.text)
+      : ["*"];
+  }
+  const modifiers = (
+    getModifiers(statement as Parameters<typeof getModifiers>[0]) ?? []
+  ).map(modifier => modifier.kind);
+  if (!modifiers.includes(SyntaxKind.ExportKeyword)) return [];
+  if (modifiers.includes(SyntaxKind.DefaultKeyword)) return ["default"];
+  if (isVariableStatement(statement)) {
+    return statement.declarationList.declarations.map(declaration =>
+      isIdentifier(declaration.name) ? declaration.name.text : "(pattern)"
+    );
+  }
+  if (
+    isFunctionDeclaration(statement) ||
+    isClassDeclaration(statement) ||
+    isTypeAliasDeclaration(statement) ||
+    isInterfaceDeclaration(statement)
+  ) {
+    return [statement.name?.text ?? "default"];
+  }
+  return ["(unknown)"];
+}
+
+/** Every name `source` exports, `default` and `*` included. */
+function moduleExports(source: string): string[] {
+  return createSourceFile(
+    "module.tsx",
+    source,
+    ScriptTarget.Latest
+  ).statements.flatMap(statementExports);
+}
+
+describe("framework modules", () => {
+  it("reads every kind of export", () => {
+    expect(
+      moduleExports(
+        [
+          "export const meta = 1, strayRouteExport = 2;",
+          "export async function loader() {}",
+          "export default function Page() {}",
+          "export type Shape = 1;",
+          "const a = 1; export { a as action, a };",
+          'export * from "./x";',
+          "function hidden() {}",
+        ].join("\n")
+      )
+    ).toEqual([
+      "meta",
+      "strayRouteExport",
+      "loader",
+      "default",
+      "Shape",
+      "action",
+      "a",
+      "*",
+    ]);
+  });
+
+  const routeModules = [
+    ...filesUnder(join("app", "routes")).filter(path =>
+      /(?<!\.test)\.tsx?$/.test(path)
+    ),
+    join("app", "root.tsx"),
+  ];
+
+  it("route modules and the root export only what React Router reads", () => {
+    expect(routeModules.length).toBeGreaterThan(10);
+    const stray = routeModules.flatMap(path =>
+      moduleExports(readFileSync(join(root, path), "utf8"))
+        .filter(name => !ROUTE_MODULE_EXPORTS.has(name))
+        .map(name => `${path}: ${name}`)
+    );
+    expect(stray).toEqual([]);
+  });
+
+  it("the server entry exports only what React Router reads", () => {
+    const path = join("app", "entry.server.tsx");
+    expect(
+      moduleExports(readFileSync(join(root, path), "utf8")).filter(
+        name => !SERVER_ENTRY_EXPORTS.has(name)
+      )
+    ).toEqual([]);
   });
 });

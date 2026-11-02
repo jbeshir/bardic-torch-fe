@@ -28,8 +28,27 @@ const codeFiles = [
   ...ROOT_FILES,
 ].filter(path => CODE_EXTENSIONS.has(extname(path)));
 
-type RuleEntry = readonly [severity: number, ...options: unknown[]];
+type RuleEntry = readonly [
+  severity: number,
+  options?: { readonly allowInterfaces?: string },
+];
 const ERROR = 2;
+
+// knip.json has comments, so it is read as JSONC.
+const knipSource = parseConfigFileTextToJson(
+  "knip.json",
+  readFileSync("knip.json", "utf8")
+);
+const knipConfig = knipSource.config as {
+  readonly entry: readonly string[];
+  readonly project: readonly string[];
+};
+
+/** Tools run by hand, as their headers say, not by an npm script. */
+const MANUAL_TOOLS = [
+  "scripts/font-fallback-metrics.mjs",
+  "scripts/wiki-categories.mjs",
+];
 
 describe("lint coverage", () => {
   it("scans scripts, config files and app code", () => {
@@ -70,14 +89,39 @@ describe("lint coverage", () => {
     }
   );
 
+  it(
+    "allows an interface that only extends another in the generated worker-configuration.d.ts alone",
+    { timeout: 60_000 },
+    async () => {
+      const eslint = new ESLint();
+      const options = async (path: string) =>
+        (
+          (await eslint.calculateConfigForFile(path)) as {
+            readonly rules?: Readonly<Record<string, RuleEntry>>;
+          }
+        ).rules?.["@typescript-eslint/no-empty-object-type"];
+      expect(await options("worker-configuration.d.ts")).toEqual([
+        ERROR,
+        { allowInterfaces: "with-single-extends" },
+      ]);
+      const loosened: string[] = [];
+      for (const path of codeFiles.filter(
+        file => /\.tsx?$/.test(file) && file !== "worker-configuration.d.ts"
+      )) {
+        const entry = await options(path);
+        // The rule's default: no empty interface, whatever it extends.
+        const allowed = entry?.[1]?.allowInterfaces ?? "never";
+        if (entry?.[0] !== ERROR || allowed !== "never") {
+          loosened.push(path);
+        }
+      }
+      expect(loosened).toEqual([]);
+    }
+  );
+
   it("puts every code file in knip's project", () => {
-    // knip.json has comments, so it is read as JSONC.
-    const { config, error } = parseConfigFileTextToJson(
-      "knip.json",
-      readFileSync("knip.json", "utf8")
-    );
-    expect(error).toBeUndefined();
-    const { project } = config as { readonly project: readonly string[] };
+    expect(knipSource.error).toBeUndefined();
+    const { project } = knipConfig;
     const included = project
       .filter(pattern => !pattern.startsWith("!"))
       .map(pattern => pattern.replace(/!$/, ""));
@@ -87,5 +131,28 @@ describe("lint coverage", () => {
         path => !included.some(pattern => matchesGlob(path, pattern))
       )
     ).toEqual([]);
+  });
+});
+
+describe("knip entries", () => {
+  it("declares exactly the scripts package.json runs and the manual tools, so an unused script is an unused file", () => {
+    const { scripts } = JSON.parse(readFileSync("package.json", "utf8")) as {
+      readonly scripts: Readonly<Record<string, string>>;
+    };
+    const run = Object.values(scripts).flatMap(command =>
+      [...command.matchAll(/(?:^|\s)(scripts\/[\w.-]+\.mjs)\b/g)].map(
+        ([, path = ""]) => path
+      )
+    );
+    const declared = knipConfig.entry
+      .filter(entry => entry.startsWith("scripts/"))
+      .map(entry => entry.replace(/!$/, ""));
+    expect(declared.filter(entry => /[*?{[]/.test(entry))).toEqual([]);
+    expect([...declared].sort()).toEqual(
+      [...new Set([...run, ...MANUAL_TOOLS])].sort()
+    );
+    for (const tool of MANUAL_TOOLS) {
+      expect(readFileSync(tool, "utf8")).toContain(`node ${tool}`);
+    }
   });
 });

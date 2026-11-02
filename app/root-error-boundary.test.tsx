@@ -80,7 +80,7 @@ describe("root ErrorBoundary", () => {
     expect(sentry.captured).toEqual([]);
   });
 
-  it("doesn't report an error response the server sent on purpose, as @sentry/remix didn't", async () => {
+  it("doesn't report an error response the server sent on purpose", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
     sentry.initialised = true;
     await renderFailure(new Response(null, { status: 503 }));

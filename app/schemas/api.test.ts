@@ -174,6 +174,18 @@ describe("response schemas", () => {
       apiTokenListSchema,
       { data: [{ ...token, created_at: "1 Jan" }] },
     ],
+    // RFC 3339 (the spec's `format: date-time`) needs both: zod 4 refuses
+    // them, where zod 3 accepted them.
+    [
+      "a date-time offset without a colon",
+      apiTokenListSchema,
+      { data: [{ ...token, created_at: "2026-11-02T10:00:00+0000" }] },
+    ],
+    [
+      "a date-time without seconds",
+      apiTokenListSchema,
+      { data: [{ ...token, last_used_at: "2026-11-02T10:00Z" }] },
+    ],
     [
       "a missing nullable",
       apiTokenListSchema,

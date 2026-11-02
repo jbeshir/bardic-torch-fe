@@ -6,8 +6,21 @@
     "workers/app.ts!",
     // The route config, which React Router's Vite plugin loads.
     "app/routes.ts!",
-    // npm scripts and the manual tools (font-fallback-metrics, wiki-categories).
-    "scripts/*.mjs!",
+    // The scripts package.json runs (test/lint-coverage.test.ts keeps this
+    // list equal to them)…
+    "scripts/build.mjs!",
+    "scripts/build-tokens.mjs!",
+    "scripts/check-production-build.mjs!",
+    "scripts/contrast.mjs!",
+    "scripts/dev.mjs!",
+    "scripts/dev-fixtures.mjs!",
+    "scripts/e2e.mjs!",
+    "scripts/gen-api.mjs!",
+    "scripts/gen-types.mjs!",
+    "scripts/sync-api.mjs!",
+    // …and the two manual tools, run by hand as their headers say.
+    "scripts/font-fallback-metrics.mjs!",
+    "scripts/wiki-categories.mjs!",
     // The build: it compiles the help pages and serves dev, so what it
     // imports (the Markdown pipeline, ENV_NAMES, the tokens) is production.
     "vite.config.ts!",
@@ -18,11 +31,16 @@
     "test/support/server-build-stub.ts"
   ],
   // Test support code is not production: knip's default run still checks it.
+  // Stylesheets are followed through their @imports, so an orphan .css is an
+  // unused file too.
   "project": [
-    "**/*.{ts,tsx,mjs,js}!",
+    "**/*.{ts,tsx,mjs,js,css,mdx}!",
     "!app/test/**!",
     "!test/**!",
-    "!e2e/**!"
+    "!e2e/**!",
+    // Lint's Tailwind tables (eslint.config.ts and the class tests): no
+    // build imports them.
+    "!scripts/tailwind-classes.mjs!"
   ],
   // Vite's plugin would treat vite.config.ts as a development-only config
   // file, and drop the production entry above. React Router's plugin finds

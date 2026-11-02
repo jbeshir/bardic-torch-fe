@@ -1558,7 +1558,7 @@ The pattern is: what happened, then what to do. Don't blame the reader, and don'
 
 ## Appendix A: Tailwind theme
 
-`scripts/build-tokens.mjs` writes the Tailwind 4 theme into `app/styles/tokens.css`, after the per-theme variables, from `app/styles/tokens.ts` and the tables in `scripts/tailwind-theme.mjs`; `npm run check:tokens` byte-checks it. There is no `tailwind.config.ts`. The `@theme` block starts with `--*: initial`, which clears every Tailwind default, so only what is listed here exists: no default palette, size scale, radii, shadows, durations or animations.
+`scripts/build-tokens.mjs` writes the Tailwind 4 theme into `app/styles/tokens.css`, after the per-theme variables, from `app/styles/tokens.ts` and the tables in `scripts/tailwind-theme.mjs`; `npm run check:tokens` byte-checks it. The `@theme` block starts with `--*: initial`, which clears every Tailwind default, so only what is listed here exists: no default palette, size scale, radii, shadows, durations or animations.
 
 - **Spacing** is Tailwind 3's default scale plus `13`, written as named keys (`--spacing-4: 1rem`) with no bare `--spacing`, so `p-17` or `mt-13.5` are not classes.
 - **Every other namespace** of Tailwind 4's theme (read from `tailwindcss/theme.css` when the file is generated) gets the values FE1's Tailwind 3 theme had: `--breakpoint-*` (`sm` 640 px … `2xl` 1536 px), `--font-weight-*`, `--leading-*`, `--tracking-*`, `--container-*` (`max-w-xs` … `max-w-7xl`), `--blur-*`, `--aspect-*`. `--drop-shadow-*` stays empty, because Tailwind 3's drop shadows are raw black (§2.1). `--inset-shadow-*`, `--text-shadow-*` and `--perspective-*` stay empty: Tailwind 3 had none.

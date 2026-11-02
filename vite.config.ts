@@ -32,10 +32,11 @@ export default defineConfig(({ command, mode }) => ({
     ),
   },
   resolve: { tsconfigPaths: true },
-  // The CSS minifier FE1 had. Vite 8's default, Lightning CSS, rewrites
-  // more (colours to hex, `light-dark()` helpers, merged rules); esbuild's
-  // output is FE1's but for shorthands such as `inset`, so the pages paint
-  // the same. esbuild comes with wrangler and tsx.
+  // esbuild, not Vite 8's default Lightning CSS, minifies the CSS:
+  // Lightning rewrites more (colours to hex, `light-dark()` helpers, merged
+  // rules), while esbuild keeps every declaration as the stylesheets write
+  // it but for shorthands such as `inset`. It is a direct dev dependency
+  // (Vite's is an optional peer) because of this option.
   build: { cssMinify: "esbuild" },
   plugins: [
     // Help pages are Markdown, compiled before React Router sees the route
@@ -46,7 +47,7 @@ export default defineConfig(({ command, mode }) => ({
       // wrangler.jsonc's `secrets.required` makes the dev server load only
       // the required secrets (and `vars`) from .dev.vars, which would drop
       // the optional SENTRY_DSN and AUTH_MODE. In dev every .dev.vars key is
-      // a binding, as before; builds keep the list, so a deploy without
+      // a binding; builds keep the list, so a deploy without
       // the secrets fails.
       ...(command === "serve"
         ? {

@@ -40,9 +40,9 @@
   }
 
   /*
-   * What FE1's Tailwind 3 preflight left as the browser had it, and Tailwind
-   * 4's resets: a table cell's 1px padding (on the sides its classes don't
-   * set), and a search field drawn as a text field.
+   * Browser defaults that Tailwind 4's preflight resets and the design keeps:
+   * a table cell's 1px padding (on the sides its classes don't set), and a
+   * search field drawn as a text field.
    */
   th,
   td {
@@ -55,8 +55,8 @@
   }
 
   /*
-   * Tailwind 4's preflight gives controls `opacity: 1`; Tailwind 3's left the
-   * browser's, which fades a disabled select (Chromium: 0.7).
+   * Tailwind 4's preflight gives controls `opacity: 1`; the browser's own
+   * opacity is kept, which fades a disabled select (Chromium: 0.7).
    */
   button,
   input,
@@ -72,7 +72,7 @@
     color: rgb(var(--bt-fg-subtle));
   }
 
-  /* Buttons show the pointer, and disabled controls don't (FE1's Tailwind 3 preflight). */
+  /* Buttons show the pointer, and disabled controls don't. */
   button,
   [role="button"] {
     cursor: pointer;
@@ -191,9 +191,3 @@
 @utility transform-box-fill {
   transform-box: fill-box;
 }
-
-/*
- * `field-sizing-content` (a text area as tall as its content, where
- * supported) and `wrap-anywhere` (break a long unspaced value anywhere,
- * even in a table cell) are Tailwind 4's own utilities now.
- */

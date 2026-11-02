@@ -19,15 +19,17 @@ import {
   componentClasses,
   RESTRICTED_CLASSES,
 } from "../scripts/tailwind-classes.mjs";
-import { UTILITY_CLASSES } from "../scripts/tailwind-theme.mjs";
+import { classParts, type ClassPart } from "./support/class-strings";
 import { filesUnder } from "./support/files";
 
 /**
  * Every class the app writes is one the build makes (F16). Lint
  * (better-tailwindcss/no-unknown-classes) checks the class attributes; this
  * compiles app/styles/app.css with Tailwind itself, over what Tailwind's
- * scanner finds in app/**, the way the Vite build does, and checks every
- * class string in the app's modules against it, constants included.
+ * scanner finds in app/**, the way the Vite build does, and checks against
+ * it every string that flows into a class attribute (support/class-strings:
+ * constants, records, helpers and `.map` callbacks included, whether or not
+ * a class in it exists), and every other string that holds a known class.
  */
 
 const root = process.cwd();
@@ -114,6 +116,21 @@ const modules = filesUnder("app").filter(path =>
   /(?<!\.test)\.tsx?$/.test(path)
 );
 const strings = modules.flatMap(classStrings);
+const read = (paths: readonly string[]) =>
+  new Map(paths.map(path => [path, readFileSync(join(root, path), "utf8")]));
+const parts = classParts(root, read(modules));
+
+/** The tokens of `part` that aren't classes, but for a partial one glued to an expression. */
+function unknownTokens({ text, gluedStart, gluedEnd }: ClassPart): string[] {
+  const words = text.split(/\s+/);
+  return words.filter(
+    (word, index) =>
+      word !== "" &&
+      !(gluedStart && index === 0) &&
+      !(gluedEnd && index === words.length - 1) &&
+      !isClass(word)
+  );
+}
 const tokens = [
   ...new Set(strings.flatMap(({ text }) => text.split(/\s+/).filter(Boolean))),
 ];
@@ -147,11 +164,92 @@ describe("Tailwind classes in the app", () => {
     expect(unknown).toEqual([]);
   });
 
+  it("finds the strings that flow into class attributes", () => {
+    const texts = new Set(parts.map(({ text }) => text));
+    // A className literal, a helper's return value through an import
+    // (textControlClasses), a record entry (Button's VARIANTS), a `.map`
+    // callback's destructured element (the styleguide's SURFACES).
+    for (const text of [
+      "sr-only",
+      "disabled:cursor-not-allowed disabled:border-solid disabled:border-border disabled:bg-input-bg-locked disabled:text-fg-subtle",
+      "border border-transparent bg-danger text-danger-on hover:bg-danger-hover active:bg-danger-hover",
+      "bg-surface-sunken",
+    ]) {
+      expect(texts).toContain(text);
+    }
+    expect(parts.length).toBeGreaterThan(strings.length);
+  });
+
+  it("builds a rule for every class in a string that flows into a class attribute", () => {
+    const unknown = parts.flatMap(part =>
+      unknownTokens(part).map(token => `${part.file}: ${token}`)
+    );
+    expect(unknown).toEqual([]);
+  });
+
+  it("reports an unknown class wherever it flows from, and nothing that isn't a class", () => {
+    const fixture = `
+      import { textControlClasses } from "~/components/ui/Input";
+      const TYPO_CLASS = "bg-surfacee";
+      const ITEM_CLASSES: Readonly<Record<"a" | "b", string>> = { a: "p-4", b: "text-fg-mutedd" };
+      const SIZES = { sm: { box: "min-h-9 gapp-1" } } as const;
+      const SWATCHES = [["canvas", "bg-canvass"]] as const;
+      function look(tone: string) {
+        const edge = tone === "secondary-danger" ? "border-dangerr" : "";
+        return \`rounded-md \${edge}\`;
+      }
+      export function Page({ tone, size }: { tone: "a" | "b"; size: "sm" }) {
+        return (
+          <div aria-label="not-a-class" data-state="signed-in" className="mt-2 text-fg-mutedd">
+            <span className={tone === "a" ? "font-medium" : "font-mediumm"} />
+            <span className={\`\${ITEM_CLASSES[tone]} \${SIZES[size].box} \${look(tone)}\`} />
+            <input className={textControlClasses({ invalid: false })} />
+            {SWATCHES.map(([name, swatch]) => (
+              <span key={name} title={name} className={swatch} />
+            ))}
+          </div>
+        );
+      }
+    `;
+    const found = classParts(
+      root,
+      new Map([
+        ...read(["app/components/ui/Input.tsx"]),
+        ["app/fixture.tsx", fixture],
+      ])
+    )
+      .filter(({ file }) => file === "app/fixture.tsx")
+      .flatMap(unknownTokens)
+      .sort();
+    expect(found).toEqual([
+      "bg-canvass",
+      "bg-surfacee",
+      "border-dangerr",
+      "font-mediumm",
+      "gapp-1",
+      "text-fg-mutedd",
+      "text-fg-mutedd",
+    ]);
+  });
+
   it("writes no class glued to a template expression, which Tailwind's scanner would miss", () => {
     const glued = strings
       .filter(({ gluedStart, gluedEnd }) => gluedStart || gluedEnd)
       .map(({ file, text }) => `${file}: ${JSON.stringify(text)}`);
     expect(glued).toEqual([]);
+  });
+
+  it.each([
+    "bg-(--bt-canvas)",
+    "bg-(color:--bt-canvas)",
+    "p-(length:--bt-gap)",
+  ])("restricts %s, an arbitrary variable Tailwind would build", async name => {
+    expect(classesIn(await rulesFor(name))).toContain(name);
+    expect(
+      RESTRICTED_CLASSES.filter(({ pattern }) =>
+        new RegExp(pattern).test(name)
+      ).map(({ message }) => message)
+    ).toEqual(["Arbitrary variables: add a named token instead."]);
   });
 
   it("writes no restricted class (scripts/tailwind-classes.mjs)", () => {
@@ -162,7 +260,14 @@ describe("Tailwind classes in the app", () => {
   });
 
   it("builds every named utility the theme generates", () => {
-    const missing = UTILITY_CLASSES.filter(name => !built.has(name));
+    // tokens.css is the generator's output (check:tokens).
+    const utilities = [
+      ...readFileSync(join(root, "app/styles/tokens.css"), "utf8").matchAll(
+        /^@utility ([\w-]+) \{$/gm
+      ),
+    ].map(([, name = ""]) => name);
+    expect(utilities.length).toBeGreaterThan(30);
+    const missing = utilities.filter(name => !built.has(name));
     // Only the ones the app uses are in the build; each of the rest compiles.
     const unbuildable = missing.filter(
       name => !classesIn(compiler.build([name])).has(name)
@@ -192,14 +297,14 @@ describe("the theme Tailwind builds from", () => {
     }
   );
 
-  it("draws hover styles only for a fine pointer that can hover, as FE1 did", async () => {
+  it("draws hover styles only for a fine pointer that can hover", async () => {
     expect(await rulesFor("hover:underline")).toMatch(
       /@media \(hover: hover\) and \(pointer: fine\) \{\s*\.hover\\:underline:hover \{\s*text-decoration-line: underline;/
     );
   });
 
   it.each(["button", "input", "select", "optgroup", "textarea"])(
-    "leaves the %s element's opacity to the browser, as FE1's preflight did (a disabled select fades)",
+    "leaves the %s element's opacity to the browser (a disabled select fades)",
     element => {
       // Bare element selectors only: preflight's rules and base.css's.
       const opacities = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].flatMap(
@@ -218,7 +323,7 @@ describe("the theme Tailwind builds from", () => {
     }
   );
 
-  it("transitions the colours FE1 did, not the outline colour", async () => {
+  it("transitions the colours, not the outline colour", async () => {
     const rule = await rulesFor("transition-colors");
     const lists = [...rule.matchAll(/transition-property: ([^;]+);/g)].map(
       ([, list]) => list

@@ -2,6 +2,7 @@ import {
   createRequestHandler,
   matchPath,
   RouterContextProvider,
+  type RequestHandler,
   type ServerBuild,
 } from "react-router";
 import { appEnvContext, authCacheContext } from "./context.server";
@@ -81,10 +82,12 @@ function plainResponse(status: number, body: string): Response {
 
 /**
  * The Worker (workers/app.ts) for the server build `loadBuild` gives. The
- * React Router handler is built once per isolate; each request's
- * environment is validated first (an invalid one gets the static
- * configuration error page) and handed to that request's loaders and
- * actions, with a fresh auth cache, through React Router's context.
+ * build is loaded, and the React Router handler built from it, once per
+ * isolate, on the first request (in development, the build is loaded again
+ * for every request). Each request's environment is validated first (an
+ * invalid one gets the static configuration error page) and handed to that
+ * request's loaders and actions, with a fresh auth cache, through React
+ * Router's context.
  *
  * Before React Router runs:
  * - A file under /assets/ that the static assets didn't have (a stale
@@ -103,10 +106,28 @@ export function createWorkerHandler(
   loadBuild: () => Promise<ServerBuild | ServerBuildModule>,
   mode: string
 ): WorkerFetch {
-  const handleRequest = createRequestHandler(
-    async () => (await loadBuild()) as ServerBuild,
-    mode
-  );
+  // Given the build itself, React Router derives its route tree once; given
+  // a function, it calls it and derives again on every request. Only the
+  // dev server needs that, so an edited route is served.
+  const createHandler = async (): Promise<RequestHandler> =>
+    mode === "development"
+      ? createRequestHandler(
+          async () => (await loadBuild()) as ServerBuild,
+          mode
+        )
+      : createRequestHandler((await loadBuild()) as ServerBuild, mode);
+  let handler: Promise<RequestHandler> | undefined;
+  const handleRequest = async (
+    request: Request,
+    context: RouterContextProvider
+  ) => {
+    // A failed load is not kept: the next request tries again.
+    handler ??= createHandler().catch((error: unknown) => {
+      handler = undefined;
+      throw error;
+    });
+    return (await handler)(request, context);
+  };
 
   return async (request, rawEnv) => {
     const parsed = parseEnv({

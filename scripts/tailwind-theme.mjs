@@ -1,14 +1,12 @@
 // The Tailwind theme, written into app/styles/tokens.css by
-// scripts/build-tokens.mjs (DESIGN Appendix A). It replaces FE1's
-// tailwind.config.ts: `--*: initial` clears every Tailwind default, so only
-// what is written here exists.
+// scripts/build-tokens.mjs (DESIGN Appendix A). `--*: initial` clears every
+// Tailwind default, so only what is written here exists.
 //
 // - Token values (colours, type, shadows, motion, radii, fonts) come from
 //   app/styles/tokens.ts and read the per-theme `--bt-*` variables.
-// - Every other namespace Tailwind 4 has gets the value Tailwind 3 had in
-//   FE1 (its resolved theme), so the classes FE1 used keep their values:
-//   `V3_THEME` below. The namespace list is read from tailwindcss/theme.css,
-//   so a namespace a new Tailwind adds can't go unnoticed.
+// - Every other namespace Tailwind 4 has gets a fixed scale: `FIXED_SCALES`
+//   below. The namespace list is read from tailwindcss/theme.css, so a
+//   namespace a new Tailwind adds can't go unnoticed.
 // - Keys Tailwind 4 has no namespace for are named utilities (`UTILITIES`).
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -31,12 +29,12 @@ const tokenColour = (name, alpha) =>
     : `rgb(var(${runtimeVariable(name)}) / ${alpha})`;
 
 /**
- * Tailwind 3.4.17's defaults that FE1 used without setting them, as its
- * resolved theme had them. Spacing is the fixed v3 scale plus FE1's `13`;
- * it is written as named keys only (no bare `--spacing`), so a value off
- * the scale (`p-17`) is not a class.
+ * The project's fixed scales for the namespaces the tokens don't set. The
+ * values are Tailwind 3.4.17's defaults, and spacing adds `13`. Spacing
+ * is written as named keys only (no bare `--spacing`), so a value off the
+ * scale (`p-17`) is not a class.
  */
-const V3_THEME = {
+const FIXED_SCALES = {
   spacing: {
     0: "0px",
     px: "1px",
@@ -117,7 +115,8 @@ const V3_THEME = {
     wider: "0.05em",
     widest: "0.1em",
   },
-  // maxWidth's named sizes; FE1's own widths are under `max-width`.
+  // The named max-width sizes; the project's own widths are under
+  // `max-width`.
   container: {
     xs: "20rem",
     sm: "24rem",
@@ -154,7 +153,7 @@ const V3_THEME = {
   aspect: { auto: "auto", square: "1 / 1", video: "16 / 9" },
 };
 
-/** FE1's animations (DESIGN §8.2), each with its keyframes. */
+/** The animations (DESIGN §8.2), each with its keyframes. */
 const ANIMATIONS = {
   none: { animation: "none" },
   spin: {
@@ -212,9 +211,9 @@ const ANIMATIONS = {
 const SAFE_AREA_BOTTOM = "env(safe-area-inset-bottom, 0px)";
 
 /**
- * Named utilities for the values Tailwind 4 has no theme namespace for
- * (FE1's `extend` keys), and the few classes whose Tailwind 4 form would
- * paint differently from FE1's: each declaration is what Tailwind 3 wrote.
+ * Named utilities for the values Tailwind 4 has no theme namespace for, and
+ * the few classes whose Tailwind 4 form would paint differently from what
+ * the design specifies: each declaration is written out here.
  */
 const UTILITIES = {
   // The home-indicator inset on notched phones, under bottom sheets.
@@ -250,7 +249,7 @@ const UTILITIES = {
   "origin-flame": { "transform-origin": "50% 90%" },
   "underline-offset-prose": { "text-underline-offset": "0.2em" },
   // Tailwind 4's list adds outline-color, which would fade a focus ring in
-  // instead of drawing it at once; this is FE1's list. The declaration
+  // instead of drawing it at once; this list leaves it out. The declaration
   // follows Tailwind's own in the same rule, so it wins.
   "transition-colors": {
     "transition-property":
@@ -266,7 +265,7 @@ const UTILITIES = {
   },
   // The skeleton's sweep: surface-raised at the shimmer alpha, in the
   // middle of a transparent band. Tailwind 4's gradient utilities would
-  // interpolate in oklab, which paints other colours than FE1's sRGB.
+  // interpolate in oklab, which paints other colours than this sRGB one.
   "bg-shimmer": {
     "background-image": `linear-gradient(to right, transparent, ${tokenColour("surface-raised", bt("shimmer-alpha"))}, transparent)`,
   },
@@ -277,16 +276,15 @@ const UTILITIES = {
 };
 
 /**
- * A space between stacked children, as Tailwind 3's `space-y-*`: a top
- * margin on every child after the first that has no `hidden` attribute.
- * Tailwind 4's `space-y-*` puts the margin on the other side and drops
+ * A space between stacked children: a top margin on every child after the
+ * first that has no `hidden` attribute. Tailwind 4's `space-y-*` puts the margin on the other side and drops
  * the specificity, and `gap` drops the space before a child hidden by a
  * class (the drawer footer's `md:hidden` slot).
  */
 const STACK_SPACES = ["1", "3", "4", "6"];
 
 /**
- * Colour utilities at an alpha, as Tailwind 3 wrote them
+ * Colour utilities at an alpha, written as an sRGB alpha
  * (`rgb(var(--bt-link) / 0.4)`). Tailwind 4's `/40` modifier mixes in oklab
  * (`color-mix()`), which can paint a channel one step off. The class is
  * `<utility>-<colour>-<alpha>`; the alpha is a percentage or a named one.
@@ -307,13 +305,6 @@ const NAMED_ALPHAS = new Set(["shimmer", "scrim"]);
 const alpha = value =>
   NAMED_ALPHAS.has(value) ? bt(`${value}-alpha`) : String(Number(value) / 100);
 
-/** Every class `UTILITIES`, the stacks and the alpha utilities define. */
-export const UTILITY_CLASSES = [
-  ...Object.keys(UTILITIES),
-  ...STACK_SPACES.map(space => `stack-y-${space}`),
-  ...ALPHA_UTILITIES.map(([utility, colour, a]) => `${utility}-${colour}-${a}`),
-];
-
 const declarations = (properties, indent) =>
   Object.entries(properties)
     .map(([property, value]) => `${indent}${property}: ${value};`)
@@ -326,7 +317,7 @@ function utilitiesCss() {
   );
   const stacks = STACK_SPACES.map(
     space =>
-      `@utility stack-y-${space} {\n  & > :not([hidden]) ~ :not([hidden]) {\n    margin-top: ${V3_THEME.spacing[space]};\n    margin-bottom: 0px;\n  }\n}`
+      `@utility stack-y-${space} {\n  & > :not([hidden]) ~ :not([hidden]) {\n    margin-top: ${FIXED_SCALES.spacing[space]};\n    margin-bottom: 0px;\n  }\n}`
   );
   const alphas = ALPHA_UTILITIES.map(
     ([utility, colour, a]) =>
@@ -363,15 +354,15 @@ function namespaces() {
     })[name] ?? tokenColour(name);
   return {
     static: {
-      spacing: namespace("spacing", V3_THEME.spacing),
-      breakpoint: namespace("breakpoint", V3_THEME.breakpoint),
-      "font-weight": namespace("font-weight", V3_THEME["font-weight"]),
-      leading: namespace("leading", V3_THEME.leading),
-      tracking: namespace("tracking", V3_THEME.tracking),
-      container: namespace("container", V3_THEME.container),
-      "max-width": namespace("max-width", V3_THEME["max-width"]),
-      blur: namespace("blur", V3_THEME.blur),
-      aspect: namespace("aspect", V3_THEME.aspect),
+      spacing: namespace("spacing", FIXED_SCALES.spacing),
+      breakpoint: namespace("breakpoint", FIXED_SCALES.breakpoint),
+      "font-weight": namespace("font-weight", FIXED_SCALES["font-weight"]),
+      leading: namespace("leading", FIXED_SCALES.leading),
+      tracking: namespace("tracking", FIXED_SCALES.tracking),
+      container: namespace("container", FIXED_SCALES.container),
+      "max-width": namespace("max-width", FIXED_SCALES["max-width"]),
+      blur: namespace("blur", FIXED_SCALES.blur),
+      aspect: namespace("aspect", FIXED_SCALES.aspect),
       radius: namespace("radius", { DEFAULT: RADII.md, ...RADII }),
       font: namespace(
         "font",
@@ -391,10 +382,10 @@ function namespaces() {
           ])
         )
       ),
-      // Tailwind 3's drop shadows are raw black, which the tokens don't allow
-      // (DESIGN §2.1); FE1 used none.
+      // Tailwind's default drop shadows are raw black, which the tokens
+      // don't allow (DESIGN §2.1), and the design has none.
       "drop-shadow": [],
-      // Tailwind 3 had none of these in FE1.
+      // The design has none of these.
       "inset-shadow": [],
       "text-shadow": [],
       perspective: [],
@@ -426,7 +417,7 @@ function namespaces() {
 }
 
 /** How many keys the theme writes per namespace; 0 for a cleared one. */
-export function writtenNamespaces() {
+function writtenNamespaces() {
   return Object.fromEntries(
     Object.values(namespaces()).flatMap(group =>
       Object.entries(group).map(([name, keys]) => [name, keys.length])
@@ -439,7 +430,7 @@ export function writtenNamespaces() {
  * every `--<namespace>-<key>` there, by the longest namespace this module
  * knows. Throws on a variable none of them covers.
  */
-export async function tailwindNamespaces() {
+async function tailwindNamespaces() {
   const known = Object.keys(writtenNamespaces());
   const source = await readFile(
     fileURLToPath(import.meta.resolve("tailwindcss/theme.css")),

@@ -126,6 +126,46 @@ describe("the Worker", () => {
     expect(handled.requests).toHaveLength(3);
   });
 
+  it("loads the server build once per isolate, so React Router derives its routes once", async () => {
+    const loadBuild = vi.fn(async () => build);
+    const fetch = createWorkerHandler(loadBuild, "production");
+    // Two first requests at once share the one load.
+    const responses = await Promise.all([
+      fetch(new Request(`${APP_ORIGIN}/`), ENV),
+      fetch(new Request(`${APP_ORIGIN}/`), ENV),
+    ]);
+    expect((await fetch(new Request(`${APP_ORIGIN}/`), ENV)).status).toBe(200);
+    expect(responses.map(response => response.status)).toEqual([200, 200]);
+    expect(loadBuild).toHaveBeenCalledTimes(1);
+    expect(handled.created).toBe(1);
+  });
+
+  it("loads the server build for every request in development, so an edited route is served", async () => {
+    const loadBuild = vi.fn(async () => build);
+    const fetch = createWorkerHandler(loadBuild, "development");
+    for (let i = 0; i < 3; i += 1) {
+      expect((await fetch(new Request(`${APP_ORIGIN}/`), ENV)).status).toBe(
+        200
+      );
+    }
+    expect(loadBuild).toHaveBeenCalledTimes(3);
+    expect(handled.created).toBe(1);
+  });
+
+  it("loads the server build again after a failed load", async () => {
+    const failure = new Error("The build failed to load");
+    const loadBuild = vi
+      .fn<() => Promise<typeof build>>()
+      .mockRejectedValueOnce(failure)
+      .mockResolvedValue(build);
+    const fetch = createWorkerHandler(loadBuild, "production");
+    await expect(fetch(new Request(`${APP_ORIGIN}/`), ENV)).rejects.toBe(
+      failure
+    );
+    expect((await fetch(new Request(`${APP_ORIGIN}/`), ENV)).status).toBe(200);
+    expect(loadBuild).toHaveBeenCalledTimes(2);
+  });
+
   it("serves the static configuration error page for an invalid environment", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     const response = await worker()(new Request(`${APP_ORIGIN}/`), {
@@ -317,7 +357,7 @@ describe("the Worker's CSRF check (React Router's, answered before it runs)", ()
     }
   );
 
-  it("lets a same-origin POST /settings reach React Router (its 405 page, as before)", async () => {
+  it("lets a same-origin POST /settings reach React Router (its 405 page)", async () => {
     const response = await worker()(
       post(`${APP_ORIGIN}/settings`, APP_ORIGIN),
       ENV

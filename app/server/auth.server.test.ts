@@ -206,8 +206,8 @@ describe("getServerAuthContext", () => {
   it.each([400, 401, 403])(
     "clears the session when Auth0 refuses the refresh token with a %i",
     async status => {
-      // FE1's cases: Auth0's OAuth error body on a 400 or 401, and a 403
-      // without a body (more shapes in the next test).
+      // Auth0's OAuth error body on a 400 or 401, and a 403 without a body
+      // (more shapes in the next test).
       auth0Answers(() =>
         status === 403
           ? new HttpResponse(null, { status })

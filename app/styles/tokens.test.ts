@@ -1,9 +1,6 @@
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  tailwindNamespaces,
-  writtenNamespaces,
-} from "../../scripts/tailwind-theme.mjs";
 import {
   channelString,
   COLOURS,
@@ -139,16 +136,54 @@ describe("generated tokens.css", () => {
 });
 
 describe("the Tailwind theme in tokens.css", () => {
-  it("writes every namespace of Tailwind's own theme, and clears only those FE1 had no keys for", async () => {
-    const written = writtenNamespaces();
-    for (const namespace of await tailwindNamespaces()) {
-      expect(written, namespace).toHaveProperty(namespace);
-    }
+  // The generator itself fails on a namespace of Tailwind's theme it doesn't
+  // know (scripts/tailwind-theme.mjs); this checks what it wrote.
+  it("writes every namespace of Tailwind's own theme, and clears only those the design has no keys for", () => {
+    const CLEARED = [
+      "drop-shadow",
+      "inset-shadow",
+      "perspective",
+      "text-shadow",
+    ];
+    const variables = (source: string) =>
+      [...source.matchAll(/^\s*--([a-z0-9_-]+)\s*:/gm)]
+        .map(([, name = ""]) => name)
+        .filter(name => !name.startsWith("default-") && !name.includes("--"));
+    const theme = css.slice(
+      css.indexOf("@theme {"),
+      css.indexOf("\n}\n", css.indexOf("@theme inline {"))
+    );
+    const written = variables(theme);
+    const tailwind = variables(
+      readFileSync(
+        join(process.cwd(), "node_modules/tailwindcss/theme.css"),
+        "utf8"
+      )
+    );
+    // A namespace is a prefix of the variable, ending at a dash; the longest
+    // one the theme writes a key in, unless the variable is in a cleared one.
+    const namespaceOf = (name: string) =>
+      CLEARED.find(
+        cleared => name === cleared || name.startsWith(`${cleared}-`)
+      ) ??
+      name
+        .split("-")
+        .map((_, end, parts) => parts.slice(0, parts.length - end).join("-"))
+        .find(prefix =>
+          written.some(key => key === prefix || key.startsWith(`${prefix}-`))
+        );
+    expect(tailwind.length).toBeGreaterThan(300);
+    expect(tailwind.filter(name => namespaceOf(name) === undefined)).toEqual(
+      []
+    );
+    const used = new Set(tailwind.map(namespaceOf));
+    expect(CLEARED.filter(cleared => !used.has(cleared))).toEqual([]);
     expect(
-      Object.entries(written)
-        .filter(([, keys]) => keys === 0)
-        .map(([namespace]) => namespace)
-        .sort()
-    ).toEqual(["drop-shadow", "inset-shadow", "perspective", "text-shadow"]);
+      written.filter(key =>
+        CLEARED.some(
+          cleared => key === cleared || key.startsWith(`${cleared}-`)
+        )
+      )
+    ).toEqual([]);
   });
 });

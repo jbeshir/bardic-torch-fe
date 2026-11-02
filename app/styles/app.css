@@ -9,9 +9,8 @@
 @source "../**/*.{ts,tsx,md}";
 
 /*
- * Hover styles only where the primary pointer can hover precisely, as in
- * FE1 (Tailwind 3's hoverOnlyWhenSupported); Tailwind 4's own hover
- * variant checks `hover: hover` alone.
+ * Hover styles only where the primary pointer can hover precisely; Tailwind
+ * 4's own hover variant checks `hover: hover` alone.
  */
 @custom-variant hover {
   @media (hover: hover) and (pointer: fine) {

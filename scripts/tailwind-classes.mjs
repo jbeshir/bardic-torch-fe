@@ -4,10 +4,9 @@
 // apply, and the component classes the stylesheets define themselves.
 import { readdirSync, readFileSync } from "node:fs";
 
-// The fixed scales FE1's Tailwind 3 theme allowed for the utilities that
-// Tailwind 4 generates for any number or fraction (`z-37`, `border-5`,
-// `w-5/7`). Values from Tailwind 3.4.17's resolved theme for FE1
-// (tailwind.config.ts before stage 4).
+// The project's fixed scales for the utilities that Tailwind 4 generates
+// for any number or fraction (`z-37`, `border-5`, `w-5/7`). The values are
+// Tailwind 3.4.17's default scales.
 const STEPS_OF_FIVE = Array.from({ length: 21 }, (_, step) => `${step * 5}`);
 const ONE_TO = last =>
   Array.from({ length: last }, (_, index) => `${index + 1}`);
@@ -34,8 +33,8 @@ const QUARTERS = ["1/2", "1/3", "2/3", "1/4", "2/4", "3/4"];
 
 /**
  * `{ utilities, values, fractions }`: `utilities` is a regex alternation of
- * class names, `values` the numbers or fractions FE1 allowed after them
- * (none: every one is refused, as Tailwind 3 had no such classes). With
+ * class names, `values` the numbers or fractions allowed after them
+ * (none: every one is refused, as the scale has no such classes). With
  * `fractions`, only fractions are checked: the numbers of a spacing utility
  * are the named spacing keys, and any other is no class at all.
  */
@@ -72,7 +71,7 @@ const SCALES = [
     utilities: "delay",
     values: ["0", "75", "100", "150", "200", "300", "500", "700", "1000"],
   },
-  // FE1's durations are the named motion tokens only.
+  // Durations are the named motion tokens only.
   { utilities: "duration", values: [] },
   {
     utilities: "brightness|backdrop-brightness",
@@ -140,8 +139,9 @@ function scalePatterns() {
 }
 
 /**
- * Classes that would step outside the tokens (DESIGN §2.1) or paint unlike
- * FE1, each with the message lint reports.
+ * Classes that would step outside the tokens (DESIGN §2.1) or the fixed
+ * scales, or that Tailwind 4 paints unlike the design, each with the
+ * message lint reports.
  */
 export const RESTRICTED_CLASSES = [
   {
@@ -153,7 +153,9 @@ export const RESTRICTED_CLASSES = [
     message: "Themes come from the tokens, not dark:.",
   },
   {
-    pattern: String.raw`\(--`,
+    // A variable in parentheses after a utility, with or without a type
+    // hint such as `color:`.
+    pattern: String.raw`\((?:[a-z-]+:)?--`,
     message: "Arbitrary variables: add a named token instead.",
   },
   {
@@ -183,7 +185,7 @@ export const RESTRICTED_CLASSES = [
   ...scalePatterns().map(pattern => ({
     pattern,
     message:
-      "Not on FE1's scale for this utility (scripts/tailwind-classes.mjs).",
+      "Not on the project's scale for this utility (scripts/tailwind-classes.mjs).",
   })),
 ];
 

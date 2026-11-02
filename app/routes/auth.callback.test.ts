@@ -9,7 +9,6 @@ import {
   AUTH0_TOKEN_ENDPOINT,
   hangingAuth0,
   idToken,
-  verifiesWithJwks,
 } from "~/test/auth0-fixture";
 import { loadContext, routeArgs, testEnv } from "~/test/context";
 import { loader as callback } from "./auth.callback";
@@ -445,20 +444,18 @@ describe("/auth/callback code exchange", () => {
     expect(asked.mock.calls).toEqual([[5_000]]);
   });
 
-  it("is answered with a real RS256 ID token, whose signature the fixture's JWKS verifies", async () => {
-    const token = await idToken();
-    expect(await verifiesWithJwks(token)).toBe(true);
-    expect(await verifiesWithJwks(`${token.slice(0, -2)}AA`)).toBe(false);
-  });
-
-  it("refuses an HS256 ID token, even one signed with the client secret", async () => {
+  /**
+   * Signs in with Auth0 answering the code exchange with `token`, and
+   * returns the response and the error the callback logged.
+   */
+  async function signInWithIdToken(token: string) {
     const error = vi
       .spyOn(console, "error")
       .mockImplementation(() => undefined);
     auth0TokenEndpoint(async () =>
       HttpResponse.json({
         access_token: "access-42",
-        id_token: await idToken({ algorithm: "HS256" }),
+        id_token: token,
         token_type: "Bearer",
       })
     );
@@ -466,25 +463,70 @@ describe("/auth/callback code exchange", () => {
     const response = await runCallback(`code=abc&state=${state}`, cookies);
     expect(exchangedCodes).toEqual(["abc"]);
     expect(response.headers.get("Location")).toBe("/help");
+    expect(error).toHaveBeenCalledTimes(1);
+    expect(error.mock.calls[0]?.[0]).toBe("Authentication callback error:");
+    return { response, logged: error.mock.calls[0]?.[1] };
+  }
+
+  /** openid-client's refusal of an ID token, for the reason `code` names. */
+  const refusal = (code: string, detail: Readonly<Record<string, unknown>>) =>
+    expect.objectContaining({
+      code,
+      cause: expect.objectContaining({
+        code,
+        cause: expect.objectContaining(detail),
+      }),
+    });
+
+  it("refuses an HS256 ID token, even one signed with the client secret", async () => {
+    const { response, logged } = await signInWithIdToken(
+      await idToken({ algorithm: "HS256" })
+    );
     expect(await sessionTokensFrom(response)).toBeUndefined();
-    expect(error).toHaveBeenCalledWith(
-      "Authentication callback error:",
-      expect.any(Error)
+    expect(logged).toEqual(
+      refusal("OAUTH_INVALID_RESPONSE", {
+        header: expect.objectContaining({ alg: "HS256" }),
+        expected: "RS256",
+      })
     );
   });
 
   it("refuses an ID token issued for another client", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
-    auth0TokenEndpoint(async () =>
-      auth0Tokens({
-        access_token: "access-42",
-        id_token: await idToken({ claims: { aud: "another-client" } }),
-        token_type: "Bearer",
+    const { response, logged } = await signInWithIdToken(
+      await idToken({ claims: { aud: "another-client" } })
+    );
+    expect(await sessionTokensFrom(response)).toBeUndefined();
+    expect(logged).toEqual(
+      refusal("OAUTH_JWT_CLAIM_COMPARISON_FAILED", {
+        claim: "aud",
+        expected: testEnv().AUTH0_CLIENT_ID,
       })
     );
-    const { state, cookies } = await startLogin("/help");
-    const response = await runCallback(`code=abc&state=${state}`, cookies);
-    expect(exchangedCodes).toEqual(["abc"]);
+  });
+
+  it("refuses an ID token from another issuer", async () => {
+    const { response, logged } = await signInWithIdToken(
+      await idToken({ claims: { iss: "https://evil.example/" } })
+    );
     expect(await sessionTokensFrom(response)).toBeUndefined();
+    expect(logged).toEqual(
+      refusal("OAUTH_JWT_CLAIM_COMPARISON_FAILED", {
+        claim: "iss",
+        expected: `https://${testEnv().AUTH0_DOMAIN}/`,
+      })
+    );
+  });
+
+  it("refuses an ID token that expired more than the 30 s clock tolerance ago", async () => {
+    const { response, logged } = await signInWithIdToken(
+      await idToken({ claims: { exp: Math.floor(Date.now() / 1000) - 31 } })
+    );
+    expect(await sessionTokensFrom(response)).toBeUndefined();
+    expect(logged).toEqual(
+      refusal("OAUTH_JWT_TIMESTAMP_CHECK_FAILED", {
+        claim: "exp",
+        tolerance: 30,
+      })
+    );
   });
 });
