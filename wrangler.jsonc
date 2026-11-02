@@ -7,10 +7,14 @@
   // `npx wrangler secret put` per Worker, or in .dev.vars locally. See
   // docs/DEPLOY.md.
   //
-  // PRODUCTION Worker (main). The preview environment below inherits `main`,
-  // the compatibility settings and `upload_source_maps` from here, but not
-  // `vars` or `secrets`, so it repeats them. It also repeats the URL and
-  // observability switches, explicitly.
+  // PRODUCTION Worker (main). The preview environment below doesn't inherit
+  // `vars` or `secrets`, so it repeats them. It inherits everything else set
+  // here (wrangler 4.156): `main`, the compatibility settings and
+  // `upload_source_maps`, and also `routes`, `workers_dev`, `preview_urls`
+  // and `observability`, which it overrides explicitly. Never remove
+  // `env.preview.routes`: the preview Worker would inherit the production
+  // custom domain, and its next deploy would move bardictorch.org to it
+  // (wrangler only warns). test/repo-hygiene.test.ts pins both Workers.
   "name": "bardic-torch-fe",
   "main": "./workers/app.ts",
   // Bump with wrangler: it must be a date the bundled workerd supports
@@ -22,11 +26,11 @@
   // No other URL serves a version: only the custom domains below.
   "workers_dev": false,
   "preview_urls": false,
-  "routes": [
-    { "pattern": "bardictorch.org", "custom_domain": true },
-    // Redirected to the apex by a zone Redirect Rule (docs/DEPLOY.md §3).
-    { "pattern": "www.bardictorch.org", "custom_domain": true },
-  ],
+  // www.bardictorch.org is not a custom domain. A zone Redirect Rule sends it
+  // to the apex, on a proxied placeholder DNS record, so if the rule is
+  // missing www serves an error, never the app on a host where sign-in
+  // can't work (docs/DEPLOY.md §3).
+  "routes": [{ "pattern": "bardictorch.org", "custom_domain": true }],
   // Workers Logs keeps the Worker's console logs. Not the per-request
   // invocation logs: they record every request URL, and a query string can
   // carry one-time secrets (/auth/callback?code=…&state=…), which no log or

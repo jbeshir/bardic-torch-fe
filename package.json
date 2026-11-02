@@ -29,7 +29,8 @@
     "gen:tokens": "tsx scripts/build-tokens.mjs",
     "check:tokens": "tsx scripts/build-tokens.mjs --check",
     "check:contrast": "tsx scripts/contrast.mjs",
-    "audit": "npm audit --omit=dev --audit-level=low && npm audit --audit-level=high"
+    "audit": "npm audit --omit=dev && npm audit --audit-level=high",
+    "audit:signatures": "npm audit signatures"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "5.3.0",

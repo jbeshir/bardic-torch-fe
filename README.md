@@ -88,13 +88,14 @@ To try a build as Cloudflare runs it, run `npm run build` (or `build:preview`), 
 
 ## Checks
 
-| command            | what it runs                                                                                                                                |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run validate` | check:types, gen:types, format:check, lint, tsc, check:unused, check:api, check:tokens, check:contrast, every vitest test, check:prod-build |
-| `npm run test:e2e` | Playwright: the prod phase, then the stub phase; needs Chromium                                                                             |
-| `npm run audit`    | `npm audit`: any runtime advisory, or a high or critical one anywhere; needs the registry                                                   |
+| command                    | what it runs                                                                                                                                |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run validate`         | check:types, gen:types, format:check, lint, tsc, check:unused, check:api, check:tokens, check:contrast, every vitest test, check:prod-build |
+| `npm run test:e2e`         | Playwright: the prod phase, then the stub phase; needs Chromium                                                                             |
+| `npm run audit`            | `npm audit`: any runtime advisory (info included), or a high or critical one anywhere; needs the registry                                   |
+| `npm run audit:signatures` | `npm audit signatures`: the installed packages' registry signatures and provenance; needs the registry and Sigstore                         |
 
-CI runs the first two as the `validate` and `e2e` jobs (`.github/workflows/ci.yml`), and the audit as the `audit` job (`.github/workflows/audit.yml`, on every push and pull request): all three are required checks on `main`. [docs/TESTING.md](docs/TESTING.md) explains the layers.
+CI runs the first two as the `validate` and `e2e` jobs (`.github/workflows/ci.yml`), and both audits as the `audit` job (`.github/workflows/audit.yml`, on every push and pull request): all three are required checks on `main`. [docs/TESTING.md](docs/TESTING.md) explains the layers.
 
 `package.json` has one override, `"typescript": "$typescript"`: it gives TypeScript 6 to `openapi-typescript`, whose peer range (`^5.x`) still stops at 5. A hygiene test keeps it the only one.
 

@@ -10,6 +10,7 @@ const root = process.cwd();
 const THIS_FILE = "test/repo-hygiene.test.ts";
 
 type PackageJson = {
+  scripts?: Record<string, string>;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
   overrides?: unknown;
@@ -218,9 +219,16 @@ describe("wiki host only in allowed files", () => {
 type WorkflowStep = {
   readonly uses?: string;
   readonly run?: string;
-  readonly with?: { readonly path?: string };
+  readonly with?: {
+    readonly path?: string;
+    readonly "persist-credentials"?: boolean;
+  };
 };
 type Workflow = {
+  readonly concurrency?: {
+    readonly group?: string;
+    readonly "cancel-in-progress"?: unknown;
+  };
   readonly on: {
     readonly push?: { readonly branches?: readonly string[] } | null;
     readonly pull_request?: unknown;
@@ -291,8 +299,37 @@ describe("CI workflows", () => {
       INSTALL_NPM,
       "npm ci",
       "npm run audit",
-      "npm audit signatures",
+      "npm run audit:signatures",
     ]);
+  });
+
+  it("npm run audit fails on any runtime advisory (info included), or a high or critical one anywhere", () => {
+    // npm audit with no --audit-level exits non-zero on any advisory.
+    expect(packageJson.scripts?.audit).toBe(
+      "npm audit --omit=dev && npm audit --audit-level=high"
+    );
+    expect(packageJson.scripts?.["audit:signatures"]).toBe(
+      "npm audit signatures"
+    );
+  });
+
+  it("cancels superseded pull request runs only, never a push's run", () => {
+    for (const [path, workflow] of Object.entries(workflows)) {
+      expect(workflow.concurrency, path).toEqual({
+        group: `${path.endsWith("ci.yml") ? "ci" : "audit"}-\${{ github.ref }}`,
+        "cancel-in-progress": "${{ github.event_name == 'pull_request' }}",
+      });
+    }
+  });
+
+  it("checks out without leaving the token in .git/config", () => {
+    for (const job of Object.keys(allJobs)) {
+      const checkouts = stepsOf(job).filter(step =>
+        step.uses?.startsWith("actions/checkout@")
+      );
+      expect(checkouts, job).toHaveLength(1);
+      expect(checkouts[0]?.with?.["persist-credentials"], job).toBe(false);
+    }
   });
 
   it("runs pull requests once, and pushes only to the deployed branches", () => {
@@ -582,10 +619,9 @@ describe("ops: wrangler.jsonc", () => {
       expect(config.preview_urls).toBe(false);
       expect(config.routes).toEqual(
         worker === "production"
-          ? [
-              { pattern: "bardictorch.org", custom_domain: true },
-              { pattern: "www.bardictorch.org", custom_domain: true },
-            ]
+          ? // www is a redirect rule on a placeholder record, not a custom
+            // domain (docs/DEPLOY.md §3).
+            [{ pattern: "bardictorch.org", custom_domain: true }]
           : [{ pattern: "preview.bardictorch.org", custom_domain: true }]
       );
     }
@@ -715,6 +751,15 @@ function flowchartNodes(chart: string): Set<string> {
   return new Set(ids ?? []);
 }
 
+/**
+ * Workers Builds' deploy command, for both Workers. When
+ * WRANGLER_CI_OVERRIDE_NAME is set, wrangler deploys under that name instead
+ * of the built config's (it only warns), which also passes its
+ * WRANGLER_CI_MATCH_TAG check. With it unset, a build for the other Worker
+ * fails that check.
+ */
+const DEPLOY_COMMAND = "env -u WRANGLER_CI_OVERRIDE_NAME npx wrangler deploy";
+
 /** A Markdown table row starting with `cells`, however Prettier pads it. */
 function tableRow(cells: readonly string[]): RegExp {
   const escaped = cells.map(cell =>
@@ -802,7 +847,11 @@ describe("docs", () => {
     expect(deploy).toContain("`npm run build:ci`");
     expect(deploy).toMatch(tableRow(["build command", "`npm run build:ci`"]));
     expect(deploy).toMatch(
-      tableRow(["deploy command", "`npx wrangler deploy`"])
+      tableRow([
+        "deploy command",
+        `\`${DEPLOY_COMMAND}\``,
+        `\`${DEPLOY_COMMAND}\``,
+      ])
     );
     for (const worker of WORKERS) {
       const origin = varsOf(worker).AUTH0_DEFAULT_REDIRECT_URI;
@@ -812,6 +861,15 @@ describe("docs", () => {
     for (const secret of SECRET_NAMES) {
       expect(deploy).toMatch(tableRow([`\`${secret}\``, "**secret**"]));
     }
+  });
+
+  it("DEPLOY.md redirects www on a proxied placeholder record, not a custom domain", () => {
+    const deploy = read("docs/DEPLOY.md");
+    expect(deploy).toContain("`A www → 192.0.2.0`, **Proxied**");
+    expect(deploy).toContain(
+      "target URL `https://${1}`, status **301**, **preserve query string** on"
+    );
+    expect(wranglerSource).not.toMatch(/"pattern":\s*"www\./);
   });
 });
 

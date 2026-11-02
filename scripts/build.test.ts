@@ -126,19 +126,37 @@ describe("checkBuiltWorker", () => {
     ]);
   });
 
-  it("fails a Workers Builds build for another connection's Worker", () => {
+  it("fails a build that WRANGLER_CI_OVERRIDE_NAME would deploy to another Worker", () => {
     expect(
       checkBuiltWorker({
         buildDir: builtFor("bardic-torch-fe"),
         mode: "production",
         env: {
           WORKERS_CI: "1",
-          WORKERS_CI_WORKER_NAME: "bardic-torch-fe-preview",
+          WRANGLER_CI_OVERRIDE_NAME: "bardic-torch-fe-preview",
         },
       })
     ).toEqual([
-      'production: this Workers Builds connection is for Worker "bardic-torch-fe-preview", but the build deploys to "bardic-torch-fe"',
+      'production: WRANGLER_CI_OVERRIDE_NAME would deploy the build to Worker "bardic-torch-fe-preview", but it is for "bardic-torch-fe"',
     ]);
+    // Set but empty is a name too: wrangler would use it, so it fails.
+    expect(
+      checkBuiltWorker({
+        buildDir: builtFor("bardic-torch-fe-preview"),
+        mode: "preview",
+        env: { WRANGLER_CI_OVERRIDE_NAME: "" },
+      })
+    ).toHaveLength(1);
+  });
+
+  it("passes a build whose WRANGLER_CI_OVERRIDE_NAME is its own Worker", () => {
+    expect(
+      checkBuiltWorker({
+        buildDir: builtFor("bardic-torch-fe-preview"),
+        mode: "preview",
+        env: { WRANGLER_CI_OVERRIDE_NAME: "bardic-torch-fe-preview" },
+      })
+    ).toEqual([]);
   });
 
   it("fails a build with no built config", () => {

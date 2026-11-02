@@ -2,15 +2,15 @@
 
 This runbook covers:
 
-- the two Cloudflare Workers behind https://bardictorch.org (and https://www.bardictorch.org) and https://preview.bardictorch.org, built from GitHub by Workers Builds;
-- their custom domains, TLS and the `www` redirect;
+- the two Cloudflare Workers behind https://bardictorch.org and https://preview.bardictorch.org, built from GitHub by Workers Builds;
+- the zone, the custom domains, TLS and the `www` redirect;
 - the API's DNS at https://api.bardictorch.org;
 - the Auth0, Turnstile and Sentry set-up the frontend relies on;
 - the first deploy, the smoke checks and rollback.
 
 The dashboard steps are done by a maintainer with access to the Cloudflare account, the GitHub repository and the Auth0 tenant. Nothing here needs a secret committed to the repository.
 
-**This is a first-time set-up.** Nothing exists yet in Cloudflare for the site: no Workers, no Pages project, no DNS records for its hostnames. So there is nothing to migrate. Cloudflare's own advice for a new site is _"Start new projects with Workers"_ (https://developers.cloudflare.com/pages/), and React Router's Cloudflare guide is Workers-only. If a Pages project or a hand-made DNS record for one of the site's hostnames does exist by the time you do this, remove it first: a custom domain can't be created on a hostname that already has a record (§3).
+**This is a first-time set-up.** Nothing exists yet in Cloudflare for the site: no zone, no Workers, no Pages project, no DNS records for its hostnames. So there is nothing to migrate. Cloudflare's own advice for a new site is _"Start new projects with Workers"_ (https://developers.cloudflare.com/pages/), and React Router's Cloudflare guide is Workers-only. If a Pages project or a hand-made DNS record for one of the site's hostnames does exist by the time you do this, remove it first: a custom domain can't be created on a hostname that already has a record (§3).
 
 Names used below:
 
@@ -26,19 +26,22 @@ Names used below:
 
 Do these once, in this order. Each step links to the section with the details.
 
-1. **Create the Auth0 application and API** (§4). Then **set the two Auth0 values in `wrangler.jsonc`**: replace `AUTH0_DOMAIN` and the placeholder `AUTH0_CLIENT_ID`, in both the top-level `vars` (production) and `env.preview.vars`, with the tenant domain and the application's client ID. Both are public values, so they belong in the repository. Commit them through a pull request. Until the placeholder is replaced, a deploy serves only the "Site configuration error" page (§2), not a site whose sign-in fails at Auth0.
-2. **Protect `main`.** In GitHub → Settings → Branches, add a branch protection rule (or ruleset) for `main`:
+1. **Create the Auth0 application and API** (§4). Then **set the two Auth0 values in `wrangler.jsonc`**: replace `AUTH0_DOMAIN` and the placeholder `AUTH0_CLIENT_ID`, in both the top-level `vars` (production) and `env.preview.vars`, with the tenant domain and the application's client ID. Both are public values, so they belong in the repository. Open a pull request with them, and leave it open for step 2. Until the placeholder is replaced, a deploy serves only the "Site configuration error" page (§2), not a site whose sign-in fails at Auth0.
+2. **Protect `main`.** Wait until step 1's pull request has run its checks: GitHub only offers status checks that have reported recently, and before that first run there are none to pick. Then, in GitHub → Settings → Branches, add a branch protection rule (or ruleset) for `main`:
    - require a pull request;
-   - require the status checks **`validate`**, **`e2e`** and **`audit`** to pass. `validate` and `e2e` are the jobs of `.github/workflows/ci.yml`, and `audit` is the job of `.github/workflows/audit.yml`.
+   - require the status checks **`validate`**, **`e2e`** and **`audit`** to pass. `validate` and `e2e` are the jobs of `.github/workflows/ci.yml`, and `audit` is the job of `.github/workflows/audit.yml`. Set each check's source to the **GitHub Actions** app, so a commit status of the same name from any other integration can't satisfy it;
+   - optionally, require branches to be up to date before merging. CI tests the pull request's merge result, so this keeps that result the commit that lands.
 
-   Add a rule for `preview` too that restricts who can push to it: a push to `preview` deploys with the preview Worker's secrets (§2).
+   Then merge step 1's pull request.
 
    CI needs no secrets. Every action in both workflows is pinned to a release's full commit SHA, with the tag in a comment.
 
-3. **Check the zone and set its TLS settings** (§3).
-4. **Give both Workers their secrets** (§2, "Bootstrap"). This creates the two Workers.
-5. **Connect Workers Builds to the preview Worker first** (§2, "Workers Builds"), push `preview`, read the first build log (§2, "The first build log"), and run the smoke checks (§8) against `https://preview.bardictorch.org`.
-6. **Then connect the production Worker**, merge to `main`, add the `www` redirect rule (§3), and run the smoke checks against `https://bardictorch.org`.
+3. **Create the `preview` branch** from `main`, which now has step 1's Auth0 values: `git fetch origin && git push origin origin/main:refs/heads/preview`, once. Workers Builds' branch control can only pick a branch that exists. Add a branch protection rule for `preview` that restricts who can push to it: a push to `preview` deploys with the preview Worker's secrets (§2).
+4. **Add the zone to Cloudflare** (§3, "The zone"), and wait until it is **Active**. Every later step that touches a domain needs it.
+5. **Set the zone's TLS settings, and add the `www` record and redirect rule** (§3). They work before any Worker exists, so `www` redirects from the first production deploy on.
+6. **Give both Workers their secrets** (§2, "Bootstrap"), in the account on the Workers Paid plan (§2, "Plan"). This creates the two Workers.
+7. **Connect Workers Builds to the preview Worker first** (§2, "Workers Builds"), then push to `preview` (or retry its first build), read the first build log (§2, "The first build log"), check that its certificate is **Active** (§3, "TLS"), and run the smoke checks (§8) against `https://preview.bardictorch.org`.
+8. **Then connect the production Worker**, start its first build (merge a pull request to `main`, or retry the build), check its certificate, and run the smoke checks against `https://bardictorch.org`.
 
 ## 2. Cloudflare Workers
 
@@ -47,13 +50,19 @@ There are two Workers, both described by `wrangler.jsonc`:
 - the production Worker `bardic-torch-fe`, at the top level;
 - the preview Worker `bardic-torch-fe-preview`, in `env.preview`.
 
-The preview environment inherits `main`, the compatibility settings and `upload_source_maps` from the top level. It doesn't inherit `vars`, `secrets`, `routes` or the URL and observability switches, so `env.preview` repeats them. Both Workers have `workers_dev: false` and `preview_urls: false`, so neither serves a `*.workers.dev` URL or a version URL: only their custom domains (§3).
+The preview environment doesn't inherit `vars` or `secrets`, so `env.preview` repeats them. It inherits everything else set at the top level (wrangler 4.156): `main`, the compatibility settings and `upload_source_maps`, and also `routes` (the production custom domain), `workers_dev`, `preview_urls` and `observability`, which `env.preview` overrides explicitly. **Never remove `env.preview.routes`:** the preview Worker would inherit `bardictorch.org`, and its next deploy would move the production domain to the preview Worker. wrangler only warns about that; a hygiene test pins both Workers' `routes`, so the change can't pass CI. Both Workers have `workers_dev: false` and `preview_urls: false`, so neither serves a `*.workers.dev` URL or a version URL: only their custom domains (§3).
+
+### Plan
+
+Use the **Workers Paid** plan for the account. The Free plan limits each request to 10 ms of CPU time, and a server-rendered React page with the per-request environment validation and Sentry can exceed that on the heavier pages; a request over the limit fails with a Cloudflare error. The zone itself can stay on the Free plan. Both Workers and the zone must be in the same account: a custom domain can only be attached to a zone in the Worker's account.
 
 ### Bootstrap: secrets before the first build
 
-`wrangler.jsonc` lists `AUTH_SESSION_SECRET` and `AUTH0_CLIENT_SECRET` under `secrets.required`, so wrangler refuses to deploy a Worker that lacks either. Workers Builds' first deploy of a new Worker would fail too. So set them first, once per Worker, from a checkout, logged in with `npx wrangler login`:
+`wrangler.jsonc` lists `AUTH_SESSION_SECRET` and `AUTH0_CLIENT_SECRET` under `secrets.required`, so wrangler refuses to deploy a Worker that lacks either. Workers Builds' first deploy of a new Worker would fail too. So set them first, once per Worker, from a checkout of `main`. Run `npm ci` first, so `npx wrangler` is the locked wrangler (4.156.1), not whatever version npx would fetch, then log in with `npx wrangler login`:
 
 ```sh
+npm ci
+npx wrangler login
 npx wrangler secret put AUTH_SESSION_SECRET --name bardic-torch-fe            # creates the Worker
 npx wrangler secret put AUTH0_CLIENT_SECRET --name bardic-torch-fe
 npx wrangler secret put AUTH_SESSION_SECRET --name bardic-torch-fe-preview    # creates the Worker
@@ -83,21 +92,22 @@ Only then connect Workers Builds.
 
 Connect each Worker to the GitHub repository: Workers & Pages → the Worker → Settings → Build → **Connect**. Fill in, for each:
 
-| setting                            | production Worker     | preview Worker            |
-| ---------------------------------- | --------------------- | ------------------------- |
-| Worker                             | `bardic-torch-fe`     | `bardic-torch-fe-preview` |
-| build command                      | `npm run build:ci`    | `npm run build:ci`        |
-| deploy command                     | `npx wrangler deploy` | `npx wrangler deploy`     |
-| root directory                     | `/`                   | `/`                       |
-| production branch                  | `main`                | `preview`                 |
-| builds for non-production branches | **off**               | **off**                   |
-| build variables                    | none                  | none                      |
+| setting                            | production Worker                                      | preview Worker                                         |
+| ---------------------------------- | ------------------------------------------------------ | ------------------------------------------------------ |
+| Worker                             | `bardic-torch-fe`                                      | `bardic-torch-fe-preview`                              |
+| build command                      | `npm run build:ci`                                     | `npm run build:ci`                                     |
+| deploy command                     | `env -u WRANGLER_CI_OVERRIDE_NAME npx wrangler deploy` | `env -u WRANGLER_CI_OVERRIDE_NAME npx wrangler deploy` |
+| root directory                     | `/`                                                    | `/`                                                    |
+| production branch                  | `main`                                                 | `preview`                                              |
+| builds for non-production branches | **off**                                                | **off**                                                |
+| build variables                    | none                                                   | none                                                   |
 
 So the production Worker has **Production branch:** `main`; **builds for non-production branches:** off. The preview Worker has **Production branch:** `preview`; **builds for non-production branches:** off.
 
 - **Production branch** is Settings → Build → Branch control. Every push to it builds and deploys that Worker.
 - **Builds for non-production branches** is the **Enable Preview Builds** checkbox under Branch control. Untick it on both Workers. It is the only branch filter Workers Builds has: with it on, a push to any other branch would build a Worker Preview with that Worker's secrets, and a push to `preview` would also start a build on the production Worker (and the reverse).
 - **Deploy command.** Cloudflare's guide for wrangler environments adds `--env preview` to the preview Worker's deploy command. Leave it off here. The Cloudflare Vite plugin chooses the environment when it builds (`npm run build:ci` sets `CLOUDFLARE_ENV=preview` on the `preview` branch), and `npx wrangler deploy` deploys the built config, `build/server/wrangler.json`, which already names the preview Worker and holds only its settings.
+- **Why `env -u WRANGLER_CI_OVERRIDE_NAME`.** Workers Builds gives `wrangler deploy` a match tag for the connection's Worker (`WRANGLER_CI_MATCH_TAG`), and wrangler refuses to deploy a config whose name isn't that Worker's: "The name in your … file (…) must match the name of your Worker". That check is what stops one connection deploying the other Worker's build. But when `WRANGLER_CI_OVERRIDE_NAME` is set, wrangler deploys under that name instead of the config's, with only a warning, and the match-tag check then passes (read in wrangler 4.156.1's source). Cloudflare doesn't document when Workers Builds sets it, so the deploy command removes it: a mismatch then fails the deploy instead of putting a preview build on the production Worker (or the reverse). `env -u` is GNU coreutils, in the build image (Ubuntu 24.04).
 - **Wrangler** is the version in `package.json` (Workers Builds uses it).
 
 **Node and npm.** The build image preinstalls Node 22 and 24 and npm 10, and the build needs Node 26.13.0 and npm 12.2.1 (`package.json` `engines`):
@@ -107,11 +117,11 @@ So the production Worker has **Production branch:** `main`; **builds for non-pro
 
 **The first build log** of each Worker must show:
 
-- `v26.13.0` for Node and `12.2.1` for npm. If Node isn't 26.13.0, add the build variable `NODE_VERSION=26.13.0` (Settings → Build → Variables and Secrets) and retry; if that fails too, stop and report it. Don't downgrade Node.
-- the build mode and Worker that `build.mjs` chose, and either a passing check of the connection's Worker or the line "Workers Builds named no Worker (WORKERS_CI_WORKER_NAME): the connection's Worker was not checked". Both are fine.
-- a deploy to the right Worker, with its custom domains.
+- `v26.13.0` for Node and `12.2.1` for npm. Only if the log shows another Node (e.g. 24.x, the image's default), add the build variable `NODE_VERSION=26.13.0` (Settings → Build → Variables and Secrets) as a fallback and retry; if that fails too, stop and report it. Don't downgrade Node.
+- the line "Building in production mode for bardic-torch-fe" (or "preview mode for bardic-torch-fe-preview"), from `build.mjs`.
+- a deploy to the right Worker, with its custom domain, and no "Failed to match Worker name" warning.
 
-If Workers Builds refuses the deploy because the deployed config's name (`bardic-torch-fe-preview`) isn't the root `wrangler.jsonc`'s `name`, change the preview Worker's deploy command to `npx wrangler deploy --config build/server/wrangler.json`.
+If Workers Builds refuses the deploy because the deployed config's name (`bardic-torch-fe-preview`) isn't the root `wrangler.jsonc`'s `name`, change the preview Worker's deploy command to `env -u WRANGLER_CI_OVERRIDE_NAME npx wrangler deploy --config build/server/wrangler.json`. This isn't expected: wrangler checks the name of the config it deploys, which is the built one.
 
 ### What `build:ci` does
 
@@ -122,7 +132,7 @@ If Workers Builds refuses the deploy because the deployed config's name (`bardic
 - Empty or unset → the build **fails** ("WORKERS_CI_BRANCH is empty: refusing to guess a deploy target"): the mode decides which Worker is deployed, so it never guesses.
 - Any other branch → the build **fails** ("Branch … is not deployed"). This catches non-production builds turned on by mistake.
 
-It then checks that the built config (`build/server/wrangler.json`, which `npx wrangler deploy` deploys) names the mode's Worker. When Workers Builds names the connection's Worker (`WORKERS_CI_WORKER_NAME`), it checks that it is that one, so the preview connection can't deploy a production build or the reverse. It deletes the `build/server/.dev.vars` the Cloudflare Vite plugin writes, so no local value ends up in a build.
+It then checks that the built config (`build/server/wrangler.json`, which `npx wrangler deploy` deploys) names the mode's Worker, and that `WRANGLER_CI_OVERRIDE_NAME`, if the build sees it, names the same Worker. Whether the build's Worker is the connection's is checked at deploy, by wrangler's match tag (see "Deploy command" above): a connection can't deploy the other Worker's build. It deletes the `build/server/.dev.vars` the Cloudflare Vite plugin writes, so no local value ends up in a build.
 
 A build log that shows the wrong Worker name, or `WORKERS_CI_BRANCH is empty`, means the connection is misconfigured. Fix the connection, never the build.
 
@@ -150,7 +160,7 @@ A separate Auth0 application for previews would remove the shared client secret 
   - an `/assets/*` file that doesn't exist (a stale hashed URL) with a plain 404 (`no-store`, security headers), never a rendered page;
   - a cross-origin POST, PUT, PATCH or DELETE to a page or `.data` URL with 400 "Bad Request" (`no-store`). React Router refuses those itself, but would report them to Sentry.
 
-  The resource routes (`/api/*`, `/auth/*`, `/resources/theme`) keep their own same-origin check, a 403. Everything else is set per request by the app: the security headers and the nonce CSP on every response the Worker makes (resource routes and redirects included), `Cache-Control: private, no-cache` on documents, and `no-store` on `/settings` and its data, on signed-in root data, on the auth routes and on the proxies.
+  The resource routes (`/api/*`, `/auth/*`, `/resources/theme`) keep their own same-origin check, a 403. Everything else is set per request by the app: the security headers and the nonce CSP on every response the Worker makes (resource routes and redirects included), `Cache-Control: private, no-cache` on documents and `.data` answers while signed out, and `no-store` on every document and `.data` answer while signed in (docs/DESIGN.md §10.3), on `/settings` and its data, on the auth routes and on the proxies.
 
 - **Source maps.** `upload_source_maps` uploads the Worker's source maps with each deploy, so stack traces in Workers Logs are readable. Sentry source-map upload isn't set up.
 
@@ -205,28 +215,36 @@ A plain-text variable changes with the next deploy of the commit that changes it
 
 ## 3. DNS, custom domains and TLS
 
-The `bardictorch.org` zone is on Cloudflare: the registrar's nameservers point at the zone's assigned Cloudflare nameservers.
+### The zone
+
+The `bardictorch.org` zone must be on Cloudflare, in the same account as the Workers, before anything else in this section or any deploy: a Worker's custom domain needs the zone. Once:
+
+1. Cloudflare dashboard → **Add a domain** → `bardictorch.org`. Choose a plan (Free is enough for the zone). When offered to import existing DNS records, skip it, or delete any imported record for `bardictorch.org`, `www` or `preview`: custom domains create their own records, and can't be created over an existing one.
+2. At the registrar, replace the nameservers with the two that Cloudflare assigns to the zone. If DNSSEC is on at the registrar, turn it off there first; once the zone is active, turn on DNSSEC in Cloudflare (DNS → Settings) and add the DS record it shows at the registrar.
+3. Wait until the zone shows **Active** (it can take up to a day; Cloudflare emails when it is). Deploys and custom domains fail until then.
 
 ### The site: `bardictorch.org`, `www` and `preview`
 
-1. **Custom domains come from `wrangler.jsonc`.** Each Worker's `routes` lists its custom domains (`"custom_domain": true`):
-   - `bardictorch.org` and `www.bardictorch.org` for `bardic-torch-fe`;
+1. **Custom domains come from `wrangler.jsonc`.** Each Worker's `routes` lists its custom domain (`"custom_domain": true`):
+   - `bardictorch.org` for `bardic-torch-fe`;
    - `preview.bardictorch.org` for `bardic-torch-fe-preview`.
 
-   Each deploy applies them. Cloudflare creates each hostname's proxied DNS record and edge certificate itself, but only if the hostname has no DNS record yet: a custom domain can't be created on a hostname with an existing record. So don't create these records by hand, and don't also add the domains in the dashboard. Keeping them in `wrangler.jsonc` keeps them in version control.
+   `www.bardictorch.org` is deliberately not a custom domain (step 3). Each deploy applies them. Cloudflare creates each hostname's proxied DNS record and edge certificate itself, but only if the hostname has no DNS record yet: a custom domain can't be created on a hostname with an existing record. So don't create these records by hand, and don't also add the domains in the dashboard. Keeping them in `wrangler.jsonc` keeps them in version control.
 
-2. **TLS.** Cloudflare issues and renews an edge certificate for each custom domain. Wait until they show **Active** (the Worker → Settings → Domains & Routes). In the zone's SSL/TLS settings:
+2. **TLS.** Set these in the zone's SSL/TLS settings once the zone is active, before the first deploy:
    - encryption mode **Full (strict)**. The Workers are their own origin, so this mode only affects other proxied records; it stops any of them from silently accepting an invalid origin certificate;
    - **Always Use HTTPS** on. It also sends `http://www…` to HTTPS before the redirect below;
    - minimum TLS version **1.2**.
 
    The app's cookies are all `Secure`, so the site is HTTPS-only by design. Turn on HSTS only once every name serves correctly.
 
-3. **Redirect `www` to the apex.** The session, returnTo and Auth0 state cookies are `__Host-` cookies, which belong to one host, and `AUTH0_DEFAULT_REDIRECT_URI` is the apex. So a sign-in started on `www` would lose its state cookie on the way back. Make `www` a permanent redirect with a **Single Redirect** rule (Rules → Redirect Rules → Create rule, or the "Redirect from WWW to root" template):
-   - **When:** wildcard pattern, request URL `https://www.*`;
-   - **Then:** target URL `https://${1}`, status **301**, **preserve query string** on.
+   Cloudflare issues and renews an edge certificate for each custom domain when the deploy creates it. **After each Worker's first deploy**, wait until its certificate shows **Active** (the Worker → Settings → Domains & Routes) before the smoke checks.
 
-   The rule runs before the Worker. It needs a proxied record for `www`, which `www.bardictorch.org`'s custom domain provides. `_redirects` can't do this: it can't redirect between hostnames.
+3. **Redirect `www` to the apex.** The session, returnTo and Auth0 state cookies are `__Host-` cookies, which belong to one host, and `AUTH0_DEFAULT_REDIRECT_URI` is the apex. So a sign-in started on `www` would lose its state cookie on the way back, and logout's `returnTo` (the request's origin) isn't an allowed logout URL there. So `www` never serves the app. It is a redirect, set up before the first production deploy, as Cloudflare documents it (Custom Domains, "Redirect from www to root"):
+   - **DNS record:** in the zone's DNS, add `A www → 192.0.2.0`, **Proxied** (orange cloud). `192.0.2.0` is a reserved documentation address: the record only lets Cloudflare's edge receive `www` requests for the rule. (Or `AAAA www → 100::`, also proxied.)
+   - **Rule:** a **Single Redirect** (Rules → Redirect Rules → Create rule, or the "Redirect from WWW to root" template). **When:** wildcard pattern, request URL `https://www.*`. **Then:** target URL `https://${1}`, status **301**, **preserve query string** on. Always Use HTTPS (step 2) sends `http://www…` to HTTPS first.
+
+   The rule runs before anything else answers. If it is ever missing or turned off, `www` serves a Cloudflare error, not a half-working copy of the site. That is why `www` isn't a custom domain of the Worker. `_redirects` can't do this: it can't redirect between hostnames.
 
 ### The API: `api.bardictorch.org` on dokku
 
@@ -411,7 +429,7 @@ Then, in a browser:
 
 ## 9. Rollback
 
-- **Fastest:** the Worker → Deployments → find the last good version → **Rollback**, or `npx wrangler rollback` (with `--name bardic-torch-fe-preview` for the preview Worker; `npx wrangler versions list` shows the candidates). It is live within seconds. Use it for a bad commit, not for a bad variable.
+- **Fastest:** the Worker → Deployments → find the last good version → **Rollback**, or `npx wrangler rollback` from a checkout after `npm ci` (with `--name bardic-torch-fe-preview` for the preview Worker). `npx wrangler versions list` shows the candidates (`npx wrangler versions list --name bardic-torch-fe-preview` for the preview Worker). It is live within seconds. Use it for a bad commit, not for a bad variable.
 - **Then fix forward:** revert the bad commit on `main` (`git revert <sha>`, via a pull request so the checks run). The next build replaces the rollback.
 - **A bad variable or secret:** don't roll back. Correct the value, which makes a new version: a commit for `wrangler.jsonc` variables, which the next deploy applies (or retry the last build); `npx wrangler secret put` for secrets, which deploys at once.
 - **A failed build** deploys nothing: the previous version keeps serving. Fix the cause, then retry the build from the Worker's build history or push the fix.

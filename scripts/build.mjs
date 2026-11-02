@@ -83,10 +83,12 @@ export function buildEnvironment(mode, env) {
 
 /**
  * Problems with the build in `buildDir` for `mode`: the Worker its built
- * config (`server/wrangler.json`) deploys to must be the mode's. In Workers
- * Builds (WORKERS_CI=1) it must also be the Worker the build belongs to,
- * when Workers Builds names it (WORKERS_CI_WORKER_NAME), so the preview
- * connection can never deploy a production build, nor the reverse.
+ * config (`server/wrangler.json`) deploys to must be the mode's. It must
+ * also be the Worker in WRANGLER_CI_OVERRIDE_NAME when that is set: wrangler
+ * deploy would deploy the build under that name instead, warning only, so
+ * the preview connection could deploy a production build, or the reverse.
+ * Without it, wrangler's own WRANGLER_CI_MATCH_TAG check refuses a build
+ * whose name isn't the connection's Worker (docs/DEPLOY.md §2).
  * @param {{ buildDir: string, mode: keyof typeof BUILD_MODES, env: Readonly<Record<string, string | undefined>> }} options
  * @returns {string[]}
  */
@@ -101,10 +103,10 @@ export function checkBuiltWorker({ buildDir, mode, env }) {
       `${mode}: the build deploys to Worker "${name}", not "${expected}"`
     );
   }
-  const connected = env.WORKERS_CI_WORKER_NAME;
-  if (env.WORKERS_CI === "1" && connected && connected !== name) {
+  const override = env.WRANGLER_CI_OVERRIDE_NAME;
+  if (override !== undefined && override !== name) {
     problems.push(
-      `${mode}: this Workers Builds connection is for Worker "${connected}", but the build deploys to "${name}"`
+      `${mode}: WRANGLER_CI_OVERRIDE_NAME would deploy the build to Worker "${override}", but it is for "${name}"`
     );
   }
   return problems;
@@ -170,13 +172,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     if (problems.length > 0) {
       console.error(problems.join("\n"));
       process.exitCode = 1;
-    } else if (
-      process.env.WORKERS_CI === "1" &&
-      !process.env.WORKERS_CI_WORKER_NAME
-    ) {
-      console.log(
-        "Workers Builds named no Worker (WORKERS_CI_WORKER_NAME): the connection's Worker was not checked"
-      );
     }
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
