@@ -12,14 +12,16 @@ Tests come in three layers:
 
 - `repo-hygiene.test.ts`:
   - exact pins and no feed leftovers;
+  - the one dependency override (`typescript`), one locked version of `@playwright/test`, `playwright` and `playwright-core`, and an `allowScripts` decision for every locked package with an install script (read from `package-lock.json`, so a version bump fails until it is decided again, and none is stale);
+  - no e2e code makes its own Playwright `APIRequestContext`, and no link component takes a `target`;
   - the original wiki's host only in the allowed files;
   - `.prettierignore` holds exactly the expected entries;
   - the CI workflow, the ops files (`wrangler.toml`, `.dev.vars.example`, `worker-configuration.d.ts`, `public/_headers`, `public/_routes.json`) and these docs.
 - `no-raw-colours.test.ts`: colour only from the tokens.
 - `motion.test.ts`: movement only under `motion-safe:`.
-- `lint-coverage.test.ts`: ESLint lints every code file (`.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`: scripts and config files too) with `import/no-unused-modules`.
+- `lint-coverage.test.ts`: ESLint (`eslint.config.ts`) lints every code file (`.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`: scripts and config files too) with the import rules at error, and every code file is in knip's project (`knip.json`), which checks unused files, exports and dependencies (`npm run check:unused`).
 - `readonly-props.test.ts`: every component's props (and every hook's options object) are `readonly`.
-- `component-usage.test.ts`: every export of an app module (components, server, schemas, constants, hooks, contexts, content; not the framework-read routes, root and entries, nor `app/test`) is imported by non-test code, not only by tests.
+- `component-usage.test.ts`, a second check after knip's: every export of an app module (components, server, schemas, constants, hooks, contexts, content; not the framework-read routes, root and entries, nor `app/test`) is imported by non-test code, not only by tests.
 
 The scans walk the tree with one helper, `filesUnder` (`test/support/files.ts`), which skips the gitignored e2e screenshots.
 
@@ -35,7 +37,9 @@ Other FE1 differences from the plan's test list follow from the real API (no rev
 
 ## Unit tests
 
-- **Environment by file name only.** `*.test.tsx` runs in jsdom; everything else runs in node, like the Workers runtime. A test that needs a DOM is a `.test.tsx` file (e.g. `test/cut-off.test.tsx`), never a per-file pragma.
+- **Environment by file name only.** `vitest.config.ts` has two projects: `dom` runs `*.test.tsx` in jsdom, `node` runs every other test in node, like the Workers runtime. A test that needs a DOM is a `.test.tsx` file (e.g. `test/cut-off.test.tsx`), never a per-file pragma; `test/environments.test.ts` proves the split. vitest has its own config, so it never loads the Remix plugin.
+- **The Node versions.** The suite runs on `.nvmrc`'s Node 26.13.0, and the migration gates also ran it on Node 22.23.3 and 24.17.0. Node ≥ 24's fetch (undici ≥ 7) rejects an `AbortSignal` that isn't its own, which broke every router navigation and submission under vitest 1's jsdom environment; vitest ≥ 4 gives jsdom Node's `AbortController`. `app/test/abort-signal.test.tsx` fails if that regresses: a `Request` takes the environment's signal, and a `<Form method="post">` submission reaches its action.
+- **Accessible names in jsdom.** Testing Library's name algorithm trims every child element's text, and only separates children that aren't `display: inline`. jsdom 30 computes HTML's default `display`, so `Moods<span> (optional)</span>` would be named "Moods(optional)", which no browser does. `app/test/setup.ts` gives inline phrasing elements a non-inline display, which is how jsdom up to 29 behaved (it computed none), so names keep the browser's word breaks.
 - **Components** use testing-library and `@testing-library/user-event`.
   - Test every state, and the keyboard.
   - `expectSameMarkupInBothThemes` in `app/test/themes.ts` is a **guard, not theme coverage**: it fails only if a component starts branching on the theme. It says nothing about how either theme looks. The theme evidence is `check:contrast` (every token pair in both themes) and the e2e checkpoints (axe and screenshots in both themes, each asserting that the page paints that theme).
@@ -52,13 +56,14 @@ Other FE1 differences from the plan's test list follow from the real API (no rev
     sessionTokens({ accessToken: "fixture:contributor" })
   );
   ```
-  - **Every msw server comes from `serveMocks()`** (`app/test/msw.ts`; `serveFixtureApi()` uses it). A request no handler answers is refused **and fails the test** that made it, so a test can't pass because the code under test turned msw's refusal into a 502. `server.use()` adds one test's handlers, e.g. a fake Auth0 token endpoint answering with Auth0's real response shapes.
+  - **Every msw server comes from `serveMocks()`** (`app/test/msw.ts`; `serveFixtureApi()` uses it). msw 3 imports `http`/`HttpResponse` from `msw/http` and `delay` from `msw/utils/delay`. A request no handler answers (msw's `onUnhandledFrame`) is refused **and fails the test** that made it, so a test can't pass because the code under test turned msw's refusal into a 502. `server.use()` adds one test's handlers, e.g. a fake Auth0 token endpoint answering with Auth0's real response shapes.
   - `loadContext()` gives a validated env whose API base URL is `https://api.test`.
   - `formRequest()` builds a same-origin, form-encoded request.
   - `runAction()` (`app/test/proxy.ts`) runs a proxy action.
   - `serveApp()` (`app/test/server-build.ts`) renders routes through the real `entry.server` for header and nonce tests.
 
 - **Sentry (R28):** `app/contexts/SentryContext.test.tsx` mocks `@sentry/remix`: no init without a DSN, one init with it across navigations, and an error page that is the first render starts Sentry before reporting. `app/entry.server.test.ts` mocks `@sentry/cloudflare`: loader and render errors are reported (abandoned requests are not), and `sentry.server.test.ts` checks the server gets no DSN when `SENTRY_DSN` is unset or empty. Delivery to a real Sentry is not part of any test run.
+- **Cookie bytes:** `app/server/cookie-format.golden.test.ts` pins the exact `Set-Cookie` strings of `__Host-bt_session` and `__Host-bt_return_to` for a fixed secret and payload, and parses them back. Its expected strings are golden: a library change that alters them would sign every reader out, so fix the code, never the strings.
 - **Markdown help pages:** `compileMarkdown` and `FRONTMATTER` (`app/test/markdown.ts`) compile with the real pipeline.
 
 ## The fixture API
@@ -83,6 +88,7 @@ Other FE1 differences from the plan's test list follow from the real API (no rev
 
   In e2e use `createFixtureUser(request, options)` and `failNext(request, {...})` from `e2e/support/fixture-api.ts`.
 
+- **Idle keep-alive sockets stay open.** The server sets `keepAliveTimeout = 0`, so only the client ever ends a keep-alive connection. With Node's default (5 s, plus a 1 s buffer) a client whose event loop runs late, such as a Playwright worker busy with axe and full-page screenshots, or workerd, can send on a socket the server has just closed, and gets `ECONNRESET` ("socket hang up"); a repro with a starved client failed 4/4 with the default and 0/4 with 0. `test/contract/server.test.ts` checks the setting, and that a second request on one socket after 6.5 s idle is answered (about 7 s). Retries would only hide it. The other hop, Playwright to `wrangler pages dev` on 8788, is still exposed: wrangler 3.57's server closes an idle keep-alive socket after about 5 s and sends no `Keep-Alive` hint, and has no setting for it. `test/repo-hygiene.test.ts` checks that every e2e API request uses the per-test `request` fixture or `page.request`, never an API context of its own. Which hop the original "socket hang up" came from is unknown: no trace of it exists, and the FE1 baseline run had none.
 - **Contract tests.** `test/contract/scenarios.ts` lists at least one success and one error per operation. They run through the router (`fixtures.test.ts`), over HTTP (`server.test.ts`) and through msw (`app/test/msw.test.ts`). `spec.test.ts` checks that the spec is valid OpenAPI 3.1 and has the FE1 operations; `generated-types.test.ts` pins the generated types FE1 relies on.
 
 ## Stub sign-in: three locks
@@ -129,6 +135,8 @@ Both are followed by the `screenshots` teardown project.
 - Full-page captures are taken scrolled to the top, so the sticky header is drawn at the top, not over the field a test scrolled to.
 - Fraunces is `font-display: optional`, so a cold page load can keep the fallback serif. Before capturing, the checkpoint adds the same Fraunces files again from JS with `display: block` and waits for `document.fonts.ready`, so every capture shows the design face.
 - **The sans in the captures is the image's `system-ui`.** In the Playwright browser image that resolves to WenQuanYi Zen Hei, a single Regular face, and Chromium neither has nor synthesises a bold for it. Labels, legends, alert titles, `h4` and `**bold**` therefore render at regular weight in the screenshots. This is the image's fonts, not our CSS: `font-synthesis` is only turned off for Fraunces, and the same CSS renders real bold with any system sans that has one (Liberation Sans in the same image: 286 → 312 px for one string at 400 → 700).
+
+**Forced colours.** `e2e/stub/forced-colours.spec.ts` emulates `forced-colors: active` and focuses, from the keyboard, the three elements that hide the browser's outline (`focus-visible:outline-none`): a card's link, the main content after a client navigation, and an error page's heading. It asserts the outline is still drawn, and takes a checkpoint of each (journey `forced-colours`), in both themes as usual. axe runs with forced colours turned off for its pass (`inAuthorColours` in `e2e/support/journey.ts`): Chromium paints the system palette but `getComputedStyle` reports the author `color` next to the forced `background-color`, and axe has no forced-colours mode, so its contrast rule would pair colours that are never painted together. The screenshots are taken in forced colours.
 
 `target: "<selector>"` limits axe and the screenshot to one element, such as a styleguide block. The sticky header and the app bar are hidden during that capture, so they are never painted over it. The element is scrolled to the top of the viewport, which is made taller if the element still doesn't fit (Chromium paints anything beyond the viewport as bare canvas), and the capture has 8 px of room around it so an outset focus ring shows whole. With `target` and `viewportOnly`, axe covers the element and the screenshot is the viewport. Use this for an open dialog with its scrim, or toasts in place. `atEachViewport` rebuilds a width-specific state (the account panel, the drawer) at each width.
 

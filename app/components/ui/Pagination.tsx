@@ -5,8 +5,8 @@ import {
   type Icon,
 } from "@tabler/icons-react";
 
-/** A page number, or a gap in the run of numbers. */
-type Item = number | "gap";
+/** A page number, or a gap in the run of numbers before page `before`. */
+type Item = number | { readonly before: number };
 
 /**
  * The page numbers to show: the first, the last, and the current one with
@@ -22,7 +22,7 @@ function pageItems(page: number, pageCount: number): Item[] {
     const previous = pages[index - 1];
     if (previous === undefined || n - previous === 1) return [n];
     if (n - previous === 2) return [n - 1, n];
-    return ["gap", n];
+    return [{ before: n }, n];
   });
 }
 
@@ -103,9 +103,9 @@ export function Pagination({
             rel="prev"
           />
         </li>
-        {pageItems(page, pageCount).map((item, index) =>
-          item === "gap" ? (
-            <li key={`gap-${index}`} className="hidden sm:block">
+        {pageItems(page, pageCount).map(item =>
+          typeof item === "object" ? (
+            <li key={`gap-${item.before}`} className="hidden sm:block">
               <span className={`${ITEM} text-fg-subtle`}>
                 <span aria-hidden="true">…</span>
                 <span className="sr-only">more pages</span>

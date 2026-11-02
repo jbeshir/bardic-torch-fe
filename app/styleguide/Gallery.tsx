@@ -18,7 +18,7 @@ import {
   PageTemplate,
   SearchBoxes,
 } from "./Shell";
-import { AnchorPrefix } from "./Specimen";
+import { AnchorPrefixContext } from "./Specimen";
 
 /**
  * Every block on the page, in DESIGN order, with its anchor. The e2e
@@ -71,10 +71,10 @@ export function Gallery({
   readonly anchorPrefix?: string;
 }) {
   return (
-    <AnchorPrefix.Provider value={anchorPrefix}>
+    <AnchorPrefixContext.Provider value={anchorPrefix}>
       {SPECIMENS.map(({ id, Block }) => (
         <Block key={id} />
       ))}
-    </AnchorPrefix.Provider>
+    </AnchorPrefixContext.Provider>
   );
 }

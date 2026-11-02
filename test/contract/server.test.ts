@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import type { Server } from "node:http";
-import type { AddressInfo } from "node:net";
+import { connect, type AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createFixtureServer } from "../fixture-api/server";
 import { responseProblems } from "../fixture-api/spec";
@@ -131,7 +131,7 @@ describe("fixture server", () => {
 });
 
 describe("fixture server entry point", () => {
-  it("listens on $PORT when run with tsx", async () => {
+  it("listens on $PORT when run with tsx", { timeout: 20_000 }, async () => {
     const port = 40_000 + Math.floor(Math.random() * 10_000);
     const child = spawn(
       process.execPath,
@@ -151,5 +151,59 @@ describe("fixture server entry point", () => {
     } finally {
       child.kill("SIGTERM");
     }
-  }, 20_000);
+  });
+});
+
+/**
+ * The e2e "socket hang up" (docs/TESTING.md): the server must never close an
+ * idle keep-alive socket under a client that is about to reuse it.
+ */
+describe("fixture server keep-alive", () => {
+  it("never times out idle keep-alive sockets", () => {
+    expect(createFixtureServer().keepAliveTimeout).toBe(0);
+  });
+
+  it(
+    "answers a second request on the same socket after 6.5 s idle",
+    { timeout: 15_000 },
+    async () => {
+      const { port } = server.address() as AddressInfo;
+      const socket = connect(port, "127.0.0.1");
+      const received: string[] = [];
+      let waiting: (() => void) | undefined;
+      socket.setEncoding("utf8");
+      socket.on("data", (chunk: string) => {
+        received.push(chunk);
+        waiting?.();
+      });
+      const closed = new Promise<"closed">(done =>
+        socket.on("close", () => done("closed"))
+      );
+      const statuses = () =>
+        [...received.join("").matchAll(/^HTTP\/1\.1 (\d{3})/gm)].map(
+          ([, status]) => status
+        );
+      const responses = async (count: number) => {
+        while (statuses().length < count) {
+          const more = new Promise<"data">(done => {
+            waiting = () => done("data");
+          });
+          if ((await Promise.race([more, closed])) === "closed") break;
+        }
+        return statuses();
+      };
+      const request =
+        "GET /healthz HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: keep-alive\r\n\r\n";
+      try {
+        socket.write(request);
+        expect(await responses(1)).toEqual(["200"]);
+        // Node's default keepAliveTimeout (5 s) plus its 1 s buffer.
+        await new Promise(done => setTimeout(done, 6_500));
+        socket.write(request);
+        expect(await responses(2)).toEqual(["200", "200"]);
+      } finally {
+        socket.destroy();
+      }
+    }
+  );
 });

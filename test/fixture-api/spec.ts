@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import Ajv2020, { type ValidateFunction } from "ajv/dist/2020";
+import { Ajv2020, type ValidateFunction } from "ajv/dist/2020";
 import addFormats from "ajv-formats";
 import { parse } from "yaml";
 import type { operations } from "../../app/api/schema.gen";

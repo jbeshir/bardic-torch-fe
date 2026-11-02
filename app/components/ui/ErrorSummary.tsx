@@ -34,19 +34,19 @@ export function ErrorSummary({
    */
   readonly attempt: number;
 }) {
-  const box = useRef<HTMLDivElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
   const signature = problems
     .map(({ fieldId, message }) => `${fieldId}:${message}`)
     .join("\n");
 
   useEffect(() => {
-    box.current?.focus();
+    boxRef.current?.focus();
   }, [signature, attempt]);
 
   const count = problems.length;
   return (
     <div
-      ref={box}
+      ref={boxRef}
       role="alert"
       tabIndex={-1}
       className="rounded-lg focus-visible:outline-offset-2"

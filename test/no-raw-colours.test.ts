@@ -20,7 +20,9 @@ const SCANNED_FILES = [
   "postcss.config.js",
   "playwright.config.ts",
   "tsconfig.json",
-  ".eslintrc.cjs",
+  "eslint.config.ts",
+  "knip.json",
+  "vitest.config.ts",
   ".prettierrc",
 ];
 const TEXT_EXTENSIONS = new Set([

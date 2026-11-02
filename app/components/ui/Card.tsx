@@ -1,12 +1,29 @@
 import { Link as RemixLink } from "@remix-run/react";
-import { Children, type ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
+
+const COLUMNS = {
+  2: "md:grid-cols-2",
+  3: "md:grid-cols-2 lg:grid-cols-3",
+} as const;
+
+// An odd last card spans the two columns, rather than leaving half a row
+// empty (until lg, where a three-column list has no half row to fill).
+const ITEM = {
+  2: "md:last:odd:col-span-2",
+  3: "md:last:odd:col-span-2 lg:last:odd:col-span-1",
+} as const;
+
+/** The columns of the CardList a Card is in, if it is in one. */
+const CardListColumnsContext = createContext<keyof typeof COLUMNS | null>(null);
+CardListColumnsContext.displayName = "CardListColumnsContext";
 
 /**
  * A content card (DESIGN §6.11): a box with a heading. Without `to` it is
  * the `static` variant: no link, no hover, no focus. With `to` it is the
  * `link` variant: the title is the link and its ::after stretches over the
  * whole card, which takes the hover edge and (on the ::after, since the card
- * itself can't be focused) the focus ring.
+ * itself can't be focused) the focus ring. In a CardList it is the
+ * list's item.
  */
 export function Card({
   title,
@@ -26,8 +43,9 @@ export function Card({
   readonly headingLevel?: 2 | 3;
   readonly children: ReactNode;
 }) {
+  const columns = useContext(CardListColumnsContext);
   const Heading = headingLevel === 2 ? "h2" : "h3";
-  return (
+  const card = (
     <div
       className={`group relative h-full rounded-lg border border-border bg-surface p-4 shadow-1 md:p-5${to ? " transition-colors hover:border-border-strong" : ""}`}
     >
@@ -55,22 +73,11 @@ export function Card({
       ) : null}
     </div>
   );
+  return columns === null ? card : <li className={ITEM[columns]}>{card}</li>;
 }
 
-const COLUMNS = {
-  2: "md:grid-cols-2",
-  3: "md:grid-cols-2 lg:grid-cols-3",
-} as const;
-
-// An odd last card spans the two columns, rather than leaving half a row
-// empty (until lg, where a three-column list has no half row to fill).
-const ITEM = {
-  2: "md:last:odd:col-span-2",
-  3: "md:last:odd:col-span-2 lg:last:odd:col-span-1",
-} as const;
-
 /**
- * Cards as a list (DESIGN §6.11): `ul role="list"`, each card in an `li`,
+ * Cards as a list (DESIGN §6.11): `ul role="list"`, each Card its own `li`,
  * one column, two from md and (with `columns` 3) three from lg. It is
  * `not-prose`, so inside help prose the list, heading and link styles of
  * `.prose-bt` leave the cards alone.
@@ -85,9 +92,9 @@ export function CardList({
 }) {
   return (
     <ul role="list" className={`not-prose grid gap-4 ${COLUMNS[columns]}`}>
-      {Children.map(children, card => (
-        <li className={ITEM[columns]}>{card}</li>
-      ))}
+      <CardListColumnsContext.Provider value={columns}>
+        {children}
+      </CardListColumnsContext.Provider>
     </ul>
   );
 }

@@ -91,20 +91,20 @@ export function ErrorState({
   /** `missing` (404): the plain unlit torch; `broken`: its flame dashed. */
   readonly art?: "missing" | "broken";
 }) {
-  const heading = useRef<HTMLHeadingElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   // True on the first render only when mounted after hydration, i.e. the
   // error happened during a client-side navigation.
-  const mountedOnClient = useRef(useHydrated());
+  const mountedOnClientRef = useRef(useHydrated());
 
   useEffect(() => {
-    if (mountedOnClient.current) heading.current?.focus();
+    if (mountedOnClientRef.current) headingRef.current?.focus();
   }, []);
 
   return (
     <div className="flex max-w-prose flex-col items-start py-8 md:py-12">
       <UnlitMark size={64} dashed={art === "broken"} />
       <h1
-        ref={heading}
+        ref={headingRef}
         tabIndex={-1}
         className="mt-6 text-h1 text-fg focus-visible:outline-none"
       >

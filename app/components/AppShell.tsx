@@ -3,7 +3,6 @@ import {
   useCallback,
   useEffect,
   useId,
-  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -12,6 +11,7 @@ import {
 import { showCurrentPage } from "~/client/scroll-within";
 import { Drawer } from "~/components/ui/Drawer";
 import type { Account } from "~/constants/account";
+import { useBrowserLayoutEffect } from "~/hooks/useBrowserLayoutEffect";
 import { useHydrated } from "~/hooks/useHydrated";
 import { AccountMenu } from "./AccountMenu";
 import { BottomBar, MenuControl } from "./BottomBar";
@@ -62,10 +62,6 @@ function useSidebarScroll(nav: RefObject<HTMLElement>, pathname: string) {
   return more;
 }
 
-/** A layout effect in the browser; on the server, where it can't run, none. */
-const useBrowserLayoutEffect =
-  typeof document === "undefined" ? useEffect : useLayoutEffect;
-
 /**
  * After a client navigation to another page (not a hash jump, not a reload
  * of the same page's data), focus moves to the main content, as a page load
@@ -75,26 +71,26 @@ const useBrowserLayoutEffect =
  * heading).
  */
 function useNavigationFocus(main: RefObject<HTMLElement>, pathname: string) {
-  const previous = useRef(pathname);
-  const focusedBefore = useRef<Element | null>(null);
+  const previousRef = useRef(pathname);
+  const focusedBeforeRef = useRef<Element | null>(null);
   const [announcement, setAnnouncement] = useState("");
 
   // Layout effects run before any page's own (passive) focus effect, so
   // this is what had focus when the new page was committed.
   useBrowserLayoutEffect(() => {
-    focusedBefore.current = document.activeElement;
+    focusedBeforeRef.current = document.activeElement;
   }, [pathname]);
 
   useEffect(() => {
-    if (previous.current === pathname) return;
-    previous.current = pathname;
+    if (previousRef.current === pathname) return;
+    previousRef.current = pathname;
     // After this render's own focus moves (a closing drawer gives focus
     // back to its trigger, an error page focuses its heading) and the new
     // <title>.
     const frame = requestAnimationFrame(() => {
       const focused = document.activeElement;
       const pageMovedFocus =
-        focused !== focusedBefore.current &&
+        focused !== focusedBeforeRef.current &&
         focused !== null &&
         focused !== main.current &&
         main.current?.contains(focused) === true;
@@ -131,8 +127,8 @@ export function AppShell({
   const busy = useSlowNavigation();
   const hydrated = useHydrated();
   const { pathname } = useLocation();
-  const siteNav = useRef<HTMLElement>(null);
-  const moreBelow = useSidebarScroll(siteNav, pathname);
+  const siteNavRef = useRef<HTMLElement>(null);
+  const moreBelow = useSidebarScroll(siteNavRef, pathname);
   const mainRef = useRef<HTMLElement>(null);
   const announcement = useNavigationFocus(mainRef, pathname);
   const drawerId = useId();
@@ -184,7 +180,7 @@ export function AppShell({
           {children}
         </main>
         <nav
-          ref={siteNav}
+          ref={siteNavRef}
           id={SITE_NAV_ID}
           aria-label="Site"
           className={`${hydrated ? "hidden lg:block" : ""} border-t border-border px-4 pt-8 md:px-6 lg:sticky lg:top-header lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:max-h-below-header lg:self-start lg:overflow-y-auto lg:border-t-0 lg:px-0 lg:pr-4 lg:pt-6 xl:pr-6`}

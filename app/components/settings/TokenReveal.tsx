@@ -22,13 +22,13 @@ export function TokenReveal({
   readonly secret: string;
   readonly onDismiss: () => void;
 }) {
-  const value = useRef<HTMLTextAreaElement>(null);
+  const valueRef = useRef<HTMLTextAreaElement>(null);
   const [copy, setCopy] = useState<CopyState>("idle");
 
   // Mounted once per new token (the parent keys it by the token).
   useEffect(() => {
-    value.current?.focus();
-    value.current?.select();
+    valueRef.current?.focus();
+    valueRef.current?.select();
   }, []);
 
   async function copyToClipboard() {
@@ -37,8 +37,8 @@ export function TokenReveal({
       setCopy("copied");
     } catch {
       setCopy("failed");
-      value.current?.focus();
-      value.current?.select();
+      valueRef.current?.focus();
+      valueRef.current?.select();
     }
   }
 
@@ -54,7 +54,7 @@ export function TokenReveal({
     >
       <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-start">
         <textarea
-          ref={value}
+          ref={valueRef}
           readOnly
           rows={4}
           value={secret}

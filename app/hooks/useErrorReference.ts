@@ -21,7 +21,16 @@ export function useErrorReference(
     if (!report) return;
     initSentry(dsn);
     const eventId = Sentry.captureRemixErrorBoundaryError(error);
-    setReference(Sentry.isInitialized() ? eventId : undefined);
+    const shown = Sentry.isInitialized() ? eventId : undefined;
+    // The reference arrives from Sentry, outside React: shown once the
+    // effect is done, unless the error has changed by then.
+    let current = true;
+    queueMicrotask(() => {
+      if (current) setReference(shown);
+    });
+    return () => {
+      current = false;
+    };
   }, [error, report, dsn]);
   return reference;
 }

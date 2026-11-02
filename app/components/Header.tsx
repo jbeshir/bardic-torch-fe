@@ -7,21 +7,24 @@ import { Wordmark } from "./Wordmark";
 /**
  * True once the page has scrolled more than 8 px: a sentinel at the top of
  * the page leaves the viewport. Without IntersectionObserver (or JS) it
- * stays false and the header simply has no shadow.
+ * stays false and the header simply has no shadow. One callback can carry
+ * several observations, oldest first (a jump away from the top right after
+ * the initial one), so the newest decides.
  */
 function useScrolled() {
-  const sentinel = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
-    const element = sentinel.current;
+    const element = sentinelRef.current;
     if (!element || typeof IntersectionObserver === "undefined") return;
-    const observer = new IntersectionObserver(([entry]) =>
-      setScrolled(entry ? !entry.isIntersecting : false)
-    );
+    const observer = new IntersectionObserver(entries => {
+      const latest = entries.at(-1);
+      setScrolled(latest ? !latest.isIntersecting : false);
+    });
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
-  return { sentinel, scrolled };
+  return { sentinel: sentinelRef, scrolled };
 }
 
 /**

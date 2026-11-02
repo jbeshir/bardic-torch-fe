@@ -9,6 +9,7 @@ type FieldControl = {
 };
 
 const FieldContext = createContext<FieldControl | null>(null);
+FieldContext.displayName = "FieldContext";
 
 /**
  * The attributes a text control (Input, Textarea, Select) takes from the

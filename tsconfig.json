@@ -6,13 +6,15 @@
       "@remix-run/cloudflare",
       "vite/client",
       "@cloudflare/workers-types/2023-07-01",
+      "node",
       "vitest/globals"
     ],
     "isolatedModules": true,
+    "verbatimModuleSyntax": true,
     "esModuleInterop": true,
     "jsx": "react-jsx",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "module": "preserve",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "target": "ES2022",
     "strict": true,
@@ -21,7 +23,6 @@
     "allowJs": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
     "paths": {
       "~/*": ["./app/*"],
       "server-build": ["./build/server/index.js", "./functions/server-build"]

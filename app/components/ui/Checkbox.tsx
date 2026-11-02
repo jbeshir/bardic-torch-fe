@@ -11,7 +11,8 @@ import {
 import { describedBy, FieldError, FieldHelp, OptionalMark } from "./Field";
 
 /** Set by a CheckboxGroup with an error, so every box shows it. */
-const GroupInvalid = createContext(false);
+const GroupInvalidContext = createContext(false);
+GroupInvalidContext.displayName = "GroupInvalidContext";
 
 const MARK =
   "pointer-events-none absolute inset-0 m-auto hidden text-accent-fg peer-disabled:text-fg-subtle forced-colors:!hidden";
@@ -44,7 +45,7 @@ export function Checkbox({
 }) {
   const id = useId();
   const ref = useRef<HTMLInputElement>(null);
-  const invalid = useContext(GroupInvalid) || Boolean(error);
+  const invalid = useContext(GroupInvalidContext) || Boolean(error);
 
   // `indeterminate` is a DOM property only; there is no attribute for it.
   useEffect(() => {
@@ -122,9 +123,9 @@ export function CheckboxGroup({
       </legend>
       {help ? <FieldHelp id={`${id}-help`}>{help}</FieldHelp> : null}
       <div className="mt-1">
-        <GroupInvalid.Provider value={Boolean(error)}>
+        <GroupInvalidContext.Provider value={Boolean(error)}>
           {children}
-        </GroupInvalid.Provider>
+        </GroupInvalidContext.Provider>
       </div>
       {error ? <FieldError id={`${id}-error`}>{error}</FieldError> : null}
     </fieldset>

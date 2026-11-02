@@ -10,9 +10,8 @@ import { fromFile } from "@capsizecss/unpack/fs";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
-const frauncesFile = require.resolve(
-  "@fontsource-variable/fraunces/files/fraunces-latin-opsz-normal.woff2"
-);
+const frauncesFile =
+  require.resolve("@fontsource-variable/fraunces/files/fraunces-latin-opsz-normal.woff2");
 
 const percent = value => `${(value * 100).toFixed(2)}%`;
 

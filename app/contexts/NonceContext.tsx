@@ -6,6 +6,7 @@ import { createContext, useContext } from "react";
  * which never needs it after hydration.
  */
 export const NonceContext = createContext<string | undefined>(undefined);
+NonceContext.displayName = "NonceContext";
 
 export function useNonce(): string | undefined {
   return useContext(NonceContext);

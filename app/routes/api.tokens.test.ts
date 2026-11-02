@@ -1,4 +1,4 @@
-import { http } from "msw";
+import { http } from "msw/http";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TOKEN_NAME_RULE } from "~/schemas/rules";
 import { API_BASE_URL, formRequest, sessionCookie } from "~/test/context";

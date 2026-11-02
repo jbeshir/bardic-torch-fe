@@ -72,7 +72,7 @@ flowchart TD
 
 ## Getting started
 
-You need Node 22 (see `.nvmrc`).
+You need Node 26.13.0 (see `.nvmrc`) and npm 12.2.1 or later.
 
 ```sh
 npm ci
@@ -85,12 +85,15 @@ To run against a real Auth0 tenant and the API, copy `.dev.vars.example` to `.de
 
 ## Checks
 
-| command            | what it runs                                                                                                |
-| ------------------ | ----------------------------------------------------------------------------------------------------------- |
-| `npm run validate` | format:check, lint, typecheck, check:api, check:tokens, check:contrast, every vitest test, check:prod-build |
-| `npm run test:e2e` | Playwright: the prod phase, then the stub phase; needs Chromium                                             |
+| command            | what it runs                                                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `npm run validate` | format:check, lint, typecheck, check:unused, check:api, check:tokens, check:contrast, every vitest test, check:prod-build |
+| `npm run test:e2e` | Playwright: the prod phase, then the stub phase; needs Chromium                                                           |
+| `npm run audit`    | `npm audit`: any runtime advisory, or a high or critical one anywhere; needs the registry                                 |
 
-CI (`.github/workflows/ci.yml`) runs both, as the required `validate` and `e2e` jobs. [docs/TESTING.md](docs/TESTING.md) explains the layers.
+CI (`.github/workflows/ci.yml`) runs the first two as the required `validate` and `e2e` jobs, and the audit as the `audit` job. [docs/TESTING.md](docs/TESTING.md) explains the layers.
+
+`package.json` has one override, `"typescript": "$typescript"`: it gives TypeScript 6 to the packages whose peer range still stops at 5, `openapi-typescript`, `tsconfck` (under `vite-tsconfig-paths`) and the Remix 2 packages (`@remix-run/dev`, `react`, `cloudflare`, `cloudflare-pages`, `server-runtime`, `node`). A hygiene test keeps it the only one.
 
 ## Licence
 

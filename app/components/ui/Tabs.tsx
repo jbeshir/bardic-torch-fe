@@ -126,23 +126,23 @@ export function Tabs({
   const id = useId();
   const enhanced = useHydrated();
   const [selected, setSelected] = useState(defaultIndex);
-  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
-  const chosen = useRef(false);
+  const tabsRef = useRef<(HTMLButtonElement | null)[]>([]);
+  const chosenRef = useRef(false);
   const Heading = headingLevel === 2 ? "h2" : "h3";
 
   // Focus stays on the tab the user chose, even when the panel it mounts
   // focuses something of its own (an ErrorState heading in the styleguide):
   // this effect runs after the panel's own effects.
   useEffect(() => {
-    if (!chosen.current) return;
-    chosen.current = false;
-    tabs.current[selected]?.focus();
+    if (!chosenRef.current) return;
+    chosenRef.current = false;
+    tabsRef.current[selected]?.focus();
   }, [selected]);
 
   function select(index: number) {
-    chosen.current = true;
+    chosenRef.current = true;
     setSelected(index);
-    tabs.current[index]?.focus();
+    tabsRef.current[index]?.focus();
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
@@ -171,7 +171,7 @@ export function Tabs({
           <button
             key={panel.label}
             ref={element => {
-              tabs.current[index] = element;
+              tabsRef.current[index] = element;
             }}
             type="button"
             role="tab"

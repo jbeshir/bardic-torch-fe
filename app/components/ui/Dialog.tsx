@@ -55,11 +55,11 @@ export function Dialog({
 }) {
   const titleId = useId();
   const descriptionId = useId();
-  const cancel = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
   const dialog = useModalDialog({
     open,
     onClose,
-    initialFocus: initialFocus ?? cancel,
+    initialFocus: initialFocus ?? cancelRef,
     fallbackFocus,
     dismissible: !pending,
     closeOnBackdrop: confirm.variant !== "danger",
@@ -97,7 +97,7 @@ export function Dialog({
           {children ? <div className="mt-4">{children}</div> : null}
           <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button
-              ref={cancel}
+              ref={cancelRef}
               variant="secondary"
               disabled={pending}
               onClick={onClose}

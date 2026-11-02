@@ -360,7 +360,7 @@ async function readLimited(
  * Read and validate a proxy route's form-encoded body. Other content types
  * get a 415, bodies over 8 KB a 413 and invalid fields a 400 listing them.
  */
-async function readFormBody<S extends z.ZodTypeAny>(
+async function readFormBody<S extends z.ZodType>(
   request: Request,
   schema: S
 ): Promise<
@@ -411,7 +411,7 @@ async function readFormBody<S extends z.ZodTypeAny>(
  * (`readFormBody`) and `send` makes the API call with it. A refreshed
  * session cookie goes out on every answer, including the form's errors.
  */
-export async function proxyForm<S extends z.ZodTypeAny>(
+export async function proxyForm<S extends z.ZodType>(
   request: Request,
   context: AppLoadContext,
   schema: S,

@@ -80,6 +80,36 @@ async function expectNoAxeViolations(
   expect(summary, `axe violations, ${label}`).toEqual([]);
 }
 
+/**
+ * Runs `check` on the page in its author colours. Under emulated forced
+ * colours Chromium paints text in the system palette, but getComputedStyle
+ * reports the author `color` next to the forced `background-color`, and axe
+ * has no forced-colours mode. So its contrast rule would compare two colours
+ * that are never painted together (a primary button's `accent-fg` text on
+ * the system Canvas: 1.02:1, while the button is drawn black on white). A
+ * page in forced colours has them turned off for the check, so every rule
+ * runs on the same DOM, focus and theme, with contrast measured as FE1's
+ * checkpoints measure it, and turned back on before the screenshot.
+ */
+async function inAuthorColours(
+  page: Page,
+  check: () => Promise<void>
+): Promise<void> {
+  const forced = await page.evaluate(
+    () => matchMedia("(forced-colors: active)").matches
+  );
+  if (!forced) {
+    await check();
+    return;
+  }
+  await page.emulateMedia({ forcedColors: "none" });
+  try {
+    await check();
+  } finally {
+    await page.emulateMedia({ forcedColors: "active" });
+  }
+}
+
 /** Room around an element screenshot, so an outset focus ring shows whole. */
 const ELEMENT_SHOT_PAD = 8;
 
@@ -223,6 +253,8 @@ async function renderedCanvas(page: Page): Promise<string> {
  * each capture it checks the page really paints that theme's canvas, and
  * moves the pointer to the corner, so no hover left by an earlier click
  * shows (hover states can't be captured statically; DESIGN §10.6).
+ * A page in emulated forced colours is checked by axe in its author
+ * colours and captured in forced colours (see `inAuthorColours`).
  *
  * With `target` (a CSS selector, e.g. one styleguide block or an open
  * dialog), axe and the screenshot cover that element only; with `target`
@@ -279,10 +311,12 @@ export async function checkpoint(
           channelString(resolveColour(theme, "canvas"))
         );
         if (AXE_WIDTHS.includes(viewport.width)) {
-          await expectNoAxeViolations(
-            page,
-            `${theme} at ${viewport.width}px`,
-            target
+          await inAuthorColours(page, () =>
+            expectNoAxeViolations(
+              page,
+              `${theme} at ${viewport.width}px`,
+              target
+            )
           );
         }
         await page.mouse.move(0, 0);

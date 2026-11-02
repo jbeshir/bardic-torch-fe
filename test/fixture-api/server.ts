@@ -18,7 +18,7 @@ function sendJson(response: ServerResponse, status: number, body: unknown) {
 
 export function createFixtureServer(): Server {
   const state = createFixtureState();
-  return createServer(async (request, response) => {
+  const server = createServer(async (request, response) => {
     const chunks: Buffer[] = [];
     let size = 0;
     for await (const chunk of request) {
@@ -53,6 +53,14 @@ export function createFixtureServer(): Server {
     }
     sendJson(response, result.status, result.body);
   });
+  // Never close an idle keep-alive socket: only the client, which knows when
+  // it reuses one, ends the connection. With Node's default (5 s, plus a 1 s
+  // buffer) a client whose event loop runs late (a Playwright worker busy
+  // with axe and screenshots, or workerd) can send on a socket the server
+  // has just closed, and gets ECONNRESET "socket hang up". `server.close()`
+  // still closes idle sockets on shutdown.
+  server.keepAliveTimeout = 0;
+  return server;
 }
 
 if (

@@ -1,4 +1,4 @@
-import { http, HttpResponse } from "msw";
+import { http, HttpResponse } from "msw/http";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { API_BASE_URL, formRequest, sessionCookie } from "~/test/context";
 import { runAction } from "~/test/proxy";

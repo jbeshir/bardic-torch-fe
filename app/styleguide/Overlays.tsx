@@ -63,7 +63,7 @@ function RevokeDemo() {
 function RenameDemo() {
   const show = useToast();
   const [open, setOpen] = useState(false);
-  const field = useRef<HTMLInputElement>(null);
+  const fieldRef = useRef<HTMLInputElement>(null);
   const formId = useId();
   return (
     <>
@@ -78,7 +78,7 @@ function RenameDemo() {
         open={open}
         onClose={() => setOpen(false)}
         title="Rename token"
-        initialFocus={field}
+        initialFocus={fieldRef}
         confirm={{
           label: "Save name",
           icon: IconDeviceFloppy,
@@ -95,7 +95,7 @@ function RenameDemo() {
           }}
         >
           <Field label="Token name" optional help="Up to 128 characters.">
-            <Input ref={field} name="name" defaultValue="Laptop MCP" />
+            <Input ref={fieldRef} name="name" defaultValue="Laptop MCP" />
           </Field>
         </form>
       </Dialog>

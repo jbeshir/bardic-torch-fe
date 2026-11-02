@@ -1,5 +1,6 @@
 import { useLocation } from "@remix-run/react";
 import { useEffect, useRef, type RefObject } from "react";
+import { useBrowserLayoutEffect } from "./useBrowserLayoutEffect";
 
 /**
  * Closing rules for a non-modal popup (the account panel, the search
@@ -17,21 +18,23 @@ export function useDismiss({
   readonly close: (returnFocus: boolean) => void;
   readonly areas: readonly RefObject<HTMLElement>[];
 }): void {
-  const latest = useRef({ close, areas });
-  latest.current = { close, areas };
+  const latestRef = useRef({ close, areas });
+  useBrowserLayoutEffect(() => {
+    latestRef.current = { close, areas };
+  });
 
   useEffect(() => {
     if (!open) return;
     const outside = (target: EventTarget | null) =>
       target instanceof Node &&
-      !latest.current.areas.some(area => area.current?.contains(target));
+      !latestRef.current.areas.some(area => area.current?.contains(target));
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.preventDefault();
-      latest.current.close(true);
+      latestRef.current.close(true);
     };
     const onOutside = (event: Event) => {
-      if (outside(event.target)) latest.current.close(false);
+      if (outside(event.target)) latestRef.current.close(false);
     };
     document.addEventListener("keydown", onKeyDown);
     document.addEventListener("pointerdown", onOutside);
@@ -44,9 +47,9 @@ export function useDismiss({
   }, [open]);
 
   const { key } = useLocation();
-  const shownAt = useRef(key);
+  const shownAtRef = useRef(key);
   useEffect(() => {
-    if (open && key !== shownAt.current) latest.current.close(false);
-    shownAt.current = key;
+    if (open && key !== shownAtRef.current) latestRef.current.close(false);
+    shownAtRef.current = key;
   }, [open, key]);
 }

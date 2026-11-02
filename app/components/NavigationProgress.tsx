@@ -13,14 +13,14 @@ export function useSlowNavigation(): boolean {
   const navigating = useNavigation().state !== "idle";
   const [slow, setSlow] = useState(false);
   useEffect(() => {
-    if (!navigating) {
-      setSlow(false);
-      return;
-    }
+    if (!navigating) return;
     const timer = setTimeout(() => setSlow(true), PROGRESS_DELAY_MS);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      setSlow(false);
+    };
   }, [navigating]);
-  return slow;
+  return navigating && slow;
 }
 
 /**

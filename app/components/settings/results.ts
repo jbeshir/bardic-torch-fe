@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { OFFLINE } from "~/client/send-form";
+import { useBrowserLayoutEffect } from "~/hooks/useBrowserLayoutEffect";
 import type { ProxyBody, ProxyError, ProxyErrorCode } from "~/schemas/proxy";
 
 /**
@@ -13,16 +14,18 @@ export function useFetcherResult<Result extends ProxyBody<unknown>>(
   fetcher: { readonly state: string; readonly data: Result | undefined },
   onResult: (result: Result) => void
 ): void {
-  const handled = useRef<unknown>(null);
-  const latest = useRef(onResult);
-  latest.current = onResult;
+  const handledRef = useRef<unknown>(null);
+  const latestRef = useRef(onResult);
+  useBrowserLayoutEffect(() => {
+    latestRef.current = onResult;
+  });
   const { state, data } = fetcher;
   useEffect(() => {
-    if (state !== "idle" || data === undefined || handled.current === data) {
+    if (state !== "idle" || data === undefined || handledRef.current === data) {
       return;
     }
-    handled.current = data;
-    latest.current(data);
+    handledRef.current = data;
+    latestRef.current(data);
   }, [state, data]);
 }
 

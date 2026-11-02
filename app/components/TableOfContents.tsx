@@ -50,11 +50,11 @@ export function TableOfContents({
   readonly entries: readonly TocEntry[];
 }) {
   const titleId = useId();
-  const details = useRef<HTMLDetailsElement>(null);
+  const detailsRef = useRef<HTMLDetailsElement>(null);
 
   useEffect(() => {
-    if (details.current && !window.matchMedia(MD_QUERY).matches) {
-      details.current.open = false;
+    if (detailsRef.current && !window.matchMedia(MD_QUERY).matches) {
+      detailsRef.current.open = false;
     }
   }, []);
 
@@ -63,7 +63,7 @@ export function TableOfContents({
       aria-labelledby={titleId}
       className="my-6 flow-root max-w-prose rounded-lg bg-surface-sunken p-4"
     >
-      <details ref={details} open className="group">
+      <details ref={detailsRef} open className="group">
         <summary className="summary-plain flex min-h-6 cursor-pointer items-center justify-between gap-2 rounded-sm">
           <span
             id={titleId}

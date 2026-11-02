@@ -4,10 +4,10 @@ Read [README.md](README.md) first for the concepts. The visual rules are in [doc
 
 ## Project rules
 
-1. **Fix problems; never suppress them.** No `eslint-disable`, `@ts-ignore`, `@ts-expect-error`, `@ts-nocheck` or `prettier-ignore`. No new exclusions in the eslint, tsconfig, prettier or vitest configs. (The one entry in `.prettierignore` is the vendored `api/openapi.yaml`.)
+1. **Fix problems; never suppress them.** No `eslint-disable`, `@ts-ignore`, `@ts-expect-error`, `@ts-nocheck` or `prettier-ignore`. No new exclusions in the eslint, tsconfig, prettier, vitest or knip configs. (The one entry in `.prettierignore` is the vendored `api/openapi.yaml`.)
 2. **Pin dependencies exactly.** Use `npm install --save-exact`, and commit `package-lock.json`. `npm ci` must work from a clean checkout.
 3. **Colour comes from tokens only.** No raw colours outside `app/styles/tokens.ts` and the files generated from it. No Tailwind `dark:` and no arbitrary `[...]` values: add a named config value instead. Every style must work in light and dark.
-4. **No dead code.** No unused exports or re-exports, no TODO/FIXME, no half-wired features and no disabled placeholder UI. Every export is used by app code, not only by tests (`import/no-unused-modules` is an error, and `test/component-usage.test.ts` checks every app module, because ESLint counts test imports as uses). Names make sense from the current code alone. Data is immutable: readonly types (props too: `test/readonly-props.test.ts`), and never mutate props or loader data.
+4. **No dead code.** No unused exports or re-exports, no TODO/FIXME, no half-wired features and no disabled placeholder UI. Every export is used by app code, not only by tests: `knip` and `knip --production` (`check:unused`) fail on any unused file, export or dependency, and on an export only tests use; `test/component-usage.test.ts` double-checks app modules. Names make sense from the current code alone. Data is immutable: readonly types (props too: `test/readonly-props.test.ts`), and never mutate props or loader data.
 5. **Every API interaction has visible, meaningful error handling** in the UI. The API's `message` is not for display, so map its `code` (and status) to our own copy in `app/server/api.server.ts`.
 6. **The API contract is vendored.** Never edit `api/openapi.yaml`. Update it with `npm run sync:api -- <path|url>`, which also regenerates `app/api/schema.gen.ts`, then fix the zod schemas and fixtures until `validate` passes.
 7. **The browser never calls the API directly.** Reads happen in loaders. Writes go through the form-encoded `/api/*` proxy routes, which call `assertSameOrigin`. The browser sends them with `sendForm` (`app/client/send-form.ts`): from a UI route's `clientAction` (Settings) or a plain `fetch` (the theme toggle), never a Remix fetcher aimed straight at a resource route, whose failed requests (a platform 503, no network) Remix throws to an error boundary instead of the form.
@@ -27,10 +27,11 @@ Read [README.md](README.md) first for the concepts. The visual rules are in [doc
 
 Run these automated checks before every commit:
 
-- `npm run validate` runs, in order: `format:check`, `lint`, `typecheck`, `check:api` (generated types fresh), `check:tokens` (generated token files fresh), `check:contrast` (every contrast pair in DESIGN), `test:run` (all vitest: unit, contract and repo scans) and `check:prod-build` (production and preview builds contain no stub sign-in; the styleguide only in preview).
+- `npm run validate` runs, in order: `format:check`, `lint`, `typecheck`, `check:unused` (knip: no unused files, exports or dependencies), `check:api` (generated types fresh), `check:tokens` (generated token files fresh), `check:contrast` (every contrast pair in DESIGN), `test:run` (all vitest: unit, contract and repo scans) and `check:prod-build` (production and preview builds contain no stub sign-in; the styleguide only in preview).
 - `npm run test:e2e` runs Playwright: the **prod** phase (`npm run build`), then the **stub** phase (`npm run build:e2e`). Each is served by `wrangler pages dev` against the fixture API. It is separate from `validate` because it needs Chromium.
+- `npm run audit` runs `npm audit`: it fails on any advisory in a runtime dependency, or a high or critical one anywhere. It is outside `validate` because it needs the registry.
 
-CI (`.github/workflows/ci.yml`) runs both as the required jobs `validate` and `e2e`. A new check must be added to a `package.json` script, to the `validate` chain (or to `test:e2e`), and to CI if it needs its own step.
+CI (`.github/workflows/ci.yml`) runs the first two as the required jobs `validate` and `e2e`, and `npm run audit` (then `npm audit signatures`) as the `audit` job, which is not required yet. Every job installs npm 12.2.1, which `packageManager` names, on the Node in `.nvmrc`. A new check must be added to a `package.json` script, to the `validate` chain (or to `test:e2e`), and to CI if it needs its own step.
 
 ### The e2e recipe
 
@@ -38,6 +39,8 @@ CI (`.github/workflows/ci.yml`) runs both as the required jobs `validate` and `e
 - **In sandboxes without browsers** (e.g. demesne), split it across two images on the same checkout:
   1. the **node** image, with package-manager egress, runs `npm ci`;
   2. the Playwright **1.61.1 browser** image, with no egress, runs `npm run test:e2e`.
+
+  Neither image has `.nvmrc`'s Node 26.13.0. Run `sh /workspace/tools/install-node-lts.sh` once in the node image (it fetches Node 26.13.0 and npm 12.2.1 from the npm registry into `/workspace/tools`), then `. /workspace/tools/node-lts.env` in every shell, in both images.
 
   The browser image's Playwright version must match the locked `@playwright/test` (1.61.1).
 

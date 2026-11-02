@@ -28,7 +28,9 @@ async function readSource(source) {
     try {
       response = await fetch(source);
     } catch (error) {
-      throw new Error(`Could not fetch ${source}: ${String(error)}`);
+      throw new Error(`Could not fetch ${source}: ${String(error)}`, {
+        cause: error,
+      });
     }
     if (!response.ok) {
       throw new Error(`Fetching ${source} failed with HTTP ${response.status}`);
@@ -42,7 +44,8 @@ async function readSource(source) {
     throw new Error(
       code === "ENOENT"
         ? `No such file: ${source}`
-        : `Could not read ${source}: ${String(error)}`
+        : `Could not read ${source}: ${String(error)}`,
+      { cause: error }
     );
   }
 }
@@ -56,7 +59,9 @@ function assertOpenApi3Yaml(text, source) {
   try {
     document = parse(text);
   } catch (error) {
-    throw new Error(`${source} is not valid YAML: ${String(error)}`);
+    throw new Error(`${source} is not valid YAML: ${String(error)}`, {
+      cause: error,
+    });
   }
   const isObject = typeof document === "object" && document !== null;
   const version = isObject ? document.openapi : undefined;

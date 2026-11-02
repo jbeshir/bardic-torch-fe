@@ -75,6 +75,11 @@ describe("Header", () => {
     expect(banner).toHaveClass("shadow-1");
     act(() => report([{ isIntersecting: true }]));
     expect(banner).toHaveClass("shadow-none");
+    // A batch is oldest first: the page left the top after the first report.
+    act(() => report([{ isIntersecting: true }, { isIntersecting: false }]));
+    expect(banner).toHaveClass("shadow-1");
+    act(() => report([{ isIntersecting: false }, { isIntersecting: true }]));
+    expect(banner).toHaveClass("shadow-none");
   });
 
   it("looks the same in both themes", async () => {

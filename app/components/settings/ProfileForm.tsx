@@ -33,7 +33,7 @@ export function ProfileForm({ user }: { readonly user: User }) {
   const show = useToast();
   const reportOffline = useOfflineToast();
   const hydrated = useHydrated();
-  const input = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(user.display_name);
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [failure, setFailure] = useState<ProxyError | null>(null);
@@ -42,7 +42,7 @@ export function ProfileForm({ user }: { readonly user: User }) {
   function reject(message: string) {
     setFieldError(message);
     setFailure(null);
-    input.current?.focus();
+    inputRef.current?.focus();
   }
 
   useFetcherResult(fetcher, result => {
@@ -89,7 +89,7 @@ export function ProfileForm({ user }: { readonly user: User }) {
         error={fieldError ?? undefined}
       >
         <Input
-          ref={input}
+          ref={inputRef}
           name="display_name"
           value={name}
           onChange={event => setName(event.target.value)}

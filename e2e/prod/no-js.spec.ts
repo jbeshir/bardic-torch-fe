@@ -52,12 +52,10 @@ test.describe("navigation below md", () => {
       const footer = document.querySelector("footer");
       return Boolean(
         main &&
-          site &&
-          footer &&
-          main.compareDocumentPosition(site) &
-            Node.DOCUMENT_POSITION_FOLLOWING &&
-          site.compareDocumentPosition(footer) &
-            Node.DOCUMENT_POSITION_FOLLOWING
+        site &&
+        footer &&
+        main.compareDocumentPosition(site) & Node.DOCUMENT_POSITION_FOLLOWING &&
+        site.compareDocumentPosition(footer) & Node.DOCUMENT_POSITION_FOLLOWING
       );
     });
     expect(order).toBe(true);

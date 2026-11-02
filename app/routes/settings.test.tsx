@@ -392,11 +392,22 @@ describe("display name", () => {
   it("announces that it is saving while the request runs", async () => {
     const user = userEvent.setup();
     await openPage();
+    // Hold the app's answer until the status has been read, so the request
+    // is still running whatever the event loop's timing.
+    const app = globalThis.fetch;
+    let answer = () => {};
+    const answered = new Promise<void>(resolve => {
+      answer = resolve;
+    });
+    vi.stubGlobal("fetch", async (input: string, init?: RequestInit) => {
+      await answered;
+      return app(input, init);
+    });
     await user.click(screen.getByRole("button", { name: "Save changes" }));
-    expect(screen.getByText("Saving your display name…")).toHaveAttribute(
-      "role",
-      "status"
-    );
+    expect(
+      await screen.findByText("Saving your display name…")
+    ).toHaveAttribute("role", "status");
+    answer();
     await within(notifications()).findByText("Display name saved.");
     expect(screen.queryByText("Saving your display name…")).toBeNull();
   });

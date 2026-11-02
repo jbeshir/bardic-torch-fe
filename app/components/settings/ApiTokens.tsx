@@ -52,8 +52,8 @@ export function ApiTokens({
 }) {
   const show = useToast();
   const reportOffline = useOfflineToast();
-  const heading = useRef<HTMLHeadingElement>(null);
-  const nameInput = useRef<HTMLInputElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const create = useFetcher<ProxyBody<Schemas["CreatedAPIToken"]>>();
   const [created, setCreated] = useState<Schemas["CreatedAPIToken"] | null>(
@@ -70,16 +70,16 @@ export function ApiTokens({
   // control with it (a create refused at the limit, the list then
   // reloaded), focus goes to the section's heading, not the page's start.
   const atLimit = tokens.length >= ACTIVE_TOKEN_LIMIT;
-  const wasAtLimit = useRef(atLimit);
+  const wasAtLimitRef = useRef(atLimit);
   useEffect(() => {
     if (
       atLimit &&
-      !wasAtLimit.current &&
+      !wasAtLimitRef.current &&
       document.activeElement === document.body
     ) {
-      heading.current?.focus();
+      headingRef.current?.focus();
     }
-    wasAtLimit.current = atLimit;
+    wasAtLimitRef.current = atLimit;
   }, [atLimit]);
 
   useFetcherResult(create, result => {
@@ -93,7 +93,7 @@ export function ApiTokens({
     if (message) {
       setNameError(message);
       setProblem(null);
-      nameInput.current?.focus();
+      nameInputRef.current?.focus();
     } else {
       setNameError(null);
       setProblem({ error: result.error, fallback: CREATE_FAILED });
@@ -122,7 +122,7 @@ export function ApiTokens({
   }
 
   return (
-    <SettingsSection title="API tokens" headingRef={heading}>
+    <SettingsSection title="API tokens" headingRef={headingRef}>
       <p className="mb-6 text-body-sm text-fg-muted">
         Tokens let tools, such as an MCP client, read and suggest edits on your
         behalf. Treat them like a password.
@@ -149,7 +149,7 @@ export function ApiTokens({
           <CreateTokenForm
             key={created?.id}
             fetcher={create}
-            inputRef={nameInput}
+            inputRef={nameInputRef}
             fieldError={nameError}
             onInvalid={message => {
               setNameError(message);
@@ -173,7 +173,7 @@ export function ApiTokens({
               secret={created.token}
               onDismiss={() => {
                 setCreated(null);
-                heading.current?.focus();
+                headingRef.current?.focus();
               }}
             />
           </div>
@@ -191,7 +191,7 @@ export function ApiTokens({
           onConfirm: confirmRevoke,
         }}
         pending={revoke.state !== "idle"}
-        fallbackFocus={() => heading.current}
+        fallbackFocus={() => headingRef.current}
       />
     </SettingsSection>
   );

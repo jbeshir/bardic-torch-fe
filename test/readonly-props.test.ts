@@ -1,5 +1,26 @@
 import { readFileSync } from "node:fs";
-import ts from "typescript";
+import {
+  createSourceFile,
+  forEachChild,
+  isArrowFunction,
+  isFunctionDeclaration,
+  isFunctionExpression,
+  isIdentifier,
+  isIntersectionTypeNode,
+  isObjectBindingPattern,
+  isParenthesizedTypeNode,
+  isPropertySignature,
+  isTypeAliasDeclaration,
+  isTypeLiteralNode,
+  isTypeReferenceNode,
+  isUnionTypeNode,
+  type Node,
+  ScriptKind,
+  ScriptTarget,
+  SyntaxKind,
+  type TypeLiteralNode,
+  type TypeNode,
+} from "typescript";
 import { describe, expect, it } from "vitest";
 import { filesUnder } from "./support/files";
 
@@ -11,63 +32,63 @@ import { filesUnder } from "./support/files";
  * from (e.g. `Props = Look & Content`).
  */
 function mutableMembers(path: string, text: string): string[] {
-  const source = ts.createSourceFile(
+  const source = createSourceFile(
     path,
     text,
-    ts.ScriptTarget.Latest,
+    ScriptTarget.Latest,
     true,
-    path.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+    path.endsWith(".tsx") ? ScriptKind.TSX : ScriptKind.TS
   );
-  const aliases = new Map<string, ts.TypeNode>();
-  const index = (node: ts.Node): void => {
-    if (ts.isTypeAliasDeclaration(node)) {
+  const aliases = new Map<string, TypeNode>();
+  const index = (node: Node): void => {
+    if (isTypeAliasDeclaration(node)) {
       aliases.set(node.name.text, node.type);
     }
-    ts.forEachChild(node, index);
+    forEachChild(node, index);
   };
   index(source);
 
-  const literals = new Set<ts.TypeLiteralNode>();
+  const literals = new Set<TypeLiteralNode>();
   const followed = new Set<string>();
-  const collect = (type: ts.TypeNode | undefined): void => {
+  const collect = (type: TypeNode | undefined): void => {
     if (!type) return;
-    if (ts.isTypeLiteralNode(type)) literals.add(type);
-    else if (ts.isIntersectionTypeNode(type) || ts.isUnionTypeNode(type)) {
+    if (isTypeLiteralNode(type)) literals.add(type);
+    else if (isIntersectionTypeNode(type) || isUnionTypeNode(type)) {
       type.types.forEach(collect);
-    } else if (ts.isParenthesizedTypeNode(type)) {
+    } else if (isParenthesizedTypeNode(type)) {
       collect(type.type);
     } else if (
-      ts.isTypeReferenceNode(type) &&
-      ts.isIdentifier(type.typeName) &&
+      isTypeReferenceNode(type) &&
+      isIdentifier(type.typeName) &&
       !followed.has(type.typeName.text)
     ) {
       followed.add(type.typeName.text);
       collect(aliases.get(type.typeName.text));
     }
   };
-  const visit = (node: ts.Node): void => {
+  const visit = (node: Node): void => {
     if (
-      (ts.isFunctionDeclaration(node) ||
-        ts.isArrowFunction(node) ||
-        ts.isFunctionExpression(node)) &&
+      (isFunctionDeclaration(node) ||
+        isArrowFunction(node) ||
+        isFunctionExpression(node)) &&
       node.parameters[0] &&
-      ts.isObjectBindingPattern(node.parameters[0].name)
+      isObjectBindingPattern(node.parameters[0].name)
     ) {
       collect(node.parameters[0].type);
     }
-    if (ts.isTypeAliasDeclaration(node) && /Props$/.test(node.name.text)) {
+    if (isTypeAliasDeclaration(node) && /Props$/.test(node.name.text)) {
       collect(node.type);
     }
-    ts.forEachChild(node, visit);
+    forEachChild(node, visit);
   };
   visit(source);
   return [...literals].flatMap(literal =>
     literal.members
       .filter(
         member =>
-          ts.isPropertySignature(member) &&
+          isPropertySignature(member) &&
           !member.modifiers?.some(
-            modifier => modifier.kind === ts.SyntaxKind.ReadonlyKeyword
+            modifier => modifier.kind === SyntaxKind.ReadonlyKeyword
           )
       )
       .map(member => `${path}: ${member.name?.getText(source)}`)

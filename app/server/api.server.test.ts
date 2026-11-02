@@ -1,4 +1,5 @@
-import { delay, http, HttpResponse } from "msw";
+import { http, HttpResponse } from "msw/http";
+import { delay } from "msw/utils/delay";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   API_BASE_URL,
@@ -454,11 +455,13 @@ describe("upstream body failures", () => {
   it("gives up on a body that stalls past the timeout with a 504", async () => {
     const timeout = AbortSignal.timeout.bind(AbortSignal);
     vi.spyOn(AbortSignal, "timeout").mockImplementation(() => timeout(20));
-    captureUpstream(
-      "get",
-      "/v1/me",
-      () =>
-        new HttpResponse(
+    // Served by a stubbed fetch, not msw: msw's socket-level interception
+    // keeps feeding Node's fetch after the timeout aborted it, and Node's
+    // fetch then fails an internal assertion outside the test. The race
+    // under test is api.server's own, between the body and the timeout.
+    const answer = vi.fn(
+      async () =>
+        new Response(
           new ReadableStream({
             start(controller) {
               controller.enqueue(new TextEncoder().encode('{"id":'));
@@ -467,7 +470,12 @@ describe("upstream body failures", () => {
           { headers: { "Content-Type": "application/json" } }
         )
     );
+    vi.stubGlobal("fetch", answer);
     const result = await getMe(await signedInRequest(), loadContext());
+    expect(answer).toHaveBeenCalledWith(
+      `${API_BASE_URL}/v1/me`,
+      expect.anything()
+    );
     expect(result).toMatchObject({
       ok: false,
       status: 504,

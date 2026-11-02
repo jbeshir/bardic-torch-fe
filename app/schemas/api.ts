@@ -49,7 +49,7 @@ export const userSchema = z.object({
   role: roleSchema,
 });
 
-const timestamp = z.string().datetime({ offset: true });
+const timestamp = z.iso.datetime({ offset: true });
 
 const apiTokenSchema = z.object({
   id: z.string(),
@@ -116,7 +116,7 @@ type Equals<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
     ? true
     : false;
-type Matches<S extends z.ZodTypeAny, Generated> = Equals<
+type Matches<S extends z.ZodType, Generated> = Equals<
   WithoutUndefined<z.output<S>>,
   WithoutUndefined<Generated>
 >;

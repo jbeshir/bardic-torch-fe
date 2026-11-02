@@ -1,4 +1,4 @@
-import { HttpResponse } from "msw";
+import { HttpResponse } from "msw/http";
 import { expect } from "vitest";
 import type { operations } from "~/api/schema.gen";
 import { responseProblems } from "../../test/fixture-api/spec";

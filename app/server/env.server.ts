@@ -54,7 +54,7 @@ const envSchema = z.object({
   AUTH0_CLIENT_SECRET: required,
   AUTH0_DEFAULT_REDIRECT_URI: httpUrl,
   AUTH0_AUDIENCE: required,
-  SENTRY_DSN: z.preprocess(emptyAsMissing, z.string().url().optional()),
+  SENTRY_DSN: z.preprocess(emptyAsMissing, z.url().optional()),
   AUTH_MODE: z.preprocess(
     emptyAsMissing,
     z.enum(["auth0", "stub"]).default("auth0")

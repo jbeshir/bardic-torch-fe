@@ -77,7 +77,10 @@ const TONES: Record<ToastTone, { bar: string; icon: string }> = {
   danger: { bar: "border-l-danger-icon", icon: "text-danger-icon" },
 };
 
-const ShowToast = createContext<((toast: ToastMessage) => void) | null>(null);
+const ShowToastContext = createContext<((toast: ToastMessage) => void) | null>(
+  null
+);
+ShowToastContext.displayName = "ShowToastContext";
 
 /**
  * Shows a toast: brief feedback after something the reader did, raised from
@@ -86,7 +89,7 @@ const ShowToast = createContext<((toast: ToastMessage) => void) | null>(null);
  * root.tsx renders around every page.
  */
 export function useToast(): (toast: ToastMessage) => void {
-  const show = useContext(ShowToast);
+  const show = useContext(ShowToastContext);
   if (!show) throw new Error("useToast() needs a ToastProvider around it");
   return show;
 }
@@ -106,11 +109,11 @@ function withRoomFor(toasts: readonly ToastEntry[]): readonly ToastEntry[] {
  */
 export function ToastProvider({ children }: { readonly children: ReactNode }) {
   const [toasts, setToasts] = useState<readonly ToastEntry[]>([]);
-  const nextId = useRef(1);
+  const nextIdRef = useRef(1);
 
   const show = useCallback((toast: ToastMessage) => {
-    const id = nextId.current;
-    nextId.current += 1;
+    const id = nextIdRef.current;
+    nextIdRef.current += 1;
     setToasts(current => [
       ...withRoomFor(current),
       { ...toast, id, leaving: false },
@@ -130,10 +133,10 @@ export function ToastProvider({ children }: { readonly children: ReactNode }) {
   }, []);
 
   return (
-    <ShowToast.Provider value={show}>
+    <ShowToastContext.Provider value={show}>
       {children}
       <ToastRegion toasts={toasts} onDismiss={dismiss} />
-    </ShowToast.Provider>
+    </ShowToastContext.Provider>
   );
 }
 
@@ -157,8 +160,8 @@ function ToastRegion({
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const paused = hovered || focused;
-  const region = useRef<HTMLElement>(null);
-  useToastScrollPadding(region);
+  const regionRef = useRef<HTMLElement>(null);
+  useToastScrollPadding(regionRef);
 
   function onBlur(event: FocusEvent<HTMLElement>) {
     if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
@@ -179,7 +182,7 @@ function ToastRegion({
   const stack = "flex flex-col-reverse gap-2 sm:flex-col";
   return (
     <section
-      ref={region}
+      ref={regionRef}
       aria-label="Notifications"
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
@@ -212,15 +215,15 @@ function Toast({
   readonly onDismiss: (id: number) => void;
 }) {
   // What is left of the 6 s, kept across pauses.
-  const remaining = useRef(AUTO_DISMISS_MS);
+  const remainingRef = useRef(AUTO_DISMISS_MS);
 
   useEffect(() => {
     if (tone === "danger" || paused || leaving) return;
     const started = Date.now();
-    const timer = setTimeout(() => onDismiss(id), remaining.current);
+    const timer = setTimeout(() => onDismiss(id), remainingRef.current);
     return () => {
       clearTimeout(timer);
-      remaining.current -= Date.now() - started;
+      remainingRef.current -= Date.now() - started;
     };
   }, [id, tone, paused, leaving, onDismiss]);
 

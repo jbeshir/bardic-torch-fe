@@ -7,7 +7,7 @@ import { Infobox } from "~/components/ui/Infobox";
 import { Link } from "~/components/ui/Link";
 import { wikiPageUrl } from "~/constants/navigation";
 import { useContext, type ReactNode } from "react";
-import { AnchorPrefix, Example, Specimen } from "./Specimen";
+import { AnchorPrefixContext, Example, Specimen } from "./Specimen";
 
 const MORWEN = {
   state: "signed-in",
@@ -20,7 +20,7 @@ const MORWEN = {
 
 /** Contents for the examples, their ids kept apart per gallery copy. */
 function useContents() {
-  const prefix = `${useContext(AnchorPrefix)}sg-`;
+  const prefix = `${useContext(AnchorPrefixContext)}sg-`;
   return [
     { id: `${prefix}low-risk`, label: "Low risk" },
     {

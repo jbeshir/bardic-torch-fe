@@ -226,9 +226,18 @@ for (const { checkpoint: name, example } of ACCOUNT_MENU_OPEN) {
         await each.keyboard.press("Enter");
       }
       await expect(panel).toBeVisible();
+      // Instant: base.css makes the root scroll smooth (motion allowed), and
+      // at 768 px, with no axe run before the capture, a smooth scroll was
+      // still moving when the screenshot was taken (the frame offset by the
+      // distance left: header cut off, a bare band at the foot).
       await trigger.evaluate(element =>
-        element.scrollIntoView({ block: "center" })
+        element.scrollIntoView({ block: "center", behavior: "instant" })
       );
+      // The capture shows the header as it settles once the page has left
+      // its top (Header.tsx: an IntersectionObserver, then a React render):
+      // with the scroll instant, nothing else is sure to come between it
+      // and the screenshot at 768 px.
+      await expect(each.getByRole("banner")).toHaveClass(/\bshadow-1\b/);
       await expect(trigger).toBeFocused();
     };
     await open(page);

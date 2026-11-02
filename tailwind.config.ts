@@ -43,6 +43,7 @@ const fontSize = Object.fromEntries(
 const cssVariables = (prefix: string, names: readonly string[]) =>
   Object.fromEntries(names.map(name => [name, `var(--${prefix}-${name})`]));
 
+/** @public Loaded by PostCSS (postcss.config.js) and the Tailwind plugin. */
 export default {
   content: ["./app/**/*.{ts,tsx,md}"],
   future: { hoverOnlyWhenSupported: true },

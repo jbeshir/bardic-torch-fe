@@ -31,13 +31,7 @@ type InputProps = Omit<
   "className" | "style" | "id" | "type"
 > & {
   readonly type?:
-    | "text"
-    | "email"
-    | "url"
-    | "search"
-    | "tel"
-    | "password"
-    | "number";
+    "text" | "email" | "url" | "search" | "tel" | "password" | "number";
   /** A decorative 20 px icon before the value (e.g. a search glass). */
   readonly icon?: Icon;
 };

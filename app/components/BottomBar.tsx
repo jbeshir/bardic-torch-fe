@@ -75,17 +75,17 @@ function SearchCell({
 }) {
   const [open, setOpen] = useState(false);
   const sheetId = useId();
-  const trigger = useRef<HTMLButtonElement>(null);
-  const sheet = useRef<HTMLDivElement>(null);
-  const input = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const close = (returnFocus: boolean) => {
     setOpen(false);
-    if (returnFocus) trigger.current?.focus();
+    if (returnFocus) triggerRef.current?.focus();
   };
-  useDismiss({ open, close, areas: [trigger, sheet] });
+  useDismiss({ open, close, areas: [triggerRef, sheetRef] });
   useEffect(() => {
-    if (open) input.current?.focus();
+    if (open) inputRef.current?.focus();
   }, [open]);
 
   const inside = (
@@ -104,7 +104,7 @@ function SearchCell({
   return (
     <>
       <button
-        ref={trigger}
+        ref={triggerRef}
         type="button"
         aria-expanded={open}
         aria-controls={sheetId}
@@ -114,14 +114,14 @@ function SearchCell({
         {inside}
       </button>
       <div
-        ref={sheet}
+        ref={sheetRef}
         id={sheetId}
         hidden={!open}
         className="absolute inset-x-0 bottom-full border-t border-border bg-surface-raised p-3 shadow-2"
       >
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
-            <SearchBox size="lg" ref={input} />
+            <SearchBox size="lg" ref={inputRef} />
           </div>
           <Button variant="ghost" onClick={() => close(true)}>
             Cancel

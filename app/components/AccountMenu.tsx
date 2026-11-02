@@ -140,17 +140,17 @@ export function AccountMenu({
 }) {
   const { pathname, search } = useLocation();
   const panelId = useId();
-  const details = useRef<HTMLDetailsElement>(null);
-  const summary = useRef<HTMLElement>(null);
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+  const summaryRef = useRef<HTMLElement>(null);
   const [open, setOpen] = useState(false);
 
   useDismiss({
     open,
     close: returnFocus => {
-      if (details.current) details.current.open = false;
-      if (returnFocus) summary.current?.focus();
+      if (detailsRef.current) detailsRef.current.open = false;
+      if (returnFocus) summaryRef.current?.focus();
     },
-    areas: [details],
+    areas: [detailsRef],
   });
 
   if (account.state === "signed-out") {
@@ -175,12 +175,12 @@ export function AccountMenu({
 
   return (
     <details
-      ref={details}
-      onToggle={() => setOpen(details.current?.open ?? false)}
+      ref={detailsRef}
+      onToggle={() => setOpen(detailsRef.current?.open ?? false)}
       className={placement === "header" ? "relative" : "relative h-full"}
     >
       <summary
-        ref={summary}
+        ref={summaryRef}
         aria-controls={panelId}
         className={
           placement === "header"

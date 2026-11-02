@@ -1,4 +1,5 @@
 import { useEffect, useRef, type RefObject } from "react";
+import { useBrowserLayoutEffect } from "./useBrowserLayoutEffect";
 
 /** The page can't scroll behind an open modal (DESIGN §6.21). */
 const SCROLL_LOCK = "overflow-hidden";
@@ -67,25 +68,27 @@ export function useModalDialog({
   readonly dismissible?: boolean;
   readonly closeOnBackdrop: boolean;
 }): RefObject<HTMLDialogElement> {
-  const dialog = useRef<HTMLDialogElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   // The latest props, for listeners that live as long as the dialog is open.
-  const latest = useRef({
+  const latestRef = useRef({
     open,
     onClose,
     fallbackFocus,
     dismissible,
     closeOnBackdrop,
   });
-  latest.current = {
-    open,
-    onClose,
-    fallbackFocus,
-    dismissible,
-    closeOnBackdrop,
-  };
+  useBrowserLayoutEffect(() => {
+    latestRef.current = {
+      open,
+      onClose,
+      fallbackFocus,
+      dismissible,
+      closeOnBackdrop,
+    };
+  });
 
   useEffect(() => {
-    const element = dialog.current;
+    const element = dialogRef.current;
     if (!open || !element) return;
     const opener =
       document.activeElement instanceof HTMLElement
@@ -107,20 +110,20 @@ export function useModalDialog({
       if (
         pressedOnBackdrop &&
         event.target === element &&
-        latest.current.closeOnBackdrop &&
-        latest.current.dismissible
+        latestRef.current.closeOnBackdrop &&
+        latestRef.current.dismissible
       ) {
-        latest.current.onClose();
+        latestRef.current.onClose();
       }
     };
     const onCancel = (event: Event) => {
       event.preventDefault();
-      if (latest.current.dismissible) latest.current.onClose();
+      if (latestRef.current.dismissible) latestRef.current.onClose();
     };
     // The browser may close a modal itself (a repeated Escape); keep the
     // parent's state in step.
     const onNativeClose = () => {
-      if (latest.current.open) latest.current.onClose();
+      if (latestRef.current.open) latestRef.current.onClose();
     };
     const onKeyDown = (event: KeyboardEvent) => trapTab(element, event);
 
@@ -139,10 +142,10 @@ export function useModalDialog({
       if (element.open) element.close();
       const target = opener?.isConnected
         ? opener
-        : (latest.current.fallbackFocus?.() ?? null);
+        : (latestRef.current.fallbackFocus?.() ?? null);
       target?.focus();
     };
   }, [open, initialFocus]);
 
-  return dialog;
+  return dialogRef;
 }

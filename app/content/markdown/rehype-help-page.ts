@@ -1,5 +1,6 @@
 import { valueToEstree } from "estree-util-value-to-estree";
 import type { Element, ElementContent, Root, RootContent, Text } from "hast";
+import type { MdxjsEsmHast } from "mdast-util-mdxjs-esm";
 
 /**
  * Shapes a compiled help page for the WikiPage template (DESIGN §10.2):
@@ -180,7 +181,7 @@ function idTableRows(
   }
 }
 
-function exportContents(contents: readonly ContentsEntry[]): RootContent {
+function exportContents(contents: readonly ContentsEntry[]): MdxjsEsmHast {
   return {
     type: "mdxjsEsm",
     value: "",

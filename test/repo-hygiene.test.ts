@@ -12,11 +12,26 @@ const THIS_FILE = "test/repo-hygiene.test.ts";
 type PackageJson = {
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
+  overrides?: unknown;
+  allowScripts?: Record<string, boolean>;
 };
 
 const packageJson = JSON.parse(
   readFileSync(join(root, "package.json"), "utf8")
 ) as PackageJson;
+
+type Lockfile = {
+  readonly packages: Readonly<
+    Record<
+      string,
+      { readonly version?: string; readonly hasInstallScript?: boolean }
+    >
+  >;
+};
+
+const lockfile = JSON.parse(
+  readFileSync(join(root, "package-lock.json"), "utf8")
+) as Lockfile;
 
 const allDependencies = {
   ...packageJson.dependencies,
@@ -39,7 +54,8 @@ const SCANNED_DIRECTORIES = ["app", "functions", "test", "scripts", "e2e"];
 const SCANNED_FILES = [
   "package.json",
   "tsconfig.json",
-  ".eslintrc.cjs",
+  "eslint.config.ts",
+  "knip.json",
   ".prettierrc",
   ".prettierignore",
   ".gitignore",
@@ -47,6 +63,7 @@ const SCANNED_FILES = [
   "postcss.config.js",
   "tailwind.config.ts",
   "vite.config.ts",
+  "vitest.config.ts",
   "playwright.config.ts",
   "load-context.ts",
   "worker-configuration.d.ts",
@@ -74,6 +91,63 @@ describe("every dependency pinned exactly", () => {
       ([, version]) => !exact.test(version)
     );
     expect(inexact).toEqual([]);
+  });
+});
+
+/**
+ * The one override: TypeScript 6 for the packages that still peer `^5`
+ * (openapi-typescript, and the Remix 2 packages until the framework moves;
+ * README "Checks" lists them). One entry, so no package gets its own.
+ */
+describe("dependency overrides", () => {
+  it("overrides only typescript, to the root's version", () => {
+    expect(packageJson.overrides).toEqual({ typescript: "$typescript" });
+  });
+});
+
+describe("Playwright", () => {
+  it("locks @playwright/test, playwright and playwright-core at one version", () => {
+    const versions = Object.entries(lockfile.packages)
+      .filter(([path]) =>
+        /(^|\/)node_modules\/(@playwright\/test|playwright|playwright-core)$/.test(
+          path
+        )
+      )
+      .map(([, entry]) => entry.version);
+    expect(versions.length).toBeGreaterThanOrEqual(3);
+    expect(new Set(versions)).toEqual(
+      new Set([allDependencies["@playwright/test"]])
+    );
+  });
+});
+
+/**
+ * npm 12 runs a dependency's install script only if `allowScripts` approves
+ * its exact `name@version`. So every locked package with an install script
+ * has a deliberate decision, true or false, and a version bump fails here
+ * until it is decided again (instead of silently skipping the script). This
+ * reads the lockfile, not npm, so it works with any npm.
+ */
+describe("install scripts", () => {
+  const withScripts = [
+    ...new Set(
+      Object.entries(lockfile.packages)
+        .filter(([path, entry]) => path !== "" && entry.hasInstallScript)
+        .map(
+          ([path, entry]) =>
+            `${path.replace(/^.*node_modules\//, "")}@${entry.version}`
+        )
+    ),
+  ].sort();
+  const decided = Object.keys(packageJson.allowScripts ?? {}).sort();
+
+  it("decides every locked package that has an install script", () => {
+    expect(withScripts.length).toBeGreaterThan(0);
+    expect(withScripts.filter(entry => !decided.includes(entry))).toEqual([]);
+  });
+
+  it("has no decision for a package the lockfile no longer has", () => {
+    expect(decided.filter(entry => !withScripts.includes(entry))).toEqual([]);
   });
 });
 
@@ -171,9 +245,35 @@ function runsOf(job: string): string[] {
   return stepsOf(job).flatMap(step => (step.run ? [step.run] : []));
 }
 
+/** npm 12, as `packageManager` and `allowScripts` assume. */
+const INSTALL_NPM = "npm install --global npm@12.2.1";
+
 describe("CI workflow", () => {
-  it("has exactly the validate and e2e jobs", () => {
-    expect(Object.keys(ciWorkflow.jobs).sort()).toEqual(["e2e", "validate"]);
+  it("has exactly the validate, e2e and audit jobs", () => {
+    expect(Object.keys(ciWorkflow.jobs).sort()).toEqual([
+      "audit",
+      "e2e",
+      "validate",
+    ]);
+  });
+
+  it("installs the npm that packageManager names first in every job", () => {
+    expect(
+      (JSON.parse(read("package.json")) as { packageManager?: string })
+        .packageManager
+    ).toBe("npm@12.2.1");
+    for (const job of Object.keys(ciWorkflow.jobs)) {
+      expect(runsOf(job)[0]).toBe(INSTALL_NPM);
+    }
+  });
+
+  it("audit installs from the lockfile, then runs npm run audit and checks signatures", () => {
+    expect(runsOf("audit")).toEqual([
+      INSTALL_NPM,
+      "npm ci",
+      "npm run audit",
+      "npm audit signatures",
+    ]);
   });
 
   it("runs pull requests once, and pushes only to the deployed branches", () => {
@@ -182,11 +282,16 @@ describe("CI workflow", () => {
   });
 
   it("validate installs from the lockfile and runs npm run validate", () => {
-    expect(runsOf("validate")).toEqual(["npm ci", "npm run validate"]);
+    expect(runsOf("validate")).toEqual([
+      INSTALL_NPM,
+      "npm ci",
+      "npm run validate",
+    ]);
   });
 
   it("e2e installs Chromium for the locked Playwright, then runs test:e2e", () => {
     expect(runsOf("e2e")).toEqual([
+      INSTALL_NPM,
       "npm ci",
       "npx playwright install --with-deps chromium",
       "npm run test:e2e",
@@ -221,11 +326,11 @@ describe("CI workflow", () => {
     expect(ciWorkflowSource).not.toMatch(/secrets\./);
   });
 
-  it("both jobs use the Node version in .nvmrc, which is 22", () => {
-    expect(readFileSync(join(root, ".nvmrc"), "utf8").trim()).toBe("22");
+  it("every job uses the Node version in .nvmrc, which is 26.13.0", () => {
+    expect(readFileSync(join(root, ".nvmrc"), "utf8").trim()).toBe("26.13.0");
     expect(
       ciWorkflowSource.match(/node-version-file: \.nvmrc$/gm)
-    ).toHaveLength(2);
+    ).toHaveLength(Object.keys(ciWorkflow.jobs).length);
   });
 });
 
@@ -619,5 +724,36 @@ describe("error copy", () => {
     );
     expect(NO_SUBJECT.test("  Couldn’t save your theme.")).toBe(true);
     expect(NO_SUBJECT.test('"We couldn’t save."')).toBe(false);
+  });
+});
+
+/**
+ * Every Playwright API request goes through the per-test `request` fixture
+ * or `page.request`, which are disposed when the test ends: an API context
+ * that outlived its test would keep keep-alive sockets open across tests
+ * (docs/TESTING.md, "socket hang up").
+ */
+describe("e2e API requests", () => {
+  it("never creates an APIRequestContext of its own", () => {
+    const own =
+      /\bnewContext\s*\(|import\s*\{[^}]*\brequest\b[^}]*\}\s*from\s*"@playwright\/test"/;
+    expect(filesUnder("e2e").filter(path => own.test(read(path)))).toEqual([]);
+  });
+});
+
+/**
+ * @eslint-react's `dom-no-unsafe-target-blank` checks plain `<a>` only, and
+ * it has no setting to add `Link` or `NavLink` (eslintrc's
+ * `linkComponents`). No link opens a new tab (DESIGN §5.3: the same tab), so
+ * no link component may take a `target`.
+ */
+describe("links", () => {
+  it("never give a link component a target", () => {
+    const linkWithTarget = /<\w*Link\b[^>]*\starget=/;
+    expect(
+      filesUnder("app").filter(
+        path => /\.tsx$/.test(path) && linkWithTarget.test(read(path))
+      )
+    ).toEqual([]);
   });
 });

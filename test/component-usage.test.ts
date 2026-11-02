@@ -5,8 +5,9 @@ import { filesUnder } from "./support/files";
 
 /**
  * Every export of an app module is used by app code, not only by tests
- * (the brief's "no unused exports"). ESLint's no-unused-modules counts
- * test imports as uses, so this check reads the sources itself: each name
+ * (the brief's "no unused exports"). `knip --production` (npm run
+ * check:unused) is the primary check; this one reads the sources itself, as
+ * a second, independent check of app/: each name
  * a module under app/ exports must be imported by another non-test module
  * (app/, functions/, scripts/ or a root config file). Modules whose exports
  * the framework reads (routes, root, the entries) and the test helpers in

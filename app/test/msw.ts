@@ -1,4 +1,6 @@
-import { http, HttpResponse, type RequestHandler } from "msw";
+import type { RequestHandler } from "msw";
+import { HttpNetworkFrame } from "msw/experimental";
+import { http, HttpResponse } from "msw/http";
 import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll, expect } from "vitest";
 import {
@@ -21,9 +23,14 @@ export function serveMocks(...handlers: RequestHandler[]) {
 
   beforeAll(() =>
     server.listen({
-      onUnhandledRequest(request, print) {
-        unhandled.push(`${request.method} ${request.url}`);
-        print.error();
+      onUnhandledFrame({ frame, defaults }) {
+        const { request } = frame instanceof HttpNetworkFrame ? frame.data : {};
+        unhandled.push(
+          request
+            ? `${request.method} ${request.url}`
+            : `${frame.protocol} frame`
+        );
+        defaults.error();
       },
     })
   );

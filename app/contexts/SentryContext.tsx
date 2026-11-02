@@ -32,18 +32,11 @@ export function SentryProvider({
   readonly dsn: string | undefined;
   readonly children: ReactNode;
 }) {
-  const location = useLocation();
-  const matches = useMatches();
-
   useEffect(() => {
     initSentry(dsn, [
-      Sentry.browserTracingIntegration({
-        useEffect,
-        useLocation: () => location,
-        useMatches: () => matches,
-      }),
+      Sentry.browserTracingIntegration({ useEffect, useLocation, useMatches }),
     ]);
-  }, [dsn, location, matches]);
+  }, [dsn]);
 
   return <>{children}</>;
 }

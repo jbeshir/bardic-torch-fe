@@ -42,28 +42,28 @@ export function Drawer({
   readonly closeFrom?: "lg" | undefined;
 }) {
   const titleId = useId();
-  const close = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
   const dialog = useModalDialog({
     open,
     onClose,
-    initialFocus: close,
+    initialFocus: closeRef,
     closeOnBackdrop: true,
   });
 
   // Opened on a long menu, the current page's link is in view.
-  const body = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (open && body.current) showCurrentPage(body.current);
+    if (open && bodyRef.current) showCurrentPage(bodyRef.current);
   }, [open]);
 
   const { key } = useLocation();
-  const shownAt = useRef(key);
+  const shownAtRef = useRef(key);
   useEffect(() => {
     if (!open) {
-      shownAt.current = key;
+      shownAtRef.current = key;
       return;
     }
-    if (key !== shownAt.current) onClose();
+    if (key !== shownAtRef.current) onClose();
   }, [open, key, onClose]);
 
   useEffect(() => {
@@ -100,14 +100,17 @@ export function Drawer({
               {title}
             </h2>
             <Button
-              ref={close}
+              ref={closeRef}
               variant="ghost"
               icon={IconX}
               label={closeLabel}
               onClick={onClose}
             />
           </div>
-          <div ref={body} className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+          <div
+            ref={bodyRef}
+            className="min-h-0 flex-1 overflow-y-auto px-4 pb-4"
+          >
             {children}
           </div>
           <div className="shrink-0 space-y-3 border-t border-border px-4 py-3">

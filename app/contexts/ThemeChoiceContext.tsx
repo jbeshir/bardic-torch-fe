@@ -25,6 +25,7 @@ type ThemeChoiceState = {
 };
 
 const ThemeChoiceContext = createContext<ThemeChoiceState | null>(null);
+ThemeChoiceContext.displayName = "ThemeChoiceContext";
 
 /**
  * Holds the reader's theme choice for the document and every ThemeToggle.
@@ -44,16 +45,16 @@ export function ThemeChoiceProvider({
   const [pending, setPending] = useState<ThemeChoice | null>(null);
   const [saved, setSaved] = useState<ThemeChoice | null>(null);
   const [failure, setFailure] = useState<ProxyError | null>(null);
-  const latest = useRef(0);
+  const latestRef = useRef(0);
 
   const save = useCallback(async (choice: ThemeChoice) => {
-    latest.current += 1;
-    const request = latest.current;
+    latestRef.current += 1;
+    const request = latestRef.current;
     setPending(choice);
     setFailure(null);
     const result = await sendForm(THEME_ACTION, "POST", { theme: choice });
     // A later click has taken over; its own answer decides.
-    if (request !== latest.current) return result;
+    if (request !== latestRef.current) return result;
     setPending(null);
     if (result.ok) setSaved(choice);
     else setFailure(result.error);

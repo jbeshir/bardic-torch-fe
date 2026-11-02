@@ -5,7 +5,8 @@ import { createContext, useContext, type ReactNode } from "react";
  * side-by-side copies never share an id; the "Current" copy has none, which makes
  * `/styleguide#button` and the e2e checkpoints point at it.
  */
-export const AnchorPrefix = createContext("");
+export const AnchorPrefixContext = createContext("");
+AnchorPrefixContext.displayName = "AnchorPrefixContext";
 
 /** A component's block: an anchored h2 and its examples. */
 export function Specimen({
@@ -21,7 +22,7 @@ export function Specimen({
   readonly summary: ReactNode;
   readonly children: ReactNode;
 }) {
-  const prefix = useContext(AnchorPrefix);
+  const prefix = useContext(AnchorPrefixContext);
   return (
     <section
       id={`${prefix}${id}`}

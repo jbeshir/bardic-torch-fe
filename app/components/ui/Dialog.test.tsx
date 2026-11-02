@@ -41,7 +41,7 @@ function RevokeToken({
 
 function RenameToken() {
   const [open, setOpen] = useState(false);
-  const field = useRef<HTMLInputElement>(null);
+  const fieldRef = useRef<HTMLInputElement>(null);
   return (
     <>
       <button type="button" onClick={() => setOpen(true)}>
@@ -51,7 +51,7 @@ function RenameToken() {
         open={open}
         onClose={() => setOpen(false)}
         title="Rename token"
-        initialFocus={field}
+        initialFocus={fieldRef}
         confirm={{
           label: "Save name",
           icon: IconDeviceFloppy,
@@ -61,7 +61,7 @@ function RenameToken() {
       >
         <form id="rename" onSubmit={event => event.preventDefault()}>
           <Field label="Token name">
-            <Input ref={field} name="name" />
+            <Input ref={fieldRef} name="name" />
           </Field>
         </form>
       </Dialog>
@@ -242,10 +242,10 @@ describe("Dialog", () => {
     function DeleteRow() {
       const [open, setOpen] = useState(false);
       const [row, setRow] = useState(true);
-      const heading = useRef<HTMLHeadingElement>(null);
+      const headingRef = useRef<HTMLHeadingElement>(null);
       return (
         <>
-          <h2 ref={heading} tabIndex={-1}>
+          <h2 ref={headingRef} tabIndex={-1}>
             Your tokens
           </h2>
           {row ? (
@@ -257,7 +257,7 @@ describe("Dialog", () => {
             open={open}
             onClose={() => setOpen(false)}
             title="Revoke this token?"
-            fallbackFocus={() => heading.current}
+            fallbackFocus={() => headingRef.current}
             confirm={{
               label: "Revoke token",
               icon: IconTrash,

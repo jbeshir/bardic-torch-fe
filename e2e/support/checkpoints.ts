@@ -97,6 +97,7 @@ export const CHECKPOINTS: Readonly<
       "profile-unavailable",
       "blocked",
     ],
+    "forced-colours": ["card-link-focus", "main-focus", "error-heading-focus"],
   },
 };
 

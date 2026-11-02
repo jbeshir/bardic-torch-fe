@@ -1,7 +1,8 @@
-# Both jobs are required status checks on main (docs/DEPLOY.md, §1 "Before
-# the first deploy", step "Protect main"). Neither needs secrets: the e2e
-# suite runs the built app against the local fixture API with stub sign-in,
-# and never leaves the runner (see docs/TESTING.md).
+# validate and e2e are required status checks on main (docs/DEPLOY.md, §1
+# "Before the first deploy", step "Protect main"); audit is not required
+# yet, because the Remix 2 packages still carry advisories. None needs
+# secrets: the e2e suite runs the built app against the local fixture API
+# with stub sign-in, and never leaves the runner (see docs/TESTING.md).
 #
 # Actions are pinned to exact release tags. Full commit SHAs (with the tag
 # in a comment) would be stronger, but they were not resolvable when this
@@ -40,6 +41,11 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
+      # npm 12, which package.json's packageManager names: its allowScripts
+      # approvals decide which install scripts npm ci runs.
+      - name: Set up npm
+        run: npm install --global npm@12.2.1
+
       - name: Install dependencies
         run: npm ci
 
@@ -63,6 +69,11 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+
+      # npm 12, which package.json's packageManager names: its allowScripts
+      # approvals decide which install scripts npm ci runs.
+      - name: Set up npm
+        run: npm install --global npm@12.2.1
 
       - name: Install dependencies
         run: npm ci
@@ -100,3 +111,34 @@ jobs:
           name: test-results
           path: test-results/
           retention-days: 14
+
+  # Known advisories in the dependencies: any in a runtime dependency, or a
+  # high or critical one anywhere, fails npm run audit. Then the registry
+  # signatures and provenance of every installed package are checked.
+  audit:
+    name: audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4.2.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # npm 12, which package.json's packageManager names: its allowScripts
+      # approvals decide which install scripts npm ci runs.
+      - name: Set up npm
+        run: npm install --global npm@12.2.1
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit dependencies
+        run: npm run audit
+
+      - name: Verify registry signatures
+        run: npm audit signatures

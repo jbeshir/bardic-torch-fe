@@ -6,11 +6,7 @@ import { ExternalMark, externalKind } from "./Link";
 import { Spinner } from "./Spinner";
 
 type Variant =
-  | "primary"
-  | "secondary"
-  | "ghost"
-  | "danger"
-  | "secondary-danger";
+  "primary" | "secondary" | "ghost" | "danger" | "secondary-danger";
 type Size = "sm" | "md" | "lg";
 
 const VARIANTS: Record<Variant, string> = {

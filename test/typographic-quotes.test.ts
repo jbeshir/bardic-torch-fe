@@ -1,6 +1,18 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import ts from "typescript";
+import {
+  createSourceFile,
+  forEachChild,
+  isJsxText,
+  isNoSubstitutionTemplateLiteral,
+  isStringLiteral,
+  isTemplateHead,
+  isTemplateMiddle,
+  isTemplateTail,
+  type Node,
+  ScriptKind,
+  ScriptTarget,
+} from "typescript";
 import { describe, expect, it } from "vitest";
 import { filesUnder } from "./support/files";
 
@@ -21,29 +33,29 @@ const CSP_KEYWORD = /'(?:self|none|nonce-|unsafe-|strict-|sha\d)/;
 
 function straightQuotesInSource(path: string): string[] {
   const text = readFileSync(join(root, path), "utf8");
-  const source = ts.createSourceFile(
+  const source = createSourceFile(
     path,
     text,
-    ts.ScriptTarget.Latest,
+    ScriptTarget.Latest,
     true,
-    path.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+    path.endsWith(".tsx") ? ScriptKind.TSX : ScriptKind.TS
   );
   const found: string[] = [];
-  const visit = (node: ts.Node) => {
+  const visit = (node: Node) => {
     if (
-      ts.isStringLiteral(node) ||
-      ts.isNoSubstitutionTemplateLiteral(node) ||
-      ts.isTemplateHead(node) ||
-      ts.isTemplateMiddle(node) ||
-      ts.isTemplateTail(node) ||
-      ts.isJsxText(node)
+      isStringLiteral(node) ||
+      isNoSubstitutionTemplateLiteral(node) ||
+      isTemplateHead(node) ||
+      isTemplateMiddle(node) ||
+      isTemplateTail(node) ||
+      isJsxText(node)
     ) {
-      const raw = ts.isJsxText(node) ? node.getText(source) : node.text;
+      const raw = isJsxText(node) ? node.getText(source) : node.text;
       if (STRAIGHT.test(raw) && !CSP_KEYWORD.test(raw)) {
         found.push(`${path}: ${raw.trim()}`);
       }
     }
-    ts.forEachChild(node, visit);
+    forEachChild(node, visit);
   };
   visit(source);
   return found;
