@@ -61,3 +61,35 @@ test("the 404 page in the shell carries the nonce CSP and hydrates without viola
   await expect(bar.getByRole("searchbox")).toBeFocused();
   expect(violations).toEqual([]);
 });
+
+test("the lazy route discovery manifest carries the security headers", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await waitForHydration(page);
+  // Asked for with the version of the build that served the page, as the
+  // page's own route discovery asks for it.
+  const version = await page.evaluate(
+    () =>
+      (window as { __remixManifest?: { version?: string } }).__remixManifest
+        ?.version
+  );
+  expect(version).toBeTruthy();
+  const response = await page.request.get(
+    `/__manifest?p=%2Fhelp%2Flicence&version=${version ?? ""}`
+  );
+  expect(response.status()).toBe(200);
+  const headers = response.headers();
+  expect(headers["content-security-policy"]).toContain(
+    "frame-ancestors 'none'"
+  );
+  expect(headers["content-security-policy"]).toMatch(/'nonce-([^']+)'/);
+  expect(headers["x-content-type-options"]).toBe("nosniff");
+  expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+  expect(headers["permissions-policy"]).toContain("camera=()");
+  expect(headers["vary"]).toMatch(/\bCookie\b/);
+  expect(headers["cache-control"]).toBe("public, max-age=31536000, immutable");
+  expect(Object.keys((await response.json()) as object)).toContain(
+    "routes/help.$slug"
+  );
+});

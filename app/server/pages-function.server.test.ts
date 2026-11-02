@@ -145,6 +145,31 @@ describe("the Pages Function", () => {
     }
   );
 
+  it("adds the security headers to the lazy route discovery manifest, keeping its own", async () => {
+    // Remix answers /__manifest before any route, and without the
+    // entry.server hooks; the build's version is "test".
+    const onRequest = createPagesHandler(build);
+    const patches = await call(
+      onRequest,
+      new Request(`${APP_ORIGIN}/__manifest?p=%2Fauth%2Flogout&version=test`)
+    );
+    expect(patches.status).toBe(200);
+    expectSecurityHeaders(patches);
+    expect(patches.headers.get("Cache-Control")).toBe(
+      "public, max-age=31536000, immutable"
+    );
+    expect(Object.keys(await patches.json())).toContain("routes/auth.logout");
+
+    // A page from an older build is told to reload instead.
+    const stale = await call(
+      onRequest,
+      new Request(`${APP_ORIGIN}/__manifest?p=%2Fauth%2Flogout&version=old`)
+    );
+    expect(stale.status).toBe(204);
+    expect(stale.headers.get("X-Remix-Reload-Document")).toBe("true");
+    expectSecurityHeaders(stale);
+  });
+
   it("keeps a resource route's Location and cookies", async () => {
     const response = await call(
       createPagesHandler(build),

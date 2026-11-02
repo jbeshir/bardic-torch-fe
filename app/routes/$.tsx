@@ -1,5 +1,5 @@
 import type { MetaFunction } from "@remix-run/cloudflare";
-import { json } from "@remix-run/cloudflare";
+import { data } from "@remix-run/cloudflare";
 import { useLocation } from "@remix-run/react";
 import { NOT_FOUND_META, NotFound } from "~/components/ErrorPages";
 
@@ -8,7 +8,7 @@ import { NOT_FOUND_META, NotFound } from "~/components/ErrorPages";
  * (DESIGN §10.4), with a real 404 status.
  */
 export function loader() {
-  return json(null, { status: 404 });
+  return data(null, { status: 404 });
 }
 
 export const meta: MetaFunction = () => [...NOT_FOUND_META];

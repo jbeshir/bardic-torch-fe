@@ -48,11 +48,15 @@ async function focusByKeyboard(page: Page, locator: Locator) {
   await expect(locator).toBeFocused();
 }
 
-/** A client-side fetch of the settings route's loader data. */
+/**
+ * A client-side single fetch of the settings route's loader data alone (the
+ * root keeps its data on a plain navigation, so it opts out).
+ */
 function isSettingsData(url: string): boolean {
   const { pathname, searchParams } = new URL(url);
   return (
-    pathname === "/settings" && searchParams.get("_data") === "routes/settings"
+    pathname === "/settings.data" &&
+    searchParams.get("_routes") === "routes/settings"
   );
 }
 

@@ -1,10 +1,11 @@
-import { json } from "@remix-run/cloudflare";
+import { data } from "@remix-run/cloudflare";
 import { UNSAFE_ErrorResponseImpl } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { handleError } from "./entry.server";
 import * as indexModule from "./routes/_index";
 import { loadContext } from "./test/context";
 import { serveApp } from "./test/server-build";
+import { routeData } from "./test/single-fetch";
 
 const captured = vi.hoisted(() => [] as unknown[]);
 vi.mock("@sentry/cloudflare", () => ({
@@ -19,7 +20,7 @@ vi.mock("@sentry/cloudflare", () => ({
  * caching, served the way the Pages function does.
  */
 const privateRoute = {
-  loader: () => json({}, { headers: { "Cache-Control": "no-store" } }),
+  loader: () => data({}, { headers: { "Cache-Control": "no-store" } }),
   headers: () => ({ "Cache-Control": "no-store" }),
   default: () => null,
 };
@@ -216,21 +217,21 @@ describe("document responses", () => {
 
 describe("data responses", () => {
   it("carry the security and cache headers", async () => {
-    const response = await get("/?_data=root");
+    const response = await get("/_root.data");
     expect(response.headers.get("X-Remix-Response")).toBe("yes");
     expect(response.headers.get("Content-Security-Policy")).toContain(
       "frame-ancestors 'none'"
     );
     expect(response.headers.get("Cache-Control")).toBe("private, no-cache");
     expect(response.headers.get("Vary")).toBe("Cookie");
-    expect(await response.json()).toEqual({
+    expect(await routeData(response, "root")).toEqual({
       theme: null,
       account: { state: "signed-out" },
     });
   });
 
   it("keep a route's no-store", async () => {
-    const response = await get("/private?_data=routes%2Fprivate");
+    const response = await get("/private.data");
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
   });

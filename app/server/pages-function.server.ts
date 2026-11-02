@@ -14,10 +14,11 @@ import { createNonce, withSecurityHeaders } from "./security-headers.server";
  * first (an invalid one gets the static configuration error page) and
  * handed to that request's loaders.
  *
- * entry.server puts the security headers on documents and `?_data`
- * answers; everything else Remix answers (resource routes: the auth
- * redirects, the CSRF 403, the theme route's 303 and 405, the proxies'
- * JSON) gets them here, so every response carries them.
+ * entry.server puts the security headers on documents and single fetch
+ * `.data` answers; everything else Remix answers (resource routes: the auth
+ * redirects, the CSRF 403, the theme route’s 303 and 405, the proxies’
+ * JSON; and lazy route discovery’s `/__manifest`) gets them here, so every
+ * response carries them.
  */
 export function createPagesHandler(build: ServerBuild): PagesFunction<Env> {
   /** Each request's validated environment, for its getLoadContext. */

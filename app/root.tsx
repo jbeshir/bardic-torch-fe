@@ -12,12 +12,13 @@ import {
 } from "@remix-run/react";
 import frauncesLatin from "@fontsource-variable/fraunces/files/fraunces-latin-opsz-normal.woff2?url";
 import type {
+  HeadersFunction,
   LinksFunction,
   LoaderFunctionArgs,
   MetaFunction,
 } from "@remix-run/cloudflare";
 import type { ShouldRevalidateFunction } from "@remix-run/react";
-import { json } from "@remix-run/cloudflare";
+import { data } from "@remix-run/cloudflare";
 import type { ReactNode } from "react";
 import { loadAccount } from "~/server/account.server";
 import { SentryProvider } from "~/contexts/SentryContext";
@@ -107,10 +108,10 @@ function ThemeMeta({ theme }: { readonly theme: Theme | null }) {
 }
 
 export function Layout({ children }: { readonly children: ReactNode }) {
-  const data = useRouteLoaderData<typeof loader>("root");
+  const loaded = useRouteLoaderData<typeof loader>("root");
   return (
-    <SentryProvider dsn={data?.sentryDsn}>
-      <ThemeChoiceProvider loaded={data?.theme ?? "system"}>
+    <SentryProvider dsn={loaded?.sentryDsn}>
+      <ThemeChoiceProvider loaded={loaded?.theme ?? "system"}>
         <Document>{children}</Document>
       </ThemeChoiceProvider>
     </SentryProvider>
@@ -151,19 +152,30 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
   // Resolving the session refreshes expiring tokens (and /v1/me can end
   // it); the updated session cookie must be forwarded on the response.
   const { account, headers } = await loadAccount(request, context);
-  // Who is reading is private: a signed-in `?_data=root` answer must not
-  // stay in the browser's cache after logout. (Documents get their
-  // Cache-Control from entry.server and the route `headers` exports.)
+  // Who is reading is private: a signed-in answer must not stay in the
+  // browser's cache after logout. The `headers` export below sends this on.
   if (account.state !== "signed-out") headers.set("Cache-Control", "no-store");
 
-  return json<LoaderData>(
-    {
-      sentryDsn: context.cloudflare.env.SENTRY_DSN,
-      theme: readTheme(request),
-      account,
-    },
-    { headers }
-  );
+  const loaded: LoaderData = {
+    sentryDsn: context.cloudflare.env.SENTRY_DSN,
+    theme: readTheme(request),
+    account,
+  };
+  return data(loaded, { headers });
+};
+
+/**
+ * Single fetch answers a client navigation with one `.data` response for
+ * every loader it runs, and gives it the headers a document would get: each
+ * route's `headers` export, or its parent's headers when it has none. So
+ * the root's Cache-Control (`no-store` while signed in) is sent on from its
+ * loader, for documents and `.data` answers alike, and the routes without
+ * a `headers` export inherit it; without one, Remix drops it. Unset, the
+ * response is private and revalidated (entry.server).
+ */
+export const headers: HeadersFunction = ({ loaderHeaders }) => {
+  const cacheControl = loaderHeaders.get("Cache-Control");
+  return cacheControl ? { "Cache-Control": cacheControl } : {};
 };
 
 /**

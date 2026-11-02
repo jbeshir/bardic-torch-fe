@@ -2,8 +2,9 @@ import type { AppEnv } from "./env.server";
 
 /**
  * Headers for every response the app makes: entry.server adds them to
- * documents and `?_data` answers, the Pages Function (pages-function.server)
- * to everything else (resource routes).
+ * documents and single fetch `.data` answers, the Pages Function
+ * (pages-function.server) to everything else (resource routes, the route
+ * discovery `/__manifest`).
  * Scripts run only from this origin or with the per-request nonce; forms
  * may post here or to Auth0 (logout redirects there); nothing may frame
  * the site.

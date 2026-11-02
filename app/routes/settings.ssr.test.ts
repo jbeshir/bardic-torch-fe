@@ -4,6 +4,7 @@ import { sessionCookie, sessionTokens } from "~/test/context";
 import type { UpstreamErrorCode } from "~/schemas/api";
 import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
+import { routeData, singleFetchResults } from "~/test/single-fetch";
 import * as settingsModule from "./settings";
 
 // /settings rendered by the real server entry and root, against the fixture
@@ -169,17 +170,23 @@ describe("/settings route error boundary", () => {
     expect(html).toContain('id="site-nav"');
   });
 
-  it("a ?_data request for the route gets the error with no-store", async () => {
+  it("a .data request for the route gets the error with no-store", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     fail("listAPITokens", 500, "internal");
     const response = await get(
-      "/settings?_data=routes%2Fsettings",
+      "/settings.data?_routes=routes%2Fsettings",
       await signedIn()
     );
     expect(response.status).toBe(500);
     expect(response.headers.get("Cache-Control")).toBe("no-store");
-    expect(await response.json()).toEqual({
-      message: "We couldn’t do that just now. Try again shortly.",
+    expect(await singleFetchResults(response)).toEqual({
+      "routes/settings": {
+        error: {
+          status: 500,
+          statusText: "",
+          data: { message: "We couldn’t do that just now. Try again shortly." },
+        },
+      },
     });
   });
 
@@ -187,10 +194,10 @@ describe("/settings route error boundary", () => {
     ["signed in", () => signedIn()],
     ["signed out", async () => undefined],
   ])(
-    "a ?_data request for the route (%s) is never cached",
+    "a .data request for the route (%s) is never cached",
     async (_case, cookie) => {
       const response = await get(
-        "/settings?_data=routes%2Fsettings",
+        "/settings.data?_routes=routes%2Fsettings",
         await cookie()
       );
       expect(response.status).toBe(200);
@@ -198,16 +205,27 @@ describe("/settings route error boundary", () => {
     }
   );
 
-  it("the root's ?_data answer is never cached when signed in, and revalidated when not", async () => {
-    const signedInRoot = await get("/settings?_data=root", await signedIn());
+  it("the root's .data answer is never cached when signed in, and revalidated when not", async () => {
+    const signedInRoot = await get(
+      "/settings.data?_routes=root",
+      await signedIn()
+    );
     expect(signedInRoot.headers.get("Cache-Control")).toBe("no-store");
-    expect(await signedInRoot.json()).toMatchObject({
+    expect(await routeData(signedInRoot, "root")).toMatchObject({
       account: { state: "signed-in" },
     });
-    const signedOutRoot = await get("/settings?_data=root");
+    // Single fetch gives the answer the page's route headers: on /settings
+    // that is the settings route's no-store, so the root's own is asked for
+    // at "/", where no route sets one.
+    const signedOutRoot = await get("/_root.data?_routes=root");
     expect(signedOutRoot.headers.get("Cache-Control")).toBe(
       "private, no-cache"
     );
+    expect(await routeData(signedOutRoot, "root")).toMatchObject({
+      account: { state: "signed-out" },
+    });
+    const signedOutSettings = await get("/settings.data?_routes=root");
+    expect(signedOutSettings.headers.get("Cache-Control")).toBe("no-store");
   });
 
   it("an API answer the app can't use is a 502, shown by the same boundary", async () => {

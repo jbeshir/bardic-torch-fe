@@ -120,13 +120,13 @@ async function asApp(request: Request): Promise<Request> {
 
 type Params = Record<string, string | undefined>;
 type Args = { request: Request; params: Params };
-type Handler = (args: {
+type Handler<Result = Response> = (args: {
   request: Request;
   params: Params;
   context: ReturnType<typeof loadContext>;
-}) => Promise<Response>;
+}) => Promise<Result>;
 
-function run(handler: Handler) {
+function run<Result>(handler: Handler<Result>) {
   return async ({ request, params }: Args) =>
     handler({ request: await asApp(request), params, context: loadContext() });
 }

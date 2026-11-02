@@ -8,6 +8,8 @@
     "functions/_middleware.ts!",
     // The AppLoadContext augmentation, imported by no module.
     "load-context.ts!",
+    // The route config, which Remix's Vite plugin loads (`v3_routeConfig`).
+    "app/routes.ts!",
     // npm scripts and the manual tools (font-fallback-metrics, wiki-categories).
     "scripts/*.mjs!",
     // The build: it compiles the help pages and serves dev, so what it

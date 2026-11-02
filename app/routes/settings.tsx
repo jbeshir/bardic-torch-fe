@@ -3,7 +3,7 @@ import type {
   LoaderFunctionArgs,
   MetaFunction,
 } from "@remix-run/cloudflare";
-import { json } from "@remix-run/cloudflare";
+import { data } from "@remix-run/cloudflare";
 import {
   isRouteErrorResponse,
   useLoaderData,
@@ -62,37 +62,30 @@ export const meta: MetaFunction = () => [
 
 const NO_STORE = "no-store";
 
-/** The document; the loader's own responses say the same for `?_data`. */
+/**
+ * Nothing here is cached: single fetch gives a client navigation's `.data`
+ * answer the same route headers as the document, so this covers both.
+ */
 export const headers: HeadersFunction = () => ({ "Cache-Control": NO_STORE });
 
 /**
  * Signed out (no session, or the API ended it) is a page state, as is a
  * 403; anything else that stops the list loading (a 500, an unreachable or
- * malformed API) is thrown to this route's error boundary. Every answer is
- * `no-store`: the `headers` export only covers the document, and a client
- * navigation's `?_data` response would otherwise be cacheable, leaving the
- * token list in the browser's cache after logout.
+ * malformed API) is thrown to this route's error boundary. Every answer
+ * forwards the API call's headers (a refreshed session cookie); the
+ * `headers` export makes each of them `no-store`, so the token list never
+ * stays in the browser's cache after logout.
  */
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const result = await listApiTokens(request, context);
-  const headers = new Headers(result.headers);
-  headers.set("Cache-Control", NO_STORE);
-  if (result.ok) {
-    return json<SettingsData>(
-      { state: "ready", tokens: result.data.data },
-      { headers }
-    );
-  }
-  if (result.status === 401) {
-    return json<SettingsData>({ state: "signed-out" }, { headers });
-  }
+  const { headers } = result;
+  const answer = (settings: SettingsData) => data(settings, { headers });
+  if (result.ok) return answer({ state: "ready", tokens: result.data.data });
+  if (result.status === 401) return answer({ state: "signed-out" });
   if (result.status === 403) {
-    return json<SettingsData>(
-      { state: "tokens-refused", message: result.error.message },
-      { headers }
-    );
+    return answer({ state: "tokens-refused", message: result.error.message });
   }
-  throw json(
+  throw data(
     { message: result.error.message },
     { status: result.status, headers }
   );
@@ -206,12 +199,12 @@ function SignedOut() {
 }
 
 export default function Settings() {
-  const data = useLoaderData<typeof loader>();
+  const settings = useLoaderData<typeof loader>();
   const account = useRouteLoaderData<typeof rootLoader>("root")?.account ?? {
     state: "signed-out",
   };
 
-  if (data.state === "signed-out" || account.state === "signed-out") {
+  if (settings.state === "signed-out" || account.state === "signed-out") {
     return (
       <Page>
         <SignedOut />
@@ -254,11 +247,11 @@ export default function Settings() {
           </SectionError>
         )}
       </SettingsSection>
-      {data.state === "ready" ? (
-        <ApiTokens tokens={data.tokens} />
+      {settings.state === "ready" ? (
+        <ApiTokens tokens={settings.tokens} />
       ) : (
         <SettingsSection title="API tokens">
-          <Alert tone="danger">{data.message}</Alert>
+          <Alert tone="danger">{settings.message}</Alert>
         </SettingsSection>
       )}
     </Page>

@@ -60,7 +60,7 @@ Other FE1 differences from the plan's test list follow from the real API (no rev
   - `loadContext()` gives a validated env whose API base URL is `https://api.test`.
   - `formRequest()` builds a same-origin, form-encoded request.
   - `runAction()` (`app/test/proxy.ts`) runs a proxy action.
-  - `serveApp()` (`app/test/server-build.ts`) renders routes through the real `entry.server` for header and nonce tests.
+  - `serveApp()` (`app/test/server-build.ts`) renders routes through the real `entry.server` for header and nonce tests. Its build has the runtime future flags of `vite.config.ts`, single fetch included, so a client navigation's data is a `.data` request (`/_root.data` for `/`, `?_routes=` naming the loaders to run). `app/test/single-fetch.ts` decodes its turbo-stream body the way Remix's client does.
 
 - **Sentry (R28):** `app/contexts/SentryContext.test.tsx` mocks `@sentry/remix`: no init without a DSN, one init with it across navigations, and an error page that is the first render starts Sentry before reporting. `app/entry.server.test.ts` mocks `@sentry/cloudflare`: loader and render errors are reported (abandoned requests are not), and `sentry.server.test.ts` checks the server gets no DSN when `SENTRY_DSN` is unset or empty. Delivery to a real Sentry is not part of any test run.
 - **Cookie bytes:** `app/server/cookie-format.golden.test.ts` pins the exact `Set-Cookie` strings of `__Host-bt_session` and `__Host-bt_return_to` for a fixed secret and payload, and parses them back. Its expected strings are golden: a library change that alters them would sign every reader out, so fix the code, never the strings.

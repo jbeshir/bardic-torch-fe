@@ -13,6 +13,7 @@ import * as settingsModule from "~/routes/settings";
 import { APP_ORIGIN, loadContext } from "~/test/context";
 import { runAction } from "~/test/proxy";
 import { testBuild } from "~/test/server-build";
+import { singleFetchResults } from "~/test/single-fetch";
 import { assertSameOrigin } from "./csrf.server";
 
 /**
@@ -166,21 +167,32 @@ describe("/settings submissions", () => {
       ]),
       "production"
     );
-    const response = await handle(
-      new Request(`${APP_ORIGIN}/settings?_data=routes%2Fsettings`, {
-        method: "POST",
-        headers: {
-          Origin: "https://evil.example",
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          intent: SETTINGS_INTENT.revokeToken,
-          tokenId: "t1",
+    // A single fetch submission, with the Host header the platform sends.
+    const post = (origin: string) =>
+      handle(
+        new Request(`${APP_ORIGIN}/settings.data`, {
+          method: "POST",
+          headers: {
+            Host: new URL(APP_ORIGIN).host,
+            Origin: origin,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            intent: SETTINGS_INTENT.revokeToken,
+            tokenId: "t1",
+          }),
         }),
-      }),
-      loadContext()
-    );
-    expect(response.status).toBe(405);
+        loadContext()
+      );
+    // The route has no server action: Remix's 405.
+    expect((await post(APP_ORIGIN)).status).toBe(405);
+    // Cross-site, single fetch's own Origin check refuses it before any
+    // route runs.
+    const crossSite = await post("https://evil.example");
+    expect(crossSite.status).toBe(500);
+    expect(await singleFetchResults(crossSite)).toEqual({
+      error: expect.objectContaining({ message: "Unexpected Server Error" }),
+    });
   });
 
   it("sends an unknown form nowhere", async () => {

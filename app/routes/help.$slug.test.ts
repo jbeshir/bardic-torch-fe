@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { serveApp } from "~/test/server-build";
+import { routeData } from "~/test/single-fetch";
 import * as helpModule from "./help.$slug";
 
 const get = serveApp([
@@ -60,10 +61,16 @@ describe("/help/:slug", () => {
   });
 
   it("answers data requests with the slug, or 404", async () => {
-    const found = await get("/help/faq-for-bards?_data=routes%2Fhelp.%24slug");
+    const found = await get(
+      "/help/faq-for-bards.data?_routes=routes%2Fhelp.%24slug"
+    );
     expect(found.status).toBe(200);
-    expect(await found.json()).toEqual({ slug: "faq-for-bards" });
-    const missing = await get("/help/nowhere?_data=routes%2Fhelp.%24slug");
+    expect(await routeData(found, "routes/help.$slug")).toEqual({
+      slug: "faq-for-bards",
+    });
+    const missing = await get(
+      "/help/nowhere.data?_routes=routes%2Fhelp.%24slug"
+    );
     expect(missing.status).toBe(404);
   });
 });

@@ -53,16 +53,14 @@ export default defineConfig(({ mode }) => ({
     remix({
       // check:prod-build builds into temporary directories.
       buildDirectory: process.env.REMIX_BUILD_DIRECTORY ?? "build",
-      // Co-located tests are never routes; the styleguide is left out
-      // of production builds only.
-      ignoredRouteFiles: [
-        "**/*.test.{ts,tsx}",
-        ...(mode === "production" ? ["**/styleguide*"] : []),
-      ],
       future: {
         v3_fetcherPersist: true,
         v3_relativeSplatPath: true,
         v3_throwAbortReason: true,
+        v3_lazyRouteDiscovery: true,
+        v3_singleFetch: true,
+        // The routes, and which files are not routes, are in app/routes.ts.
+        v3_routeConfig: true,
       },
     }),
     tsconfigPaths(),

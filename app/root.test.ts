@@ -3,7 +3,8 @@ import { sessionCookie, sessionTokens } from "~/test/context";
 import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
 import { shouldRevalidate } from "./root";
-import { json } from "@remix-run/cloudflare";
+import { data } from "@remix-run/cloudflare";
+import { routeData } from "~/test/single-fetch";
 import * as indexModule from "./routes/_index";
 import * as notFoundModule from "./routes/$";
 
@@ -16,7 +17,7 @@ const failing = {
 };
 const gone = {
   loader: () => {
-    throw json(null, { status: 404 });
+    throw data(null, { status: 404 });
   },
   default: () => null,
 };
@@ -39,8 +40,11 @@ const contributor = () =>
   sessionCookie(sessionTokens({ accessToken: "fixture:contributor" }));
 
 async function rootData(cookie?: string) {
-  const response = await get("/?_data=root", cookie);
-  return { response, data: (await response.json()) as { account: unknown } };
+  const response = await get("/_root.data?_routes=root", cookie);
+  const loaded = (await routeData(response.clone(), "root")) as {
+    account: unknown;
+  };
+  return { response, data: loaded };
 }
 
 describe("root loader", () => {
@@ -97,6 +101,23 @@ describe("root loader", () => {
     expect(html.match(/<details/g)).toHaveLength(2);
     expect(html).toMatch(/Account(<!-- -->)?: Morwen of the Marches/);
     expect(html).toMatch(/<form method="post" action="\/auth\/logout"[^>]*>/);
+  });
+});
+
+describe("root headers", () => {
+  it("send the loader's no-store on while signed in, to documents and .data answers, its own route's and its children's", async () => {
+    const cacheControl = async (path: string, cookie?: string) =>
+      (await get(path, cookie)).headers.get("Cache-Control");
+    const signedIn = await contributor();
+    // The home page and the 404 route have no `headers` export of their own.
+    for (const path of ["/", "/_root.data", "/nowhere", "/nowhere.data"]) {
+      expect(await cacheControl(path, signedIn), path).toBe("no-store");
+      expect(await cacheControl(path), path).toBe("private, no-cache");
+    }
+    // A .data answer without the root's loader has none of its headers.
+    expect(
+      await cacheControl("/nowhere.data?_routes=routes%2F%24", signedIn)
+    ).toBe("private, no-cache");
   });
 });
 

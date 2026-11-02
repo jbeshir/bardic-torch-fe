@@ -89,8 +89,8 @@ export function testBuild(routes: readonly TestRoute[]): ServerBuild {
       v3_fetcherPersist: true,
       v3_relativeSplatPath: true,
       v3_throwAbortReason: true,
-      v3_singleFetch: false,
-      v3_lazyRouteDiscovery: false,
+      v3_singleFetch: true,
+      v3_lazyRouteDiscovery: true,
     },
     isSpaMode: false,
   };

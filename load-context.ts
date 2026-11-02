@@ -18,4 +18,10 @@ declare module "@remix-run/cloudflare" {
     cloudflare: Cloudflare;
     authCache: AuthCache;
   }
+
+  // Single fetch: `useLoaderData<typeof loader>` is what the loader returns
+  // (unwrapped from `data()`), not its JSON serialisation.
+  interface Future {
+    v3_singleFetch: true;
+  }
 }

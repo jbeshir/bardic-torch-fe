@@ -30,7 +30,7 @@ describe("$ (any other address)", () => {
   });
 
   it("answers data requests with 404 too", async () => {
-    const response = await get("/nowhere?_data=routes%2F%24");
+    const response = await get("/nowhere.data");
     expect(response.status).toBe(404);
   });
 });
