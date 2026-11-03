@@ -37,7 +37,7 @@ CI runs the first two as the jobs `validate` and `e2e` (`.github/workflows/ci.ym
 ### The e2e recipe
 
 - **Where layout is decided: the Playwright image.** CI's `e2e` job runs in the official `mcr.microsoft.com/playwright:v1.61.1-noble` container, pinned by digest in `ci.yml`, the same image as the sandboxes' browser image. Chromium, its libraries and the system fonts (`system-ui` is WenQuanYi Zen Hei there) are the same, so CI's layout and screenshots match a sandbox run. On the bare `ubuntu-24.04` runner `system-ui` was DejaVu Sans, and two layout checks failed there only (docs/TESTING.md, "Fonts"). The image's tag must be the locked `@playwright/test` version (`test/repo-hygiene.test.ts` checks it): bump them together, with the new tag's digest.
-- **Locally:** `npm ci`, then `npx playwright install --with-deps chromium` once, then `npm run test:e2e`. This uses your machine's fonts, so screenshots differ from CI's; the layout checks must pass with any fonts, but compare screenshots only from the image.
+- **Locally:** `npm ci`, then `npx playwright install --with-deps chromium` once, then `npm run test:e2e`. This uses your machine's fonts, so screenshots differ from CI's; the layout checks must still pass (they do with the image's fonts and with Ubuntu's DejaVu Sans, see docs/TESTING.md, "Fonts"), but compare screenshots only from the image.
 - **In sandboxes without browsers** (e.g. demesne), split it across two images on the same checkout:
   1. the **node** image, with package-manager egress, runs `npm ci`;
   2. the Playwright **1.61.1 browser** image, with no egress, runs `npm run test:e2e`.

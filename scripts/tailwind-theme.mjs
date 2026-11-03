@@ -234,7 +234,7 @@ const UTILITIES = {
   "top-toast": { top: `calc(${bt("header-h")} + 0.5rem)` },
   "top-header": { top: bt("header-h") },
   "bottom-above-app-bar": {
-    bottom: `calc(${bt("app-bar-h")} + ${SAFE_AREA_BOTTOM} + 1rem)`,
+    bottom: `calc(${APP_BAR_BOX} + 1rem)`,
   },
   "h-header": { height: bt("header-h") },
   "h-app-bar": { height: APP_BAR_BOX },

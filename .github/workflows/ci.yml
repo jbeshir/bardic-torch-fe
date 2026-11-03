@@ -72,8 +72,8 @@ jobs:
     # system-ui was DejaVu Sans, not the image's WenQuanYi Zen Hei, and the
     # layout differed. Bump it with @playwright/test: the tag's version must
     # be the locked one (test/repo-hygiene.test.ts), and the digest is the
-    # tag's `Docker-Content-Digest` from
-    # https://mcr.microsoft.com/v2/playwright/manifests/<tag>.
+    # tag's multi-arch index: the top-level Digest of `docker buildx
+    # imagetools inspect mcr.microsoft.com/playwright:<tag>`.
     # --ipc=host: Chromium's shared memory, as Playwright's Docker docs say.
     container:
       image: mcr.microsoft.com/playwright:v1.61.1-noble@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48

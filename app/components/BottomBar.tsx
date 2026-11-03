@@ -134,10 +134,11 @@ function SearchCell({
 
 /**
  * The bottom app bar (DESIGN §5.2), below md only: Menu · Search · Account
- * in three equal cells, fixed to the bottom of the viewport. Its whole box,
- * top border and safe-area inset included, is `h-app-bar` (56 px plus the
- * inset), the room the shell keeps under the page (`pb-app-bar`), so it
- * never covers the end of the page. It is part of the header in the DOM, so the Tab order is
+ * in three equal cells, fixed to the bottom of the viewport. Its whole
+ * box, top border and safe-area inset included, is `h-app-bar` (56 px
+ * plus the inset, so the cells are 55 px under the border): the room the
+ * shell keeps under the page (`pb-app-bar`), so it never covers the end
+ * of the page. It is part of the header in the DOM, so the Tab order is
  * logo → Menu → Search → Account → content. It is a group named "App bar"
  * (not a landmark), which sets its Menu, Search and Account apart from the
  * header's own copies. Only one set is ever rendered: the header's are

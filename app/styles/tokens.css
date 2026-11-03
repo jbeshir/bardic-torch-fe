@@ -607,7 +607,9 @@
   top: var(--bt-header-h);
 }
 @utility bottom-above-app-bar {
-  bottom: calc(var(--bt-app-bar-h) + env(safe-area-inset-bottom, 0px) + 1rem);
+  bottom: calc(
+    calc(var(--bt-app-bar-h) + env(safe-area-inset-bottom, 0px)) + 1rem
+  );
 }
 @utility h-header {
   height: var(--bt-header-h);

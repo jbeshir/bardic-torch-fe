@@ -79,15 +79,20 @@ async function showSiteMenu(page: Page): Promise<void> {
 async function expectBarClearOfPageEnd(page: Page): Promise<void> {
   // Instantly: under no-preference the page scrolls smoothly, and the
   // boxes would be measured part-way there.
-  const { gap, unscrollable } = await page.evaluate(() => {
+  const { gap, unscrollable, room } = await page.evaluate(() => {
     const root = document.documentElement;
     window.scrollTo({ top: root.scrollHeight, behavior: "instant" });
+    // The shell, whose padding is the room under the page, holds the header.
+    const shell = document.querySelector("header")?.parentElement;
     return {
       gap: root.scrollHeight - (window.scrollY + window.innerHeight),
       unscrollable: Math.max(
         0,
         root.getBoundingClientRect().height - root.scrollHeight
       ),
+      room: shell
+        ? Number.parseFloat(getComputedStyle(shell).paddingBottom)
+        : 0,
     };
   });
   expect(gap, "scrolled to the end of the page").toBeLessThanOrEqual(1);
@@ -95,6 +100,10 @@ async function expectBarClearOfPageEnd(page: Page): Promise<void> {
   const footer = await page.getByRole("contentinfo").boundingBox();
   const bar = await appBar(page).boundingBox();
   if (!footer || !bar) throw new Error("not laid out");
+  // The room under the page is the bar's whole box, whatever the fonts.
+  expect(bar.height, "the bar is as tall as the room under the page").toBe(
+    room
+  );
   expect(footer.y + footer.height).toBeLessThanOrEqual(bar.y + unscrollable);
 }
 
@@ -188,7 +197,8 @@ test.describe("below md", () => {
     await expectPrimaryTargetsAtLeast44(cells);
     const box = await bar.boundingBox();
     expect(Math.round((box?.y ?? 0) + (box?.height ?? 0))).toBe(MOBILE.height);
-    expect(Math.round(box?.height ?? 0)).toBeGreaterThanOrEqual(56);
+    // 56 px, its top border included (DESIGN §5.2; no safe-area inset here).
+    expect(box?.height).toBe(56);
     await expectNoHorizontalOverflow(page);
   });
 
@@ -562,7 +572,7 @@ test.describe("from md", () => {
   });
 });
 
-test.describe("with wider text (0.15em more letter spacing) the shell's room holds", () => {
+test.describe("with wider text (0.1em more letter spacing) the shell's room holds", () => {
   // The wider text is an injected <style>, which the nonce CSP would block.
   test.use({ bypassCSP: true });
 
@@ -571,7 +581,12 @@ test.describe("with wider text (0.15em more letter spacing) the shell's room hol
   }) => {
     await page.setViewportSize(MOBILE);
     await openHydrated(page);
+    const height = () =>
+      page.evaluate(() => document.documentElement.scrollHeight);
+    const ownHeight = await height();
     await applyWiderText(page);
+    // Not vacuous: the wider text makes the page longer.
+    expect(await height()).toBeGreaterThan(ownHeight);
     await expectBarClearOfPageEnd(page);
   });
 
@@ -580,9 +595,12 @@ test.describe("with wider text (0.15em more letter spacing) the shell's room hol
   }) => {
     const note = page
       .getByRole("navigation", { name: "Site" })
-      .getByRole("paragraph")
-      .first();
-    const noteHeight = async () => (await note.boundingBox())?.height ?? 0;
+      .getByText("The catalogue is on its way.");
+    const noteHeight = async () => {
+      const box = await note.boundingBox();
+      if (!box) throw new Error("not laid out");
+      return box.height;
+    };
     await page.setViewportSize({ width: 1280, height: 800 });
     await openHydrated(page, "/");
     const ownHeight = await noteHeight();

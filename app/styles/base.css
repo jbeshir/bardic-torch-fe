@@ -93,7 +93,8 @@
     outline-offset: 2px;
   }
 
-  /* Below md the bottom app bar is fixed over the end of the viewport. */
+  /* Below md the bottom app bar is fixed over the end of the viewport: its
+     whole box is APP_BAR_BOX in scripts/tailwind-theme.mjs. */
   @media not all and (min-width: 768px) {
     html {
       scroll-padding-bottom: calc(
