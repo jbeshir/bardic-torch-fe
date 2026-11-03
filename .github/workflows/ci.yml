@@ -65,6 +65,19 @@ jobs:
   e2e:
     name: e2e
     runs-on: ubuntu-24.04
+    # The official Playwright image for the locked @playwright/test, pinned
+    # by digest (the multi-arch index; the tag is for reading, the digest
+    # decides): Chromium, its libraries and the system fonts are exactly
+    # the sandbox's, so layout and screenshots match it. On the bare runner
+    # system-ui was DejaVu Sans, not the image's WenQuanYi Zen Hei, and the
+    # layout differed. Bump it with @playwright/test: the tag's version must
+    # be the locked one (test/repo-hygiene.test.ts), and the digest is the
+    # tag's `Docker-Content-Digest` from
+    # https://mcr.microsoft.com/v2/playwright/manifests/<tag>.
+    # --ipc=host: Chromium's shared memory, as Playwright's Docker docs say.
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.1-noble@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48
+      options: --ipc=host
     timeout-minutes: 60
     env:
       WRANGLER_SEND_METRICS: "false"
@@ -89,11 +102,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      # Installs the Chromium build that the locked @playwright/test
-      # (1.61.1) expects, with its system libraries.
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
 
       # The prod phase (npm run build), then the stub phase (npm run
       # build:e2e); see scripts/e2e.mjs.

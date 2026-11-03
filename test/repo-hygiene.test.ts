@@ -234,7 +234,16 @@ type Workflow = {
     readonly pull_request?: unknown;
   };
   readonly jobs: Readonly<
-    Record<string, { readonly steps: readonly WorkflowStep[] }>
+    Record<
+      string,
+      {
+        readonly container?: {
+          readonly image?: string;
+          readonly options?: string;
+        };
+        readonly steps: readonly WorkflowStep[];
+      }
+    >
   >;
 };
 
@@ -355,14 +364,20 @@ describe("CI workflows", () => {
     ]);
   });
 
-  it("e2e installs Chromium for the locked Playwright, then runs test:e2e", () => {
-    expect(runsOf("e2e")).toEqual([
-      INSTALL_NPM,
-      "npm ci",
-      "npx playwright install --with-deps chromium",
-      "npm run test:e2e",
-    ]);
-    expect(allDependencies["@playwright/test"]).toBe("1.61.1");
+  it("e2e runs test:e2e in the Playwright image of the locked version, pinned by digest", () => {
+    expect(runsOf("e2e")).toEqual([INSTALL_NPM, "npm ci", "npm run test:e2e"]);
+    const version = allDependencies["@playwright/test"] ?? "";
+    expect(version).toBe("1.61.1");
+    // The image brings Chromium and the fonts: nothing installs others.
+    expect(ciWorkflow.jobs.e2e?.container).toEqual({
+      image: expect.stringMatching(
+        new RegExp(
+          `^mcr\\.microsoft\\.com/playwright:v${version.replaceAll(".", "\\.")}-noble@sha256:[0-9a-f]{64}$`
+        )
+      ),
+      options: "--ipc=host",
+    });
+    expect(ciWorkflow.jobs.validate?.container).toBeUndefined();
   });
 
   it("e2e uploads the report, the screenshots and the test results", () => {
@@ -800,6 +815,7 @@ describe("docs", () => {
       "npm run validate",
       "npm run test:e2e",
       "npx playwright install --with-deps chromium",
+      "mcr.microsoft.com/playwright:v1.61.1-noble",
       "1.61.1",
       "**Theming.**",
       "**Error handling.**",
