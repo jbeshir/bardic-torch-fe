@@ -613,7 +613,7 @@
   height: var(--bt-header-h);
 }
 @utility h-app-bar {
-  height: var(--bt-app-bar-h);
+  height: calc(var(--bt-app-bar-h) + env(safe-area-inset-bottom, 0px));
 }
 @utility h-text-line {
   height: 0.75em;

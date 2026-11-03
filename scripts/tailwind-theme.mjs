@@ -211,6 +211,14 @@ const ANIMATIONS = {
 const SAFE_AREA_BOTTOM = "env(safe-area-inset-bottom, 0px)";
 
 /**
+ * The bottom app bar's whole box: its 56 px plus the safe-area inset, its
+ * top border included. The bar is sized by it (`h-app-bar`) and the page
+ * keeps exactly this much room under its end (`pb-app-bar`), so the bar
+ * can never cover the end of the page, whatever the page's fonts.
+ */
+const APP_BAR_BOX = `calc(${bt("app-bar-h")} + ${SAFE_AREA_BOTTOM})`;
+
+/**
  * Named utilities for the values Tailwind 4 has no theme namespace for, and
  * the few classes whose Tailwind 4 form would paint differently from what
  * the design specifies: each declaration is written out here.
@@ -219,9 +227,7 @@ const UTILITIES = {
   // The home-indicator inset on notched phones, under bottom sheets.
   "pb-safe-b": { "padding-bottom": SAFE_AREA_BOTTOM },
   // Room under the page for the fixed bottom app bar (below md).
-  "pb-app-bar": {
-    "padding-bottom": `calc(${bt("app-bar-h")} + ${SAFE_AREA_BOTTOM})`,
-  },
+  "pb-app-bar": { "padding-bottom": APP_BAR_BOX },
   "max-h-sheet": { "max-height": "85dvh" },
   "max-h-below-header": { "max-height": `calc(100dvh - ${bt("header-h")})` },
   "min-h-textarea": { "min-height": "7.5rem" },
@@ -231,7 +237,7 @@ const UTILITIES = {
     bottom: `calc(${bt("app-bar-h")} + ${SAFE_AREA_BOTTOM} + 1rem)`,
   },
   "h-header": { height: bt("header-h") },
-  "h-app-bar": { height: bt("app-bar-h") },
+  "h-app-bar": { height: APP_BAR_BOX },
   "h-text-line": { height: "0.75em" },
   "h-progress": { height: "3px" },
   "w-dialog": { width: "min(32rem, calc(100vw - 2rem))" },

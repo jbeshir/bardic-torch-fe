@@ -383,17 +383,17 @@ The base is 16 px (1 rem). The scale is about a 1.2 minor third, rounded to 4 px
 
 Use the 4 px scale (Tailwind 3's default steps, kept as named keys) only. **No arbitrary spacing values.** Sizes that aren't on the scale (header height, infobox and drawer widths, the textarea minimum and so on) are named theme values or utilities, listed in Appendix A. Use these steps: `0.5` = 2 px, `1` = 4 px, `1.5` = 6 px, `2` = 8 px, `3` = 12 px, `4` = 16 px, `5` = 20 px, `6` = 24 px, `8` = 32 px, `10` = 40 px, `12` = 48 px, `16` = 64 px, `20` = 80 px, `24` = 96 px.
 
-| Semantic use                                | Value                                                    |
-| ------------------------------------------- | -------------------------------------------------------- |
-| Icon–label gap in controls                  | 2 (8 px), or 1.5 (6 px) in `sm` controls                 |
-| Control internal padding x                  | sm 3 (12 px), md 4 (16 px), lg 5 (20 px)                 |
-| Stack gap between form fields               | 5 (20 px)                                                |
-| Card padding                                | 4 (16 px) mobile, 5 (20 px) ≥md                          |
-| Page gutter (horizontal)                    | 4 (16 px) <md, 6 (24 px) md, 8 (32 px) lg, 10 (40 px) xl |
-| Section gap (between page sections)         | 10 (40 px) <md, 12 (48 px) ≥md                           |
-| Gap between chips                           | 2 (8 px)                                                 |
-| Header height (`--bt-header-h`, `h-header`) | 56 px <md, 64 px ≥md                                     |
-| Bottom app bar (`h-app-bar`)                | 56 px plus `env(safe-area-inset-bottom)`, <md only       |
+| Semantic use                                | Value                                                               |
+| ------------------------------------------- | ------------------------------------------------------------------- |
+| Icon–label gap in controls                  | 2 (8 px), or 1.5 (6 px) in `sm` controls                            |
+| Control internal padding x                  | sm 3 (12 px), md 4 (16 px), lg 5 (20 px)                            |
+| Stack gap between form fields               | 5 (20 px)                                                           |
+| Card padding                                | 4 (16 px) mobile, 5 (20 px) ≥md                                     |
+| Page gutter (horizontal)                    | 4 (16 px) <md, 6 (24 px) md, 8 (32 px) lg, 10 (40 px) xl            |
+| Section gap (between page sections)         | 10 (40 px) <md, 12 (48 px) ≥md                                      |
+| Gap between chips                           | 2 (8 px)                                                            |
+| Header height (`--bt-header-h`, `h-header`) | 56 px <md, 64 px ≥md                                                |
+| Bottom app bar (`h-app-bar`)                | 56 px plus `env(safe-area-inset-bottom)`, border included, <md only |
 
 ### 4.2 Radii
 
@@ -467,7 +467,7 @@ The app shell has `max-width: 90rem` (1440 px) and is centred. The canvas extend
 **Bottom app bar** (<md only):
 
 - It is part of the `<header>` landmark in the DOM (after the logo link), positioned `fixed inset-x-0 bottom-0`. So the Tab order at 360 px is skip link → logo → Menu → Search → Account → main content, and the bar needs no landmark of its own.
-- Its height is `h-app-bar`: 56 px plus `padding-bottom: env(safe-area-inset-bottom)`. It is `bg-surface-raised border-t border-border shadow-2`, with three equal cells: **Menu · Search · Account**.
+- Its height is `h-app-bar`: 56 px plus `padding-bottom: env(safe-area-inset-bottom)`, for the whole box, its top border included. It is `bg-surface-raised border-t border-border shadow-2`, with three equal cells: **Menu · Search · Account**. The room the page keeps under its end (`pb-app-bar`) is the same expression (`APP_BAR_BOX` in `scripts/tailwind-theme.mjs`), so the bar never covers the end of the page, whatever the fonts make its height come to (an e2e check, also with wider text).
 - Each cell is a full-height control (at least 44 × 56 px) with a 24 px icon above a visible `caption` label: "Menu" (`IconMenu2`), "Search" (`IconSearch`), and "Account" (avatar initials) or "Log in" (`IconLogin`). The visible label is the accessible name.
 - `body` has `padding-bottom: calc(56px + env(safe-area-inset-bottom))` below `md`, and `html` has the same `scroll-padding-bottom`, so the bar never covers the end of the page or the focused element.
 - **Menu** opens the drawer as a bottom sheet, nearest its trigger (§6.21).
@@ -511,11 +511,11 @@ CONTRIBUTE                               ← ContributeCard (see below)
 
 - The URL map lives in one typed, read-only module, `app/constants/navigation.ts`. Each entry is `{label, href}`, so the catalogue launch (FE2) only changes `href`. Whether a link is external, and to the wiki or elsewhere, follows from its address alone (`externalKind` in `app/components/ui/Link.tsx`, used by every link-like component and the sidebar). The help pages' slugs and sidebar labels are listed once there too (`HELP_PAGES`); the help route, the sidebar, the footer and the home page take their addresses from it. The same module holds the header search target (`https://bardictorch.miraheze.org/w/index.php`, query parameter `search`) and the contact form (`https://forms.gle/wUwWnMKtWZSUisWCA`, until FE4). `bardictorch.miraheze.org` appears only in this module, the help content and the docs (a repo-hygiene test checks this). Every wiki target title must exist in `test/fixtures/wiki-categories.json`, a snapshot taken from the wiki dump.
 - **Nav item:**
-  - Layout: `flex items-center gap-2 min-h-11 (44px) <lg / min-h-8 (32px) ≥lg`, `px-3`, `rounded-md`, `text-fg-muted`. Focus ring inset (`-outline-offset-2`). The tighter ≥lg rhythm (and the note's `p-2.5`) lets Browse, Facets and the whole Help group fit in an 800 px tall window.
+  - Layout: `flex items-center gap-2 min-h-11 (44px) <lg / min-h-7 (28px) ≥lg`, `px-3`, `rounded-md`, `text-fg-muted`. Focus ring inset (`-outline-offset-2`). The tighter ≥lg rhythm (and the note's `p-2.5`) lets Browse, Facets and the whole Help group fit in an 800 px tall window, clear of the "more below" fade. Only the Browse note's height depends on the sans the reader's system has (how many lines it wraps to); the rows, headings and gaps don't. 32 px rows left too little room: the Help group's last item sat under the fade, and with DejaVu Sans (Ubuntu's default sans, one more note line) it fell 0.6 px below the fold. At 28 px the Help group still ends above the fade with DejaVu Sans, and with text wide enough for the note to wrap to two more lines than in the Playwright image's sans and one item to wrap as well. The e2e check runs with that wider text to prove it (docs/TESTING.md, "Fonts").
   - Hover: `bg-surface-sunken text-fg`.
   - Focus-visible: standard ring.
   - Current (`aria-current="page"`): `bg-accent-subtle text-accent-text font-semibold`, plus a 3 px `accent` bar on the left inset (`box-shadow: inset 3px 0 0 rgb(var(--bt-accent))`).
-  - On desktop the 32 px height is above the 24 px minimum (WCAG 2.5.8; ≥lg is a pointer layout).
+  - On desktop the 28 px height is above the 24 px minimum (WCAG 2.5.8; ≥lg is a pointer layout).
 - **Taller than the window:** the sidebar scrolls on its own. On each page it scrolls itself (never the page) so the current item is in view and clear of the fade, and while anything is below its fold a 24 px `bg-fade-up` fade sits at its foot (sticky, `aria-hidden`), so the ContributeCard's existence is signalled. The sidebar's end space is padding on an inner wrapper, not on the scroller, so the fade's solid end meets the sidebar's visible foot (a sticky element stops at its scroller's padding edge). The navigation Drawer likewise scrolls its body to the current page's link when it opens.
 - **External nav item:**
   - Label, then `IconArrowUpRight` 14 px `text-fg-subtle`, pushed to the right with `ml-auto`, `aria-hidden`.
@@ -1580,12 +1580,12 @@ The pattern is: what happened, then what to do. Don't blame the reader, and don'
 | `@utility` (max height)              | `max-h-sheet` (85dvh, the bottom-sheet drawer), `max-h-below-header` (`calc(100dvh - var(--bt-header-h))`, the sticky sidebar)                                                                                                                                                                         |
 | `@utility` (inset)                   | `top-toast` (`calc(var(--bt-header-h) + 0.5rem)`, toasts below sm), `top-header` (`var(--bt-header-h)`, the sticky sidebar), `bottom-above-app-bar` (`calc(var(--bt-app-bar-h) + env(safe-area-inset-bottom) + 1rem)`, toasts from sm to md)                                                           |
 | `@utility` (grid)                    | `grid-cols-infobox` (`7rem 1fr`, infobox rows), `grid-cols-shell` (`15rem minmax(0, 1fr)`, sidebar and main at lg), `grid-cols-shell-xl` (`16rem minmax(0, 1fr)`), `grid-rows-shell` (`1fr auto`)                                                                                                      |
-| `@utility` (height)                  | `h-header` (`var(--bt-header-h)`), `h-app-bar` (3.5rem), `h-text-line` (0.75em), `h-progress` (3 px, the navigation progress bar)                                                                                                                                                                      |
+| `@utility` (height)                  | `h-header` (`var(--bt-header-h)`), `h-app-bar` (`calc(var(--bt-app-bar-h) + env(safe-area-inset-bottom, 0px))`, the bar's whole box), `h-text-line` (0.75em), `h-progress` (3 px, the navigation progress bar)                                                                                         |
 | `@utility` (min height)              | `min-h-textarea` (7.5rem)                                                                                                                                                                                                                                                                              |
 | `@utility` (width)                   | `w-dialog` (`min(32rem, calc(100vw - 2rem))`), `w-drawer` (`min(20rem, 85vw)`), `w-infobox` (16.5rem), `w-infobox-xl` (18rem)                                                                                                                                                                          |
 | `@utility` (underline offset)        | `underline-offset-prose` (0.2em)                                                                                                                                                                                                                                                                       |
 | `@utility` (background image)        | `bg-hero`: the home hero's radial glow, `hero-glow` at the top left fading to transparent over `surface` (§10.1); `bg-shimmer`: the skeleton sweep (§6.18); `bg-fade-up`: `canvas` clearing upwards, the sidebar's "more below" fade (§5.3)                                                            |
-| `@utility` (padding)                 | `pb-safe-b` (`env(safe-area-inset-bottom, 0px)`, bottom sheets), `pb-app-bar` (`calc(var(--bt-app-bar-h) + env(safe-area-inset-bottom, 0px))`, room for the bottom app bar under the page below md)                                                                                                    |
+| `@utility` (padding)                 | `pb-safe-b` (`env(safe-area-inset-bottom, 0px)`, bottom sheets), `pb-app-bar` (the same as `h-app-bar`: room for the whole bottom app bar under the page below md)                                                                                                                                     |
 | `@utility` (transform origin)        | `origin-flame` (`50% 90%`, the logo flicker; with the `transform-box-fill` utility in `base.css` so it is measured on the flame, not the viewBox)                                                                                                                                                      |
 | `@utility` (z-index)                 | `z-header` (30), `z-progress` (40), `z-toast` (50)                                                                                                                                                                                                                                                     |
 | `@utility` (colour at an alpha)      | `bg-fg-10`, `bg-scrim-scrim` (the scrim at `--bt-scrim-alpha`), `decoration-link-40`, `decoration-link-visited-40`, `decoration-fg-subtle-50`: `<utility>-<colour>-<alpha>`, writing `rgb(var(--bt-colour) / alpha)`. Tailwind 4's `/40` modifier would mix the colours in oklab instead.              |

@@ -68,12 +68,12 @@ describe("Sidebar", () => {
     ).toEqual([current]);
   });
 
-  it("has 44 px items below lg and 32 px from lg", async () => {
+  it("has 44 px items below lg and 28 px from lg", async () => {
     await renderSidebar();
     for (const link of within(
       screen.getAllByRole("list")[0] as HTMLElement
     ).getAllByRole("link")) {
-      expect(link).toHaveClass("min-h-11", "lg:min-h-8");
+      expect(link).toHaveClass("min-h-11", "lg:min-h-7");
     }
   });
 

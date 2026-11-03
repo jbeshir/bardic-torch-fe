@@ -21,8 +21,9 @@ describe("BottomBar", () => {
   it("is fixed to the bottom below md: Menu, Search and Account in three cells", async () => {
     await renderBar();
     const bar = screen.getByRole("group", { name: "App bar" });
-    expect(bar).toHaveClass("bottom-0", "md:hidden", "pb-safe-b");
-    expect(bar.firstElementChild).toHaveClass("grid-cols-3", "h-app-bar");
+    // The whole bar, border and inset included, is the shell's pb-app-bar.
+    expect(bar).toHaveClass("bottom-0", "md:hidden", "pb-safe-b", "h-app-bar");
+    expect(bar.firstElementChild).toHaveClass("grid-cols-3", "h-full");
     expect(
       [...(bar.firstElementChild?.children ?? [])]
         .filter(cell => !cell.hasAttribute("hidden"))

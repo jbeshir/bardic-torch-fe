@@ -5,10 +5,13 @@ import { EXTERNAL_MARKS, externalKind } from "~/components/ui/Link";
 import { CONTRIBUTE_HREF, NAV_GROUPS } from "~/constants/navigation";
 import { LogoMark } from "./LogoMark";
 
-// 44 px rows below lg; 32 px at lg (pointer screens, WCAG 2.5.8), so the
-// Help group fits above the fold of an 800 px window.
+// 44 px rows below lg; 28 px at lg (pointer screens, WCAG 2.5.8), so the
+// whole Help group fits above the fold of an 800 px window, clear of the
+// "more below" fade, with room for the Browse note to wrap to more lines
+// in a wider sans (DESIGN §5.3). The rows, headings and gaps don't depend
+// on the font; the note's line count does.
 const ITEM =
-  "group flex min-h-11 items-center gap-2 rounded-md px-3 text-body-sm transition-colors focus-visible:-outline-offset-2 lg:min-h-8";
+  "group flex min-h-11 items-center gap-2 rounded-md px-3 text-body-sm transition-colors focus-visible:-outline-offset-2 lg:min-h-7";
 const ITEM_IDLE = "text-fg-muted hover:bg-surface-sunken hover:text-fg";
 const ITEM_CURRENT =
   "bg-accent-subtle font-semibold text-accent-text shadow-current-bar";

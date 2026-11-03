@@ -134,8 +134,10 @@ function SearchCell({
 
 /**
  * The bottom app bar (DESIGN §5.2), below md only: Menu · Search · Account
- * in three equal cells, 56 px plus the safe-area inset, fixed to the bottom
- * of the viewport. It is part of the header in the DOM, so the Tab order is
+ * in three equal cells, fixed to the bottom of the viewport. Its whole box,
+ * top border and safe-area inset included, is `h-app-bar` (56 px plus the
+ * inset), the room the shell keeps under the page (`pb-app-bar`), so it
+ * never covers the end of the page. It is part of the header in the DOM, so the Tab order is
  * logo → Menu → Search → Account → content. It is a group named "App bar"
  * (not a landmark), which sets its Menu, Search and Account apart from the
  * header's own copies. Only one set is ever rendered: the header's are
@@ -158,9 +160,9 @@ export function BottomBar({
     <div
       role="group"
       aria-label="App bar"
-      className="fixed inset-x-0 bottom-0 z-header border-t border-border bg-surface-raised pb-safe-b shadow-2 md:hidden"
+      className="fixed inset-x-0 bottom-0 z-header h-app-bar border-t border-border bg-surface-raised pb-safe-b shadow-2 md:hidden"
     >
-      <div className="grid h-app-bar grid-cols-3">
+      <div className="grid h-full grid-cols-3">
         <MenuControl
           look="cell"
           hydrated={hydrated}
