@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test";
 import { checkpoint } from "../support/journey";
-import { expectNoLayoutShift, FOCUSABLE } from "../support/layout";
+import { expectNoLayoutShift, FOCUSABLE, SUB_PIXEL } from "../support/layout";
 import { HOME_HEADLINE } from "../support/pages";
 import { waitForHydration } from "../support/hydration";
 import { appBar } from "../support/shell";
@@ -198,8 +198,8 @@ test("at 360 the hero buttons stack full width, primary first", async ({
   if (first && second && field) {
     expect(first.y + first.height).toBeLessThanOrEqual(second.y);
     expect(second.y + second.height).toBeLessThanOrEqual(field.y);
-    expect(Math.abs(first.width - second.width)).toBeLessThanOrEqual(1);
-    expect(Math.abs(first.x - second.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(first.width - second.width)).toBeLessThan(SUB_PIXEL);
+    expect(Math.abs(first.x - second.x)).toBeLessThan(SUB_PIXEL);
   }
 });
 

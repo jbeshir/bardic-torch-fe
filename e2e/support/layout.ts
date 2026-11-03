@@ -9,6 +9,15 @@ const MAX_TABS = 400;
 /** Below md: the width with the fixed bottom app bar. */
 const FOCUS_WIDTH = 360;
 
+/**
+ * The most two boxes that should line up may differ by: rounding, never a
+ * whole pixel. Layout units are 1/64 px and boxes that line up do so
+ * exactly (0 in the Playwright image and with Ubuntu's DejaVu Sans alike),
+ * so anything at or above half a pixel is a layout error. A 1 px allowance
+ * once hid one: the app bar's top border lay over the page's last pixel.
+ */
+export const SUB_PIXEL = 0.5;
+
 /** What the sweeps (and the styleguide focus states) count as a control. */
 export const FOCUSABLE =
   'a[href], button, input:not([type="hidden"]), select, textarea, summary, ' +

@@ -6,6 +6,7 @@ import {
   expectPrimaryTargetsAtLeast44,
   expectTargetSizesAtLeast24,
   settled,
+  SUB_PIXEL,
 } from "../support/layout";
 import {
   accountPanel,
@@ -14,7 +15,11 @@ import {
   openShownAccountPanel,
 } from "../support/shell";
 import { test } from "../support/test";
-import { applyTextSpacing, expectNothingCutOff } from "../support/text-spacing";
+import {
+  applyTextSpacing,
+  applyWiderText,
+  expectNothingCutOff,
+} from "../support/text-spacing";
 
 /**
  * The shell's navigation (DESIGN §5, R18, R20, R26): the bottom app bar
@@ -56,6 +61,94 @@ async function showSiteMenu(page: Page): Promise<void> {
   }
   await expect(drawer).toBeVisible();
   await settled(drawer);
+}
+
+/**
+ * Below md, scrolled to the end of the page, the app bar covers none of
+ * it: the footer ends at or above the bar's top. The page's room for the
+ * bar is the bar's whole box (`pb-app-bar` and `h-app-bar` are one
+ * expression), so this holds whatever the fonts make the page's height.
+ *
+ * The one allowance is sub-pixel, and measured rather than assumed: the
+ * scroll extent (`scrollHeight`) is the document's height rounded to a
+ * whole pixel, so when the height ends in a fraction rounded down (CI's
+ * DejaVu Sans: 3192.34375 → 3192) the last fraction of a pixel can't be
+ * scrolled into view, and the footer ends that fraction below the bar's
+ * top. That remainder is computed from the page, and is under half a pixel.
+ */
+async function expectBarClearOfPageEnd(page: Page): Promise<void> {
+  // Instantly: under no-preference the page scrolls smoothly, and the
+  // boxes would be measured part-way there.
+  const { gap, unscrollable } = await page.evaluate(() => {
+    const root = document.documentElement;
+    window.scrollTo({ top: root.scrollHeight, behavior: "instant" });
+    return {
+      gap: root.scrollHeight - (window.scrollY + window.innerHeight),
+      unscrollable: Math.max(
+        0,
+        root.getBoundingClientRect().height - root.scrollHeight
+      ),
+    };
+  });
+  expect(gap, "scrolled to the end of the page").toBeLessThanOrEqual(1);
+  expect(unscrollable, "only rounding is out of reach").toBeLessThan(SUB_PIXEL);
+  const footer = await page.getByRole("contentinfo").boundingBox();
+  const bar = await appBar(page).boundingBox();
+  if (!footer || !bar) throw new Error("not laid out");
+  expect(footer.y + footer.height).toBeLessThanOrEqual(bar.y + unscrollable);
+}
+
+/**
+ * At 1280 × 800 (`prepare` runs after each page load): on a help page the
+ * sidebar shows the current page clear of the "more below" fade, and the
+ * fade's solid end meets the sidebar's foot; on any page the whole Help
+ * group fits above the fold, clear of the fade too, and the fade goes once
+ * the sidebar is scrolled to its end.
+ */
+async function expectSidebarFold(
+  page: Page,
+  prepare: () => Promise<void>
+): Promise<void> {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openHydrated(page, "/help/licence");
+  await prepare();
+  const nav = page.getByRole("navigation", { name: "Site" });
+  const current = nav.getByRole("link", { name: "Licence & attribution" });
+  await expect(current).toHaveAttribute("aria-current", "page");
+  await expect(current).toBeInViewport({ ratio: 1 });
+  // The fade is a cue at the sidebar's visible foot: its solid end meets
+  // the foot, and it never lies over the current page's item.
+  const more = page.getByTestId("sidebar-more");
+  await expect(more).toBeVisible();
+  const [navBox, moreBox, currentBox] = await Promise.all([
+    nav.boundingBox(),
+    more.boundingBox(),
+    current.boundingBox(),
+  ]);
+  if (!navBox || !moreBox || !currentBox) throw new Error("not laid out");
+  expect(
+    Math.abs(moreBox.y + moreBox.height - (navBox.y + navBox.height))
+  ).toBeLessThan(SUB_PIXEL);
+  expect(currentBox.y + currentBox.height).toBeLessThanOrEqual(moreBox.y);
+  // The whole Help group fits above the fold on any page, clear of the fade.
+  await openHydrated(page, "/");
+  await prepare();
+  const last = nav.getByRole("link", { name: "Licence & attribution" });
+  await expect(last).toBeInViewport({ ratio: 1 });
+  await expect(more).toBeVisible();
+  const [lastBox, fadeBox] = await Promise.all([
+    last.boundingBox(),
+    more.boundingBox(),
+  ]);
+  if (!lastBox || !fadeBox) throw new Error("not laid out");
+  expect(lastBox.y + lastBox.height).toBeLessThanOrEqual(fadeBox.y);
+  await nav.evaluate(element => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await expect(more).toBeHidden();
+  await expect(
+    nav.getByRole("link", { name: "Start contributing" })
+  ).toBeInViewport();
 }
 
 /** The accessible label of whatever has focus, and whether it is inside `selector`. */
@@ -131,20 +224,7 @@ test.describe("below md", () => {
 
   test("the bar never covers the end of the page", async ({ page }) => {
     await openHydrated(page);
-    // Instantly: under no-preference the page scrolls smoothly, and the
-    // boxes would be measured part-way there.
-    const gap = await page.evaluate(() => {
-      const root = document.documentElement;
-      window.scrollTo({ top: root.scrollHeight, behavior: "instant" });
-      return root.scrollHeight - (window.scrollY + window.innerHeight);
-    });
-    expect(gap, "scrolled to the end of the page").toBeLessThanOrEqual(1);
-    const footer = await page.getByRole("contentinfo").boundingBox();
-    const bar = await appBar(page).boundingBox();
-    expect(footer && bar).toBeTruthy();
-    expect((footer?.y ?? 0) + (footer?.height ?? 0)).toBeLessThanOrEqual(
-      (bar?.y ?? 0) + 1
-    );
+    await expectBarClearOfPageEnd(page);
     // Focus behind the bar is the journey-page sweep's (sweeps.spec.ts).
   });
 
@@ -361,7 +441,7 @@ test.describe("from md", () => {
         expect(
           Math.abs(footer.y + footer.height - viewport.height),
           `footer at the bottom at ${viewport.width}`
-        ).toBeLessThanOrEqual(1);
+        ).toBeLessThan(SUB_PIXEL);
       }
       expect(
         await page.evaluate(() => document.documentElement.scrollHeight)
@@ -425,40 +505,7 @@ test.describe("from md", () => {
   test("at 1280 × 800 the sidebar shows the current page, and says when there is more below", async ({
     page,
   }) => {
-    await page.setViewportSize({ width: 1280, height: 800 });
-    await openHydrated(page, "/help/licence");
-    const nav = page.getByRole("navigation", { name: "Site" });
-    const current = nav.getByRole("link", { name: "Licence & attribution" });
-    await expect(current).toHaveAttribute("aria-current", "page");
-    await expect(current).toBeInViewport({ ratio: 1 });
-    // The fade is a cue at the sidebar's visible foot: its solid end meets
-    // the foot, and it never lies over the current page's item.
-    const more = page.getByTestId("sidebar-more");
-    await expect(more).toBeVisible();
-    const [navBox, moreBox, currentBox] = await Promise.all([
-      nav.boundingBox(),
-      more.boundingBox(),
-      current.boundingBox(),
-    ]);
-    if (!navBox || !moreBox || !currentBox) throw new Error("not laid out");
-    expect(
-      Math.abs(moreBox.y + moreBox.height - (navBox.y + navBox.height))
-    ).toBeLessThanOrEqual(1);
-    expect(currentBox.y + currentBox.height).toBeLessThanOrEqual(moreBox.y);
-    // The whole Help group fits above the fold on any page.
-    await openHydrated(page, "/");
-    await expect(
-      nav.getByRole("link", { name: "Licence & attribution" })
-    ).toBeInViewport({ ratio: 1 });
-    const fade = page.getByTestId("sidebar-more");
-    await expect(fade).toBeVisible();
-    await nav.evaluate(element => {
-      element.scrollTop = element.scrollHeight;
-    });
-    await expect(fade).toBeHidden();
-    await expect(
-      nav.getByRole("link", { name: "Start contributing" })
-    ).toBeInViewport();
+    await expectSidebarFold(page, () => Promise.resolve());
   });
 
   test("Log in comes back to the page, then the account menu opens, closes on Escape and outside", async ({
@@ -512,6 +559,41 @@ test.describe("from md", () => {
       atEachViewport: openShownAccountPanel,
       viewportOnly: true,
     });
+  });
+});
+
+test.describe("with wider text (0.15em more letter spacing) the shell's room holds", () => {
+  // The wider text is an injected <style>, which the nonce CSP would block.
+  test.use({ bypassCSP: true });
+
+  test("below md the bar never covers the end of the page", async ({
+    page,
+  }) => {
+    await page.setViewportSize(MOBILE);
+    await openHydrated(page);
+    await applyWiderText(page);
+    await expectBarClearOfPageEnd(page);
+  });
+
+  test("at 1280 × 800 the sidebar shows the current page and the Help group, and says when there is more below", async ({
+    page,
+  }) => {
+    const note = page
+      .getByRole("navigation", { name: "Site" })
+      .getByRole("paragraph")
+      .first();
+    const noteHeight = async () => (await note.boundingBox())?.height ?? 0;
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await openHydrated(page, "/");
+    const ownHeight = await noteHeight();
+    let widenedHeight = 0;
+    await expectSidebarFold(page, async () => {
+      await applyWiderText(page);
+      widenedHeight = await noteHeight();
+    });
+    // Not vacuous: the Browse note wraps to more lines than in the
+    // machine's own sans (two more in the Playwright image).
+    expect(widenedHeight).toBeGreaterThan(ownHeight);
   });
 });
 

@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test";
 import { checkpoint } from "../support/journey";
-import { expectNoLayoutShift } from "../support/layout";
+import { expectNoLayoutShift, SUB_PIXEL } from "../support/layout";
 import { waitForHydration } from "../support/hydration";
 import { test } from "../support/test";
 
@@ -121,8 +121,8 @@ for (const help of PAGES.filter(({ infobox }) => infobox)) {
     if (narrowBox && narrowIntro) {
       // Above the prose, as wide as it.
       expect(narrowBox.y + narrowBox.height).toBeLessThanOrEqual(narrowIntro.y);
-      expect(Math.abs(narrowBox.x - narrowIntro.x)).toBeLessThanOrEqual(1);
-      expect(narrowBox.width).toBeGreaterThanOrEqual(narrowIntro.width - 1);
+      expect(Math.abs(narrowBox.x - narrowIntro.x)).toBeLessThan(SUB_PIXEL);
+      expect(narrowBox.width).toBeGreaterThan(narrowIntro.width - SUB_PIXEL);
     }
     // Below the title rule: the first thing in the content.
     const rule = await main.getByText("Read", { exact: true }).boundingBox();
