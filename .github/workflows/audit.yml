@@ -1,0 +1,63 @@
+# Known advisories in the dependencies: any in a runtime dependency (info
+# included), or a high or critical one anywhere, fails npm run audit. Then
+# npm run audit:signatures checks the registry signatures and provenance of
+# every installed package. audit is a required status check on main, with
+# validate and e2e from ci.yml (docs/DEPLOY.md, §1 "Before the first
+# deploy", step "Protect main").
+#
+# Actions are pinned as in ci.yml: the release's full commit SHA, with the
+# tag in a trailing comment.
+name: Audit
+
+# Every push to any branch, and every pull request, like the backend's
+# govulncheck job. The advisory database changes without any commit, so a
+# branch is re-checked on each push, and a pull request's merge result is
+# checked too. This is a workflow of its own because ci.yml limits pushes to
+# the deployed branches: there, a job skipped on the other pushes would still
+# report a passing check under a required name.
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+# Pull requests: a new push cancels the run it replaces. Pushes to a branch
+# (main and preview deploy theirs) all run to the end, so every deployed
+# commit keeps its own result.
+concurrency:
+  group: audit-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  audit:
+    name: audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # No job pushes: the token is not left in .git/config while npm ci
+        # runs install scripts.
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # npm 12, which package.json's packageManager names: its allowScripts
+      # approvals decide which install scripts npm ci runs.
+      - name: Set up npm
+        run: npm install --global npm@12.2.1
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit dependencies
+        run: npm run audit
+
+      - name: Verify registry signatures
+        run: npm run audit:signatures

@@ -1,0 +1,21 @@
+/* The stylesheet entry (DESIGN Appendix A). root.tsx links it in <head>. */
+@import "tailwindcss" source(none);
+@import "./tokens.css";
+@import "./fonts.css";
+@import "./base.css";
+@import "./prose.css";
+
+/* Classes come from the app's modules and help pages only. */
+@source "../**/*.{ts,tsx,md}";
+
+/*
+ * Hover styles only where the primary pointer can hover precisely; Tailwind
+ * 4's own hover variant checks `hover: hover` alone.
+ */
+@custom-variant hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
+  }
+}

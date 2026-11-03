@@ -1,0 +1,10 @@
+node_modules/
+build*/
+.cache/
+.wrangler/
+playwright-report/
+test-results/
+e2e/screenshots/
+package-lock.json
+# Vendored byte for byte from the backend by `npm run sync:api`; never edited here.
+api/openapi.yaml

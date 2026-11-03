@@ -1,0 +1,194 @@
+/* Element defaults and global accessibility rules (DESIGN §2, §3, §6.1, §8). */
+@layer base {
+  html {
+    background-color: rgb(var(--bt-canvas));
+    color: rgb(var(--bt-fg));
+    /* Focus and anchor targets never land under the sticky header (WCAG 2.4.11). */
+    scroll-padding-top: calc(
+      var(--bt-header-h) + var(--bt-toast-stack-h, 0px) + 0.5rem
+    );
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply font-sans text-body;
+  }
+
+  h1,
+  h2,
+  h3 {
+    /*
+     * The display stack by its variable, not `@apply font-display`, so the
+     * rule below that names .font-display (font-synthesis: none) stays off
+     * the sans headings.
+     */
+    font-family: var(--font-display);
+    text-wrap: balance;
+    scroll-margin-top: calc(var(--bt-header-h) + 0.5rem);
+  }
+
+  /*
+   * Never fake bold or italic in Fraunces; let the size drive optical size.
+   * Only where Fraunces is the face: a heading set in the sans (an alert
+   * title, the sidebar's group headings) keeps the browser's synthesis, so
+   * its weight doesn't depend on the installed system font having a 600.
+   */
+  :where(h1, h2, h3):not(.font-sans, .font-mono),
+  .font-display {
+    font-optical-sizing: auto;
+    font-synthesis: none;
+  }
+
+  /*
+   * Browser defaults that Tailwind 4's preflight resets and the design keeps:
+   * a table cell's 1px padding (on the sides its classes don't set), and a
+   * search field drawn as a text field.
+   */
+  th,
+  td {
+    padding: 1px;
+  }
+
+  [type="search"] {
+    -webkit-appearance: textfield;
+    outline-offset: -2px;
+  }
+
+  /*
+   * Tailwind 4's preflight gives controls `opacity: 1`; the browser's own
+   * opacity is kept, which fades a disabled select (Chromium: 0.7).
+   */
+  button,
+  input,
+  select,
+  optgroup,
+  textarea,
+  ::file-selector-button {
+    opacity: revert;
+  }
+
+  /* A placeholder without its own colour class still gets a token. */
+  ::placeholder {
+    color: rgb(var(--bt-fg-subtle));
+  }
+
+  /* Buttons show the pointer, and disabled controls don't. */
+  button,
+  [role="button"] {
+    cursor: pointer;
+  }
+
+  :disabled {
+    cursor: default;
+  }
+
+  ::selection {
+    background-color: rgb(var(--bt-selection));
+    color: rgb(var(--bt-fg));
+  }
+
+  /* The shared focus ring; dense containers inset it per component. */
+  :focus-visible {
+    outline: 2px solid rgb(var(--bt-focus));
+    outline-offset: 2px;
+  }
+
+  /* Below md the bottom app bar is fixed over the end of the viewport: its
+     whole box is APP_BAR_BOX in scripts/tailwind-theme.mjs. */
+  @media not all and (min-width: 768px) {
+    html {
+      scroll-padding-bottom: calc(
+        var(--bt-app-bar-h) + env(safe-area-inset-bottom, 0px) + 0.5rem
+      );
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  /*
+   * Windows High Contrast: keep control edges and state marks visible. A
+   * pressed, current or selected control is marked with a Highlight
+   * outline; focus is a thicker CanvasText one, and the state mark gives
+   * way to it, so focus on a marked control still changes what is drawn.
+   */
+  @media (forced-colors: active) {
+    button {
+      border: 1px solid ButtonText;
+    }
+
+    :focus-visible {
+      outline: 3px solid CanvasText;
+    }
+
+    [aria-current]:not([aria-current="false"]):not(:focus-visible),
+    [aria-pressed="true"]:not(:focus-visible),
+    [aria-selected="true"]:not(:focus-visible) {
+      outline: 2px solid Highlight;
+      outline-offset: -2px;
+    }
+
+    input[type="checkbox"] {
+      appearance: auto;
+    }
+  }
+}
+
+@layer components {
+  /*
+   * An inline list that wraps, with a separator before each item (footer
+   * help links, breadcrumbs). Each item starts with a `.separated-list-mark`
+   * (aria-hidden); the list is pulled left by one mark and clipped there, so
+   * the mark that starts a line, the first item's included, is never
+   * painted, and no line starts or ends with a separator. The clip is
+   * 0.5rem clear of the items on every other side, for their focus rings.
+   */
+  .separated-list {
+    --separator-space: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-inline-start: calc(-1rem - var(--separator-space));
+    clip-path: inset(-0.5rem -0.5rem -0.5rem 1rem);
+  }
+
+  .separated-list-tight {
+    --separator-space: 0.25rem;
+  }
+
+  .separated-list > li {
+    display: flex;
+    align-items: center;
+  }
+
+  .separated-list-mark {
+    display: inline-flex;
+    flex-shrink: 0;
+    justify-content: center;
+    width: 1rem;
+    margin-inline-end: var(--separator-space);
+    color: rgb(var(--bt-fg-subtle));
+  }
+}
+
+/* The wordmark's fixed optical size (DESIGN §3.2). */
+@utility opsz-32 {
+  font-variation-settings: "opsz" 32;
+}
+
+/* A <summary> drawn as a control: no disclosure triangle. */
+@utility summary-plain {
+  list-style: none;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+}
+
+/* Transform an SVG part around its own box (the logo's flame), not the viewBox. */
+@utility transform-box-fill {
+  transform-box: fill-box;
+}
