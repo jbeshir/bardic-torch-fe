@@ -309,7 +309,10 @@ test.describe("/pieces filters below xl", () => {
     await expectPrimaryTargetsAtLeast44([link]);
     await link.click();
     await expect(page).toHaveURL(/\?letter=T#filters$/);
-    const filters = main.getByRole("region", { name: "Filters" });
+    const filters = main.getByRole("region", {
+      name: "Filters",
+      exact: true,
+    });
     await expect(filters).toBeInViewport();
     await filters.getByRole("checkbox", { name: /^Song\b/ }).check();
     const [response] = await Promise.all([

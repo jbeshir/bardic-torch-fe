@@ -185,7 +185,7 @@ test("a search too slow keeps the search box and offers Try again", async ({
 // C2.2: the facet column, its chips and stale categories
 
 const filters = (page: Page) =>
-  main(page).getByRole("region", { name: "Filters" });
+  main(page).getByRole("region", { name: "Filters", exact: true });
 
 test("at 1280 the facet column applies each tick at once, and its chips take them off", async ({
   page,
@@ -209,7 +209,7 @@ test("at 1280 the facet column applies each tick at once, and its chips take the
     filters(page).getByRole("checkbox", { name: /^Warlike\b/ })
   ).toBeFocused();
   await expect(
-    filters(page).getByRole("checkbox", { name: "Song, 3 pieces" })
+    filters(page).getByRole("checkbox", { name: /^Song\s*, 3 pieces$/ })
   ).toBeVisible();
   await filters(page)
     .getByRole("checkbox", { name: /^Song\b/ })

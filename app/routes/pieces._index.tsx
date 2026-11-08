@@ -392,6 +392,15 @@ export default function PiecesRoute() {
   return (
     <>
       <h1 className="text-h1 text-fg">Pieces</h1>
+      {/* Right after the heading, because a hidden link sits where it would
+          have been in the flow, and here nothing is within a target's reach
+          (WCAG 2.5.8). */}
+      <a
+        href={`#${FILTERS_ID}`}
+        className="sr-only rounded-sm text-body-sm font-medium text-link focus:not-sr-only focus:mt-2 focus:block focus:w-fit max-xl:hidden"
+      >
+        Skip to filters
+      </a>
       <div className="mt-4">
         <ViewTabs
           views={[{ label: "Read", to: ALL_PIECES, icon: IconBook2 }]}
@@ -403,12 +412,6 @@ export default function PiecesRoute() {
           which the grid lifts into the left column from xl. */}
       <div className="mt-6 grid gap-6 xl:grid-cols-browse xl:gap-x-8">
         <div className="grid min-w-0 content-start gap-6 xl:col-start-2 xl:row-start-1">
-          <a
-            href={`#${FILTERS_ID}`}
-            className="sr-only rounded-sm text-body-sm font-medium text-link focus:not-sr-only focus:justify-self-start max-xl:hidden"
-          >
-            Skip to filters
-          </a>
           <PieceSearch state={state} />
           <LetterBar
             label="Pieces by letter"

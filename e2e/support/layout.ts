@@ -147,6 +147,9 @@ function findSmallTargets(selector: string): string[] {
         rect.width > 0 &&
         rect.height > 0 &&
         style.visibility !== "hidden" &&
+        // Not in a closed <details> (content-visibility: hidden keeps
+        // boxes that nobody can see or focus).
+        element.checkVisibility() &&
         !element.closest("[inert]") &&
         !inSentence(element)
       );
@@ -164,15 +167,25 @@ function findSmallTargets(selector: string): string[] {
     });
 
   /**
-   * The fixed or sticky box a target rides in (the header, the app bar, a
-   * toast), or null for the page. Spacing is between targets of one layer:
-   * a link that has scrolled under the app bar isn't "next to" its cells
-   * (whether focus is hidden there is expectFocusNotObscured's question).
+   * The fixed or sticky box, or the scrolling region (a drawer's body), a
+   * target rides in (the header, the app bar, a toast), or null for the
+   * page. Spacing is between targets of one layer: a link that has
+   * scrolled under the app bar, or a checkbox under a drawer's footer
+   * buttons, isn't "next to" them (whether focus is hidden there is
+   * expectFocusNotObscured's question).
    */
   function layerOf(element: HTMLElement): Element | null {
     for (let node: Element | null = element; node; node = node.parentElement) {
-      const { position } = getComputedStyle(node);
+      const { position, overflowY } = getComputedStyle(node);
       if (position === "fixed" || position === "sticky") return node;
+      const scrolls = overflowY === "auto" || overflowY === "scroll";
+      if (
+        scrolls &&
+        node !== document.body &&
+        node !== document.documentElement
+      ) {
+        return node;
+      }
     }
     return null;
   }

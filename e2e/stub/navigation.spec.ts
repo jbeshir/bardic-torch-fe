@@ -304,11 +304,10 @@ test.describe("below md", () => {
     page,
   }) => {
     await openHydrated(page);
-    // Exact: the sheet's submit is "Search" too.
-    const search = appBar(page).getByRole("button", {
-      name: "Search",
-      exact: true,
-    });
+    // The one that controls the sheet: its submit is named "Search" too.
+    const search = appBar(page)
+      .getByRole("button", { name: "Search", exact: true })
+      .and(page.locator("[aria-controls]"));
     await search.click();
     await expect(search).toHaveAttribute("aria-expanded", "true");
     const field = appBar(page).getByRole("searchbox", {
@@ -441,7 +440,9 @@ test.describe("from md", () => {
   }) => {
     for (const viewport of [
       { width: 768, height: 1024 },
-      { width: 1280, height: 800 },
+      // The 404 is about 830 px tall at 1280 (its copy and three actions), so
+      // 800 would make it a long page, not a short one.
+      { width: 1280, height: 900 },
     ]) {
       await page.setViewportSize(viewport);
       await openHydrated(page, "/no-such-page");
