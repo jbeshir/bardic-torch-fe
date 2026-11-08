@@ -54,7 +54,7 @@ test("a letter lists its pieces, and an empty letter is not a link", async ({
     "aria-disabled",
     "true"
   );
-  await letters(page).getByRole("link", { name: "T" }).click();
+  await letters(page).getByRole("link", { name: "T", exact: true }).click();
   await expect(page).toHaveURL(/\/pieces\?letter=T$/);
   await expect(
     main(page).getByRole("heading", { level: 2, name: "Pieces under T" })
@@ -68,7 +68,7 @@ test("a letter lists its pieces, and an empty letter is not a link", async ({
   await expect(
     results.getByRole("link", { name: "Þorvald’s Lament" })
   ).toBeVisible();
-  await expect(page.getByRole("status")).toHaveText("Showing 5 pieces");
+  await expect(main(page).getByRole("status")).toHaveText("Showing 5 pieces");
   // The chip takes the letter off again.
   await main(page).getByRole("link", { name: "Remove Letter: T" }).click();
   await expect(page).toHaveURL(/\/pieces$/);
@@ -139,7 +139,7 @@ test("checkpoint: no-results, a search that matches nothing", async ({
   await expect(
     main(page).getByRole("heading", { name: "Nothing matches ‘zzqx-nothing’" })
   ).toBeVisible();
-  await expect(page.getByRole("status")).toHaveText("No results");
+  await expect(main(page).getByRole("status")).toHaveText("No results");
   await expect(
     main(page).getByRole("link", { name: "Browse pieces" })
   ).toHaveAttribute("href", "/pieces");
