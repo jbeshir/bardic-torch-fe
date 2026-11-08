@@ -97,44 +97,47 @@ function sectionsOf(
 }
 
 /**
- * A person's Read view (plan §4.6): the entity page with "Bards" in the
- * breadcrumbs and their kind, pronouns and status as the meta line. A
- * person who asked not to have a page is their identity only: the name,
- * the kind, the banner that keeps their request on record (with their
- * statement when there is one), no History tab and no prose. Anyone else
- * has the stub banner when their page is one, the infobox, their sections
- * and the licence line pointing at the page history.
+ * A person's head, the same on their Read and History views: "Bards" in
+ * the breadcrumbs, the name, their kind, pronouns and status as the meta
+ * line, and the banner: the one that keeps a no-page person's request on
+ * record (with their statement when there is one), or the stub's.
  */
-export function PersonPage({ view }: { readonly view: PersonView }) {
-  const { person, markdown } = view;
-  const path = `/bards/${person.slug}`;
-  const page = {
-    path,
+export function personHead(person: Person) {
+  const statement = person.status_source_url;
+  return {
+    path: `/bards/${person.slug}`,
     title: person.name,
     breadcrumbs: {
       trail: [{ label: "Bards", to: "/bards" }] as const,
       current: person.name,
     },
     subtitle: personSubtitle(person),
+    banners: !person.profile ? (
+      <PageBanner
+        kind="no-page"
+        name={person.name}
+        statementUrl={statement && isUserUrl(statement) ? statement : undefined}
+      />
+    ) : person.is_stub ? (
+      <PageBanner kind="stub" subject="person" />
+    ) : undefined,
   };
+}
+
+/**
+ * A person's Read view (plan §4.6): their head (`personHead`). A person
+ * who asked not to have a page is their identity only: no History tab
+ * (plan R8; a direct `/bards/{slug}/history` still works) and no prose.
+ * Anyone else has the infobox, their sections and the licence line
+ * pointing at the page history.
+ */
+export function PersonPage({ view }: { readonly view: PersonView }) {
+  const { person, markdown } = view;
+  const head = personHead(person);
   const { profile } = person;
   if (!profile) {
-    const statement = person.status_source_url;
     return (
-      <EntityPage
-        {...page}
-        history={false}
-        banners={
-          <PageBanner
-            kind="no-page"
-            name={person.name}
-            statementUrl={
-              statement && isUserUrl(statement) ? statement : undefined
-            }
-          />
-        }
-        licence={<LicenceLine />}
-      >
+      <EntityPage {...head} history={false} licence={<LicenceLine />}>
         {null}
       </EntityPage>
     );
@@ -142,13 +145,10 @@ export function PersonPage({ view }: { readonly view: PersonView }) {
   const sections = sectionsOf(profile, markdown);
   return (
     <EntityPage
-      {...page}
-      banners={
-        person.is_stub ? <PageBanner kind="stub" subject="person" /> : undefined
-      }
+      {...head}
       infobox={<PersonInfobox person={person} />}
       contents={sections.map(({ id, label }) => ({ id, label }))}
-      licence={<LicenceLine historyPath={`${path}/history`} />}
+      licence={<LicenceLine historyPath={`${head.path}/history`} />}
     >
       {sections.map(({ id, element }) => (
         <Fragment key={id}>{element}</Fragment>

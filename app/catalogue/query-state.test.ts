@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  categoryIndexQuery,
+  collectionQuery,
+  eventQuery,
+  historyQuery,
   pieceQuery,
   redirectIfNotCanonical,
   searchQuery,
+  termMembersQuery,
   type PieceQueryState,
 } from "./query-state";
 
@@ -402,5 +407,174 @@ describe("searchQuery", () => {
   it("links to the search, or the empty search page", () => {
     expect(searchQuery.href({ q: "a b" })).toBe("/search?q=a+b");
     expect(searchQuery.href({ q: undefined })).toBe("/search");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C6–C8: categories, a page of members or history, collections and events
+
+describe("categoryIndexQuery (plan §4.8)", () => {
+  const parseIndex = (search: string) =>
+    categoryIndexQuery.parse(new URLSearchParams(search));
+
+  it.each([
+    ["", undefined, ""],
+    ["?facet=mood", "mood", "?facet=mood"],
+    ["?facet=Affiliation", "affiliation", "?facet=affiliation"],
+    // The two piece fields the index shows as sections of their own.
+    ["?facet=kind", "kind", "?facet=kind"],
+    ["?facet=conservation", "conservation", "?facet=conservation"],
+    // An invalid facet is dropped; the first valid one of a repeat wins.
+    ["?facet=genre", undefined, ""],
+    ["?facet=genre&facet=topic&facet=form", "topic", "?facet=topic"],
+    ["?facet=", undefined, ""],
+    ["?utm_source=mail&facet=origin", "origin", "?facet=origin"],
+  ] as const)("reads %j", (search, facet, canonical) => {
+    expect(parseIndex(search)).toEqual({ state: { facet }, canonical });
+  });
+
+  it("links to a section, or to the whole index", () => {
+    expect(categoryIndexQuery.href("mood")).toBe("/categories?facet=mood");
+    expect(categoryIndexQuery.href(undefined)).toBe("/categories");
+  });
+
+  it("is canonical for every href it makes", () => {
+    for (const facet of ["kind", "other", "conservation", undefined] as const) {
+      const href = categoryIndexQuery.href(facet);
+      const search = href.slice("/categories".length);
+      expect(parseIndex(search).canonical).toBe(search);
+    }
+  });
+});
+
+describe("termMembersQuery (plan §4.8)", () => {
+  const parsePage = (search: string) =>
+    termMembersQuery.parse(new URLSearchParams(search));
+
+  it.each([
+    ["", 1, ""],
+    ["?page=2", 2, "?page=2"],
+    ["?page=1", 1, ""],
+    ["?page=0", 1, ""],
+    ["?page=02", 1, ""],
+    ["?page=x&page=3", 3, "?page=3"],
+    ["?offset=50", 1, ""],
+  ] as const)("reads %j", (search, page, canonical) => {
+    expect(parsePage(search)).toEqual({ state: { page }, canonical });
+  });
+
+  it("asks for 50 members from the page's offset", () => {
+    expect(termMembersQuery.toApi({ page: 1 })).toEqual({
+      limit: 50,
+      offset: 0,
+    });
+    expect(termMembersQuery.toApi({ page: 3 })).toEqual({
+      limit: 50,
+      offset: 100,
+    });
+  });
+
+  it("links to a page under the entity's path", () => {
+    expect(termMembersQuery.href("/categories/joyful", 2)).toBe(
+      "/categories/joyful?page=2"
+    );
+    expect(termMembersQuery.href("/categories/joyful", 1)).toBe(
+      "/categories/joyful"
+    );
+  });
+});
+
+describe("collectionQuery (plan §4.9)", () => {
+  const parseCollections = (search: string) =>
+    collectionQuery.parse(new URLSearchParams(search));
+
+  it.each([
+    ["", ""],
+    ["?kind=wiki&kind=blog", "?kind=wiki&kind=blog"],
+    // Enum order, lower-cased, de-duplicated, invalid dropped.
+    ["?kind=blog&kind=WIKI&kind=wiki&kind=zine", "?kind=wiki&kind=blog"],
+    ["?letter=n", "?letter=N"],
+    ["?letter=0", "?letter=0"],
+    ["?letter=%C3%A9", ""],
+    ["?page=2&kind=other", "?kind=other&page=2"],
+    ["?page=1", ""],
+    ["?q=songs", ""],
+  ])("reads %j as %j", (search, canonical) => {
+    expect(parseCollections(search).canonical).toBe(canonical);
+    // The canonical form is canonical itself.
+    expect(parseCollections(canonical).canonical).toBe(canonical);
+  });
+
+  it("asks the API for the kinds, the letter and the page", () => {
+    const { state } = parseCollections("?kind=blog&letter=C&page=3");
+    expect(collectionQuery.toApi(state)).toEqual({
+      kind: ["blog"],
+      letter: "C",
+      limit: 50,
+      offset: 100,
+    });
+    expect(collectionQuery.toApi(parseCollections("").state)).toEqual({
+      limit: 50,
+      offset: 0,
+    });
+  });
+
+  it("resets the page on a change unless the change is the page", () => {
+    const { state } = parseCollections("?kind=blog&page=3");
+    expect(collectionQuery.href(state, { letter: "B" })).toBe(
+      "/collections?kind=blog&letter=B"
+    );
+    expect(collectionQuery.href(state, { page: 4 })).toBe(
+      "/collections?kind=blog&page=4"
+    );
+    expect(collectionQuery.href(state, { kind: [] })).toBe("/collections");
+  });
+});
+
+describe("eventQuery (plan §4.10)", () => {
+  const parseEvents = (search: string) =>
+    eventQuery.parse(new URLSearchParams(search));
+
+  it.each([
+    ["", ""],
+    ["?kind=venue", "?kind=venue"],
+    ["?kind=Venue", "?kind=venue"],
+    ["?kind=tavern", ""],
+    ["?kind=tavern&kind=event", "?kind=event"],
+    ["?kind=event&kind=venue", "?kind=event"],
+    ["?page=2&kind=venue", "?kind=venue&page=2"],
+    ["?letter=M", ""],
+  ])("reads %j as %j", (search, canonical) => {
+    expect(parseEvents(search).canonical).toBe(canonical);
+    expect(parseEvents(canonical).canonical).toBe(canonical);
+  });
+
+  it("asks the API for the kind and the page", () => {
+    expect(eventQuery.toApi(parseEvents("?kind=venue&page=2").state)).toEqual({
+      kind: "venue",
+      limit: 50,
+      offset: 50,
+    });
+  });
+
+  it("switches kind from page 1", () => {
+    const { state } = parseEvents("?kind=venue&page=2");
+    expect(eventQuery.href(state, { kind: "event" })).toBe(
+      "/events?kind=event"
+    );
+    expect(eventQuery.href(state, { kind: undefined })).toBe("/events");
+  });
+});
+
+describe("historyQuery (plan §4.11)", () => {
+  it("pages a history like any page-only list", () => {
+    expect(historyQuery.parse(new URLSearchParams("?page=3&x=1"))).toEqual({
+      state: { page: 3 },
+      canonical: "?page=3",
+    });
+    expect(historyQuery.toApi({ page: 2 })).toEqual({ limit: 50, offset: 50 });
+    expect(historyQuery.href("/events/x/history", 2)).toBe(
+      "/events/x/history?page=2"
+    );
   });
 });

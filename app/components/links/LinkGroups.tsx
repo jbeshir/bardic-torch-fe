@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { LINK_ROLE_LABELS } from "~/constants/vocabulary";
+import { LINK_ROLE_HEADINGS } from "~/constants/vocabulary";
 import { linkRoleSchema, type LinkRole } from "~/schemas/catalogue";
 import { LinkRow, type AnyLink } from "./LinkRow";
 
@@ -16,7 +16,7 @@ function Group({
   const headingId = useId();
   return (
     <section aria-labelledby={headingId}>
-      <h3 id={headingId}>{LINK_ROLE_LABELS[role]}</h3>
+      <h3 id={headingId}>{LINK_ROLE_HEADINGS[role]}</h3>
       <ul role="list" className="not-prose">
         {links.map(link => (
           <LinkRow key={link.url} link={link} archive={archive} />

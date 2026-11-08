@@ -1,17 +1,19 @@
 import type { MetaDescriptor, ShouldRevalidateFunction } from "react-router";
 import { failureTitle } from "~/components/catalogue/CatalogueError";
-import { SERVER_ERROR_META } from "~/components/ErrorPages";
 import { thrownPageFailure } from "./read-failure";
 
 /**
- * What an entity's layout route (`pieces.$slug`, `bards.$slug`) shares: it
- * loads the entity once for its Read and History views.
+ * What an entity's layout route shares (`pieces.$slug`, `bards.$slug`,
+ * `categories.$slug`, `collections.$id`, `events.$slug`): it loads the
+ * entity once for its Read and History views.
  */
 
 /**
- * The layout's `shouldRevalidate`: a search-only change (another history
- * page) doesn't load the entity again; a new address, Try again (the same
- * URL) and anything else does as React Router would.
+ * The layout's `shouldRevalidate` (plan §1): its loader reads the entity
+ * by its path alone, so a search-only change (a history or members
+ * `?page=`) doesn't load it again, while its children reload; a new
+ * address, Try again (the same URL) and anything else does as React Router
+ * would.
  */
 export const ignoreSearchChanges: ShouldRevalidateFunction = ({
   currentUrl,
@@ -24,17 +26,17 @@ export const ignoreSearchChanges: ShouldRevalidateFunction = ({
     : defaultShouldRevalidate;
 
 /**
- * The meta of an entity page that failed: titled like its boundary's h1
- * ("We couldn’t find that piece") and kept out of search results; anything
- * unexpected is a server error.
+ * The meta of an entity page (or one of its views) that failed: titled
+ * like its boundary's h1 ("We couldn’t find that piece") and kept out of
+ * search results; anything unexpected is a server error, "We couldn’t
+ * load {what}" as the boundary says.
  */
 export function failureMeta(
   error: unknown,
   what: string,
   missing: string
 ): MetaDescriptor[] {
-  const thrown = thrownPageFailure(error);
-  if (!thrown) return [...SERVER_ERROR_META];
+  const thrown = thrownPageFailure(error) ?? { kind: "server" };
   return [
     { title: `${failureTitle(thrown, what, missing)} · Bardic Torch` },
     { name: "robots", content: "noindex" },

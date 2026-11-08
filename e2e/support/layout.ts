@@ -147,8 +147,9 @@ function findSmallTargets(selector: string): string[] {
         rect.width > 0 &&
         rect.height > 0 &&
         style.visibility !== "hidden" &&
-        // Not in a closed <details> (content-visibility: hidden keeps
-        // boxes that nobody can see or focus).
+        // Not in a closed <details>: its content is laid out
+        // (content-visibility: hidden keeps the boxes), but nobody can
+        // see or focus it.
         element.checkVisibility() &&
         !element.closest("[inert]") &&
         !inSentence(element)

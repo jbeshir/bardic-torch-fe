@@ -16,9 +16,33 @@ describe("failureTitle", () => {
   ] as const)("titles %o “%s”", (failure, title) => {
     expect(failureTitle(failure, "the pieces")).toBe(title);
   });
+
+  it("says what is missing for a 404", () => {
+    expect(failureTitle({ kind: "not_found" }, "this category")).toBe(
+      "We couldn’t find that page"
+    );
+    expect(
+      failureTitle({ kind: "not_found" }, "this category", "that category")
+    ).toBe("We couldn’t find that category");
+  });
 });
 
 describe("CatalogueError", () => {
+  it("is the 404 page, titled for what is missing", async () => {
+    await renderWithRouter(
+      <CatalogueError
+        failure={{ kind: "not_found" }}
+        what="this category"
+        missing="that category"
+      />,
+      "/categories/no-such"
+    );
+    expect(heading()).toHaveTextContent("We couldn’t find that category");
+    expect(
+      screen.getByRole("link", { name: "Go to the home page" })
+    ).toHaveAttribute("href", "/");
+  });
+
   it("is the resting page for an outage, with no reference", async () => {
     await renderWithRouter(
       <CatalogueError

@@ -11,16 +11,30 @@ import {
 } from "~/catalogue/read-failure";
 import { upstreamErrorSchema } from "~/schemas/api";
 import {
+  collectionListSchema,
+  collectionSchema,
+  eventListSchema,
+  eventSchema,
   personListSchema,
   personSchema,
   pieceListSchema,
   pieceSchema,
+  revisionHistorySchema,
+  revisionSchema,
+  termListSchema,
+  termSchema,
   type ApiQuery,
+  type Collection,
+  type CollectionList,
+  type Event,
+  type EventList,
   type Person,
   type PersonList,
   type Piece,
   type PieceList,
-  termListSchema,
+  type Revision,
+  type RevisionHistory,
+  type Term,
   type TermList,
 } from "~/schemas/catalogue";
 import { appEnvContext } from "./context.server";
@@ -48,9 +62,10 @@ import {
  * (checked against the spec), and a typed function below. Each entry says
  * how its error answers read (`reads`): a search's 500 may be a slow
  * search and its 400 a stale filter (`searchFailure`); another list's are
- * a server error and a contract break (`listFailure`); a detail read's 404
- * (or 400) is the entity's 404 (`detailFailure`), and every failure of a
- * detail read is a `PageFailure`.
+ * a server error and a contract break (`listFailure`); a detail or
+ * history read's 404 (or 400) is the entity's 404 (`detailFailure`). Only
+ * a search can fail with a `FilterFailure`: every failure of another
+ * read is a `PageFailure`.
  */
 
 type ReadResult<T, Failure extends ReadFailure = ReadFailure> =
@@ -93,7 +108,8 @@ const ENDPOINTS = {
     ],
     reads: "search",
   },
-  // The facet column (C2.2), search (C3.1) and the bards directory (C5.2).
+  // The facet column (C2.2), search (C3.1), the bards directory (C5.2) and
+  // the categories (C6.1).
   listTerms: {
     method: "GET",
     path: "/v1/terms",
@@ -128,6 +144,74 @@ const ENDPOINTS = {
     query: [],
     reads: "detail",
   },
+  // A category (C6.2), collections (C7.1) and events (C7.2).
+  getTerm: {
+    method: "GET",
+    path: "/v1/terms/{slug}",
+    query: ["limit", "offset"],
+    reads: "detail",
+  },
+  listCollections: {
+    method: "GET",
+    path: "/v1/collections",
+    query: ["kind", "letter", "limit", "offset"],
+    reads: "search",
+  },
+  getCollection: {
+    method: "GET",
+    path: "/v1/collections/{collection_id}",
+    query: [],
+    reads: "detail",
+  },
+  listEvents: {
+    method: "GET",
+    path: "/v1/events",
+    query: ["kind", "limit", "offset"],
+    reads: "list",
+  },
+  getEvent: {
+    method: "GET",
+    path: "/v1/events/{slug}",
+    query: [],
+    reads: "detail",
+  },
+  // Histories (C8.1) and revisions (C8.2).
+  listPieceRevisions: {
+    method: "GET",
+    path: "/v1/pieces/{slug}/history",
+    query: ["limit", "offset"],
+    reads: "detail",
+  },
+  listPersonRevisions: {
+    method: "GET",
+    path: "/v1/persons/{slug}/history",
+    query: ["limit", "offset"],
+    reads: "detail",
+  },
+  listTermRevisions: {
+    method: "GET",
+    path: "/v1/terms/{slug}/history",
+    query: ["limit", "offset"],
+    reads: "detail",
+  },
+  listCollectionRevisions: {
+    method: "GET",
+    path: "/v1/collections/{collection_id}/history",
+    query: ["limit", "offset"],
+    reads: "detail",
+  },
+  listEventRevisions: {
+    method: "GET",
+    path: "/v1/events/{slug}/history",
+    query: ["limit", "offset"],
+    reads: "detail",
+  },
+  getRevision: {
+    method: "GET",
+    path: "/v1/revisions/{revision_id}",
+    query: [],
+    reads: "detail",
+  },
 } as const satisfies {
   readonly [Id in keyof operations]?: EndpointOf<operations[Id]> & {
     readonly query: readonly (keyof NonNullable<
@@ -141,9 +225,9 @@ type ReadId = keyof typeof ENDPOINTS;
 
 type QueryValue = string | number | boolean | readonly string[] | undefined;
 
-/** What a read of `Id` can fail with: a detail read's are page failures. */
+/** What a read of `Id` can fail with: only a search's can be filter failures. */
 type FailureOf<Id extends ReadId> =
-  (typeof ENDPOINTS)[Id]["reads"] extends "detail" ? PageFailure : ReadFailure;
+  (typeof ENDPOINTS)[Id]["reads"] extends "search" ? ReadFailure : PageFailure;
 
 /**
  * The query string for `query` (with its "?", or "" when empty), in the
@@ -200,7 +284,7 @@ function failureOf(
 /**
  * One read: `query` in the operation's order, and `path` filling the
  * path's `{name}`s (already checked by the loader, percent-encoded here).
- * A detail read fails only with a `PageFailure` (`FailureOf`).
+ * A read that isn't a search fails only with a `PageFailure` (`FailureOf`).
  */
 function callPublicApi<Id extends ReadId, T>(
   context: Readonly<RouterContextProvider>,
@@ -293,12 +377,13 @@ export function listPieces(
 /**
  * The public term tree, or one facet's, in tree order (`GET /v1/terms`):
  * the facet column's labels and tree, search's categories and the bards
- * directory's affiliations. Not a search, so a 500 is a plain server error.
+ * directory's affiliations, and /categories. Not a search, so a 500 is a
+ * plain server error.
  */
 export function listTerms(
   context: Readonly<RouterContextProvider>,
   query: ApiQuery<"listTerms">
-): Promise<ReadResult<TermList>> {
+): Promise<ReadResult<TermList, PageFailure>> {
   return callPublicApi(context, "listTerms", { query }, termListSchema);
 }
 
@@ -324,4 +409,129 @@ export function getPerson(
   slug: string
 ): Promise<ReadResult<Person, PageFailure>> {
   return callPublicApi(context, "getPerson", { path: { slug } }, personSchema);
+}
+
+// ---------------------------------------------------------------------------
+// Categories, collections, events, histories and revisions (C6–C8)
+
+/**
+ * A term with one page of its members (`GET /v1/terms/{slug}`): `slug`
+ * already checked with `isSlug`.
+ */
+export function getTerm(
+  context: Readonly<RouterContextProvider>,
+  slug: string,
+  query: ApiQuery<"getTerm">
+): Promise<ReadResult<Term, PageFailure>> {
+  return callPublicApi(
+    context,
+    "getTerm",
+    { query, path: { slug } },
+    termSchema
+  );
+}
+
+/** A page of collections by sort name (`GET /v1/collections`). */
+export function listCollections(
+  context: Readonly<RouterContextProvider>,
+  query: ApiQuery<"listCollections">
+): Promise<ReadResult<CollectionList>> {
+  return callPublicApi(
+    context,
+    "listCollections",
+    { query },
+    collectionListSchema
+  );
+}
+
+/**
+ * A collection with its citations (`GET /v1/collections/{collection_id}`):
+ * `id` already checked with `isEntityId`, and sent as written, since an
+ * int64 may not fit a JavaScript number.
+ */
+export function getCollection(
+  context: Readonly<RouterContextProvider>,
+  id: string
+): Promise<ReadResult<Collection, PageFailure>> {
+  return callPublicApi(
+    context,
+    "getCollection",
+    { path: { collection_id: id } },
+    collectionSchema
+  );
+}
+
+/** A page of events and venues by name (`GET /v1/events`). */
+export function listEvents(
+  context: Readonly<RouterContextProvider>,
+  query: ApiQuery<"listEvents">
+): Promise<ReadResult<EventList, PageFailure>> {
+  return callPublicApi(context, "listEvents", { query }, eventListSchema);
+}
+
+/**
+ * An event or venue with its performances (`GET /v1/events/{slug}`):
+ * `slug` already checked with `isSlug`.
+ */
+export function getEvent(
+  context: Readonly<RouterContextProvider>,
+  slug: string
+): Promise<ReadResult<Event, PageFailure>> {
+  return callPublicApi(context, "getEvent", { path: { slug } }, eventSchema);
+}
+
+/**
+ * Each entity with a history, by its history operation and the name of
+ * its address in the path.
+ */
+const HISTORIES = {
+  piece: { operationId: "listPieceRevisions", address: "slug" },
+  person: { operationId: "listPersonRevisions", address: "slug" },
+  term: { operationId: "listTermRevisions", address: "slug" },
+  collection: {
+    operationId: "listCollectionRevisions",
+    address: "collection_id",
+  },
+  event: { operationId: "listEventRevisions", address: "slug" },
+} as const satisfies Readonly<
+  Record<string, { readonly operationId: ReadId; readonly address: string }>
+>;
+
+export type HistoryEntity = keyof typeof HISTORIES;
+
+/**
+ * A page of an entity's approved revisions, newest first (`GET
+ * /v1/{pieces|persons|terms|collections|events}/{address}/history`):
+ * `address` already checked by the route (a slug, or a collection id as
+ * written).
+ */
+export function listRevisions(
+  context: Readonly<RouterContextProvider>,
+  entity: HistoryEntity,
+  address: string,
+  query: { readonly limit: number; readonly offset: number }
+): Promise<ReadResult<RevisionHistory, PageFailure>> {
+  const { operationId, address: name } = HISTORIES[entity];
+  return callPublicApi(
+    context,
+    operationId,
+    { query, path: { [name]: address } },
+    revisionHistorySchema
+  );
+}
+
+/**
+ * A revision with its snapshot and its base's (`GET /v1/revisions/{id}`):
+ * `id` already checked with `isEntityId`, and sent as written.
+ */
+export function getRevision(
+  context: Readonly<RouterContextProvider>,
+  id: string
+): Promise<ReadResult<Revision, PageFailure>> {
+  return callPublicApi(
+    context,
+    "getRevision",
+    { path: { revision_id: id } },
+    revisionSchema
+  );
 }

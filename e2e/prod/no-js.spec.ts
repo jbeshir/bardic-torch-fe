@@ -439,3 +439,85 @@ test.describe("/bards", () => {
     ).toBeVisible();
   });
 });
+// Track C (categories, collections, events, history).
+
+test.describe("/categories", () => {
+  test.use({ viewport: MOBILE });
+
+  test("a term's breadcrumbs wrap whole, and its links and pages work", async ({
+    page,
+  }) => {
+    await page.goto("/categories/swords");
+    const main = page.getByRole("main");
+    const crumbs = main.getByRole("navigation", { name: "Breadcrumb" });
+    // Without JS nothing collapses: every crumb shows, wrapping.
+    await expect(crumbs.getByRole("button")).toHaveCount(0);
+    for (const name of ["Categories", "Topic", "War", "Battles"]) {
+      await expect(crumbs.getByRole("link", { name })).toBeVisible();
+    }
+    await crumbs.getByRole("link", { name: "Topic" }).click();
+    await expect(page).toHaveURL(/\/categories\?facet=topic$/);
+
+    await page.goto("/categories/joyful");
+    await main
+      .getByRole("navigation", { name: "Pagination" })
+      .getByRole("link", { name: "Next" })
+      .click();
+    await expect(page).toHaveURL(/\/categories\/joyful\?page=2$/);
+    await expect(
+      main.getByRole("heading", { level: 1, name: "Joyful" })
+    ).toBeVisible();
+  });
+});
+
+test.describe("/collections", () => {
+  test("the kind filter is a plain GET form, answered 200, and keeps the letter", async ({
+    page,
+  }) => {
+    await page.goto("/collections?letter=H");
+    const main = page.getByRole("main");
+    await main.getByText("Filter by kind").click();
+    await main.getByRole("checkbox", { name: "YouTube playlist" }).check();
+    const [response] = await Promise.all([
+      page.waitForResponse(r => new URL(r.url()).pathname === "/collections"),
+      main.getByRole("button", { name: "Apply filters" }).click(),
+    ]);
+    // The form's own order (the letter first) isn't redirected.
+    expect(response.status()).toBe(200);
+    await expect(page).toHaveURL(
+      /\/collections\?letter=H&kind=youtube_playlist$/
+    );
+    await expect(
+      main.getByRole("link", { name: "Harvest Playlist", exact: true })
+    ).toBeVisible();
+  });
+});
+
+test.describe("/events", () => {
+  test("the kind switch and the tabs are plain links", async ({ page }) => {
+    await page.goto("/events");
+    const main = page.getByRole("main");
+    await main
+      .getByRole("navigation", { name: "Kinds" })
+      .getByRole("link", { name: "Events" })
+      .click();
+    await expect(page).toHaveURL(/\/events\?kind=event$/);
+    await main.getByRole("link", { name: "Midwinter Revel" }).click();
+    await expect(
+      main.getByRole("heading", { level: 1, name: "Midwinter Revel" })
+    ).toBeVisible();
+  });
+});
+
+test.describe("history", () => {
+  test("the Read and History tabs are plain links", async ({ page }) => {
+    await page.goto("/events/midwinter-revel");
+    const main = page.getByRole("main");
+    const views = main.getByRole("navigation", { name: "Page views" });
+    await views.getByRole("link", { name: "History" }).click();
+    await expect(page).toHaveURL(/\/events\/midwinter-revel\/history$/);
+    await expect(main.getByText("2 revisions")).toBeVisible();
+    await views.getByRole("link", { name: "Read" }).click();
+    await expect(page).toHaveURL(/\/events\/midwinter-revel$/);
+  });
+});

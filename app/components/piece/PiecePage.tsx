@@ -123,32 +123,42 @@ function banner(piece: Piece) {
 }
 
 /**
- * A piece's Read view (plan §4.5): the entity page with "Pieces" in the
- * breadcrumbs, the kinds and period as the meta line, the restricted or
- * stub banner, the infobox, every term as a category chip ("Mood:
- * Singalong") and the licence line pointing at the page history.
+ * A piece's head, the same on its Read and History views: "Pieces" in the
+ * breadcrumbs, the title, the kinds and period as the meta line, and the
+ * restricted or stub banner.
+ */
+export function pieceHead(piece: Piece) {
+  return {
+    path: `/pieces/${piece.slug}`,
+    title: piece.title,
+    breadcrumbs: {
+      trail: [{ label: "Pieces", to: "/pieces" }] as const,
+      current: piece.title,
+    },
+    subtitle: pieceSubtitle(piece),
+    banners: banner(piece),
+  };
+}
+
+/**
+ * A piece's Read view (plan §4.5): its head (`pieceHead`), the infobox,
+ * every term as a category chip ("Mood: Singalong") and the licence line
+ * pointing at the page history.
  */
 export function PiecePage({ view }: { readonly view: PieceView }) {
   const { piece } = view;
-  const path = `/pieces/${piece.slug}`;
+  const head = pieceHead(piece);
   const sections = sectionsOf(view);
   return (
     <EntityPage
-      path={path}
-      title={piece.title}
-      breadcrumbs={{
-        trail: [{ label: "Pieces", to: "/pieces" }],
-        current: piece.title,
-      }}
-      subtitle={pieceSubtitle(piece)}
-      banners={banner(piece)}
+      {...head}
       infobox={<PieceInfobox piece={piece} />}
       categories={piece.terms.map(({ term }) => ({
         label: term.display_name,
         prefix: `${FACET_LABELS[term.facet]}:`,
         to: `/categories/${term.slug}`,
       }))}
-      licence={<LicenceLine historyPath={`${path}/history`} />}
+      licence={<LicenceLine historyPath={`${head.path}/history`} />}
       contents={sections.map(({ id, label }) => ({ id, label }))}
     >
       {sections.map(({ id, element }) => (

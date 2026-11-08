@@ -200,6 +200,86 @@ const JOURNEY_PAGES: readonly JourneyPage[] = [
     ],
     inShell: true,
   },
+  // Track C (C6–C8): categories, collections, events, history.
+  {
+    name: "/categories",
+    phase: "prod",
+    open: visit("/categories"),
+    // The section chips are filter chips, 36 px tall on a 44 px pitch (DESIGN §6.12), not primary controls.
+    primary: () => [],
+    inShell: true,
+    // Every term of every facet: a long Tab walk.
+    long: true,
+  },
+  {
+    name: "/categories/swords",
+    phase: "prod",
+    open: visit("/categories/swords"),
+    primary: page => [
+      main(page)
+        .getByRole("navigation", { name: "Page views" })
+        .getByRole("link", { name: "History" }),
+    ],
+    inShell: true,
+  },
+  {
+    name: "/collections",
+    phase: "prod",
+    open: visit("/collections"),
+    // The A–Z are filter chips, 36 px tall on a 44 px pitch (DESIGN §6.12), not primary controls.
+    primary: () => [],
+    inShell: true,
+    // A full page of collections and the A–Z: a long Tab walk.
+    long: true,
+  },
+  {
+    name: "/collections/12",
+    phase: "prod",
+    open: visit("/collections/12"),
+    primary: page => [
+      main(page)
+        .getByRole("navigation", { name: "Page views" })
+        .getByRole("link", { name: "History" }),
+    ],
+    inShell: true,
+  },
+  {
+    name: "/events",
+    phase: "prod",
+    open: visit("/events"),
+    // The kind chips are filter chips, 36 px tall on a 44 px pitch (DESIGN §6.12), not primary controls.
+    primary: () => [],
+    inShell: true,
+  },
+  {
+    name: "/events/midwinter-revel",
+    phase: "prod",
+    open: visit("/events/midwinter-revel"),
+    primary: page => [
+      main(page)
+        .getByRole("navigation", { name: "Page views" })
+        .getByRole("link", { name: "History" }),
+    ],
+    inShell: true,
+  },
+  {
+    name: "/pieces/the-copper-kettle/history",
+    phase: "prod",
+    open: visit("/pieces/the-copper-kettle/history"),
+    primary: page => [
+      main(page)
+        .getByRole("navigation", { name: "Page views" })
+        .getByRole("link", { name: "Read" }),
+    ],
+    inShell: true,
+  },
+  {
+    name: "/revisions/1003",
+    phase: "prod",
+    open: visit("/revisions/1003"),
+    primary: page => [main(page).getByRole("link", { name: "Older revision" })],
+    inShell: true,
+  },
   {
     name: "settings, signed out",
     phase: "prod",

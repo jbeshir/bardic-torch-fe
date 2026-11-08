@@ -17,10 +17,10 @@ import type { UpstreamErrorCode } from "~/schemas/api";
  * - `invalid_filters`: a list op's 400 `invalid_request`.
  * - `bad_gateway`: an answer that breaks the contract (a body zod rejects,
  *   not JSON, a redirect, an undeclared status or code).
- *
- * - `not_found`: a detail read's 404, or its 400 (the route checked the
- *   address first, so a 400 is a contract mismatch, logged), or an address
- *   the route refused without calling.
+ * - `not_found`: a detail or history read's 404, or its 400 (the route
+ *   checked the address first, so a 400 means the app and the API
+ *   disagree, and is logged as such), or an address the route refused
+ *   without calling. The page answers 404.
  */
 export type ReadFailure =
   | {
@@ -60,86 +60,102 @@ const RETRY_AFTER_UNAVAILABLE = 60;
 /** How long to wait after a network failure or a timeout. */
 const RETRY_AFTER_UNREACHABLE = 30;
 
+/** An error answer: its status and the Error body's code, if any. */
+type Answer = {
+  readonly status: number;
+  /** The Error body's code; undefined when the body isn't an Error. */
+  readonly code: UpstreamErrorCode | undefined;
+};
+
 /** What the read client saw: an error answer, or no answer at all. */
-type Upstream =
-  | {
-      readonly status: number;
-      /** The Error body's code; undefined when the body isn't an Error. */
-      readonly code: UpstreamErrorCode | undefined;
-    }
-  | "unreachable";
+type Upstream = Answer | "unreachable";
+
+type Resting = Extract<ReadFailure, { readonly kind: "resting" }>;
+
+/** A contract break: the answer the app couldn't read. */
+export const BAD_GATEWAY: { readonly kind: "bad_gateway" } = {
+  kind: "bad_gateway",
+};
+
+/** An address that names nothing public: the page answers 404. */
+export const NOT_FOUND: { readonly kind: "not_found" } = { kind: "not_found" };
+
+const SERVER: { readonly kind: "server" } = { kind: "server" };
+const SEARCH_TIMEOUT: { readonly kind: "search_timeout" } = {
+  kind: "search_timeout",
+};
+
+/**
+ * Resting for no answer (`Retry-After` 30), a 503 or `unavailable` (60);
+ * any other answer as `answered` reads it.
+ */
+function classify<Failure extends ReadFailure>(
+  upstream: Upstream,
+  answered: (answer: Answer) => Failure
+): Failure | Resting {
+  if (upstream === "unreachable") {
+    return { kind: "resting", retryAfter: RETRY_AFTER_UNREACHABLE };
+  }
+  if (upstream.status === 503 || upstream.code === "unavailable") {
+    return { kind: "resting", retryAfter: RETRY_AFTER_UNAVAILABLE };
+  }
+  return answered(upstream);
+}
+
+/** Whether `answer` is the spec's `status` with `code`. */
+function is(answer: Answer, status: number, code: UpstreamErrorCode): boolean {
+  return answer.status === status && answer.code === code;
+}
+
+/** `failure` for the declared 500 `internal`; any other answer breaks the contract. */
+function internal<Failure extends ReadFailure>(
+  answer: Answer,
+  failure: Failure
+): Failure | typeof BAD_GATEWAY {
+  return is(answer, 500, "internal") ? failure : BAD_GATEWAY;
+}
 
 /**
  * The failure for an upstream error answer (or none) of a search op
- * (listPieces, and later listPersons and listCollections). `filtered`: the
+ * (listPieces, listPersons, listCollections). `filtered`: the
  * request had `q` or a filter (`letter`, `sort` and paging don't count).
  */
 export function searchFailure(
   upstream: Upstream,
   { filtered }: { readonly filtered: boolean }
 ): ReadFailure {
-  if (upstream === "unreachable") {
-    return { kind: "resting", retryAfter: RETRY_AFTER_UNREACHABLE };
-  }
-  const { status, code } = upstream;
-  if (status === 503 || code === "unavailable") {
-    return { kind: "resting", retryAfter: RETRY_AFTER_UNAVAILABLE };
-  }
-  if (status === 400 && code === "invalid_request") {
-    return { kind: "invalid_filters" };
-  }
-  if (status === 500 && code === "internal") {
-    return { kind: filtered ? "search_timeout" : "server" };
-  }
-  return { kind: "bad_gateway" };
+  return classify(upstream, answer =>
+    is(answer, 400, "invalid_request")
+      ? { kind: "invalid_filters" }
+      : internal(answer, filtered ? SEARCH_TIMEOUT : SERVER)
+  );
 }
 
 /**
  * The failure for an error answer (or none) of a list op that isn't a
- * search (listTerms): its 500 is a plain server error, and its 400 can only
- * mean the app and the API disagree, since the loader sends only values it
- * has checked, so it is an answer we can't use (502).
+ * search (listTerms, listEvents): its 500 is a plain server error, and its
+ * 400 can only mean the app and the API disagree, since the loader sends
+ * only values it has checked, so it is an answer we can't use (502).
  */
-export function listFailure(upstream: Upstream): ReadFailure {
-  if (upstream === "unreachable") {
-    return { kind: "resting", retryAfter: RETRY_AFTER_UNREACHABLE };
-  }
-  const { status, code } = upstream;
-  if (status === 503 || code === "unavailable") {
-    return { kind: "resting", retryAfter: RETRY_AFTER_UNAVAILABLE };
-  }
-  if (status === 500 && code === "internal") return { kind: "server" };
-  return { kind: "bad_gateway" };
+export function listFailure(upstream: Upstream): PageFailure {
+  return classify(upstream, answer => internal(answer, SERVER));
 }
-
-/** An address that names nothing public: the page answers 404. */
-export const NOT_FOUND: PageFailure = { kind: "not_found" };
 
 /**
- * The failure for an upstream error answer (or none) of a detail read
- * (getPiece, getPerson). The route checked the address before calling, so
- * a 400 means the same as a 404 (the API says so); a 500 is a server error.
+ * The failure for an error answer (or none) of a detail or history op
+ * (getPiece, getPerson, getTerm, getCollection, getEvent, the history
+ * lists, getRevision): a 404 `not_found` is the entity's 404, and so is
+ * a 400 `invalid_request`: the loader checked the address first, so the
+ * API disagrees with the app's rule (the read client has logged it), and
+ * the address still leads nowhere.
  */
 export function detailFailure(upstream: Upstream): PageFailure {
-  if (upstream === "unreachable") {
-    return { kind: "resting", retryAfter: RETRY_AFTER_UNREACHABLE };
-  }
-  const { status, code } = upstream;
-  if (status === 503 || code === "unavailable") {
-    return { kind: "resting", retryAfter: RETRY_AFTER_UNAVAILABLE };
-  }
-  if (
-    (status === 404 && code === "not_found") ||
-    (status === 400 && code === "invalid_request")
-  ) {
-    return NOT_FOUND;
-  }
-  if (status === 500 && code === "internal") return { kind: "server" };
-  return { kind: "bad_gateway" };
+  return classify(upstream, answer =>
+    is(answer, 404, "not_found") || is(answer, 400, "invalid_request")
+      ? NOT_FOUND
+      : internal(answer, SERVER)
+  );
 }
-
-/** A contract break: the answer the app couldn't read. */
-export const BAD_GATEWAY: PageFailure = { kind: "bad_gateway" };
 
 /** The status and headers a page answers a failure with. */
 export function failureInit(failure: ReadFailure): {
@@ -197,4 +213,14 @@ export function thrownPageFailure(error: unknown): PageFailure | null {
     default:
       return null;
   }
+}
+
+/**
+ * The page failure for a read the page can't show without: a filter
+ * failure there (a read with no filters, or one the page doesn't offer
+ * to change) can only mean the app and the API disagree, an answer the
+ * page can't use (502).
+ */
+export function asPageFailure(failure: ReadFailure): PageFailure {
+  return isPageFailure(failure) ? failure : { kind: "bad_gateway" };
 }

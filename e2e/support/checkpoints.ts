@@ -85,6 +85,11 @@ export const CHECKPOINTS: Readonly<
     piece: ["full", "stub", "restricted"],
     bard: ["profile", "no-page"],
     directories: ["bards"],
+    // Track C (C6–C8): categories, collections, events, history.
+    categories: ["index", "term"],
+    collections: ["directory", "collection"],
+    events: ["directory", "event"],
+    history: ["piece-history", "revision"],
   },
   stub: {
     styleguide: [

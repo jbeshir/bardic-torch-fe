@@ -2,19 +2,25 @@ import { describe, expect, it } from "vitest";
 import {
   ATTRIBUTION_LABELS,
   CERTAINTY_QUALIFIERS,
+  COLLECTION_KIND_LABELS,
   CONSERVATION_LABELS,
   CC_LICENCE_SHORT_NAMES,
   CONSERVATION_STATUSES,
   CREDIT_ROLE_LABELS,
   DECEASED_LABELS,
+  ENUMERABLE_LABELS,
+  EVENT_KIND_LABELS,
   FACET_LABELS,
   LICENCE_LABELS,
+  LICENSING_STATUS_LABELS,
   LINK_PLACE_TYPE_LABELS,
+  LINK_ROLE_HEADINGS,
   LINK_ROLE_LABELS,
   PERSON_ALIAS_KIND_LABELS,
   PERSON_KIND_LABELS,
   PERSON_RELATION_LABELS,
   PERSON_ROLE_LABELS,
+  PERSON_STATUS_LABELS,
   PIECE_ALIAS_KIND_LABELS,
   PIECE_KIND_LABELS,
   PIECE_PART_LABELS,
@@ -112,15 +118,16 @@ describe("piece page vocabulary (C4.1)", () => {
     );
   });
 
-  it("labels every piece alias kind but redirect, a search aid", () => {
+  it("labels every piece alias kind, redirect for a revision's diff", () => {
     expect(Object.keys(PIECE_ALIAS_KIND_LABELS)).toEqual(
-      specEnum("PieceAliasKind").filter(value => value !== "redirect")
+      specEnum("PieceAliasKind")
     );
   });
 });
 
 describe("link vocabulary (C4.3)", () => {
-  it("labels every link role and place type, in the spec's order", () => {
+  it("labels every link role (as a heading and as a name) and place type, in the spec's order", () => {
+    expect(Object.keys(LINK_ROLE_HEADINGS)).toEqual(specEnum("LinkRole"));
     expect(Object.keys(LINK_ROLE_LABELS)).toEqual(specEnum("LinkRole"));
     expect(Object.keys(LINK_PLACE_TYPE_LABELS)).toEqual(
       specEnum("LinkPlaceType")
@@ -163,9 +170,27 @@ describe("bard page vocabulary (C5.1)", () => {
     }
   });
 
-  it("labels every person alias kind but redirect", () => {
+  it("labels every person alias kind, redirect for a revision's diff", () => {
     expect(Object.keys(PERSON_ALIAS_KIND_LABELS)).toEqual(
-      specEnum("PersonAliasKind").filter(kind => kind !== "redirect")
+      specEnum("PersonAliasKind")
     );
+  });
+});
+
+describe("collection, event and revision vocabulary (C7, C8)", () => {
+  it("labels every collection kind, enumerable value, event kind, licensing status and person status", () => {
+    expect(Object.keys(COLLECTION_KIND_LABELS)).toEqual(
+      specEnum("CollectionKind")
+    );
+    expect(Object.keys(ENUMERABLE_LABELS).sort()).toEqual(
+      [...specEnum("CollectionEnumerable")].sort()
+    );
+    expect(Object.keys(EVENT_KIND_LABELS).sort()).toEqual(
+      [...specEnum("EventKind")].sort()
+    );
+    expect(Object.keys(LICENSING_STATUS_LABELS)).toEqual(
+      specEnum("LicensingStatus")
+    );
+    expect(Object.keys(PERSON_STATUS_LABELS)).toEqual(specEnum("PersonStatus"));
   });
 });

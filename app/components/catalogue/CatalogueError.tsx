@@ -13,7 +13,7 @@ import { UNEXPECTED_ANSWER } from "~/schemas/proxy";
 /**
  * The h1 of a failed catalogue read (plan §3.3), which the route's `meta`
  * titles the page with too. `what` names what didn't load: "the pieces";
- * `missing`, on an entity page, what wasn't found: "that piece".
+ * `missing`, on an entity page, what wasn’t found: "that piece".
  */
 export function failureTitle(
   failure: ReadFailure,

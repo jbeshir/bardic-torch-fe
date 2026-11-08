@@ -1,4 +1,5 @@
 import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { renderWithRouter } from "~/test/router";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
@@ -29,6 +30,22 @@ describe("EntityPage", () => {
       </EntityPage>,
       "/pieces/x/history"
     );
+    expect(screen.getByRole("link", { name: "History" })).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
+  });
+
+  it("moves to the History view with the keyboard", async () => {
+    await renderWithRouter(
+      <EntityPage path="/categories/swords" title="Swords">
+        <p>Body</p>
+      </EntityPage>,
+      "/categories/swords"
+    );
+    const user = userEvent.setup();
+    screen.getByRole("link", { name: "History" }).focus();
+    await user.keyboard("{Enter}");
     expect(screen.getByRole("link", { name: "History" })).toHaveAttribute(
       "aria-current",
       "page"

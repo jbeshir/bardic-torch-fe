@@ -726,6 +726,7 @@ Generic components live in `app/components/ui/`. App-specific ones (ThemeToggle,
 | SearchBox (6.26)                        | FE1 | Header, drawer, home hero (searches the original wiki)         |
 | TOC (6.27)                              | FE1 | Help pages with ≥4 h2s                                         |
 | LetterBar (6.29)                        | FE2 | `/pieces` (§10.7)                                              |
+| TermTree (10.12)                        | FE2 | `/categories` (§10.12)                                         |
 | LogoMark, Wordmark (5.9)                | FE1 | Header, footer, EmptyState art                                 |
 | SidebarNote, ContributeCard (5.3)       | FE1 | Sidebar and drawer                                             |
 | HelpLinks (5.7)                         | FE1 | Every footer and the root error page                           |
@@ -1610,8 +1611,6 @@ The head is the h1 "Settings" with no tab row. Sections are separated by h2 plus
 - **Empty:** with `q`, "Nothing matches ‘{q}’" / "Try a shorter search." / [Clear search]; with filters or a letter, "No bards match these filters" / "Try removing a filter." / [Clear all filters].
 - **Errors** as `/pieces`: a 500 to a search or filter is "That search took too long"; to the plain A–Z, "We couldn’t load the bards".
 
----
-
 ### 10.11 Search (`/search`)
 
 **Tag: FE2.** The catalogue-wide search, the SearchBox's target (`app/routes/search.tsx`, plan §4.4). The URL is only `q` (`searchQuery`: trimmed, cut at 200 code points; anything else is a 301).
@@ -1621,6 +1620,57 @@ The head is the h1 "Settings" with no tab row. Sections are separated by h2 plus
 - **Empty `q`:** h1, the SearchBox and "Type a word from a title, a name or a category."; no API call. **Nothing anywhere:** the §11.3 EmptyState "Nothing matches ‘{q}’" / "Try a shorter search, or browse by mood or topic." / [Browse pieces].
 - **Failures:** each section fails on its own, with a SectionError: a 500 to a search is "That search took too long" / "Try fewer words."; anything else "We couldn’t load the pieces" (bards, categories), with "The catalogue is briefly out of reach. Try again in a few minutes." for an outage. When all three fail, the page is the resting page (503, `Retry-After`) if all were outages, otherwise ServerError "We couldn’t load the search results" (500), inside the shell.
 - **Meta:** "Search: {q}" (or "Search"), `noindex, follow`, canonical `/search?q=`.
+
+### 10.12 Categories index and category page (`/categories`, `/categories/:slug`)
+
+**Tag: FE2.** The URL state is `categoryIndexQuery` (`facet`) and `termMembersQuery` (`page`) in `app/catalogue/query-state.ts`.
+
+- **Index:** h1 "Categories", the single-view Read label, then the "Category sections" nav (a `sm` TagList: "All categories", Kind, the eight piece facets, Affiliation, Conservation status; the shown one is current), then one section per facet, each named by its h2:
+  - the term facets: a `TermTree` (`app/components/TermTree.tsx`): a nested `ul role="list"`, each term a compact link to `/categories/{slug}` followed by its count "(31)" in `body-sm text-fg-subtle` (`aria-hidden`, with an `sr-only` "31 pieces", or "4 bards" for an affiliation), each child list indented `pl-4` on a `border-l border-border` rule. A term shows its `display_name`, or its full `name` ("Story (Mood)") where two terms of the facet share one. A facet with no terms: "No categories here yet." (`body-sm text-fg-subtle`);
+  - Kind: each kind with pieces, linking to `/pieces?kind=…` with its count;
+  - Conservation status: every status (the help page's order) as a static `sm` ConservationBadge (`named`) followed by a link "Browse endangered pieces" (…) to `/pieces?status=…` and its count. The badge is not the link (§6.13's link variant goes to the help page);
+  - the kind and status counts are one region (`listPieces?limit=1`): if they fail, a SectionError "We couldn’t load the kinds and conservation statuses" stands in for both and the tree still shows (200).
+- **One section** (`?facet=mood`, the sidebar's facet links): the breadcrumb "Categories › Mood", h1 the section's label, the meta "{n} categories", the section's body with no h2. `kind` and `conservation` are never sent to `listTerms`.
+- **Category page:** `EntityPage` with breadcrumbs "Categories › {Facet} › {ancestors…} › {name}" (collapsing below sm, §6.19), h1 the `display_name`, the meta "Topic · 12 pieces" ("Affiliation · 3 bards"), Read / History; on Read only: the infobox ("Also called", "Part of" the parent, "Related affiliation"; left out when none applies), the description, "Subcategories" (chips "Battles (3 pieces)"), the members (a section "Pieces" or "Bards": the count, "Filter these pieces" → `/pieces?term=…` or "Search these bards" → `/bards?affiliation=…`, `PieceListItem` or `PersonListItem` rows, `ListPagination`), the chip row (the ancestors and the term itself, current), and the `LicenceLine`. No members: EmptyState "Nothing here yet" / "No pieces are in this category yet." / [Browse pieces] (for an affiliation "No bards are in this affiliation yet." / [Browse bards]).
+- **Errors:** an invalid slug is our own 404 "We couldn’t find that category" (no call); a failed head is the page's error (§10.7's kinds); a failed members read is a CatalogueError under the head ("We couldn’t load the members of this category").
+- The description (`description_md`), here and on the collection and event pages, is rendered from the sanitised tree the layout's loader makes of it (`renderMarkdown`, C4.2) by `UserMarkdown`, like a piece's notes.
+
+### 10.13 Collections directory and collection page (`/collections`, `/collections/:id`)
+
+**Tag: FE2.** The URL state is `collectionQuery` (`kind`×n, `letter`, `page`); ids are positive int64 decimals (`isEntityId`), anything else our own 404.
+
+- **Directory:** h1 "Collections", the Read label with "{n} collections", the LetterBar ("Collections by letter"), the selected-filter chips (`Kind: Wiki`, `Letter: H`, Clear all), the results ("All collections", "Collections under H", "Matching collections"; the API's order, never re-sorted), Pagination, then the kind filter: a `<details>` "Filter by kind ({n} selected)", open while a kind is chosen, holding a GET form of 13 checkboxes ("Kind") and a secondary `sm` "Apply filters" (`CollectionKindFilter`, keyed by the canonical query). Each row: the name (compact link), the kind label, "Made for bards" (caption with `IconBook2`) and "Visit" (a `userContent` link, named "Visit {name}").
+  - Empty with a filter: EmptyState "No collections match these filters" / "Try another letter or kind." / [Clear all filters].
+  - A 500 to a kind filter: "That search took too long" with the chips and the filter kept; a 400: "We couldn’t apply these filters"; a 500 to a letter or the whole list is the route's ServerError.
+- **Collection page:** EntityPage with breadcrumbs "Collections › {parent} › {name}", the meta "{kind}{ · region}", Read / History; on Read the infobox (Where, Region as a chip, Part of, Contents can be listed, Made for bards), the description, "Part collections", "Citations" and the LicenceLine.
+- **Citations** (`app/components/Citations.tsx` on `RowTable`, `app/components/catalogue/RowTable.tsx`: a table from md, cards below, one displayed at a time like the token list): Piece or bard (internal link and kind; a restricted piece with its `sm` Restricted badge), Link (title, or the URL, a `userContent` link), Where (the locator), Roles. A restricted piece's link is "Link not shown: see the piece page" (`text-fg-subtle`), and the loader empties its URL and title (`withoutRestrictedLink`), so they never reach the page. Past the cap: "and {n} more". None: "Nothing cited from this collection yet."
+
+### 10.14 Events and venues (`/events`, `/events/:slug`)
+
+**Tag: FE2.** The URL state is `eventQuery` (`kind`: `venue` or `event`, `page`). The API has no A–Z or search for events (spec issue B10).
+
+- **Directory:** h1 "Events and venues", the Read label with "{n} events and venues", the "Kinds" switch (a `sm` TagList: All, Events, Venues; the shown one current), the list ("All events and venues", "Events", "Venues": each name a compact link, then its kind), Pagination. None of a kind: EmptyState "No venues recorded yet" (or "No events recorded yet") / "Try the other kind, or all of them." / [Show all events and venues]. Every failure is the route's error (a 500 is "We couldn’t load the events and venues", never the slow-search copy).
+- **Event page:** EntityPage with breadcrumbs "Events and venues › {name}", the meta "Event" or "Venue", Read / History; on Read the description, "Performances recorded here" and the LicenceLine.
+- **Performances** (`app/components/EventPerformances.tsx` on `RowTable`), in the API's order (newest year first, unknown last): Year ("Unknown"), Piece (a link, or "No particular piece"; a restricted piece with its badge), Performers (links), Recording (the title, or the URL, with "(platform)", a `userContent` link). A restricted piece's recording is "Link not shown: see the piece page", and the loader empties it. Past the cap: "and {n} more". None: "No performances recorded here yet."
+
+### 10.15 History (`…/history`)
+
+**Tag: FE2.** The History view of every entity, under its layout's head (History current), `noindex, follow` (`noindex, nofollow` for a restricted piece), titled "History of {name}". `historyQuery` pages it 50 at a time (`page`), and one loader serves them all (`loadHistory`, `app/server/history.server.ts`).
+
+- **Pieces and bards** (`/pieces/:slug/history`, `/bards/:slug/history`): their layouts (§10.8, §10.9) hand the entity to their views through the outlet, so the History view draws the same head as Read (`pieceHead`, `personHead`: breadcrumbs, h1, meta line and the restricted, stub or no-page banner) without the Read parts. A person who prefers not to have a page has no History tab (§10.9, plan R8), but the address still works.
+
+- An h2 "History", the meta "{n} revisions", then `RevisionHistory` (`app/components/RevisionHistory.tsx` on `RowTable`): When (`<time datetime>`, "10 Mar 2026"), Who (`revisionCredit`: the author, "… (via the MCP tool)", "Imported from the original wiki, by Archivist and Lorekeeper", or "Unknown"), Summary (or "No summary" in `text-fg-subtle`), and "View changes" (named "View changes, revision {id}") → `/revisions/{id}`; then Pagination.
+- None: EmptyState "No history yet" / "Changes to this page will be listed here."
+- A failed read shows under the head: 404 the entity's 404, 500 "We couldn’t load the history", the resting page, 502.
+
+### 10.16 Revision (`/revisions/:id`)
+
+**Tag: FE2.** One approved revision of any entity type, named by the entity as it is now; `noindex, follow`, titled "Revision {id} of {title}".
+
+- **Head:** breadcrumbs "{section} › {title} › History › Revision {id}", h1 "Revision {id} of {title}", the meta "{date} · {who}" (`revisionCredit`), the summary in a `blockquote` (`border-l-3 border-border-strong`) when it has one, then the links "View the {piece|bard|category|collection|event|venue} as it is now" and "Older revision" (when there is a base).
+- **The caveat**, always: an info Alert "This is how the revision looks today." / "Anything that has since been hidden, made private or removed is left out, so it may differ from what was saved at the time."
+- **The changes** (`RevisionDiff`, `DiffRow` in `app/components/revision/`, from `revisionChanges` in `app/catalogue/diff.ts`): h2 "Changes" (or "First recorded version" with "These are the fields this revision set."), then one section per changed field, its label an h3: a scalar as Before / After (`dl`, side by side from sm; "—" for none), a text field as one block of its Markdown source marked word by word (`wordDiff`, `app/catalogue/word-diff.ts`: Myers' O(ND), bounded at 1,500 words a side and 500 edits): removed words in `<del>` (struck through, `danger-bg`/`danger-fg`, `IconMinus`, a hidden "removed:"), added ones in `<ins>` (`success-bg`/`success-fg`, `IconPlus`, a hidden "added:"); past the bounds, or with one side empty, two whole blocks Before / After (`font-mono` on `surface-sunken`), a list as items marked "Added" (`IconPlus`, `success-bg`/`success-fg`), "Removed" (`IconMinus`, `danger-bg`/`danger-fg`) or "Changed" (`IconPencil`, `surface-sunken`; "before → after", read ", now"), never colour alone. With no base, the values alone, unmarked. A person's profile is a row per sub-field that differs ("Profile: Roles"), with "Identity only (the person prefers not to have a page)" for a side with none.
+- **Links** in the diff are `userContent` links, except in a restricted piece's revision (restricted now or in either snapshot), where every link is its title or host as text and a caption says why, and a person's links that carry performances (B14), text with their pieces linked inside the site.
 
 ## 11. Voice and microcopy
 

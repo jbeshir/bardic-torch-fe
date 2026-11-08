@@ -10,6 +10,7 @@ import {
   pieceListSchema,
   pieceSortSchema,
   termListSchema,
+  termSchema,
 } from "./catalogue";
 
 // Type equality with the generated contract is asserted at compile time in
@@ -168,6 +169,53 @@ describe("personListSchema", () => {
       personListSchema.safeParse({
         ...persons,
         letters: [{ letter: "W", count: 0 }],
+      }).success
+    ).toBe(false);
+  });
+});
+
+// C6.2 a category
+
+describe("termSchema", () => {
+  const summary = { slug: "war", facet: "topic", display_name: "War" };
+  const term = {
+    slug: "battles",
+    facet: "topic",
+    name: "Battles",
+    display_name: "Battles",
+    description_md: null,
+    aliases: ["Fights"],
+    ancestors: [summary],
+    children: [
+      {
+        term: { slug: "swords", facet: "topic", display_name: "Swords" },
+        piece_count: 0,
+        person_count: 0,
+      },
+    ],
+    related_affiliation: null,
+    piece_count: 3,
+    person_count: 0,
+    pieces: [piece],
+    persons: [
+      {
+        slug: "wren-of-the-vale",
+        name: "Wren of the Vale",
+        kind: "community_bard",
+        is_stub: false,
+      },
+    ],
+  };
+
+  it("reads a term, a child with counts of 0", () => {
+    expect(termSchema.parse(term)).toEqual(term);
+  });
+
+  it("refuses an unknown person kind", () => {
+    expect(
+      termSchema.safeParse({
+        ...term,
+        persons: [{ ...term.persons[0], kind: "bard" }],
       }).success
     ).toBe(false);
   });

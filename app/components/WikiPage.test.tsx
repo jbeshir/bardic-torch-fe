@@ -1,4 +1,5 @@
 import { screen, within } from "@testing-library/react";
+import { IconBook2, IconHistory } from "@tabler/icons-react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Infobox } from "~/components/ui/Infobox";
 import { renderWithRouter } from "~/test/router";
@@ -121,6 +122,28 @@ describe("WikiPage", () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole("navigation")).toBeNull();
     expect(screen.getByText("Read")).toBeInTheDocument();
+  });
+
+  it("shows the subtitle under the h1, the page's views and its banners", async () => {
+    await renderPage({
+      subtitle: "Topic · 2 pieces",
+      views: [
+        { label: "Read", to: "/help/conservation-status", icon: IconBook2 },
+        {
+          label: "History",
+          to: "/help/conservation-status/history",
+          icon: IconHistory,
+        },
+      ],
+      banners: <p>A banner</p>,
+    });
+    const h1 = screen.getByRole("heading", { level: 1 });
+    expect(h1.nextElementSibling).toHaveTextContent("Topic · 2 pieces");
+    const views = screen.getByRole("navigation", { name: "Page views" });
+    expect(
+      within(views).getByRole("link", { name: "History" })
+    ).toHaveAttribute("href", "/help/conservation-status/history");
+    expect(screen.getByText("A banner")).toBeVisible();
   });
 
   it("looks the same in both themes", async () => {

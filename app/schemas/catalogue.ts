@@ -102,7 +102,7 @@ export const pieceListSchema = z.strictObject({
 });
 
 // ---------------------------------------------------------------------------
-// Terms (C2.2): the facet column's labels and tree
+// Terms (C2.2, C6.1): the facet column's labels and tree, and /categories
 
 export const facetSchema = z.enum([
   "mood",
@@ -116,14 +116,17 @@ export const facetSchema = z.enum([
   "affiliation",
 ]);
 
+/** A term's member count: 0 for a term nothing is classified under yet. */
+const memberCountSchema = z.int().min(0);
+
 const termListItemSchema = z.strictObject({
   slug: z.string(),
   facet: facetSchema,
   name: z.string(),
   display_name: z.string(),
   parent_slug: z.string().nullable(),
-  piece_count: z.int().min(0),
-  person_count: z.int().min(0),
+  piece_count: memberCountSchema,
+  person_count: memberCountSchema,
 });
 
 export const termListSchema = z.strictObject({
@@ -131,7 +134,8 @@ export const termListSchema = z.strictObject({
 });
 
 // ---------------------------------------------------------------------------
-// Persons (C3.1): the search page's bards
+// Persons (C3.1): the search page's bards, the bards directory and every
+// list that names a person
 
 export const personKindSchema = z.enum([
   "community_bard",
@@ -153,52 +157,11 @@ export const personListSchema = z.strictObject({
 });
 
 // ---------------------------------------------------------------------------
-
-/** An operation's query object, as the generated types have it. */
-export type ApiQuery<Id extends keyof operations> = DeepReadonly<
-  NonNullable<operations[Id]["parameters"]["query"]>
->;
-
-export type ConservationStatus = z.output<typeof conservationStatusSchema>;
-export type Letter = z.output<typeof letterSchema>;
-export type PieceKind = z.output<typeof pieceKindSchema>;
-export type PieceSort = z.output<typeof pieceSortSchema>;
-export type PieceSummary = DeepReadonly<z.output<typeof pieceSummarySchema>>;
-export type PieceList = DeepReadonly<z.output<typeof pieceListSchema>>;
-export type PieceFacets = PieceList["facets"];
-export type Facet = z.output<typeof facetSchema>;
-export type TermListItem = DeepReadonly<z.output<typeof termListItemSchema>>;
-export type TermList = DeepReadonly<z.output<typeof termListSchema>>;
-export type PersonKind = z.output<typeof personKindSchema>;
-export type PersonSummary = DeepReadonly<z.output<typeof personSummarySchema>>;
-export type PersonList = DeepReadonly<z.output<typeof personListSchema>>;
-
-// Compile-time contract checks: each schema's output must equal the generated
-// type in both directions (see `Matches`).
-type _ContractChecks = [
-  Assert<Matches<typeof pieceKindSchema, Schemas["PieceKind"]>>,
-  Assert<
-    Matches<typeof conservationStatusSchema, Schemas["ConservationStatus"]>
-  >,
-  Assert<Matches<typeof pieceSortSchema, Schemas["PieceSort"]>>,
-  Assert<Matches<typeof letterSchema, Schemas["Letter"]>>,
-  Assert<Matches<typeof pieceSummarySchema, Schemas["PieceSummary"]>>,
-  Assert<Matches<typeof pieceFacetsSchema, Schemas["PieceFacets"]>>,
-  Assert<Matches<typeof pieceListSchema, Schemas["PieceList"]>>,
-  Assert<Matches<typeof facetSchema, Schemas["Facet"]>>,
-  Assert<Matches<typeof termListItemSchema, Schemas["TermListItem"]>>,
-  Assert<Matches<typeof termListSchema, Schemas["TermList"]>>,
-  Assert<Matches<typeof letterCountSchema, Schemas["LetterCount"]>>,
-  Assert<Matches<typeof personKindSchema, Schemas["PersonKind"]>>,
-  Assert<Matches<typeof personSummarySchema, Schemas["PersonSummary"]>>,
-  Assert<Matches<typeof personListSchema, Schemas["PersonList"]>>,
-];
-
-// ---------------------------------------------------------------------------
-// The piece page (C4.1): `getPiece`'s body and what it nests.
+// Shared by the entity bodies and their revision snapshots (C4.1, C5.1,
+// C7, C8): the enums and the small nested objects.
 // ---------------------------------------------------------------------------
 
-const eventKindSchema = z.enum(["venue", "event"]);
+export const eventKindSchema = z.enum(["venue", "event"]);
 
 const licensingStatusSchema = z.enum(["known", "unknown"]);
 
@@ -218,6 +181,15 @@ const pieceAliasKindSchema = z.enum([
   "alt_title",
   "nickname",
   "subtitle",
+  "redirect",
+]);
+
+const personAliasKindSchema = z.enum([
+  "legal",
+  "sca",
+  "stage",
+  "nickname",
+  "former",
   "redirect",
 ]);
 
@@ -251,7 +223,22 @@ const pieceRelationTypeSchema = z.enum([
   "same_text_other_form",
 ]);
 
+const personRelationTypeSchema = z.enum(["heir_of", "member_of", "same_as"]);
+
 const relationDirectionSchema = z.enum(["outgoing", "incoming"]);
+
+const personStatusSchema = z.enum(["active", "deceased", "prefers_no_page"]);
+
+export const personRoleSchema = z.enum([
+  "singer",
+  "songwriter",
+  "musician",
+  "instrumentalist",
+  "storyteller",
+  "poet",
+  "jester",
+  "dancer",
+]);
 
 const linkPlaceTypeSchema = z.enum([
   "recording_platform",
@@ -301,32 +288,20 @@ const eventSummarySchema = z.strictObject({
   kind: eventKindSchema,
 });
 
-const piecePerformanceSchema = z.strictObject({
-  year: z.int().nullable(),
-  uploader: z.string().nullable(),
-  description_verbatim: z.string(),
-  event: eventSummarySchema.nullable(),
-  performers: z.array(personSummarySchema),
+const pieceAliasSchema = z.strictObject({
+  text: z.string(),
+  kind: pieceAliasKindSchema,
 });
 
-/** The fields every link has, a piece's or a person's. */
-const linkFields = {
-  url: z.string(),
-  title: z.string().nullable(),
-  description: z.string().nullable(),
-  platform: z.string().nullable(),
-  place_type: linkPlaceTypeSchema.nullable(),
-  collection: collectionRefSchema.nullable(),
-  locator: z.string().nullable(),
-  liveness: livenessSchema,
-  last_checked_at: z.string().nullable(),
-  archived_url: z.string().nullable(),
-  roles: z.array(linkRoleSchema),
-};
+const personAliasSchema = z.strictObject({
+  name: z.string(),
+  kind: personAliasKindSchema,
+});
 
-const pieceLinkSchema = z.strictObject({
-  ...linkFields,
-  performances: z.array(piecePerformanceSchema),
+const pieceTermSchema = z.strictObject({
+  term: termSummarySchema,
+  is_primary: z.boolean(),
+  part: piecePartSchema.nullable(),
 });
 
 /**
@@ -348,6 +323,50 @@ const pieceCreditSchema = z
     { message: "a credit names a person exactly when it is named" }
   );
 
+const piecePerformanceSchema = z.strictObject({
+  year: z.int().nullable(),
+  uploader: z.string().nullable(),
+  description_verbatim: z.string(),
+  event: eventSummarySchema.nullable(),
+  performers: z.array(personSummarySchema),
+});
+
+/** A performance's recording, as an event or a person lists it. */
+const performanceLinkSchema = z.strictObject({
+  url: z.string(),
+  title: z.string().nullable(),
+  platform: z.string().nullable(),
+});
+
+/** What every link has, a piece's or a person's, live or in a snapshot. */
+const snapshotLinkFields = {
+  url: z.string(),
+  title: z.string().nullable(),
+  description: z.string().nullable(),
+  platform: z.string().nullable(),
+  place_type: linkPlaceTypeSchema.nullable(),
+  collection: collectionRefSchema.nullable(),
+  locator: z.string().nullable(),
+  roles: z.array(linkRoleSchema),
+};
+
+/** A live link: a snapshot's fields plus its liveness and archive copy. */
+const linkFields = {
+  ...snapshotLinkFields,
+  liveness: livenessSchema,
+  last_checked_at: z.string().nullable(),
+  archived_url: z.string().nullable(),
+};
+
+// ---------------------------------------------------------------------------
+// The piece page (C4.1): `getPiece`'s body.
+// ---------------------------------------------------------------------------
+
+const pieceLinkSchema = z.strictObject({
+  ...linkFields,
+  performances: z.array(piecePerformanceSchema),
+});
+
 export const pieceSchema = z.strictObject({
   slug: z.string(),
   title: z.string(),
@@ -363,16 +382,8 @@ export const pieceSchema = z.strictObject({
   historical_source_md: z.string().nullable(),
   period_start: z.int().nullable(),
   period_end: z.int().nullable(),
-  aliases: z.array(
-    z.strictObject({ text: z.string(), kind: pieceAliasKindSchema })
-  ),
-  terms: z.array(
-    z.strictObject({
-      term: termSummarySchema,
-      is_primary: z.boolean(),
-      part: piecePartSchema.nullable(),
-    })
-  ),
+  aliases: z.array(pieceAliasSchema),
+  terms: z.array(pieceTermSchema),
   credits: z.array(pieceCreditSchema),
   relations: z.array(
     z.strictObject({
@@ -392,69 +403,9 @@ export const pieceSchema = z.strictObject({
   ),
 });
 
-export type Piece = DeepReadonly<z.output<typeof pieceSchema>>;
-export type PieceAliasKind = z.output<typeof pieceAliasKindSchema>;
-export type PiecePart = z.output<typeof piecePartSchema>;
-export type CreditRole = z.output<typeof creditRoleSchema>;
-export type Attribution = z.output<typeof attributionSchema>;
-export type Certainty = z.output<typeof certaintySchema>;
-export type LinkRole = z.output<typeof linkRoleSchema>;
-export type LinkPlaceType = z.output<typeof linkPlaceTypeSchema>;
-export type Licence = z.output<typeof licenceSchema>;
-export type LicensingStatus = z.output<typeof licensingStatusSchema>;
-export type PieceRelationType = z.output<typeof pieceRelationTypeSchema>;
-export type RelationDirection = z.output<typeof relationDirectionSchema>;
-
-type _PieceContractChecks = [
-  Assert<Matches<typeof eventKindSchema, Schemas["EventKind"]>>,
-  Assert<Matches<typeof licensingStatusSchema, Schemas["LicensingStatus"]>>,
-  Assert<Matches<typeof licenceSchema, Schemas["Licence"]>>,
-  Assert<Matches<typeof pieceAliasKindSchema, Schemas["PieceAliasKind"]>>,
-  Assert<Matches<typeof piecePartSchema, Schemas["PiecePart"]>>,
-  Assert<Matches<typeof creditRoleSchema, Schemas["CreditRole"]>>,
-  Assert<Matches<typeof attributionSchema, Schemas["Attribution"]>>,
-  Assert<Matches<typeof certaintySchema, Schemas["Certainty"]>>,
-  Assert<Matches<typeof pieceRelationTypeSchema, Schemas["PieceRelationType"]>>,
-  Assert<Matches<typeof relationDirectionSchema, Schemas["RelationDirection"]>>,
-  Assert<Matches<typeof linkPlaceTypeSchema, Schemas["LinkPlaceType"]>>,
-  Assert<Matches<typeof livenessSchema, Schemas["Liveness"]>>,
-  Assert<Matches<typeof linkRoleSchema, Schemas["LinkRole"]>>,
-  Assert<Matches<typeof termSummarySchema, Schemas["TermSummary"]>>,
-  Assert<Matches<typeof collectionRefSchema, Schemas["CollectionRef"]>>,
-  Assert<Matches<typeof eventSummarySchema, Schemas["EventSummary"]>>,
-  Assert<Matches<typeof piecePerformanceSchema, Schemas["PiecePerformance"]>>,
-  Assert<Matches<typeof pieceLinkSchema, Schemas["PieceLink"]>>,
-  Assert<Matches<typeof pieceCreditSchema, Schemas["PieceCredit"]>>,
-  Assert<Matches<typeof pieceSchema, Schemas["Piece"]>>,
-];
-
 // ---------------------------------------------------------------------------
 // The bard page (C5.1): `getPerson`'s body.
 // ---------------------------------------------------------------------------
-
-const personStatusSchema = z.enum(["active", "deceased", "prefers_no_page"]);
-
-const personAliasKindSchema = z.enum([
-  "legal",
-  "sca",
-  "stage",
-  "nickname",
-  "former",
-  "redirect",
-]);
-
-const personRelationTypeSchema = z.enum(["heir_of", "member_of", "same_as"]);
-
-export const personRoleSchema = z.enum([
-  "singer",
-  "songwriter",
-  "musician",
-  "instrumentalist",
-  "storyteller",
-  "poet",
-  "jester",
-  "dancer",
-]);
 
 const personLinkSchema = z.strictObject(linkFields);
 
@@ -463,9 +414,7 @@ const personProfileSchema = z.strictObject({
   notes_md: z.string().nullable(),
   licensing_status: licensingStatusSchema,
   licensing_notes_md: z.string().nullable(),
-  aliases: z.array(
-    z.strictObject({ name: z.string(), kind: personAliasKindSchema })
-  ),
+  aliases: z.array(personAliasSchema),
   roles: z.array(personRoleSchema),
   affiliations: z.array(termSummarySchema),
   relations: z.array(
@@ -491,11 +440,7 @@ const personProfileSchema = z.strictObject({
     .array(
       z.strictObject({
         piece: pieceSummarySchema.nullable(),
-        link: z.strictObject({
-          url: z.string(),
-          title: z.string().nullable(),
-          platform: z.string().nullable(),
-        }),
+        link: performanceLinkSchema,
         year: z.int().nullable(),
         event: eventSummarySchema.nullable(),
         description_verbatim: z.string(),
@@ -526,32 +471,492 @@ export const personSchema = z
     { message: "a person has no profile exactly when they prefer no page" }
   );
 
-export type Person = DeepReadonly<z.output<typeof personSchema>>;
-export type PersonAliasKind = z.output<typeof personAliasKindSchema>;
-export type PersonRole = z.output<typeof personRoleSchema>;
-export type PersonRelationType = z.output<typeof personRelationTypeSchema>;
-
-type _PersonContractChecks = [
-  Assert<Matches<typeof personStatusSchema, Schemas["PersonStatus"]>>,
-  Assert<Matches<typeof personAliasKindSchema, Schemas["PersonAliasKind"]>>,
-  Assert<
-    Matches<typeof personRelationTypeSchema, Schemas["PersonRelationType"]>
-  >,
-  Assert<Matches<typeof personRoleSchema, Schemas["PersonRole"]>>,
-  Assert<Matches<typeof personLinkSchema, Schemas["PersonLink"]>>,
-  Assert<Matches<typeof personProfileSchema, Schemas["PersonProfile"]>>,
-  Assert<Matches<typeof personSchema, Schemas["Person"]>>,
-];
-
 // ---------------------------------------------------------------------------
 // The bards directory (C5.2): its sort. `personListSchema` and
 // `termListSchema` are above, shared with search and the facets.
-// ---------------------------------------------------------------------------
 
 export const personSortSchema = z.enum(["name", "relevance"]);
 
-export type PersonSort = z.output<typeof personSortSchema>;
+// ---------------------------------------------------------------------------
+// A category (C6.2): `getTerm`'s body
 
-type _DirectoryContractChecks = [
+const termChildSchema = z.strictObject({
+  term: termSummarySchema,
+  piece_count: memberCountSchema,
+  person_count: memberCountSchema,
+});
+
+export const termSchema = z.strictObject({
+  slug: z.string(),
+  facet: facetSchema,
+  name: z.string(),
+  display_name: z.string(),
+  description_md: z.string().nullable(),
+  aliases: z.array(z.string()),
+  ancestors: z.array(termSummarySchema),
+  children: z.array(termChildSchema),
+  related_affiliation: termSummarySchema.nullable(),
+  piece_count: memberCountSchema,
+  person_count: memberCountSchema,
+  pieces: z.array(pieceSummarySchema),
+  persons: z.array(personSummarySchema),
+});
+
+// ---------------------------------------------------------------------------
+// Collections (C7.1: /collections)
+
+export const collectionKindSchema = z.enum([
+  "index_or_link_list",
+  "songbook_pdf",
+  "songbook_website",
+  "website",
+  "wiki_category",
+  "wiki",
+  "youtube_channel",
+  "youtube_playlist",
+  "google_doc_songbook",
+  "blog",
+  "archived_songbook",
+  "hosted_document",
+  "other",
+]);
+
+const collectionEnumerableSchema = z.enum([
+  "unknown",
+  "yes",
+  "pdf",
+  "browser",
+  "api",
+  "no",
+]);
+
+const collectionSummarySchema = z.strictObject({
+  id: z.int().min(1),
+  name: z.string(),
+  kind: collectionKindSchema,
+  url: z.string().nullable(),
+  is_bardic_resource: z.boolean(),
+});
+
+export const collectionListSchema = z.strictObject({
+  data: z.array(collectionSummarySchema),
+  total: z.int().min(0),
+  letters: z.array(letterCountSchema),
+});
+
+const collectionCitationSchema = z.strictObject({
+  piece: pieceSummarySchema.nullable(),
+  person: personSummarySchema.nullable(),
+  url: z.string(),
+  title: z.string().nullable(),
+  locator: z.string().nullable(),
+  roles: z.array(linkRoleSchema),
+});
+
+export const collectionSchema = z.strictObject({
+  id: z.int().min(1),
+  name: z.string(),
+  kind: collectionKindSchema,
+  url: z.string().nullable(),
+  is_bardic_resource: z.boolean(),
+  description_md: z.string().nullable(),
+  enumerable: collectionEnumerableSchema,
+  region: termSummarySchema.nullable(),
+  parent: collectionSummarySchema.nullable(),
+  children: z.array(collectionSummarySchema),
+  citations: z.array(collectionCitationSchema),
+  citations_total: z.int().min(0),
+});
+
+// ---------------------------------------------------------------------------
+// Events (C7.2: /events)
+
+export const eventListSchema = z.strictObject({
+  data: z.array(eventSummarySchema),
+  total: z.int().min(0),
+});
+
+const eventPerformanceSchema = z.strictObject({
+  piece: pieceSummarySchema.nullable(),
+  link: performanceLinkSchema,
+  year: z.int().nullable(),
+  performers: z.array(personSummarySchema),
+  description_verbatim: z.string(),
+});
+
+export const eventSchema = z.strictObject({
+  slug: z.string(),
+  name: z.string(),
+  kind: eventKindSchema,
+  description_md: z.string().nullable(),
+  performances: z.array(eventPerformanceSchema),
+  performances_total: z.int().min(0),
+});
+// ---------------------------------------------------------------------------
+// Histories (C8.1: */history)
+
+const revisionSourceSchema = z.enum(["user", "import", "mcp"]);
+
+const revisionAuthorSchema = z.strictObject({ display_name: z.string() });
+
+const revisionSummarySchema = z.strictObject({
+  id: z.int().min(1),
+  source: revisionSourceSchema,
+  summary: z.string(),
+  author: revisionAuthorSchema.nullable(),
+  contributors: z.array(z.string()),
+  created_at: z.string(),
+});
+
+export const revisionHistorySchema = z.strictObject({
+  data: z.array(revisionSummarySchema),
+  total: z.int().min(0),
+});
+
+// ---------------------------------------------------------------------------
+// Revisions (track C: /revisions/:id)
+// Revisions (C8.2: /revisions/:id). A snapshot is the entity as it was saved:
+// its links have no liveness or archive copy, and its relations no direction.
+
+const snapshotPieceLinkSchema = z.strictObject({
+  ...snapshotLinkFields,
+  performances: z.array(piecePerformanceSchema),
+});
+
+const snapshotPersonPerformanceSchema = z.strictObject({
+  piece: pieceSummarySchema.nullable(),
+  year: z.int().nullable(),
+  uploader: z.string().nullable(),
+  description_verbatim: z.string(),
+  event: eventSummarySchema.nullable(),
+  performers: z.array(personSummarySchema),
+});
+
+const snapshotPersonLinkSchema = z.strictObject({
+  ...snapshotLinkFields,
+  performances: z.array(snapshotPersonPerformanceSchema),
+});
+
+const pieceSnapshotSchema = z.strictObject({
+  title: z.string(),
+  kind: pieceKindSchema,
+  secondary_kinds: z.array(pieceKindSchema),
+  conservation_status: conservationStatusSchema,
+  conservation_source_url: z.string().nullable(),
+  is_stub: z.boolean(),
+  notes_md: z.string().nullable(),
+  version_notes_md: z.string().nullable(),
+  licensing_status: licensingStatusSchema,
+  licensing_notes_md: z.string().nullable(),
+  licence: licenceSchema.nullable(),
+  historical_source_md: z.string().nullable(),
+  period_start: z.int().nullable(),
+  period_end: z.int().nullable(),
+  aliases: z.array(pieceAliasSchema),
+  terms: z.array(pieceTermSchema),
+  credits: z.array(pieceCreditSchema),
+  relations: z.array(
+    z.strictObject({ type: pieceRelationTypeSchema, piece: pieceSummarySchema })
+  ),
+  links: z.array(snapshotPieceLinkSchema),
+});
+
+const personSnapshotProfileSchema = z.strictObject({
+  pronouns: z.string().nullable(),
+  notes_md: z.string().nullable(),
+  licensing_status: licensingStatusSchema,
+  licensing_notes_md: z.string().nullable(),
+  aliases: z.array(personAliasSchema),
+  roles: z.array(personRoleSchema),
+  affiliations: z.array(termSummarySchema),
+  relations: z.array(
+    z.strictObject({
+      type: personRelationTypeSchema,
+      person: personSummarySchema,
+    })
+  ),
+  links: z.array(snapshotPersonLinkSchema),
+});
+
+const personSnapshotSchema = z.strictObject({
+  name: z.string(),
+  kind: personKindSchema,
+  status: personStatusSchema,
+  status_date: z.string().nullable(),
+  status_source_url: z.string().nullable(),
+  is_stub: z.boolean(),
+  profile: personSnapshotProfileSchema.nullable(),
+});
+
+const termSnapshotSchema = z.strictObject({
+  facet: facetSchema,
+  name: z.string(),
+  display_name: z.string(),
+  parent: termSummarySchema.nullable(),
+  related_affiliation: termSummarySchema.nullable(),
+  description_md: z.string().nullable(),
+  position: z.int(),
+  aliases: z.array(z.string()),
+});
+
+const collectionSnapshotSchema = z.strictObject({
+  name: z.string(),
+  url: z.string().nullable(),
+  kind: collectionKindSchema,
+  description_md: z.string().nullable(),
+  region: termSummarySchema.nullable(),
+  parent: collectionSummarySchema.nullable(),
+  is_bardic_resource: z.boolean(),
+  enumerable: collectionEnumerableSchema,
+});
+
+const eventSnapshotSchema = z.strictObject({
+  name: z.string(),
+  kind: eventKindSchema,
+  description_md: z.string().nullable(),
+});
+
+/** What every revision has, whatever its entity. */
+const revisionFields = {
+  id: z.int().min(1),
+  base_revision_id: z.int().min(1).nullable(),
+  source: revisionSourceSchema,
+  summary: z.string(),
+  author: revisionAuthorSchema.nullable(),
+  contributors: z.array(z.string()),
+  created_at: z.string(),
+};
+
+/** The changed fields of a snapshot shape: its keys. */
+function fieldsOf<Shape extends z.core.$ZodShape>(schema: z.ZodObject<Shape>) {
+  return z.array(schema.keyof());
+}
+
+const pieceRevisionSchema = z.strictObject({
+  entity_type: z.literal("piece"),
+  entity: pieceSummarySchema,
+  ...revisionFields,
+  snapshot: pieceSnapshotSchema,
+  base_snapshot: pieceSnapshotSchema.nullable(),
+  changed_fields: fieldsOf(pieceSnapshotSchema),
+});
+
+const personRevisionSchema = z.strictObject({
+  entity_type: z.literal("person"),
+  entity: personSummarySchema,
+  ...revisionFields,
+  snapshot: personSnapshotSchema,
+  base_snapshot: personSnapshotSchema.nullable(),
+  changed_fields: fieldsOf(personSnapshotSchema),
+});
+
+const termRevisionSchema = z.strictObject({
+  entity_type: z.literal("term"),
+  entity: termSummarySchema,
+  ...revisionFields,
+  snapshot: termSnapshotSchema,
+  base_snapshot: termSnapshotSchema.nullable(),
+  changed_fields: fieldsOf(termSnapshotSchema),
+});
+
+const collectionRevisionSchema = z.strictObject({
+  entity_type: z.literal("collection"),
+  entity: collectionRefSchema,
+  ...revisionFields,
+  snapshot: collectionSnapshotSchema,
+  base_snapshot: collectionSnapshotSchema.nullable(),
+  changed_fields: fieldsOf(collectionSnapshotSchema),
+});
+
+const eventRevisionSchema = z.strictObject({
+  entity_type: z.literal("event"),
+  entity: eventSummarySchema,
+  ...revisionFields,
+  snapshot: eventSnapshotSchema,
+  base_snapshot: eventSnapshotSchema.nullable(),
+  changed_fields: fieldsOf(eventSnapshotSchema),
+});
+
+export const revisionSchema = z.discriminatedUnion("entity_type", [
+  pieceRevisionSchema,
+  personRevisionSchema,
+  termRevisionSchema,
+  collectionRevisionSchema,
+  eventRevisionSchema,
+]);
+
+// ---------------------------------------------------------------------------
+
+/** An operation's query object, as the generated types have it. */
+export type ApiQuery<Id extends keyof operations> = DeepReadonly<
+  NonNullable<operations[Id]["parameters"]["query"]>
+>;
+
+export type ConservationStatus = z.output<typeof conservationStatusSchema>;
+export type Letter = z.output<typeof letterSchema>;
+export type PieceKind = z.output<typeof pieceKindSchema>;
+export type PieceSort = z.output<typeof pieceSortSchema>;
+export type PieceSummary = DeepReadonly<z.output<typeof pieceSummarySchema>>;
+export type PieceList = DeepReadonly<z.output<typeof pieceListSchema>>;
+export type PieceFacets = PieceList["facets"];
+export type Facet = z.output<typeof facetSchema>;
+export type TermListItem = DeepReadonly<z.output<typeof termListItemSchema>>;
+export type TermList = DeepReadonly<z.output<typeof termListSchema>>;
+export type PersonKind = z.output<typeof personKindSchema>;
+export type PersonSummary = DeepReadonly<z.output<typeof personSummarySchema>>;
+export type PersonList = DeepReadonly<z.output<typeof personListSchema>>;
+export type EventKind = z.output<typeof eventKindSchema>;
+export type Licence = z.output<typeof licenceSchema>;
+export type LicensingStatus = z.output<typeof licensingStatusSchema>;
+export type PieceAliasKind = z.output<typeof pieceAliasKindSchema>;
+export type PersonAliasKind = z.output<typeof personAliasKindSchema>;
+export type PiecePart = z.output<typeof piecePartSchema>;
+export type CreditRole = z.output<typeof creditRoleSchema>;
+export type Attribution = z.output<typeof attributionSchema>;
+export type Certainty = z.output<typeof certaintySchema>;
+export type PieceRelationType = z.output<typeof pieceRelationTypeSchema>;
+export type PersonRelationType = z.output<typeof personRelationTypeSchema>;
+export type RelationDirection = z.output<typeof relationDirectionSchema>;
+export type PersonStatus = z.output<typeof personStatusSchema>;
+export type PersonRole = z.output<typeof personRoleSchema>;
+export type LinkPlaceType = z.output<typeof linkPlaceTypeSchema>;
+export type LinkRole = z.output<typeof linkRoleSchema>;
+export type TermSummary = DeepReadonly<z.output<typeof termSummarySchema>>;
+export type Piece = DeepReadonly<z.output<typeof pieceSchema>>;
+export type Person = DeepReadonly<z.output<typeof personSchema>>;
+export type PersonSort = z.output<typeof personSortSchema>;
+export type Term = DeepReadonly<z.output<typeof termSchema>>;
+export type CollectionKind = z.output<typeof collectionKindSchema>;
+export type CollectionEnumerable = z.output<typeof collectionEnumerableSchema>;
+export type CollectionSummary = DeepReadonly<
+  z.output<typeof collectionSummarySchema>
+>;
+export type CollectionList = DeepReadonly<
+  z.output<typeof collectionListSchema>
+>;
+export type CollectionCitation = DeepReadonly<
+  z.output<typeof collectionCitationSchema>
+>;
+export type Collection = DeepReadonly<z.output<typeof collectionSchema>>;
+export type EventList = DeepReadonly<z.output<typeof eventListSchema>>;
+export type EventPerformance = DeepReadonly<
+  z.output<typeof eventPerformanceSchema>
+>;
+export type Event = DeepReadonly<z.output<typeof eventSchema>>;
+export type RevisionSummary = DeepReadonly<
+  z.output<typeof revisionSummarySchema>
+>;
+export type RevisionHistory = DeepReadonly<
+  z.output<typeof revisionHistorySchema>
+>;
+export type Revision = DeepReadonly<z.output<typeof revisionSchema>>;
+
+// Compile-time contract checks: each schema's output must equal the generated
+// type in both directions (see `Matches`). Each schema is checked once.
+type _ContractChecks = [
+  // Pieces, terms and persons (C2.2, C3.1)
+  Assert<Matches<typeof pieceKindSchema, Schemas["PieceKind"]>>,
+  Assert<
+    Matches<typeof conservationStatusSchema, Schemas["ConservationStatus"]>
+  >,
+  Assert<Matches<typeof pieceSortSchema, Schemas["PieceSort"]>>,
+  Assert<Matches<typeof letterSchema, Schemas["Letter"]>>,
+  Assert<Matches<typeof letterCountSchema, Schemas["LetterCount"]>>,
+  Assert<Matches<typeof pieceSummarySchema, Schemas["PieceSummary"]>>,
+  Assert<Matches<typeof pieceFacetsSchema, Schemas["PieceFacets"]>>,
+  Assert<Matches<typeof pieceListSchema, Schemas["PieceList"]>>,
+  Assert<Matches<typeof facetSchema, Schemas["Facet"]>>,
+  Assert<Matches<typeof termListItemSchema, Schemas["TermListItem"]>>,
+  Assert<Matches<typeof termListSchema, Schemas["TermList"]>>,
+  Assert<Matches<typeof personKindSchema, Schemas["PersonKind"]>>,
+  Assert<Matches<typeof personSummarySchema, Schemas["PersonSummary"]>>,
+  Assert<Matches<typeof personListSchema, Schemas["PersonList"]>>,
+  // Shared enums and nested objects
+  Assert<Matches<typeof eventKindSchema, Schemas["EventKind"]>>,
+  Assert<Matches<typeof licensingStatusSchema, Schemas["LicensingStatus"]>>,
+  Assert<Matches<typeof licenceSchema, Schemas["Licence"]>>,
+  Assert<Matches<typeof pieceAliasKindSchema, Schemas["PieceAliasKind"]>>,
+  Assert<Matches<typeof personAliasKindSchema, Schemas["PersonAliasKind"]>>,
+  Assert<Matches<typeof piecePartSchema, Schemas["PiecePart"]>>,
+  Assert<Matches<typeof creditRoleSchema, Schemas["CreditRole"]>>,
+  Assert<Matches<typeof attributionSchema, Schemas["Attribution"]>>,
+  Assert<Matches<typeof certaintySchema, Schemas["Certainty"]>>,
+  Assert<Matches<typeof pieceRelationTypeSchema, Schemas["PieceRelationType"]>>,
+  Assert<
+    Matches<typeof personRelationTypeSchema, Schemas["PersonRelationType"]>
+  >,
+  Assert<Matches<typeof relationDirectionSchema, Schemas["RelationDirection"]>>,
+  Assert<Matches<typeof personStatusSchema, Schemas["PersonStatus"]>>,
+  Assert<Matches<typeof personRoleSchema, Schemas["PersonRole"]>>,
+  Assert<Matches<typeof linkPlaceTypeSchema, Schemas["LinkPlaceType"]>>,
+  Assert<Matches<typeof livenessSchema, Schemas["Liveness"]>>,
+  Assert<Matches<typeof linkRoleSchema, Schemas["LinkRole"]>>,
+  Assert<Matches<typeof termSummarySchema, Schemas["TermSummary"]>>,
+  Assert<Matches<typeof collectionRefSchema, Schemas["CollectionRef"]>>,
+  Assert<Matches<typeof eventSummarySchema, Schemas["EventSummary"]>>,
+  Assert<Matches<typeof pieceAliasSchema, Schemas["PieceAlias"]>>,
+  Assert<Matches<typeof personAliasSchema, Schemas["PersonAlias"]>>,
+  Assert<Matches<typeof pieceTermSchema, Schemas["PieceTerm"]>>,
+  Assert<Matches<typeof pieceCreditSchema, Schemas["PieceCredit"]>>,
+  Assert<Matches<typeof piecePerformanceSchema, Schemas["PiecePerformance"]>>,
+  Assert<Matches<typeof performanceLinkSchema, Schemas["PerformanceLink"]>>,
+  // The piece and bard pages, the bards directory (C4.1, C5.1, C5.2)
+  Assert<Matches<typeof pieceLinkSchema, Schemas["PieceLink"]>>,
+  Assert<Matches<typeof pieceSchema, Schemas["Piece"]>>,
+  Assert<Matches<typeof personLinkSchema, Schemas["PersonLink"]>>,
+  Assert<Matches<typeof personProfileSchema, Schemas["PersonProfile"]>>,
+  Assert<Matches<typeof personSchema, Schemas["Person"]>>,
   Assert<Matches<typeof personSortSchema, Schemas["PersonSort"]>>,
+  // Categories, collections and events (C6, C7)
+  Assert<Matches<typeof termChildSchema, Schemas["TermChild"]>>,
+  Assert<Matches<typeof termSchema, Schemas["Term"]>>,
+  Assert<Matches<typeof collectionKindSchema, Schemas["CollectionKind"]>>,
+  Assert<
+    Matches<typeof collectionEnumerableSchema, Schemas["CollectionEnumerable"]>
+  >,
+  Assert<Matches<typeof collectionSummarySchema, Schemas["CollectionSummary"]>>,
+  Assert<Matches<typeof collectionListSchema, Schemas["CollectionList"]>>,
+  Assert<
+    Matches<typeof collectionCitationSchema, Schemas["CollectionCitation"]>
+  >,
+  Assert<Matches<typeof collectionSchema, Schemas["Collection"]>>,
+  Assert<Matches<typeof eventListSchema, Schemas["EventList"]>>,
+  Assert<Matches<typeof eventPerformanceSchema, Schemas["EventPerformance"]>>,
+  Assert<Matches<typeof eventSchema, Schemas["Event"]>>,
+  // Histories and revisions (C8)
+  Assert<Matches<typeof revisionSourceSchema, Schemas["RevisionSource"]>>,
+  Assert<Matches<typeof revisionAuthorSchema, Schemas["RevisionAuthor"]>>,
+  Assert<Matches<typeof revisionSummarySchema, Schemas["RevisionSummary"]>>,
+  Assert<Matches<typeof revisionHistorySchema, Schemas["RevisionHistory"]>>,
+  Assert<Matches<typeof pieceSnapshotSchema, Schemas["PieceSnapshot"]>>,
+  Assert<Matches<typeof snapshotPieceLinkSchema, Schemas["SnapshotPieceLink"]>>,
+  Assert<
+    Matches<typeof snapshotPersonLinkSchema, Schemas["SnapshotPersonLink"]>
+  >,
+  Assert<
+    Matches<
+      typeof snapshotPersonPerformanceSchema,
+      Schemas["SnapshotPersonPerformance"]
+    >
+  >,
+  Assert<Matches<typeof personSnapshotSchema, Schemas["PersonSnapshot"]>>,
+  Assert<
+    Matches<
+      typeof personSnapshotProfileSchema,
+      Schemas["PersonSnapshotProfile"]
+    >
+  >,
+  Assert<Matches<typeof termSnapshotSchema, Schemas["TermSnapshot"]>>,
+  Assert<
+    Matches<typeof collectionSnapshotSchema, Schemas["CollectionSnapshot"]>
+  >,
+  Assert<Matches<typeof eventSnapshotSchema, Schemas["EventSnapshot"]>>,
+  Assert<Matches<typeof pieceRevisionSchema, Schemas["PieceRevision"]>>,
+  Assert<Matches<typeof personRevisionSchema, Schemas["PersonRevision"]>>,
+  Assert<Matches<typeof termRevisionSchema, Schemas["TermRevision"]>>,
+  Assert<
+    Matches<typeof collectionRevisionSchema, Schemas["CollectionRevision"]>
+  >,
+  Assert<Matches<typeof eventRevisionSchema, Schemas["EventRevision"]>>,
+  Assert<Matches<typeof revisionSchema, Schemas["Revision"]>>,
 ];

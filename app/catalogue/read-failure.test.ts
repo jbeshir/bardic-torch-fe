@@ -1,6 +1,7 @@
 import { data } from "react-router";
 import { describe, expect, it } from "vitest";
 import {
+  asPageFailure,
   detailFailure,
   failureInit,
   isPageFailure,
@@ -191,6 +192,11 @@ describe("detailFailure (plan §3.3, detail reads)", () => {
       { status: 400, code: "conflict" },
       { kind: "bad_gateway" },
     ],
+    [
+      "an undeclared status",
+      { status: 418, code: "internal" },
+      { kind: "bad_gateway" },
+    ],
   ] as const)("maps %s", (_why, upstream, failure) => {
     expect(detailFailure(upstream)).toEqual(failure);
   });
@@ -226,6 +232,11 @@ describe("listFailure (plan §3.3, lists that aren't searches)", () => {
       { kind: "resting", retryAfter: 60 },
     ],
     [
+      "404 not_found (a list has no entity to miss)",
+      { status: 404, code: "not_found" },
+      { kind: "bad_gateway" },
+    ],
+    [
       "a 500 without an Error body",
       { status: 500, code: undefined },
       { kind: "bad_gateway" },
@@ -238,6 +249,41 @@ describe("listFailure (plan §3.3, lists that aren't searches)", () => {
     expect(listFailure("unreachable")).toEqual({
       kind: "resting",
       retryAfter: 30,
+    });
+  });
+});
+
+describe("not_found as a page failure", () => {
+  it("is a page failure, answered 404", () => {
+    expect(isPageFailure({ kind: "not_found" })).toBe(true);
+    expect(failureInit({ kind: "not_found" }).status).toBe(404);
+  });
+
+  it("is read back from a thrown 404", () => {
+    const thrown = data({ kind: "not_found" }, { status: 404 });
+    expect(
+      thrownPageFailure({
+        status: 404,
+        statusText: "",
+        internal: false,
+        data: thrown.data,
+      })
+    ).toEqual({ kind: "not_found" });
+  });
+});
+
+describe("asPageFailure", () => {
+  it("keeps a page failure", () => {
+    expect(asPageFailure({ kind: "server" })).toEqual({ kind: "server" });
+    expect(asPageFailure({ kind: "not_found" })).toEqual({ kind: "not_found" });
+  });
+
+  it("reads a filter failure of a read with no filters as a contract break", () => {
+    expect(asPageFailure({ kind: "invalid_filters" })).toEqual({
+      kind: "bad_gateway",
+    });
+    expect(asPageFailure({ kind: "search_timeout" })).toEqual({
+      kind: "bad_gateway",
     });
   });
 });

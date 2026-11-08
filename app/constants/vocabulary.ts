@@ -2,17 +2,22 @@ import type { CcLicence } from "~/constants/licences";
 import type {
   Attribution,
   Certainty,
+  CollectionEnumerable,
+  CollectionKind,
   ConservationStatus,
   CreditRole,
+  EventKind,
   Facet,
   Letter,
   Licence,
+  LicensingStatus,
   LinkPlaceType,
   LinkRole,
   PersonAliasKind,
   PersonKind,
   PersonRelationType,
   PersonRole,
+  PersonStatus,
   PieceAliasKind,
   PieceKind,
   PiecePart,
@@ -89,8 +94,9 @@ export function letterLabel(letter: Letter): string {
 // Facets (C2.2, C4.1)
 
 /**
- * Each facet's label, in sentence case: the facet column's legends, and
- * the prefix of a piece page's category chips ("Mood: Singalong").
+ * Each facet's label, in sentence case: the facet column's legends, the
+ * prefix of a piece page's category chips ("Mood: Singalong") and the
+ * categories index's sections.
  */
 export const FACET_LABELS: Readonly<Record<Facet, string>> = {
   mood: "Mood",
@@ -150,23 +156,23 @@ export const CERTAINTY_QUALIFIERS: Readonly<
 };
 
 /**
- * What kind of other name an alias is. `redirect` aliases are search aids,
- * never shown, so they have no label.
+ * What kind of other name an alias is. A page never shows a `redirect`
+ * alias (a search aid); only a revision's diff names one.
  */
-export const PIECE_ALIAS_KIND_LABELS: Readonly<
-  Record<Exclude<PieceAliasKind, "redirect">, string>
-> = {
-  alt_title: "alternative title",
-  nickname: "nickname",
-  subtitle: "subtitle",
-};
+export const PIECE_ALIAS_KIND_LABELS: Readonly<Record<PieceAliasKind, string>> =
+  {
+    alt_title: "alternative title",
+    nickname: "nickname",
+    subtitle: "subtitle",
+    redirect: "old title",
+  };
 
 // ---------------------------------------------------------------------------
 // Links (C4.3): where a piece or a person can be found.
 // ---------------------------------------------------------------------------
 
-/** Each link role as the heading of its links: "Sheet music". */
-export const LINK_ROLE_LABELS: Readonly<Record<LinkRole, string>> = {
+/** Each link role as the heading of its links: "Text sources". */
+export const LINK_ROLE_HEADINGS: Readonly<Record<LinkRole, string>> = {
   official: "Official",
   lyrics: "Lyrics",
   text: "Text",
@@ -178,6 +184,25 @@ export const LINK_ROLE_LABELS: Readonly<Record<LinkRole, string>> = {
   licensing_source: "Licensing sources",
   website: "Websites",
   external_profile: "External profiles",
+  other: "Other",
+};
+
+/**
+ * Each link role as one role's name, in a list of a link's roles ("Lyrics,
+ * Text source"): a citation's roles and a revision's links.
+ */
+export const LINK_ROLE_LABELS: Readonly<Record<LinkRole, string>> = {
+  official: "Official",
+  lyrics: "Lyrics",
+  text: "Text",
+  sheet_music: "Sheet music",
+  dance_instructions: "Dance instructions",
+  text_source: "Text source",
+  translation: "Translation",
+  performance: "Performance",
+  licensing_source: "Licensing source",
+  website: "Website",
+  external_profile: "External profile",
   other: "Other",
 };
 
@@ -268,17 +293,19 @@ export const DECEASED_LABELS: Readonly<Record<PersonKind, string>> = {
 };
 
 /**
- * What kind of other name a person's alias is. \`redirect\` aliases are
- * search aids, never shown; a public legal name is just their name.
+ * What kind of other name a person's alias is. A page never shows a
+ * `redirect` alias (a search aid); only a revision's diff names one. A
+ * public legal name is just their name.
  */
 export const PERSON_ALIAS_KIND_LABELS: Readonly<
-  Record<Exclude<PersonAliasKind, "redirect">, string>
+  Record<PersonAliasKind, string>
 > = {
   legal: "Name",
   sca: "SCA name",
   stage: "Stage name",
   nickname: "Nickname",
   former: "Former name",
+  redirect: "Old name",
 };
 
 /** Each role a person takes, in sentence case. */
@@ -314,4 +341,58 @@ export const PERSON_RELATION_LABELS: Readonly<
   member_of: { outgoing: "Member of", incoming: "Members" },
   heir_of: { outgoing: "Heir of", incoming: "Heirs" },
   same_as: { outgoing: "Also recorded as", incoming: "Also recorded as" },
+};
+
+// ---------------------------------------------------------------------------
+// Collections, events and revisions (C7, C8)
+// ---------------------------------------------------------------------------
+
+/** Each collection kind's label, in sentence case. */
+export const COLLECTION_KIND_LABELS: Readonly<Record<CollectionKind, string>> =
+  {
+    index_or_link_list: "Index or link list",
+    songbook_pdf: "Songbook (PDF)",
+    songbook_website: "Songbook website",
+    website: "Website",
+    wiki_category: "Wiki category",
+    wiki: "Wiki",
+    youtube_channel: "YouTube channel",
+    youtube_playlist: "YouTube playlist",
+    google_doc_songbook: "Songbook (Google Doc)",
+    blog: "Blog",
+    archived_songbook: "Archived songbook",
+    hosted_document: "Hosted document",
+    other: "Other",
+  };
+
+/** Whether, and how, a collection's contents can be listed. */
+export const ENUMERABLE_LABELS: Readonly<Record<CollectionEnumerable, string>> =
+  {
+    yes: "Yes",
+    pdf: "From a PDF",
+    browser: "In a browser",
+    api: "Through an API",
+    no: "No",
+    unknown: "Not yet assessed",
+  };
+
+/** Each event kind's label. */
+export const EVENT_KIND_LABELS: Readonly<Record<EventKind, string>> = {
+  event: "Event",
+  venue: "Venue",
+};
+
+/** Whether a piece's or a person's licensing is known, in a revision. */
+export const LICENSING_STATUS_LABELS: Readonly<
+  Record<LicensingStatus, string>
+> = {
+  known: "Known",
+  unknown: "Not yet known",
+};
+
+/** A person's status, in a revision. */
+export const PERSON_STATUS_LABELS: Readonly<Record<PersonStatus, string>> = {
+  active: "Active",
+  deceased: "Deceased",
+  prefers_no_page: "Prefers not to have a page",
 };

@@ -1,4 +1,4 @@
-import { linkExposure } from "~/catalogue/restricted";
+import { linkExposure, LINK_NOT_SHOWN } from "~/catalogue/restricted";
 import { isUserUrl } from "~/catalogue/user-url";
 import { ConservationBadge } from "~/components/ui/ConservationBadge";
 import { linkName } from "~/components/links/LinkRow";
@@ -29,14 +29,9 @@ function PerformedPiece({ piece }: { readonly piece: Performance["piece"] }) {
  * no address.
  */
 function Recording({ performance }: { readonly performance: Performance }) {
-  if (
-    performance.piece &&
-    linkExposure(performance.piece) === "internal-only"
-  ) {
+  if (linkExposure(performance.piece) === "internal-only") {
     return (
-      <span className="text-caption text-fg-subtle">
-        Link not shown: see the piece page
-      </span>
+      <span className="text-caption text-fg-subtle">{LINK_NOT_SHOWN}</span>
     );
   }
   const { link } = performance;
