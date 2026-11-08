@@ -73,7 +73,7 @@ test("a no-page bard has no History tab, but their history's address works", asy
     main(page).getByRole("heading", { level: 1, name: "Hollis Fenn" })
   ).toBeVisible();
   await expect(
-    main(page).getByRole("heading", { level: 2, name: "History" })
+    main(page).getByRole("heading", { level: 2, name: "History", exact: true })
   ).toBeVisible();
 });
 
