@@ -1,4 +1,5 @@
 import type { MetaFunction } from "react-router";
+import { pageMeta } from "~/catalogue/seo";
 import { useId, type ReactNode } from "react";
 import { LogoMark } from "~/components/LogoMark";
 import { SearchBox } from "~/components/SearchBox";
@@ -14,14 +15,12 @@ import {
   wikiPageUrl,
 } from "~/constants/navigation";
 
-export const meta: MetaFunction = () => [
-  { title: "Bardic Torch" },
-  {
-    name: "description",
-    content:
+export const meta: MetaFunction = args =>
+  pageMeta(args, {
+    description:
       "A community index of SCA bardic songs, stories and poems and the bards who made them, so they can be found, sung and passed on.",
-  },
-];
+    path: "/",
+  });
 
 /** A home page section: an h2 with a rule under it, then its content. */
 function Section({

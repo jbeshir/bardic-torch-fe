@@ -364,7 +364,7 @@ The base is 16 px (1 rem). The scale is about a 1.2 minor third, rounded to 4 px
 - **Tables:**
   - Full width of the measure, `border-collapse: collapse`, `body-sm`.
   - `th` has `bg-surface-sunken text-fg font-semibold text-left`, and cells have `padding: 0.5rem 0.75rem; border-bottom: 1px solid border; vertical-align: top`, so a short row label sits level with the first line of a long value.
-  - In help pages each body row gets an id from its first cell (`#low-risk`), with the headings' `scroll-margin-top`, so an infobox row can link to its own table row.
+  - In help pages each body row gets an id from its first cell, its words joined by underscores like an API enum value (`#low_risk`), with the headings' `scroll-margin-top`, so an infobox row can link to its own table row and each ConservationBadge link lands on its status's row (§6.13).
   - Wrap in `<div class="overflow-x-auto" tabindex="0" role="region" aria-label="{caption}">` for horizontal scroll at 360 px.
   - `caption` uses caption style, `text-fg-muted`, aligned left and on top.
 - **Definition lists** (used for "at a glance" and preference lists):
@@ -698,37 +698,37 @@ Drawer (open, bottom sheet from the bar, max-height 85dvh):
 
 Generic components live in `app/components/ui/`. App-specific ones (ThemeToggle, LogoMark, Wordmark, AccountMenu, SearchBox, TOC, HelpLinks and so on) live in `app/components/`. Each has a styleguide entry (§10.6) and a `*.test.tsx`. Unless a component says otherwise, the shared rules below apply.
 
-| Component                              | Tag  | FE1 use                                                   |
-| -------------------------------------- | ---- | --------------------------------------------------------- |
-| Button (6.2)                           | FE1  | Everywhere                                                |
-| Link (6.3)                             | FE1  | Everywhere                                                |
-| Field, Input (6.4, 6.5)                | FE1  | Settings                                                  |
-| Textarea, Select, Checkbox (6.6–6.8)   | SG   | None in FE1                                               |
-| Tabs (6.9): Read label                 | FE1  | Every page head                                           |
-| Tabs (6.9): page-link tabs and tablist | SG   | Styleguide (the tablist drives the theme preview)         |
-| Infobox (6.10)                         | FE1  | Help pages ("At a glance")                                |
-| Card (6.11)                            | FE1  | Home, help index                                          |
-| Chip / TagList (6.12)                  | FE1  | Category chips, home facet chips                          |
-| ConservationBadge (6.13)               | FE2+ | None. FE1 writes status names as text                     |
-| Alert (6.14)                           | FE1  | Settings, home, noscript notice                           |
-| Banner (6.14)                          | SG   | None in FE1 (page states are FE2+)                        |
-| EmptyState (6.15)                      | FE1  | No API tokens                                             |
-| ErrorState (6.16)                      | FE1  | 404, error boundaries                                     |
-| Spinner (6.17)                         | FE1  | Button loading                                            |
-| Skeleton (6.18)                        | SG   | None in FE1 (SSR pages render real content)               |
-| Breadcrumbs (6.19)                     | FE1  | Help pages                                                |
-| Pagination (6.20)                      | SG   | None in FE1                                               |
-| Drawer (6.21)                          | FE1  | Navigation <lg                                            |
-| Dialog (6.22)                          | FE1  | Revoke-token confirm                                      |
-| Toast (6.23)                           | FE1  | Settings feedback                                         |
-| ThemeToggle (6.24)                     | FE1  | Header from md; drawer (and the no-JS site menu) below md |
-| AccountMenu (6.25)                     | FE1  | Header / bottom bar                                       |
-| SearchBox (6.26)                       | FE1  | Header, drawer, home hero (searches the original wiki)    |
-| TOC (6.27)                             | FE1  | Help pages with ≥4 h2s                                    |
-| LogoMark, Wordmark (5.9)               | FE1  | Header, footer, EmptyState art                            |
-| SidebarNote, ContributeCard (5.3)      | FE1  | Sidebar and drawer                                        |
-| HelpLinks (5.7)                        | FE1  | Every footer and the root error page                      |
-| Progress indicator (7.1)               | FE1  | Client navigations                                        |
+| Component                               | Tag | FE1 use                                                   |
+| --------------------------------------- | --- | --------------------------------------------------------- |
+| Button (6.2)                            | FE1 | Everywhere                                                |
+| Link (6.3)                              | FE1 | Everywhere                                                |
+| Field, Input (6.4, 6.5)                 | FE1 | Settings                                                  |
+| Textarea, Select, Checkbox (6.6–6.8)    | SG  | None in FE1                                               |
+| Tabs (6.9): Read label                  | FE1 | Every page head                                           |
+| Tabs (6.9): page-link tabs and tablist  | SG  | Styleguide (the tablist drives the theme preview)         |
+| Infobox (6.10)                          | FE1 | Help pages ("At a glance")                                |
+| Card (6.11)                             | FE1 | Home, help index                                          |
+| Chip / TagList (6.12)                   | FE1 | Category chips, home facet chips                          |
+| ConservationBadge (6.13)                | FE2 | None. FE1 writes status names as text                     |
+| Alert (6.14)                            | FE1 | Settings, home, noscript notice                           |
+| Banner (6.14): page states (PageBanner) | FE2 | None in FE1 (stub, restricted, prefers no page)           |
+| EmptyState (6.15)                       | FE1 | No API tokens                                             |
+| ErrorState (6.16)                       | FE1 | 404, error boundaries                                     |
+| Spinner (6.17)                          | FE1 | Button loading                                            |
+| Skeleton (6.18)                         | SG  | None in FE1 (SSR pages render real content)               |
+| Breadcrumbs (6.19)                      | FE1 | Help pages                                                |
+| Pagination (6.20)                       | SG  | None in FE1                                               |
+| Drawer (6.21)                           | FE1 | Navigation <lg                                            |
+| Dialog (6.22)                           | FE1 | Revoke-token confirm                                      |
+| Toast (6.23)                            | FE1 | Settings feedback                                         |
+| ThemeToggle (6.24)                      | FE1 | Header from md; drawer (and the no-JS site menu) below md |
+| AccountMenu (6.25)                      | FE1 | Header / bottom bar                                       |
+| SearchBox (6.26)                        | FE1 | Header, drawer, home hero (searches the original wiki)    |
+| TOC (6.27)                              | FE1 | Help pages with ≥4 h2s                                    |
+| LogoMark, Wordmark (5.9)                | FE1 | Header, footer, EmptyState art                            |
+| SidebarNote, ContributeCard (5.3)       | FE1 | Sidebar and drawer                                        |
+| HelpLinks (5.7)                         | FE1 | Every footer and the root error page                      |
+| Progress indicator (7.1)                | FE1 | Client navigations                                        |
 
 ### 6.1 Shared rules
 
@@ -786,16 +786,16 @@ Generic components live in `app/components/ui/`. App-specific ones (ThemeToggle,
 
 **Tag: FE1.**
 
-| Kind                                                | Style                                                                                                                                                                                                             | Notes                                                                                                                     |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Internal, in prose                                  | §3.3 prose link (underlined, lapis, visited purple)                                                                                                                                                               | React Router `<Link prefetch="intent">`                                                                                   |
-| Internal, standalone / UI (card titles, "View all") | `text-link font-medium`, no underline at rest, underline on hover and focus-visible                                                                                                                               | Only in navigational containers (§2.6)                                                                                    |
-| External                                            | As above, plus trailing `IconExternalLink` 0.85em `text-fg-subtle` (`aria-hidden`) plus `<span class="sr-only"> (external link)</span>`. Or, for old-wiki links, `IconArrowUpRight` plus "(opens original wiki)". | `rel="noopener"`, no `target="_blank"` by default. User-supplied URLs also get `rel="nofollow ugc"` (FE2+; FE1 has none). |
-| Muted                                               | `text-fg-muted underline decoration-fg-subtle-50`                                                                                                                                                                 | Footer, meta lines                                                                                                        |
+| Kind                                                | Style                                                                                                                                                                                                             | Notes                                                                                                                |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Internal, in prose                                  | §3.3 prose link (underlined, lapis, visited purple)                                                                                                                                                               | React Router `<Link prefetch="intent">`                                                                              |
+| Internal, standalone / UI (card titles, "View all") | `text-link font-medium`, no underline at rest, underline on hover and focus-visible                                                                                                                               | Only in navigational containers (§2.6)                                                                               |
+| External                                            | As above, plus trailing `IconExternalLink` 0.85em `text-fg-subtle` (`aria-hidden`) plus `<span class="sr-only"> (external link)</span>`. Or, for old-wiki links, `IconArrowUpRight` plus "(opens original wiki)". | `rel="noopener"`, no `target="_blank"` by default. User-supplied URLs (`userContent`) also get `rel="nofollow ugc"`. |
+| Muted                                               | `text-fg-muted underline decoration-fg-subtle-50`                                                                                                                                                                 | Footer, meta lines                                                                                                   |
 
 - **States:** hover is `text-link-hover` with a 2 px decoration. Focus-visible is the shared ring with `rounded-sm` and `outline-offset: 2px`. Active (pressed) matches hover. There is no disabled link: render plain text instead.
 - **Current page** links in body text (rare) get `aria-current="page"` and `font-semibold text-fg no-underline`.
-- **Component:** `Link` (`to`, `appearance` prose | standalone | plain | muted | inherit, `current`, `compact`). `plain` is standalone at the surrounding weight (breadcrumbs, the contents list). `compact` gives a link outside running text a 24 px tall target (`inline-flex min-h-6 items-center`): the footer's help links and the breadcrumbs. The TOC's in-page anchors take the same look from `linkClasses`.
+- **Component:** `Link` (`to`, `appearance` prose | standalone | plain | muted | inherit, `current`, `compact`, `userContent`). `userContent` marks a URL that came from the API (a reader added it): it is typed to an absolute `` `http${string}` `` URL, always renders as an external anchor, and gets `rel="nofollow ugc noopener"`. Every API-supplied URL goes through it. `plain` is standalone at the surrounding weight (breadcrumbs, the contents list). `compact` gives a link outside running text a 24 px tall target (`inline-flex min-h-6 items-center`): the footer's help links and the breadcrumbs. The TOC's in-page anchors take the same look from `linkClasses`.
 
 ### 6.4 Field pattern (label, help, error)
 
@@ -936,7 +936,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
 
 ### 6.12 Chip / TagList (category chips)
 
-**Tag: FE1.** The current-chip state is **SG** (no FE1 term pages). Overflow is **FE2+**.
+**Tag: FE1.** The current-chip state is **SG** (no FE1 term pages). Overflow is **FE2**.
 
 - The list is `<ul class="flex flex-wrap gap-2" role="list">`, and each item is a link chip.
 - **Chip:**
@@ -949,11 +949,11 @@ Read   Edit   History                         Last edited 3 Oct 2026
   - Disabled does not exist.
 - **External chips** (FE1, pointing at the old wiki) get a trailing `IconArrowUpRight` 14 plus `sr-only` "(opens original wiki)".
 - **Empty:** if a page has no categories, show `caption text-fg-subtle` "No categories yet." with an Edit link for editable pages (FE3).
-- **Overflow (FE2+):** more than 12 chips collapse behind a "Show all {n}" ghost `sm` button (a disclosure: `aria-expanded`, `aria-controls`). Without JS, all chips are shown.
+- **Overflow:** more than 12 chips collapse behind a "Show all {n}" ghost `sm` button under the list (a disclosure: `aria-expanded`, `aria-controls` on the list). Pressing it shows the rest and relabels it "Show fewer"; focus stays on the button. The hidden chips are `hidden`, so Tab skips them. Without JS, and before hydration, all chips are shown and there is no button.
 
 ### 6.13 ConservationBadge
 
-**Tag: FE2+** (PLAN §10 assigns it to FE2). The tokens (§2.5) and contrast rows exist already. FE1 pages name statuses in text: the conservation help page uses headings, and the home card links to that page.
+**Tag: FE2.** The tokens (§2.5) and contrast rows exist already. FE1 pages name statuses in text: the conservation help page uses a table, and the home card links to that page.
 
 - **Anatomy:** a pill, `[icon] Label`, with `bg-cons-{s}-bg text-cons-{s}-fg border border-cons-{s}-border rounded-full`. The icon is in `text-cons-{s}-border`. See §2.5 for the per-status values; critically endangered gets a 2 px border, and unassessed gets a dashed border.
 - **Sizes:** `sm` is 24 px high, `px-2 caption gap-1`, icon 14. `md` is 28 px, `px-2.5 body-sm font-medium gap-1.5`, icon 16.
@@ -963,21 +963,24 @@ Read   Edit   History                         Last edited 3 Oct 2026
   - Also add `sr-only` "Conservation status: " before the label wherever the context doesn't already say so (outside the infobox row labelled "Conservation").
 - **States:** hover (link variant only) adds an underline on the label. Focus-visible is the ring. There are no other states.
 - **Restricted** never appears alongside "help preserve this" prompts. The page template suppresses them (R-7).
+- **Forced colours:** the border keeps its width and style (1 px, 2 px for critically endangered, dashed for unassessed) in the system colour, and the icon and label stay, so the status still reads.
+- **Component** (`app/components/ui/ConservationBadge.tsx`): `ConservationBadge` (`status`, `size` sm | md, `link`, `named`). `link` makes it a link to `/help/conservation-status#{status}`, whose table row has the enum value as its id (§3.3). `named` drops the hidden prefix where the context already says "Conservation". Labels and the status list are in `app/constants/vocabulary.ts` (`CONSERVATION_LABELS`, a `Record` over the enum).
 - **Dark:** tints over charcoal. The icon colour is lighter and less saturated, and text is near-vellum.
 
 ### 6.14 Alert / Banner
 
-**Tag:** Alert **FE1**. Banner **SG**. There is no dismissible variant (FE2+; see below).
+**Tag:** Alert **FE1**. Banner **FE2** (the page states; the pending banner is FE3). There is no dismissible variant (see below).
 
 - **Anatomy:** `[icon 20] [title (body 600)] [body (body-sm)] [actions]`. It is `flex gap-3 p-4 rounded-lg border bg-{s}-bg border-{s}-border text-{s}-fg`, the icon is `text-{s}-icon`, and links inside use `text-{s}-fg underline`.
 - **Variants:** see the table below.
-- **Placement:** an _Alert_ is inline in content. A _Banner_ is full sheet width under the tab row (page-level states: pending, stub, restricted; all FE2+). It uses the same component with `variant="banner"`: `rounded-none border-x-0` on mobile, `rounded-lg` at ≥md.
+- **Placement:** an _Alert_ is inline in content. A _Banner_ is full sheet width under the tab row (page-level states: stub, restricted and prefers no page in FE2; pending in FE3). It uses the same component with `variant="banner"`: `rounded-none border-x-0` on mobile, `rounded-lg` at ≥md.
 - **Semantics:**
   - Static alerts rendered with the page are **not** live regions: a plain `<div>` with an `<h2 class="sr-only">` or a visible title.
   - Alerts injected after an action use `role="status"` (info, success, pending) or `role="alert"` (danger, and warning when blocking). Mount the container empty first, so the announcement fires.
 - **No dismissible variant in FE1.** No FE1 alert needs dismissing, and dismissal without JS would need a route and a cookie the plan doesn't have. If a later milestone adds one, it must add the route, the cookie (with its flags tested) and the no-JS form to the plan first. **Danger and pending alerts are never dismissible.**
 - Links inside alerts use `text-{s}-fg underline`, and their focus ring sits on `{s}-bg` (pairs in §2.7).
 - **Components** (`app/components/ui/Alert.tsx`): `Alert` (`tone`, optional `title`, body, `actions`, `banner`, `icon`, `headingLevel`) and `AlertRegion` (an always-mounted `role="status"`, or `role="alert"` with `urgent`). Every tone has a distinct icon and a hidden tone name ("Warning: ") before the words.
+- **Page states** (`app/components/PageBanner.tsx`): `PageBanner` with `kind` `stub` (`subject` piece | person), `restricted` or `no-page` (`name`), each an info `Alert banner` with the §7.5 wording. Restricted swaps in `IconLock`. Restricted and no-page take an optional `statementUrl`, shown as "Read their statement" (a `userContent` link, §6.3) only when the API has one; with none there is no action row. The stub's action is "How to contribute" (`/help/contributing`) until editing exists (FE3).
 
 | Variant        | Icon                | Typical title                   |
 | -------------- | ------------------- | ------------------------------- |
@@ -1031,11 +1034,11 @@ Read   Edit   History                         Last edited 3 Oct 2026
 
 ### 6.19 Breadcrumbs
 
-**Tag: FE1.** The collapse is **FE2+** (FE1 crumbs are two deep).
+**Tag: FE1.** The collapse is **FE2** (FE1 crumbs are two deep).
 
 - `<nav aria-label="Breadcrumb"><ol>` containing links, with the last item `<span aria-current="page">` in `text-fg-muted`, not a link. The separator is `IconChevronRight` 14 `text-fg-subtle aria-hidden`, an inline SVG in a `separated-list-mark` that starts every item (CSS `::before` can't draw a token-coloured Tabler icon without a data URI). The `ol` is a `separated-list separated-list-tight` (§5.7): the chevron that would start a line is clipped, so when the trail wraps no chevron dangles at either end of a line. Text is caption, links are `text-link` with no underline (underline on hover), and each link is `inline-flex min-h-6 items-center` (§6.1, WCAG 2.5.8).
 - Component: `Breadcrumbs` (`trail: [{label, to}, …]`, `current`), `ol role="list"` with `gap-y-2`.
-- **At 360 px (FE2+):** collapse the middle items to "…" (a disclosure button, `aria-label="Show full path"`) when there are more than 3. Without JS, it wraps instead.
+- **Below sm:** when there are more than 3 items (the page included), the ancestors between the first and the parent collapse to "…" (a button, `aria-label="Show full path"`, `aria-expanded="false"`, a 24 px target). Pressing it shows the whole trail, removes the button and moves focus to the first crumb it revealed. From sm the whole trail shows and the button is hidden (`sm:hidden`, the collapsed items `max-sm:hidden`). Without JS, and before hydration, the full trail wraps instead.
 - Shown on help pages ("Help › …") and later on term pages. Not shown on Home.
 
 ### 6.20 Pagination
@@ -1259,11 +1262,12 @@ Every edit from a non-moderator waits for one of the moderators. This is a norma
 
 The pattern is: **what state it is in** (bold, ≤7 words), then **what it means for you**, then **one or two actions**. Never use the words "rejected", "blocked" or "error" for pending.
 
-**Related page-level banners** (FE2+; FE1 shows them in the styleguide only):
+**Related page-level banners** (FE2, `PageBanner`, §6.14):
 
-- **Stub** (info): "**This page is a stub.** We know this piece or person exists but haven't gathered much yet. [Help complete it]".
+- **Stub** (info): "**This page is a stub.** We know this piece (or person) exists but haven't gathered much yet. [How to contribute]". Until editing exists (FE3) the action is the contributing guide; it becomes "Help complete it" with the edit form.
 - **Restricted** (info variant, icon swapped for `IconLock`): "**The creator has asked that this work isn't recorded or shared.** Please respect their wishes. [Read their statement ↗]". This replaces every "help preserve" prompt.
 - **Prefers no page** (info): "**{Name} has asked not to have a page here.** This stub keeps their request on record so the page isn't recreated. [Read their statement ↗]".
+- "Read their statement ↗" shows only when the API has a source URL for the statement; without one the banner has no action.
 
 ---
 
@@ -1344,6 +1348,8 @@ Dark mode is a separately tuned palette with the same token names:
 
 Every page uses the app shell (header, bottom bar or sidebar, drawer, sheet, footer with HelpLinks), and has a unique `<title>` of the form "{Page} · Bardic Torch" plus a `meta description`.
 
+Content pages write their meta one way, with `pageMeta(args, {title, description, path, robots?, type?, preview?})` (`app/catalogue/seo.ts`) from the route's `meta`: the title ("{title} · Bardic Torch"; the site's name alone on Home), the description cut at a word to 160 characters with "…", an absolute `<link rel="canonical">` built from `path` and the root loader's `siteOrigin` (the request URL's origin), `og:title`, `og:description` (`preview` when given, e.g. a help page's `summary`), `og:url`, `og:type` (`website` by default; `profile` for bard pages), `og:site_name` "Bardic Torch", `og:locale` `en_GB`, `twitter:card` "summary", and `robots` only when asked. Home and the help pages use it; the error pages, Settings and the styleguide keep their fixed title and `noindex`.
+
 ### 10.1 Home (`/`)
 
 **Tag: FE1.** There are no tabs and no Read label. The sheet has no title rule: the hero replaces the page head.
@@ -1414,7 +1420,7 @@ Every page uses the app shell (header, bottom bar or sidebar, drawer, sheet, foo
 - **Content pages in FE1:** `contributing`, `faq-for-bards`, `bard-preference-checklist`, `conservation-status`, `licence`, plus an index at `/help`. The index is a `ul role="list"` of `link` Cards.
 - Help pages are **Markdown** (`.md`, compiled by `@mdx-js/rollup` with `format: "md"`), with `:::note`, `:::warning` and `:::infobox` directives that map to Alert and Infobox. They are reviewed for tone (§11) and adapted rather than copied verbatim. Remove the wiki's mobile warning and "make an account on Miraheze" instructions.
 - **Built as (FE1):** the pages live in `app/content/help/*.md`; the pipeline is `app/content/markdown/` (options, plugins and the component map).
-  - Front matter: `title`, `description` (≤160 characters, the meta description), `summary` (`og:description`; the index's intro), `sourcePages` (wiki page titles, credited in the meta link and the licence line) and `lastReviewed` (`YYYY-MM-DD`, shown in the licence line). The build fails on front matter that doesn't match `helpFrontmatterSchema`.
+  - Front matter: `title`, `description` (≤160 characters, the meta description), `summary` (`og:description`, as `pageMeta`'s `preview`; the index's intro), `sourcePages` (wiki page titles, credited in the meta link and the licence line) and `lastReviewed` (`YYYY-MM-DD`, shown in the licence line). The build fails on front matter that doesn't match `helpFrontmatterSchema`.
   - `:::infobox{title="At a glance"}` holds one list of `**Label:** value` or `[Label](#section): value` items, which become the Infobox's rows. `:::cards` (the index only) holds one list of `[Title](/help/slug): description` items, which become link Cards. A note or warning with one paragraph renders it as the Alert's body. Any other directive, a missing infobox title or a stray `:name` text directive fails the build.
   - h2s and h3s get GitHub-style ids from their text (`#how-restricted-works`), and the module exports them as the contents. The infobox is rendered first and outside `.prose-bt`; the content before the first h2 is the intro; the TOC follows it.
   - Links: absolute URLs are external `Link`s (wiki URLs get the wiki mark and suffix); paths go through React Router. Links in the infobox are standalone, in the prose they are prose links.
@@ -1473,13 +1479,13 @@ The head is the h1 "Settings" with no tab row. Sections are separated by h2 plus
 
 ### 10.5 Error page (500 / unexpected)
 
-**Tag: FE1.** The 503 variant is **FE2+**.
+**Tag: FE1.** The 503 variant is **FE2**.
 
 - **h1:** "Something went wrong".
 - **Body:** "That's on us, not you. Try again in a moment. If it keeps happening, let us know and include the reference below." (Without Sentry there is no reference, so the last clause is dropped.)
 - The reference is the Sentry `eventId` in mono (§6.16). Actions: [Try again] (reload, primary) and [Go to the home page]. "Let us know" is the HelpLinks Contact link, not a separate one.
 - **Layout:** the minimal header and footer around a `min-h-dvh` column. Below lg the body is full-bleed `bg-surface`, as in the shell; from lg it is a centred `max-w-form` sheet (`rounded-xl border shadow-1`, 40 px of canvas above and below), like every other page's sheet, rather than a slab hugging the left edge.
-- **503 (API down, FE2+):** h1 "Bardic Torch is resting", body "We're doing some upkeep or the catalogue is briefly unreachable. Please try again in a few minutes."
+- **503 (API down):** h1 "Bardic Torch is resting", body "We're doing some upkeep or the catalogue is briefly unreachable. Please try again in a few minutes." Actions: [Try again] (primary; a reload link without JS) and [Go to the home page]. The art is the plain unlit torch (`art="missing"`), not the broken one, and there is no reference: an outage is logged by the server, never reported to Sentry. Built as `Resting` in `app/components/ErrorPages.tsx`, titled "Bardic Torch is resting · Bardic Torch" with `noindex` (`RESTING_META`). A loader signals it by throwing `data({kind: "resting"}, {status: 503})`; the root boundary shows it for that (`isResting`), and reports nothing.
 - **Built as (FE1):** `ServerError` in `app/components/ErrorPages.tsx`. The root `ErrorBoundary` reports the error with Sentry's `captureException` after mounting (`useErrorReference`, starting Sentry first if the page failed on its first render) and shows the returned event id only when `Sentry.isInitialized()`. Only real errors are reported, never an error response (a thrown `data()`, such as a 404). The server reports the same error on its side (`handleError`, docs/DEPLOY.md §6).
 - It is rendered within the shell. If the shell itself can't render (the root boundary), it uses a minimal standalone page with the same tokens and stylesheet, the Wordmark, and the **same HelpLinks block** (Contact · Help · Licence & attribution) as every other page (WCAG 3.2.6).
 

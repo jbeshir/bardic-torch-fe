@@ -1,8 +1,16 @@
 import type { MetaFunction } from "react-router";
-import { HelpPage, helpMeta } from "~/components/HelpPage";
+import { pageMeta } from "~/catalogue/seo";
+import { HelpPage } from "~/components/HelpPage";
+import { HELP_HREF } from "~/constants/navigation";
 import { HELP_INDEX } from "~/content/help/pages";
 
-export const meta: MetaFunction = () => helpMeta(HELP_INDEX.frontmatter);
+export const meta: MetaFunction = args =>
+  pageMeta(args, {
+    title: HELP_INDEX.frontmatter.title,
+    description: HELP_INDEX.frontmatter.description,
+    preview: HELP_INDEX.frontmatter.summary,
+    path: HELP_HREF,
+  });
 
 /** The help index (DESIGN §10.2): a card for each help page. */
 export default function HelpIndexRoute() {

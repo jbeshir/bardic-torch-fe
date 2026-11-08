@@ -154,6 +154,8 @@ To reproduce the bare runner's fonts in the image, point fontconfig at DejaVu (t
 
 Every checkpoint is declared per phase and journey in `e2e/support/checkpoints.ts`; the journey is the spec file name. `checkpoint()` refuses undeclared names. On a full run, the `screenshots` teardown (`e2e/global-teardown.ts`) fails unless the screenshot directory holds exactly the declared set: every checkpoint × 6, nothing undeclared, and no name in both phases. Filtered runs skip that check.
 
+The styleguide (`e2e/stub/styleguide.spec.ts`) takes one checkpoint per block, named by its anchor and listed in page order in `STYLEGUIDE_BLOCKS` (the spec checks the page against the list): the DESIGN §6 components, `conservation-badge` (every status at both sizes, static and as a link) among them, plus the open account menus, dialog and drawer. Its forced-colours test also checks that the badge borders keep their width and style (solid 1 px, 2 px for critically endangered, dashed for unassessed).
+
 The layout sweep (`e2e/support/journey-pages.ts`, run by `e2e/{prod,stub}/sweeps.spec.ts`) checks every page a reader can land on for:
 
 - horizontal overflow at 360 and 320 px;

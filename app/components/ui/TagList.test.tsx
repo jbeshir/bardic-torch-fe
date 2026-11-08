@@ -2,7 +2,7 @@ import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { wikiPageUrl } from "~/constants/navigation";
-import { renderWithRouter } from "~/test/router";
+import { renderOnServer, renderWithRouter } from "~/test/router";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { TagList } from "./TagList";
 
@@ -116,6 +116,72 @@ describe("TagList", () => {
     expect(screen.getByRole("link", { name: "Licence" })).toHaveFocus();
     await act(() => user.keyboard("{Enter}"));
     expect(router.state.location.pathname).toBe("/help/licence");
+  });
+
+  describe("more than 12 chips", () => {
+    const tags = (count: number) =>
+      Array.from({ length: count }, (_, index) => ({
+        label: `Topic ${index + 1}`,
+        to: `/topics/${index + 1}`,
+      }));
+    const shown = () =>
+      within(screen.getByRole("list"))
+        .getAllByRole("listitem")
+        .filter(item => !item.hidden)
+        .map(item => item.textContent);
+
+    it("shows the first 12 and a Show all disclosure for the rest", async () => {
+      await renderWithRouter(<TagList tags={tags(15)} />);
+      expect(shown()).toEqual(tags(12).map(({ label }) => label));
+      const toggle = screen.getByRole("button", { name: "Show all 15" });
+      expect(toggle).toHaveAttribute("aria-expanded", "false");
+      expect(toggle).toHaveAttribute(
+        "aria-controls",
+        screen.getByRole("list").id
+      );
+      expect(toggle).toHaveClass("bg-transparent", "min-h-9");
+    });
+
+    it("shows and hides the rest from the keyboard, keeping focus on the toggle", async () => {
+      const user = userEvent.setup();
+      await renderWithRouter(<TagList tags={tags(13)} />);
+      const toggle = screen.getByRole("button", { name: "Show all 13" });
+      act(() => toggle.focus());
+      await act(() => user.keyboard("{Enter}"));
+      expect(toggle).toHaveFocus();
+      expect(toggle).toHaveAttribute("aria-expanded", "true");
+      expect(toggle).toHaveAccessibleName("Show fewer");
+      expect(shown()).toHaveLength(13);
+      await act(() => user.keyboard(" "));
+      expect(toggle).toHaveFocus();
+      expect(toggle).toHaveAttribute("aria-expanded", "false");
+      expect(toggle).toHaveAccessibleName("Show all 13");
+      expect(shown()).toHaveLength(12);
+    });
+
+    it("skips the hidden chips when tabbing", async () => {
+      const user = userEvent.setup();
+      await renderWithRouter(<TagList tags={tags(13)} />);
+      for (let step = 0; step < 13; step += 1) {
+        await act(() => user.tab());
+      }
+      expect(screen.getByRole("button", { name: "Show all 13" })).toHaveFocus();
+    });
+
+    it("keeps exactly 12 chips as they are", async () => {
+      await renderWithRouter(<TagList tags={tags(12)} />);
+      expect(screen.queryByRole("button")).toBeNull();
+      expect(shown()).toHaveLength(12);
+    });
+
+    it("shows every chip, with no button, without JS", async () => {
+      const html = await renderOnServer(<TagList tags={tags(15)} />);
+      const page = document.createElement("div");
+      page.innerHTML = html;
+      expect(page.querySelectorAll("li")).toHaveLength(15);
+      expect(page.querySelectorAll("li[hidden]")).toHaveLength(0);
+      expect(page.querySelector("button")).toBeNull();
+    });
   });
 
   it("renders the same token classes in both themes", async () => {

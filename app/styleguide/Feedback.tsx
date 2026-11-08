@@ -1,5 +1,7 @@
 import { IconPlus } from "@tabler/icons-react";
 import { useState } from "react";
+import { Resting } from "~/components/ErrorPages";
+import { PageBanner } from "~/components/PageBanner";
 import { Alert, AlertRegion, type AlertTone } from "~/components/ui/Alert";
 import { Button, ButtonLink } from "~/components/ui/Button";
 import { EmptyState } from "~/components/ui/EmptyState";
@@ -69,7 +71,7 @@ export function Alerts() {
     <Specimen
       id="alert"
       title="Alert and Banner"
-      summary="Status messages in five tones, each with its own icon and a hidden tone name (DESIGN §6.14). Banners are styleguide-only in FE1."
+      summary="Status messages in five tones, each with its own icon and a hidden tone name (DESIGN §6.14). Banners mark a page’s state under its tab row."
     >
       <Example label="Tones" stack>
         {ALERTS.map(({ tone, title, body }) => (
@@ -100,6 +102,25 @@ export function Alerts() {
           <Alert tone="pending" banner title="Waiting for approval">
             Your edit will appear once a moderator has looked at it.
           </Alert>
+        </div>
+      </Example>
+      <Example label="Page banners: stub, restricted, prefers no page" wide>
+        <div className="grid w-full gap-3">
+          <PageBanner kind="stub" subject="piece" />
+          <PageBanner
+            kind="restricted"
+            statementUrl="https://example.org/wren-of-the-vale/statement"
+          />
+          <PageBanner
+            kind="no-page"
+            name="Corin Ashgrove"
+            statementUrl="https://example.org/corin-ashgrove/no-page"
+          />
+        </div>
+      </Example>
+      <Example label="Restricted, with no statement on record" wide>
+        <div className="w-full">
+          <PageBanner kind="restricted" />
         </div>
       </Example>
       <Example label="After an action (announced politely)" wide>
@@ -140,7 +161,7 @@ export function ErrorStates() {
     <Specimen
       id="error-state"
       title="Error state"
-      summary="A region that failed, and the body of the 404 and error pages (DESIGN §6.16, §10.4, §10.5). On a real page the heading is the page’s h1."
+      summary="A region that failed, and the body of the 404, error and resting pages (DESIGN §6.16, §10.4, §10.5). On a real page the heading is the page’s h1."
     >
       <Example label="Section failed to load" stack>
         <SectionError title="We couldn’t load your profile">
@@ -183,6 +204,11 @@ export function ErrorStates() {
             That’s on us, not you. Try again in a moment. If it keeps happening,
             let us know and include the reference below.
           </ErrorState>
+        </div>
+      </Example>
+      <Example label="Resting: the catalogue is out of reach (503)" wide>
+        <div className="w-full rounded-lg border border-border bg-surface px-4 md:px-8">
+          <Resting />
         </div>
       </Example>
     </Specimen>

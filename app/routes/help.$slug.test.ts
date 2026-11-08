@@ -31,6 +31,13 @@ describe("/help/:slug", () => {
     expect(html).toContain(
       '<meta property="og:description" content="Anyone can help keep the torch lit.'
     );
+    expect(html).toMatch(
+      /<link rel="canonical" href="https:\/\/app\.test\/help\/contributing"\/?>/
+    );
+    expect(html).toContain(
+      '<meta property="og:title" content="Contributing guide"'
+    );
+    expect(html).toContain('<meta property="og:type" content="website"');
     const main = mainOf(html);
     expect(main).toMatch(/<h1[^>]*>Contributing guide<\/h1>/);
     expect(main).toContain('aria-label="Breadcrumb"');

@@ -31,6 +31,7 @@ export const STYLEGUIDE_BLOCKS = [
   "infobox",
   "card",
   "tag-list",
+  "conservation-badge",
   "alert",
   "empty-state",
   "error-state",

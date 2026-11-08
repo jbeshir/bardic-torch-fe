@@ -76,7 +76,7 @@ export function Crumbs() {
     <Specimen
       id="breadcrumbs"
       title="Breadcrumbs"
-      summary="Where a help page sits (DESIGN §6.19)."
+      summary="Where a page sits (DESIGN §6.19). A trail of more than three collapses its middle below sm."
     >
       <Example label="Two deep">
         <Breadcrumbs
@@ -91,6 +91,17 @@ export function Crumbs() {
             { label: "Contributing", to: "/help/contributing" },
           ]}
           current="How to write a good piece summary"
+        />
+      </Example>
+      <Example label="Five deep, collapsed below sm (“…” shows the full path)">
+        <Breadcrumbs
+          trail={[
+            { label: "Categories", to: "/styleguide?crumb=categories" },
+            { label: "Topic", to: "/styleguide?crumb=topic" },
+            { label: "Warfare", to: "/styleguide?crumb=warfare" },
+            { label: "Weapons", to: "/styleguide?crumb=weapons" },
+          ]}
+          current="Swords"
         />
       </Example>
     </Specimen>

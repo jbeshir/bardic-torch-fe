@@ -126,6 +126,11 @@ export function Links() {
           Licence and attribution
         </Link>
       </Example>
+      <Example label="A reader’s URL (nofollow ugc)">
+        <Link to="https://example.org/songbook/the-long-road" userContent>
+          The long road, in a community songbook
+        </Link>
+      </Example>
       <Example label="Current page">
         <Link to="/styleguide" current>
           Styleguide
