@@ -427,8 +427,19 @@ export default function PiecesRoute() {
             href={letter => pieceQuery.href(state, { letter })}
           />
           {/* An order only for a search that found something: with no
-              results there is nothing to put in order. */}
-          {state.q === undefined || list.total === 0 ? null : (
+              results there is nothing to put in order. The order chosen
+              still goes with the filters (the select would send it), so a
+              change that brings results back keeps it. */}
+          {state.q === undefined ? null : list.total === 0 ? (
+            state.sort === undefined ? null : (
+              <input
+                type="hidden"
+                name="sort"
+                form={formId}
+                value={state.sort}
+              />
+            )
+          ) : (
             <KeptFocus key={canonical} focusRef={sortFocusRef}>
               <PieceSort state={state} form={formId} />
             </KeptFocus>

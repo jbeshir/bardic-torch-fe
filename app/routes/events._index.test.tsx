@@ -90,6 +90,8 @@ describe("/events page", () => {
     expect(
       screen.getByRole("link", { name: "Show all events and venues" })
     ).toHaveAttribute("href", "/events");
+    // The empty state says it: the status only for screen readers.
+    expect(screen.getByRole("status")).toHaveClass("sr-only");
   });
 
   it("says which rows a page shows, so a new page is announced", async () => {
@@ -98,6 +100,8 @@ describe("/events page", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "Showing 101–102 of 160 events and venues"
     );
+    // Shown, as on the other directories (DESIGN §10.13).
+    expect(screen.getByRole("status")).not.toHaveClass("sr-only");
     expect(
       screen.getByRole("heading", { level: 2, name: "All events and venues" })
     ).toHaveAttribute("tabindex", "-1");

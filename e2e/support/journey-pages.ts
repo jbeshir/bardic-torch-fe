@@ -386,6 +386,26 @@ const JOURNEY_PAGES: readonly JourneyPage[] = [
   },
 ];
 
+/**
+ * Pages and states outside the table that still get the app bar check
+ * (below): the other catalogue page types and states FE2 added (a stub,
+ * the bards directory unfiltered, every history page, the venue switch,
+ * no results, a 200-row venue). Their layout is that of the table's
+ * pages, so they skip its Tab-walk sweep.
+ */
+const BAR_ONLY_PAGES: readonly string[] = [
+  "/pieces/the-unfinished-lay",
+  "/pieces?q=zzqx-nothing",
+  "/bards",
+  "/bards/hollis-fenn/history",
+  "/categories/war/history",
+  "/collections/12/history",
+  "/events?kind=venue",
+  "/events/midwinter-revel/history",
+  // 200 performances: too many stops for the sweep (events.spec.ts).
+  "/events/muster-field",
+];
+
 /** The shell's own primary controls below md: home, then the app bar. */
 function shellPrimary(page: Page): Locator[] {
   const bar = appBar(page);
@@ -403,7 +423,15 @@ export function sweepJourneyPages(phase: Phase): void {
   test.describe("below md the app bar never covers the end of the page", () => {
     // The wider text is an injected <style>, which the nonce CSP would block.
     test.use({ bypassCSP: true, viewport: MOBILE });
-    for (const journey of rows.filter(row => row.inShell)) {
+    const opens = [
+      ...rows
+        .filter(row => row.inShell)
+        .map(({ name, open }) => ({ name, open })),
+      ...(phase === "prod"
+        ? BAR_ONLY_PAGES.map(path => ({ name: path, open: visit(path) }))
+        : []),
+    ];
+    for (const journey of opens) {
       test(`${journey.name}: with the machine's sans and with wider text`, async ({
         page,
       }) => {

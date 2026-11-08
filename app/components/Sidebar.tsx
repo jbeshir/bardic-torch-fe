@@ -9,7 +9,7 @@ import { LogoMark } from "./LogoMark";
 // (DESIGN §5.3). The rows, headings and gaps don't depend on the font;
 // only a label that wraps adds a line to its row.
 const ITEM =
-  "group flex min-h-11 items-center gap-2 rounded-md px-3 text-body-sm transition-colors focus-visible:-outline-offset-2 lg:min-h-7";
+  "flex min-h-11 items-center gap-2 rounded-md px-3 text-body-sm transition-colors focus-visible:-outline-offset-2 lg:min-h-7";
 const ITEM_IDLE = "text-fg-muted hover:bg-surface-sunken hover:text-fg";
 const ITEM_CURRENT =
   "bg-accent-subtle font-semibold text-accent-text shadow-current-bar";

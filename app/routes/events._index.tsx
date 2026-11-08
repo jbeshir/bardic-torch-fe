@@ -189,7 +189,7 @@ export default function EventsRoute() {
                 ? "Events"
                 : "All events and venues"}
           </h2>
-          <ResultsStatus>
+          <ResultsStatus visible={list.total > 0}>
             {list.total > 0
               ? showingText(
                   state.page,

@@ -2,7 +2,6 @@ import { expect, type Page } from "@playwright/test";
 import { waitForHydration } from "../support/hydration";
 import { checkpoint } from "../support/journey";
 import {
-  expectBarClearOfPageEnd,
   expectNoHorizontalOverflow,
   expectTargetSizesAtLeast24,
 } from "../support/layout";
@@ -93,8 +92,8 @@ test("a venue with more than 200 performances says how many more", async ({
   await page.setViewportSize({ width: 360, height: 800 });
   await expectNoHorizontalOverflow(page);
   await expectTargetSizesAtLeast24(page);
-  // Nor is the page's end under the app bar, as the sweep checks elsewhere.
-  await expectBarClearOfPageEnd(page);
+  // (Its end clears the app bar, plain and with wider text: the sweep's
+  // bar check, support/journey-pages.ts.)
   // Focus on the last row's link isn't hidden under the app bar, as the
   // sweep's Tab walk would check on a shorter page.
   await main(page).locator("a:visible").last().focus();

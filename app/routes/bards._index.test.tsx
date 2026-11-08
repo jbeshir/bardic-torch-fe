@@ -276,7 +276,11 @@ describe("/bards page", () => {
       await screen.findByRole("link", { name: "Remove Kind: Group" })
     );
     expect(router.state.location.search).toBe("");
-    expect(screen.getByRole("checkbox", { name: "Group" })).not.toBeChecked();
+    // The location changes before the form keyed by it remounts: wait for
+    // the remount (seen to lag under a loaded full run), then go on with it.
+    await waitFor(() => {
+      expect(screen.getByRole("checkbox", { name: "Group" })).not.toBeChecked();
+    });
     await user.click(screen.getByRole("checkbox", { name: "Poet" }));
     expect(router.state.location.search).toBe("?role=poet");
   });

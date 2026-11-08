@@ -232,6 +232,39 @@ describe("/pieces page", () => {
     expect(within(bar).getByText("D")).toHaveAttribute("aria-disabled", "true");
   });
 
+  it("keeps the order chosen with the filters when a sorted search finds nothing", async () => {
+    wideScreen();
+    const none = listOf([], 0);
+    const search = "?q=zzz&sort=title&kind=poem";
+    await renderPieces(
+      search,
+      loaded(search, { ...none, facets: { ...none.facets, letters: [] } })
+    );
+    // No select to choose an order with, but a filter change (the way back
+    // to results) still sends the one chosen, as the select would have.
+    expect(screen.queryByRole("combobox", { name: "Sort by" })).toBeNull();
+    const form = screen
+      .getByRole("button", { name: "Apply filters" })
+      .closest("form");
+    if (!form) throw new Error("no facet form");
+    expect(new FormData(form).getAll("sort")).toEqual(["title"]);
+  });
+
+  it("sends no order with the filters when a search without one finds nothing", async () => {
+    wideScreen();
+    const none = listOf([], 0);
+    const search = "?q=zzz&kind=poem";
+    await renderPieces(
+      search,
+      loaded(search, { ...none, facets: { ...none.facets, letters: [] } })
+    );
+    const form = screen
+      .getByRole("button", { name: "Apply filters" })
+      .closest("form");
+    if (!form) throw new Error("no facet form");
+    expect(new FormData(form).getAll("sort")).toEqual([]);
+  });
+
   it("says no pieces match the filters, and offers to clear them", async () => {
     await renderPieces("?letter=Q", loaded("?letter=Q", listOf([], 0)));
     expect(

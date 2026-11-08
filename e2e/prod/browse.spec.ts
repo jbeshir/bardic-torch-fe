@@ -151,6 +151,22 @@ test("the search box searches every letter, straight to the canonical URL", asyn
   await expect(
     main(page).getByRole("combobox", { name: "Sort by" })
   ).toHaveValue("");
+  // The box shows the search as the page has it, trimmed; the chip that
+  // takes the search off empties it, and Escape empties a typed one.
+  const searchbox = main(page).getByRole("searchbox", {
+    name: "Search pieces",
+  });
+  await expect(searchbox).toHaveValue("kettle");
+  await main(page)
+    .getByRole("link", { name: /^Remove Search: / })
+    .click();
+  await expect(page).toHaveURL(/\/pieces$/);
+  await expect(searchbox).toHaveValue("");
+  await searchbox.fill("drill");
+  await searchbox.press("Escape");
+  await expect(searchbox).toHaveValue("");
+  await expect(searchbox).toBeFocused();
+  await expect(page).toHaveURL(/\/pieces$/);
 });
 
 test("checkpoint: no-results, a search that matches nothing", async ({
@@ -211,28 +227,46 @@ test.describe("at 1280 the facet column", () => {
   }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await open(page, "/pieces?kind=poem&term=eerie");
+    // The column and the results are one grid row, stretched to its
+    // height, so their own boxes line up by construction: compare what
+    // starts each (the Filters heading, the search form) and measure the
+    // facet form, which isn't stretched.
     const column = filters(page);
-    // The results column starts with the search form.
-    const results = main(page).getByRole("search");
+    const heading = column.getByRole("heading", { level: 2, name: "Filters" });
+    const form = column.locator("form");
+    const search = main(page).getByRole("search");
     const boxes = async () => {
-      const [columnBox, resultsBox] = await Promise.all([
+      const [columnBox, headingBox, formBox, searchBox] = await Promise.all([
         column.boundingBox(),
-        results.boundingBox(),
+        heading.boundingBox(),
+        form.boundingBox(),
+        search.boundingBox(),
       ]);
-      if (!columnBox || !resultsBox) throw new Error("not laid out");
-      return { column: columnBox, results: resultsBox };
+      if (!columnBox || !headingBox || !formBox || !searchBox) {
+        throw new Error("not laid out");
+      }
+      return {
+        column: columnBox,
+        heading: headingBox,
+        form: formBox,
+        search: searchBox,
+      };
     };
     const own = await boxes();
     await applyWiderText(page);
     const widened = await boxes();
-    // Not vacuous: the column's labels wrap further, so it grows.
-    expect(widened.column.height).toBeGreaterThan(own.column.height);
-    for (const [label, { column: left, results: right }] of [
+    // Not vacuous: the facets' labels wrap further, so the form grows.
+    expect(widened.form.height).toBeGreaterThan(own.form.height);
+    for (const [label, box] of [
       ["own sans", own],
       ["wider text", widened],
     ] as const) {
-      expect(left.x + left.width, label).toBeLessThanOrEqual(right.x);
-      expect(Math.abs(left.y - right.y), label).toBeLessThan(SUB_PIXEL);
+      expect(box.column.x + box.column.width, label).toBeLessThanOrEqual(
+        box.search.x
+      );
+      expect(Math.abs(box.heading.y - box.search.y), label).toBeLessThan(
+        SUB_PIXEL
+      );
     }
     // And the widened page still fits the window's width.
     expect(
