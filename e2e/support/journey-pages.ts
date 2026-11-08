@@ -131,6 +131,10 @@ const JOURNEY_PAGES: readonly JourneyPage[] = [
       main(page).getByRole("searchbox", { name: "Search pieces" }),
     ],
     inShell: true,
+    // 123 stops at 1280 and 125 at 360, beside the facet column: alone
+    // its walk takes about 14 s, but with four workers busy it ran past
+    // 90 s (on FE2's own commit too).
+    long: true,
   },
   {
     name: "/pieces",
