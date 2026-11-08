@@ -93,9 +93,14 @@ test("journey: from the A–Z to a piece's links, licensing and history", async 
 test("checkpoint: stub, with its banner", async ({ page }) => {
   await open(page, "/pieces/the-unfinished-lay");
   await expect(main(page).getByText("This page is a stub.")).toBeVisible();
-  await expect(
-    main(page).getByRole("link", { name: "How to contribute" })
-  ).toHaveAttribute("href", "/help/contributing");
+  // Two of them: the banner's and the empty state's.
+  const contribute = main(page).getByRole("link", {
+    name: "How to contribute",
+  });
+  await expect(contribute).toHaveCount(2);
+  for (const link of await contribute.all()) {
+    await expect(link).toHaveAttribute("href", "/help/contributing");
+  }
   await checkpoint(page, "stub");
 });
 
@@ -104,8 +109,9 @@ test("checkpoint: restricted, its links inside one closed disclosure", async ({
 }) => {
   await open(page, "/pieces/the-dragons-hoard");
   await expect(
+    // The banner's title (the closed disclosure repeats the sentence).
     main(page).getByText(
-      "The creator has asked that this work isn’t recorded or shared."
+      /^Information: The creator has asked that this work isn’t recorded or shared\.$/
     )
   ).toBeVisible();
   await expect(
@@ -140,20 +146,23 @@ test("opens a restricted piece's links on request, saying why first", async ({
   page,
 }) => {
   await open(page, "/pieces/the-dragons-hoard");
-  const summary = main(page).getByText(
-    "Show links (the creator asks that this isn’t shared further)"
-  );
-  await summary.focus();
+  const text = "Show links (the creator asks that this isn’t shared further)";
+  const details = main(page).locator("details", { hasText: text });
+  await details.getByText(text).focus();
   await page.keyboard.press("Enter");
-  const details = main(page).locator("details", { has: summary });
   await expect(details).toHaveAttribute("open", "");
   await expect(details.locator("p").first()).toHaveText(
     "The creator has asked that this work isn’t recorded or shared. These links are listed for reference only; please don’t repost them."
   );
   await expect(
-    details.getByRole("link", { name: "The text of the poem (external link)" })
+    // Listed under Text and under Licensing sources.
+    details
+      .getByRole("link", { name: "The text of the poem (external link)" })
+      .first()
   ).toBeVisible();
-  await expect(details.getByText("This link may be broken")).toBeVisible();
+  await expect(
+    details.getByText("This link may be broken").first()
+  ).toBeVisible();
   await expect(
     details.getByRole("link", { name: /Archived copy/ })
   ).toHaveCount(0);
@@ -169,8 +178,10 @@ test("shows 12 of 15 categories, and the rest on request", async ({ page }) => {
   await more.focus();
   await page.keyboard.press("Enter");
   await expect(categories.getByRole("link")).toHaveCount(15);
-  await expect(more).toHaveAttribute("aria-expanded", "true");
-  await expect(more).toBeFocused();
+  // The same button, now offering to hide them again.
+  const fewer = categories.getByRole("button", { name: "Show fewer" });
+  await expect(fewer).toHaveAttribute("aria-expanded", "true");
+  await expect(fewer).toBeFocused();
 });
 
 test("drops a credit to someone who asked not to have a page, and never says “unknown author”", async ({

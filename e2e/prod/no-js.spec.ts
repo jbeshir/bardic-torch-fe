@@ -255,9 +255,9 @@ test.describe("/pieces/:slug", () => {
     await details.locator("summary").click();
     await expect(details).toHaveAttribute("open", "");
     await expect(
-      details.getByRole("link", {
-        name: "The text of the poem (external link)",
-      })
+      details
+        .getByRole("link", { name: "The text of the poem (external link)" })
+        .first() // listed under Text and under Licensing sources
     ).toBeVisible();
   });
 
