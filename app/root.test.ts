@@ -4,6 +4,7 @@ import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
 import { shouldRevalidate } from "./root";
 import { data } from "react-router";
+import stylesheetUrl from "../test/support/stylesheet-url";
 import { routeData } from "~/test/single-fetch";
 import * as indexModule from "./routes/_index";
 import * as notFoundModule from "./routes/$";
@@ -104,6 +105,18 @@ describe("root loader", () => {
     expect(html).toMatch(
       /<form(?=[^>]* method="post")(?=[^>]* action="\/auth\/logout")[^>]*>/
     );
+  });
+});
+
+describe("root document", () => {
+  it("links a stylesheet with a non-empty href", async () => {
+    const html = await (await get("/")).text();
+    const hrefs = [...html.matchAll(/<link[^>]*rel="stylesheet"[^>]*>/g)].map(
+      link => /href="([^"]*)"/.exec(link[0])?.[1]
+    );
+    // vitest.config.ts aliases `~/styles/app.css?url` to this stub.
+    expect(hrefs).toContain(stylesheetUrl);
+    for (const href of hrefs) expect(href).toBeTruthy();
   });
 });
 

@@ -20,6 +20,16 @@ beforeEach(() => {
   }
 });
 
+// React warns (console.error) about an empty href, which is what an
+// unresolved stylesheet URL renders. Fail on it, so it can't come back.
+const consoleError = console.error.bind(console);
+console.error = (...args: unknown[]) => {
+  if (typeof args[0] === "string" && args[0].includes("An empty string")) {
+    throw new Error(args[0]);
+  }
+  consoleError(...args);
+};
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();

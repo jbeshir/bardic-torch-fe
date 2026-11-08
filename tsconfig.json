@@ -35,6 +35,9 @@
     },
 
     // Vite takes care of building everything, not tsc.
-    "noEmit": true
+    "noEmit": true,
+    // Allowed because nothing is emitted. The files Vite's config loader
+    // reads (test/config-imports.test.ts) import each other with `.ts`.
+    "allowImportingTsExtensions": true
   }
 }

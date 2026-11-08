@@ -1,4 +1,4 @@
-import type { AppEnv } from "./env.server";
+import type { AppEnv } from "./env.server.ts";
 
 /**
  * Headers for every response the app makes: entry.server adds them to

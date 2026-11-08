@@ -3,8 +3,8 @@ import mdx from "@mdx-js/rollup";
 import { reactRouter } from "@react-router/dev/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
-import { MARKDOWN_OPTIONS } from "./app/content/markdown/options";
-import { ENV_NAMES } from "./app/server/env.server";
+import { MARKDOWN_OPTIONS } from "./app/content/markdown/options.ts";
+import { ENV_NAMES } from "./app/server/env.server.ts";
 
 // Under `react-router dev`, variables set in the process environment
 // override .dev.vars, so `npm run dev:fixtures` can point the app at the

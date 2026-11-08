@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { withStaticPageHeaders } from "./security-headers.server";
+import { withStaticPageHeaders } from "./security-headers.server.ts";
 
 /**
  * The Worker's environment, validated on every request. Bindings arrive as

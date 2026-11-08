@@ -14,6 +14,11 @@ import { createWorkerHandler } from "./worker.server";
 // security headers on every answer (resource routes included), and the
 // answers it gives itself before React Router runs.
 
+/** Every route module, by its path from this file (a static glob, which Vite can analyse). */
+const ROUTE_MODULES = import.meta.glob<{ default?: unknown }>(
+  "../routes/**/*.tsx"
+);
+
 const handled = vi.hoisted(() => ({ requests: [] as string[], created: 0 }));
 
 // React Router's handler, counted: how often it is created, and which
@@ -397,9 +402,11 @@ describe("the Worker's CSRF check (React Router's, answered before it runs)", ()
     async function collect(entries: readonly Entry[], parent: string) {
       for (const route of entries) {
         const routePath = [parent, route.path].filter(Boolean).join("/");
-        const module = (await import(`../${route.file}`)) as {
-          default?: unknown;
-        };
+        const load = ROUTE_MODULES[`../${route.file}`];
+        if (load === undefined) {
+          throw new Error(`${route.file} is not in ROUTE_MODULES`);
+        }
+        const module = await load();
         found.push({
           path: `/${routePath.replace(/:\w+|\*/g, "x")}`,
           page: module.default !== undefined,
