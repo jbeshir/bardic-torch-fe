@@ -12,9 +12,9 @@ Many bardic works have been lost because the only copy was on a website that wen
 
 :::infobox{title="At a glance"}
 
-- [Low Risk](#low-risk): found in at least 4 places
+- [Low risk](#low-risk): found in at least 4 places
 - [Endangered](#endangered): found in 3 places or fewer
-- [Critically Endangered](#critically-endangered): can’t be found, or only in part
+- [Critically endangered](#critically-endangered): can’t be found, or only in part
 - [Restricted](#how-restricted-works): the creator doesn’t want it recorded, archived or shared
 - [Unassessed](#unassessed): nobody has checked yet
 
@@ -24,15 +24,15 @@ Many bardic works have been lost because the only copy was on a website that wen
 
 | Status                    | What it means                                                                                                                                                                                                  |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Low Risk**              | The work exists in **at least 4** known places.                                                                                                                                                                |
+| **Low risk**              | The work exists in **at least 4** known places.                                                                                                                                                                |
 | **Endangered**            | The work exists in **3 or fewer** known places, and isn’t Restricted.                                                                                                                                          |
-| **Critically Endangered** | Nobody can find the work, or can find only part of it (for example, the lyrics but not the melody), and it isn’t Restricted. It may be mentioned in indexes or histories, but you can’t easily get hold of it. |
+| **Critically endangered** | Nobody can find the work, or can find only part of it (for example, the lyrics but not the melody), and it isn’t Restricted. It may be mentioned in indexes or histories, but you can’t easily get hold of it. |
 | **Restricted**            | The creator doesn’t allow the work to be recorded, archived or shared. This overrides every other status.                                                                                                      |
 | **Unassessed**            | Nobody has worked out a status yet. Most pieces start here.                                                                                                                                                    |
 
 :::note
 
-**Exactly 3 places now counts as Endangered.** The original wiki defined Low Risk as at least 4 places and Endangered as fewer than 3, which left exactly 3 undecided. On Bardic Torch, a piece needs 4 places to be Low Risk.
+**Exactly 3 places now counts as Endangered.** The original wiki defined Low risk as at least 4 places and Endangered as fewer than 3, which left exactly 3 undecided. On Bardic Torch, a piece needs 4 places to be Low risk.
 
 :::
 
@@ -62,10 +62,10 @@ Statuses are set like this:
 
 ## How you can help
 
-- **Add links.** If you know of performances, lyrics, recordings, or places to buy or borrow an Endangered or Critically Endangered work, add them to the piece.
-- **Suggest a new status.** When a piece gains enough places to move up (Endangered to Low Risk, or Critically Endangered to Endangered), suggest the change and give the reason. A moderator will confirm it.
-- **Spot losses.** If a Low Risk piece has lost its places, suggest moving it down. That might be because the websites went down, the piece was removed, the seller stopped selling it, or the person holding the hard copy can no longer be contacted.
-- **Host a copy.** If you have a copy of an Endangered or Critically Endangered piece, and the creator’s wishes allow it, consider putting it on your own site or in a community archive so we can link to it. See the [collections](/collections) for community archives and songbooks.
+- **Add links.** If you know of performances, lyrics, recordings, or places to buy or borrow an Endangered or Critically endangered work, add them to the piece.
+- **Suggest a new status.** When a piece gains enough places to move up (Endangered to Low risk, or Critically endangered to Endangered), suggest the change and give the reason. A moderator will confirm it.
+- **Spot losses.** If a Low risk piece has lost its places, suggest moving it down. That might be because the websites went down, the piece was removed, the seller stopped selling it, or the person holding the hard copy can no longer be contacted.
+- **Host a copy.** If you have a copy of an Endangered or Critically endangered piece, and the creator’s wishes allow it, consider putting it on your own site or in a community archive so we can link to it. See the [collections](/collections) for community archives and songbooks.
 
 Each piece’s status badge links to its entry on this page. To see pieces by status, browse [endangered pieces](/pieces?status=endangered), [critically endangered pieces](/pieces?status=critically_endangered) or [low-risk pieces](/pieces?status=low_risk), or see every status on the [categories](/categories?facet=conservation) page.
 
@@ -73,9 +73,9 @@ Each piece’s status badge links to its entry on this page. To see pieces by st
 
 Some creators don’t want their work recorded, archived or shared. It might belong to an oral tradition, or be meant only for the people in the room. That wish comes first.
 
-- **Restricted overrides everything.** A Restricted piece is never marked Endangered or Critically Endangered, however few places it exists in. Those statuses exist to help works be found and preserved, and these works shouldn’t be.
+- **Restricted overrides everything.** A Restricted piece is never marked Endangered or Critically endangered, however few places it exists in. Those statuses exist to help works be found and preserved, and these works shouldn’t be.
 - **No ‘help preserve’ prompts.** A Restricted piece’s page doesn’t ask anyone to find, add or host copies. It shows the creator’s wishes and a link to where they stated them.
 - **It needs a source.** Like any statement about a creator’s wishes, Restricted must link to a public page where the creator said so. See the [FAQ for bards](/help/faq-for-bards) for how creators can do this.
 - **Please respect it.** Don’t add recordings or copies of a Restricted work, here or anywhere else.
 
-If you’re a bard and want your work treated this way, the [Bard preference checklist](/help/bard-preference-checklist) can help you word your wishes.
+If you’re a bard and want your work treated this way, the [bard preference checklist](/help/bard-preference-checklist) can help you word your wishes.

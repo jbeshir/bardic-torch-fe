@@ -28,7 +28,7 @@ test("an unknown URL is a 404 page inside the shell", async ({ page }) => {
   // The catalogue's own search for the address's last part (C3.2).
   await expect(
     main.getByRole("link", {
-      name: "Search the catalogue for ‘Ballad of the Bell’",
+      name: "Search for ‘Ballad of the Bell’",
     })
   ).toHaveAttribute("href", "/search?q=Ballad+of+the+Bell");
 
@@ -146,7 +146,7 @@ test("an old wiki address searches the catalogue for its page", async ({
   await waitForHydration(page);
   const main = page.getByRole("main");
   await main
-    .getByRole("link", { name: "Search the catalogue for ‘Northmarch Rising’" })
+    .getByRole("link", { name: "Search for ‘Northmarch Rising’" })
     .click();
   await expect(page).toHaveURL(/\/search\?q=Northmarch\+Rising$/);
   await expect(

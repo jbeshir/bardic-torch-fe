@@ -77,9 +77,9 @@ test.describe("/bards", () => {
   }) => {
     await open(page, "/bards?affiliation=gone-kingdom");
     await expect(
-      main(page).getByText(
-        "That affiliation no longer exists, so we left it out."
-      )
+      main(page)
+        .getByText("That affiliation no longer exists, so we left it out.")
+        .and(page.locator("div"))
     ).toBeVisible();
   });
 

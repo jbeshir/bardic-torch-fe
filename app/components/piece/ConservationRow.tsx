@@ -1,8 +1,7 @@
 import { formatDate, formatNumber } from "~/catalogue/format";
-import { isUserUrl } from "~/catalogue/user-url";
+import { UserLink } from "~/components/catalogue/UserLink";
 import { Disclosure } from "~/components/catalogue/Disclosure";
 import { ConservationBadge } from "~/components/ui/ConservationBadge";
-import { Link } from "~/components/ui/Link";
 import type { Piece } from "~/schemas/catalogue";
 
 /**
@@ -21,7 +20,7 @@ export function ConservationRow({
   const history = piece.conservation_history;
   return (
     <div className="grid justify-items-start gap-2">
-      <ConservationBadge status={piece.conservation_status} link />
+      <ConservationBadge status={piece.conservation_status} size="sm" link />
       {history.length > 0 ? (
         <Disclosure
           summary={`Status history (${formatNumber(history.length)})`}
@@ -45,10 +44,14 @@ export function ConservationRow({
                   />
                 </span>
                 <span>{change.reason}</span>
-                {change.source_url && isUserUrl(change.source_url) ? (
-                  <Link to={change.source_url} userContent compact>
+                {change.source_url ? (
+                  <UserLink
+                    url={change.source_url}
+                    appearance="standalone"
+                    compact
+                  >
                     Source
-                  </Link>
+                  </UserLink>
                 ) : null}
               </li>
             ))}

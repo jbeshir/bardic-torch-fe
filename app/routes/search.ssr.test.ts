@@ -186,6 +186,30 @@ describe("/search loader", () => {
       { kind: "bad_gateway" },
     ],
     [
+      "pieces",
+      "a 400",
+      () =>
+        fixtures.fail({
+          operationId: "listPieces",
+          status: 400,
+          code: "invalid_request",
+          match: { q: "northmarch" },
+        }),
+      { kind: "invalid_filters" },
+    ],
+    [
+      "terms",
+      "a 400",
+      () =>
+        fixtures.fail({
+          operationId: "listTerms",
+          status: 400,
+          code: "invalid_request",
+        }),
+      // A list of checked values, not a search: our request was wrong.
+      { kind: "bad_gateway" },
+    ],
+    [
       "persons",
       "a 400",
       () =>

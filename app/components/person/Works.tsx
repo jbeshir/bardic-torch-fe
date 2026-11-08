@@ -1,5 +1,6 @@
 import { CREDIT_ROLES } from "~/constants/enums";
 import { Fragment } from "react";
+import { MoreNotListed } from "~/components/catalogue/MoreNotListed";
 import { formatNumber } from "~/catalogue/format";
 import { ConservationBadge } from "~/components/ui/ConservationBadge";
 import { Link } from "~/components/ui/Link";
@@ -44,21 +45,6 @@ function WorksTable({ works }: { readonly works: readonly Work[] }) {
       </tbody>
     </table>
   );
-}
-
-/** "and 5 more not listed here", when the API listed only some. */
-export function MoreNotListed({
-  shown,
-  total,
-}: {
-  readonly shown: number;
-  readonly total: number;
-}) {
-  return total > shown ? (
-    <p className="text-caption text-fg-subtle">
-      and {formatNumber(total - shown)} more not listed here
-    </p>
-  ) : null;
 }
 
 /**

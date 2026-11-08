@@ -1,9 +1,8 @@
-import { isUserUrl } from "~/catalogue/user-url";
+import { UserLink } from "~/components/catalogue/UserLink";
 import { personStatus } from "~/catalogue/person";
 import { LicensingSummary } from "~/components/catalogue/LicensingCard";
 import { linkName } from "~/components/links/LinkRow";
 import { Infobox } from "~/components/ui/Infobox";
-import { Link } from "~/components/ui/Link";
 import { TagList } from "~/components/ui/TagList";
 import {
   PERSON_ALIAS_KIND_LABELS,
@@ -27,13 +26,9 @@ function Websites({ profile }: { readonly profile: Profile }) {
     <ul role="list" className="grid gap-1 wrap-anywhere">
       {websites.map(link => (
         <li key={link.url}>
-          {isUserUrl(link.url) ? (
-            <Link to={link.url} userContent>
-              {linkName(link)}
-            </Link>
-          ) : (
-            linkName(link)
-          )}
+          <UserLink url={link.url} appearance="standalone">
+            {linkName(link)}
+          </UserLink>
         </li>
       ))}
     </ul>

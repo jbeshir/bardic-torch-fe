@@ -12,10 +12,17 @@
     margin-block: 0 1em;
   }
 
+  /* The first block shares a top line with a floated infobox beside it. */
+  .prose-bt > :first-child {
+    margin-top: 0;
+  }
+
   .prose-bt :where(h2):not(:where(.not-prose, .not-prose *)) {
     @apply text-h2;
     margin-block: 2em 0.5em;
     padding-bottom: 0.25em;
+    /* Its rule stops at a floated infobox instead of running under it. */
+    display: flow-root;
     border-bottom: 1px solid rgb(var(--bt-border));
   }
 

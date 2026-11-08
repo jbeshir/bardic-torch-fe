@@ -2,7 +2,7 @@ import { RowTable } from "~/components/catalogue/RowTable";
 import { UserLink } from "~/components/catalogue/UserLink";
 import { ConservationBadge } from "~/components/ui/ConservationBadge";
 import { Link } from "~/components/ui/Link";
-import { formatNumber } from "~/catalogue/format";
+import { MoreNotListed } from "~/components/catalogue/MoreNotListed";
 import { linkExposure, LINK_NOT_SHOWN } from "~/catalogue/restricted";
 import {
   LINK_ROLE_LABELS,
@@ -16,11 +16,13 @@ function Cited({ citation }: { readonly citation: CollectionCitation }) {
   const { piece, person } = citation;
   if (piece) {
     return (
-      <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <Link to={`/pieces/${piece.slug}`} appearance="prose">
           {piece.title}
         </Link>
-        <span className="text-fg-muted">{PIECE_KIND_LABELS[piece.kind]}</span>
+        <span className="text-caption text-fg-muted">
+          {PIECE_KIND_LABELS[piece.kind]}
+        </span>
         {piece.conservation_status === "restricted" ? (
           <ConservationBadge status="restricted" size="sm" />
         ) : null}
@@ -29,11 +31,13 @@ function Cited({ citation }: { readonly citation: CollectionCitation }) {
   }
   if (person) {
     return (
-      <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <Link to={`/bards/${person.slug}`} appearance="prose">
           {person.name}
         </Link>
-        <span className="text-fg-muted">{PERSON_KIND_LABELS[person.kind]}</span>
+        <span className="text-caption text-fg-muted">
+          {PERSON_KIND_LABELS[person.kind]}
+        </span>
       </span>
     );
   }
@@ -56,7 +60,7 @@ function CitedLink({ citation }: { readonly citation: CollectionCitation }) {
  * is cited by, its place in the collection and the link's roles, a table
  * from md and cards below. A restricted piece is named and linked to its
  * own page, with "Link not shown" for its link (§4.0). The API caps the
- * list at 200: "and {n} more" says how many aren't listed.
+ * list at 200: "and {n} more not listed here" says how many aren't listed.
  */
 export function Citations({
   citations,
@@ -104,11 +108,7 @@ export function Citations({
           },
         ]}
       />
-      {total > citations.length ? (
-        <p className="mt-3 text-body-sm text-fg-muted">
-          {`and ${formatNumber(total - citations.length)} more`}
-        </p>
-      ) : null}
+      <MoreNotListed shown={citations.length} total={total} />
     </>
   );
 }

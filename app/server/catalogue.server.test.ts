@@ -56,6 +56,7 @@ async function outage(match: Readonly<Record<string, string>>) {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 function quietErrors() {
   return vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -211,6 +212,34 @@ describe("listPieces: answers", () => {
         await delay("infinite");
         return contractResponse("listPieces", 200, EMPTY_LIST);
       })
+    );
+    expect(await listPieces(loadContext(), {})).toEqual({
+      ok: false,
+      failure: { kind: "resting", retryAfter: 30 },
+    });
+    expect(String(logged.mock.calls[0]?.[0])).toBe("listPieces timed out:");
+  });
+
+  it("is resting (Retry-After 30) when the body stalls after the headers", async () => {
+    const logged = quietErrors();
+    const timeout = AbortSignal.timeout.bind(AbortSignal);
+    vi.spyOn(AbortSignal, "timeout").mockImplementation(() => timeout(20));
+    // A stubbed fetch, not msw: msw keeps feeding Node's fetch after the
+    // timeout aborted it, and Node fails an internal assertion outside the
+    // test (as in api.server.test.ts). The race under test is ours.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(
+            new ReadableStream({
+              start(controller) {
+                controller.enqueue(new TextEncoder().encode('{"data":'));
+              },
+            }),
+            { headers: { "Content-Type": "application/json" } }
+          )
+      )
     );
     expect(await listPieces(loadContext(), {})).toEqual({
       ok: false,

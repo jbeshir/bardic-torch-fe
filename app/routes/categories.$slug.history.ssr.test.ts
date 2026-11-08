@@ -1,7 +1,7 @@
-import { http, HttpResponse } from "msw";
+import { http } from "msw";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { API_BASE_URL, routeArgs } from "~/test/context";
-import { contractResponse, offContractResponse } from "~/test/contract";
+import { historyFailures, historyRedirects } from "~/test/history-cases";
 import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
 import * as layoutModule from "./categories.$slug";
@@ -95,75 +95,27 @@ describe("/categories/:slug/history loader", () => {
     expect(seen).toEqual([]);
   });
 
-  it.each([
-    ["page 1", "?page=1", 301, "/categories/war/history"],
-    ["past the end", "?page=2", 302, "/categories/war/history"],
-    ["past the API", "?page=900", 302, "/categories/war/history"],
-  ])("redirects %s", async (_why, search, status, location) => {
-    const answer = await load("war", search);
-    expect(answer).toBeInstanceOf(Response);
-    expect((answer as Response).status).toBe(status);
-    expect((answer as Response).headers.get("Location")).toBe(location);
-  });
+  it.each(historyRedirects("/categories/war/history"))(
+    "redirects %s",
+    async (_why, search, status, location) => {
+      const answer = await load("war", search);
+      expect(answer).toBeInstanceOf(Response);
+      expect((answer as Response).status).toBe(status);
+      expect((answer as Response).headers.get("Location")).toBe(location);
+    }
+  );
 
-  it.each([
-    [
-      "a 404",
-      () =>
-        contractResponse("listTermRevisions", 404, {
-          code: "not_found",
-          message: "x",
-        }),
-      { kind: "not_found" },
-      404,
-    ],
-    [
-      "a 400 after our own check",
-      () =>
-        contractResponse("listTermRevisions", 400, {
-          code: "invalid_request",
-          message: "x",
-        }),
-      { kind: "not_found" },
-      404,
-    ],
-    [
-      "a 500",
-      () =>
-        contractResponse("listTermRevisions", 500, {
-          code: "internal",
-          message: "x",
-        }),
-      { kind: "server" },
-      500,
-    ],
-    [
-      "a network failure",
-      () => HttpResponse.error(),
-      { kind: "resting", retryAfter: 30 },
-      503,
-    ],
-    [
-      "a proxy's 503",
-      () => new HttpResponse("down", { status: 503 }),
-      { kind: "resting", retryAfter: 60 },
-      503,
-    ],
-    [
-      "a malformed body",
-      () =>
-        offContractResponse("listTermRevisions", 200, { data: [] }, "no total"),
-      { kind: "bad_gateway" },
-      502,
-    ],
-  ] as const)("throws %s", async (_why, respond, failure, status) => {
-    quietErrors();
-    fixtures.server.use(http.get(HISTORY, respond));
-    expect(await load("war")).toMatchObject({
-      data: failure,
-      init: { status },
-    });
-  });
+  it.each(historyFailures("listTermRevisions"))(
+    "throws %s",
+    async (_why, respond, failure, status) => {
+      quietErrors();
+      fixtures.server.use(http.get(HISTORY, respond));
+      expect(await load("war")).toMatchObject({
+        data: failure,
+        init: { status },
+      });
+    }
+  );
 });
 
 describe("/categories/:slug/history document", () => {

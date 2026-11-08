@@ -142,7 +142,7 @@ describe("Index route", () => {
       })
     ).toHaveAttribute("href", "/help/conservation-status");
     expect(cards[2]).toHaveTextContent(
-      "a moderator will review it before it goes live"
+      "Editing is not open yet: it arrives in a later release. Until then, send us the link to where a work lives, and once editing opens a moderator will review every edit before it goes live."
     );
   });
 

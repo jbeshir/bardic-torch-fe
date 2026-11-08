@@ -24,6 +24,7 @@ import { withoutRestrictedLink } from "~/catalogue/restricted";
 import { failureMeta, ignoreSearchChanges } from "~/catalogue/entity-route";
 import { pageMeta } from "~/catalogue/seo";
 import { categoryPath } from "~/catalogue/term-page";
+import { urlHost } from "~/catalogue/user-url";
 import {
   COLLECTION_KIND_LABELS,
   ENUMERABLE_LABELS,
@@ -107,7 +108,9 @@ function CollectionInfobox({
               label: "Where",
               value:
                 collection.url === null ? null : (
-                  <UserLink url={collection.url}>{collection.url}</UserLink>
+                  <UserLink url={collection.url}>
+                    {urlHost(collection.url)}
+                  </UserLink>
                 ),
             },
             {

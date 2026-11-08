@@ -1,5 +1,5 @@
 import { formatDate } from "~/catalogue/format";
-import { isUserUrl } from "~/catalogue/user-url";
+import { UserLink } from "~/components/catalogue/UserLink";
 import { Link } from "~/components/ui/Link";
 import { LINK_PLACE_TYPE_LABELS } from "~/constants/vocabulary";
 import type { Piece } from "~/schemas/catalogue";
@@ -41,13 +41,9 @@ export function LinkRow({
   return (
     <li className="grid gap-1 border-b border-border py-3 wrap-anywhere last:border-b-0">
       <span className="text-body">
-        {isUserUrl(link.url) ? (
-          <Link to={link.url} userContent compact>
-            {name}
-          </Link>
-        ) : (
-          name
-        )}
+        <UserLink url={link.url} appearance="standalone" compact>
+          {name}
+        </UserLink>
       </span>
       {caption.length > 0 ? (
         <span className="text-caption text-fg-subtle">

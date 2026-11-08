@@ -1,7 +1,7 @@
 import { http, HttpResponse } from "msw";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { API_BASE_URL, routeArgs } from "~/test/context";
-import { contractResponse } from "~/test/contract";
+import { historyFailures, historyRedirects } from "~/test/history-cases";
 import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
 import * as layoutModule from "./events.$slug";
@@ -33,10 +33,10 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-async function load(id: string): Promise<unknown> {
+async function load(id: string, search = ""): Promise<unknown> {
   try {
     return await historyModule.loader(
-      routeArgs(new Request(`https://app.test/events/${id}/history`), {
+      routeArgs(new Request(`https://app.test/events/${id}/history${search}`), {
         params: { slug: id },
       })
     );
@@ -50,28 +50,41 @@ describe("/events/:slug/history", () => {
     expect(await load(id)).toMatchObject({ init: { status: 404 } });
   });
 
-  it("throws the history's failure", async () => {
+  it.each(historyRedirects("/events/midwinter-revel/history"))(
+    "redirects %s",
+    async (_why, search, status, location) => {
+      const answer = await load("midwinter-revel", search);
+      expect(answer).toBeInstanceOf(Response);
+      expect((answer as Response).status).toBe(status);
+      expect((answer as Response).headers.get("Location")).toBe(location);
+    }
+  );
+
+  it.each(historyFailures("listEventRevisions"))(
+    "throws %s",
+    async (_why, respond, failure, status) => {
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      fixtures.server.use(
+        http.get(`${API_BASE_URL}/v1/events/midwinter-revel/history`, respond)
+      );
+      expect(await load("midwinter-revel")).toMatchObject({
+        data: failure,
+        init: { status },
+      });
+    }
+  );
+
+  it("answers the document 503 with Retry-After when the history is down", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
-    fixtures.server.use(
-      http.get(`${API_BASE_URL}/v1/events/midwinter-revel/history`, () =>
-        contractResponse("listEventRevisions", 500, {
-          code: "internal",
-          message: "x",
-        })
-      )
-    );
-    expect(await load("midwinter-revel")).toMatchObject({
-      data: { kind: "server" },
-      init: { status: 500 },
-    });
     fixtures.server.use(
       http.get(`${API_BASE_URL}/v1/events/midwinter-revel/history`, () =>
         HttpResponse.error()
       )
     );
-    expect(await load("midwinter-revel")).toMatchObject({
-      init: { status: 503 },
-    });
+    const response = await get("/events/midwinter-revel/history");
+    expect(response.status).toBe(503);
+    expect(response.headers.get("Retry-After")).toBe("30");
+    expect(response.headers.get("Cache-Control")).toBe("private, no-cache");
   });
 
   it("is the event's history, titled and noindex", async () => {

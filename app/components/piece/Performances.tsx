@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { isUserUrl } from "~/catalogue/user-url";
+import { UserLink } from "~/components/catalogue/UserLink";
 import { linkName } from "~/components/links/LinkRow";
 import { Link } from "~/components/ui/Link";
 import type { Piece } from "~/schemas/catalogue";
@@ -46,12 +46,10 @@ function Performers({
 }
 
 function Recording({ link }: { readonly link: PieceLink }) {
-  return isUserUrl(link.url) ? (
-    <Link to={link.url} userContent appearance="plain">
+  return (
+    <UserLink url={link.url} appearance="plain">
       {linkName(link)}
-    </Link>
-  ) : (
-    linkName(link)
+    </UserLink>
   );
 }
 

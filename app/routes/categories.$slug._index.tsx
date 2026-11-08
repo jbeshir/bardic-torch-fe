@@ -193,7 +193,7 @@ export default function CategoryMembersRoute() {
               {affiliation ? "Search these bards" : "Filter these pieces"}
             </Link>
           </p>
-          <ul role="list" className="mt-2">
+          <ul role="list" className="mt-2 flow-root">
             <Members term={term} />
           </ul>
           <div className="mt-6">

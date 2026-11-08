@@ -516,11 +516,11 @@ test.describe("history", () => {
     const views = main.getByRole("navigation", { name: "Page views" });
     await views.getByRole("link", { name: "History" }).click();
     await expect(page).toHaveURL(/\/events\/midwinter-revel\/history$/);
-    await expect(main.getByText("2 revisions")).toBeVisible();
+    await expect(main.getByText("2 revisions", { exact: true })).toBeVisible();
     await views.getByRole("link", { name: "Read" }).click();
     await expect(page).toHaveURL(/\/events\/midwinter-revel$/);
   });
-  test("a history row leads to its revision, and Older revision to the one before", async ({
+  test("a history row leads to its revision, and Previous revision to the one before", async ({
     page,
   }) => {
     await page.goto("/pieces/the-copper-kettle/history");
@@ -534,7 +534,7 @@ test.describe("history", () => {
     await expect(
       main.getByRole("heading", { level: 1, name: /^Revision 1014 of / })
     ).toBeVisible();
-    await main.getByRole("link", { name: "Older revision" }).click();
+    await main.getByRole("link", { name: "Previous revision" }).click();
     await expect(page).toHaveURL(/\/revisions\/1004$/);
     await main
       .getByRole("link", { name: "View the piece as it is now" })

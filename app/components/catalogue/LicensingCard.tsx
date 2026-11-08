@@ -106,7 +106,7 @@ export function LicensingCard({
   readonly sourcesHidden?: boolean;
 }) {
   return (
-    <div className="not-prose my-8">
+    <div className="not-prose my-8 flow-root">
       <Card title="Licensing" headingLevel={2} headingId={LICENSING_ID}>
         <div className="grid gap-3 text-body text-fg">
           <Status status={status} subject={subject} />

@@ -96,7 +96,7 @@ test("checkpoint: revision, a piece's changes against its base", async ({
   await checkpoint(page, "revision");
 });
 
-test("history: piece → History tab → newest row → its changes → Older revision → the first version", async ({
+test("history: piece → History tab → newest row → its changes → Previous revision → the first version", async ({
   page,
 }) => {
   await open(page, "/pieces/the-copper-kettle");
@@ -121,7 +121,7 @@ test("history: piece → History tab → newest row → its changes → Older re
   ).toBeVisible();
   // Back through 1004 and 1003 to the import, which has no base.
   for (const older of [1004, 1003, 1001]) {
-    await main(page).getByRole("link", { name: "Older revision" }).click();
+    await main(page).getByRole("link", { name: "Previous revision" }).click();
     await expect(page).toHaveURL(new RegExp(`/revisions/${older}$`));
   }
   await expect(
@@ -134,7 +134,7 @@ test("history: piece → History tab → newest row → its changes → Older re
     main(page).getByText("This is how the revision looks today.")
   ).toBeVisible();
   await expect(
-    main(page).getByRole("link", { name: "Older revision" })
+    main(page).getByRole("link", { name: "Previous revision" })
   ).toHaveCount(0);
   await main(page)
     .getByRole("link", { name: "View the piece as it is now" })

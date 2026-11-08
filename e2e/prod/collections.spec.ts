@@ -103,7 +103,9 @@ test("a long list of citations says how many more there are", async ({
   page,
 }) => {
   await open(page, "/collections/9");
-  await expect(main(page).getByText("and 5 more")).toBeVisible();
+  await expect(
+    main(page).getByText("and 5 more not listed here")
+  ).toBeVisible();
 });
 
 test("an id that can't be one is a 404 without asking the API", async ({

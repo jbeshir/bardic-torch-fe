@@ -426,7 +426,7 @@ describe("/pieces/:slug document", () => {
     const main = mainOf(
       await (await get("/pieces/the-ashdown-wassail")).text()
     );
-    expect(main).toContain("Tune (tune)");
+    expect(main).toContain("Tune");
     expect(main).toContain("Traditional");
     expect(main).not.toContain("hollis");
     expect(main).not.toContain("Hollis");

@@ -57,6 +57,11 @@ export function isResting(error: unknown): boolean {
  * wiki, since its old pages don't redirect here yet. An entity page's 404
  * says what wasn't found in `title`: "We couldn’t find that piece".
  */
+/** A long address segment, cut short so the search button stays one line. */
+function shortened(term: string): string {
+  return term.length > 32 ? `${term.slice(0, 31)}…` : term;
+}
+
 export function NotFound({
   pathname,
   title = "We couldn’t find that page",
@@ -81,9 +86,7 @@ export function NotFound({
                 : SEARCH.action
             }
           >
-            {term
-              ? `Search the catalogue for ‘${term}’`
-              : "Search the catalogue"}
+            {term ? `Search for ‘${shortened(term)}’` : "Search the catalogue"}
           </ButtonLink>
           <Link to={wikiSearchUrl(term)}>Look on the original wiki</Link>
         </>

@@ -289,7 +289,9 @@ const JOURNEY_PAGES: readonly JourneyPage[] = [
     name: "/revisions/1003",
     phase: "prod",
     open: visit("/revisions/1003"),
-    primary: page => [main(page).getByRole("link", { name: "Older revision" })],
+    primary: page => [
+      main(page).getByRole("link", { name: "Previous revision" }),
+    ],
     inShell: true,
   },
   {

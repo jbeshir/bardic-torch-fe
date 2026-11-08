@@ -12,11 +12,17 @@ import { useEffect, useRef, type ReactNode } from "react";
 export function Disclosure({
   summary,
   openWhen,
+  open,
+  primary,
   children,
 }: {
   /** The summary's words: "Status history (3)". */
   readonly summary: string;
   readonly openWhen?: string;
+  /** Open from the start (e.g. while a filter inside is applied). */
+  readonly open?: boolean;
+  /** A primary control on mobile: a 44 px target below lg (24 px from lg). */
+  readonly primary?: boolean;
   readonly children: ReactNode;
 }) {
   const ref = useRef<HTMLDetailsElement>(null);
@@ -26,8 +32,10 @@ export function Disclosure({
     }
   }, [openWhen]);
   return (
-    <details ref={ref} className="group">
-      <summary className="summary-plain inline-flex min-h-6 cursor-pointer items-center gap-1 rounded-sm text-body-sm font-medium text-link hover:text-link-hover">
+    <details ref={ref} open={open} className="group">
+      <summary
+        className={`summary-plain inline-flex ${primary ? "min-h-11 lg:min-h-6" : "min-h-6"} cursor-pointer items-center gap-1 rounded-sm text-body-sm font-medium text-link hover:text-link-hover`}
+      >
         {summary}
         <IconChevronDown
           size={16}

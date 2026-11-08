@@ -184,10 +184,7 @@ export default function Index() {
             </p>
             <ul role="list" className="mt-3 grid gap-2">
               {CARD_STATUSES.map(status => (
-                <li
-                  key={status}
-                  className="flex flex-wrap items-center gap-x-3 gap-y-1"
-                >
+                <li key={status} className="flex flex-col items-start gap-1">
                   <ConservationBadge status={status} size="sm" named />
                   <Link
                     to={pieceQuery.href(NO_PIECE_FILTERS, { status: [status] })}
@@ -201,10 +198,12 @@ export default function Index() {
           </Card>
           <Card title="Anyone can contribute">
             <p>
-              You don’t have to be a bard, and no contribution is too small. Log
-              in, add what you know, and a moderator will review it before it
-              goes live. That way the index can keep growing beyond what any one
-              person could maintain.
+              You don’t have to be a bard, and no contribution is too small.
+              Editing is not open yet: it arrives in a later release. Until
+              then, send us the link to where a work lives, and once editing
+              opens a moderator will review every edit before it goes live. That
+              way the index can keep growing beyond what any one person could
+              maintain.
             </p>
             <p className="mt-3">
               <Link to={CONTRIBUTE_HREF}>How to contribute</Link>

@@ -131,7 +131,9 @@ export function ErrorState({
           Reference: {reference}
         </p>
       ) : null}
-      <div className="mt-8 flex flex-wrap items-center gap-3">{actions}</div>
+      <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+        {actions}
+      </div>
     </div>
   );
 }

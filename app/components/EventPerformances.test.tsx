@@ -76,10 +76,9 @@ describe("EventPerformances", () => {
     expect(
       within(carol).getByRole("link", { name: /Midwinter carol, sung/ })
     ).toHaveAttribute("rel", "nofollow ugc noopener");
-    expect(carol).toHaveTextContent("(Videohall)");
     expect(open).toHaveTextContent("No particular piece");
     expect(
-      within(open).getByRole("link", { name: /video\.example\/open/ })
+      within(open).getByRole("link", { name: /video\.example/ })
     ).toBeInTheDocument();
   });
 
@@ -101,7 +100,7 @@ describe("EventPerformances", () => {
     await renderWithRouter(
       <EventPerformances performances={[CAROL]} total={203} />
     );
-    expect(screen.getByText("and 202 more")).toBeVisible();
+    expect(screen.getByText("and 202 more not listed here")).toBeVisible();
   });
 
   it("says when nothing is recorded", async () => {

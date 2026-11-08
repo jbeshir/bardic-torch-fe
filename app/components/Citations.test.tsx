@@ -112,7 +112,7 @@ describe("Citations", () => {
 
   it("says how many more there are past the cap", async () => {
     await renderWithRouter(<Citations citations={[KETTLE]} total={1206} />);
-    expect(screen.getByText("and 1,205 more")).toBeVisible();
+    expect(screen.getByText("and 1,205 more not listed here")).toBeVisible();
   });
 
   it("says when nothing is cited", async () => {

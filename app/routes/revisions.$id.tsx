@@ -100,7 +100,7 @@ export default function RevisionRoute() {
       )}
       <ul
         role="list"
-        className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-body-sm"
+        className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-body-sm"
       >
         <li>
           <Link to={entity.path} compact>
@@ -110,7 +110,7 @@ export default function RevisionRoute() {
         {revision.baseRevisionId === null ? null : (
           <li>
             <ButtonLink to={`/revisions/${revision.baseRevisionId}`}>
-              Older revision
+              Previous revision
             </ButtonLink>
           </li>
         )}

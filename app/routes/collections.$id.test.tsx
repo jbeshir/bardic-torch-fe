@@ -111,7 +111,7 @@ describe("/collections/:id page", () => {
       name: "The Northmarch Songbook",
     });
     expect(
-      within(infobox).getByRole("link", { name: /songs\.example\/12/ })
+      within(infobox).getByRole("link", { name: /^songs\.example(?!\/)/ })
     ).toHaveAttribute("rel", "nofollow ugc noopener");
     expect(
       within(infobox).getByRole("link", { name: "Northmarch" })

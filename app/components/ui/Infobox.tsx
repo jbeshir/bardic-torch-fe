@@ -46,7 +46,7 @@ export function InfoboxFactValue({
 }: {
   readonly children: ReactNode;
 }) {
-  return <dd className="text-fg">{children}</dd>;
+  return <dd className="min-w-0 wrap-anywhere text-fg">{children}</dd>;
 }
 
 function Rows({ rows }: { readonly rows: readonly InfoboxRow[] }) {

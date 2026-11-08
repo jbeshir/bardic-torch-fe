@@ -93,14 +93,12 @@ test("journey: from the A–Z to a piece's links, licensing and history", async 
 test("checkpoint: stub, with its banner", async ({ page }) => {
   await open(page, "/pieces/the-unfinished-lay");
   await expect(main(page).getByText("This page is a stub.")).toBeVisible();
-  // Two of them: the banner's and the empty state's.
+  // Only the banner's: the empty links state doesn't repeat it.
   const contribute = main(page).getByRole("link", {
     name: "How to contribute",
   });
-  await expect(contribute).toHaveCount(2);
-  for (const link of await contribute.all()) {
-    await expect(link).toHaveAttribute("href", "/help/contributing");
-  }
+  await expect(contribute).toHaveCount(1);
+  await expect(contribute).toHaveAttribute("href", "/help/contributing");
   await checkpoint(page, "stub");
 });
 

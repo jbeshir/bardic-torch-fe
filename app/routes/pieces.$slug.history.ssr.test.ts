@@ -1,7 +1,7 @@
 import { http, HttpResponse } from "msw";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { API_BASE_URL, routeArgs } from "~/test/context";
-import { contractResponse } from "~/test/contract";
+import { historyFailures, historyRedirects } from "~/test/history-cases";
 import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
 import * as layoutModule from "./pieces.$slug";
@@ -74,28 +74,35 @@ describe("/pieces/:slug/history", () => {
     });
   });
 
-  it("throws the history's failure", async () => {
+  it.each(historyRedirects("/pieces/the-copper-kettle/history"))(
+    "redirects %s",
+    async (_why, search, status, location) => {
+      const answer = await load("the-copper-kettle", search);
+      expect(answer).toBeInstanceOf(Response);
+      expect((answer as Response).status).toBe(status);
+      expect((answer as Response).headers.get("Location")).toBe(location);
+    }
+  );
+
+  it.each(historyFailures("listPieceRevisions"))(
+    "throws %s",
+    async (_why, respond, failure, status) => {
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      fixtures.server.use(http.get(HISTORY, respond));
+      expect(await load("the-copper-kettle")).toMatchObject({
+        data: failure,
+        init: { status },
+      });
+    }
+  );
+
+  it("answers the document 503 with Retry-After when the history is down", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
-    fixtures.server.use(
-      http.get(HISTORY, () =>
-        contractResponse("listPieceRevisions", 500, {
-          code: "internal",
-          message: "x",
-        })
-      )
-    );
-    expect(await load("the-copper-kettle")).toMatchObject({
-      data: { kind: "server" },
-      init: { status: 500 },
-    });
     fixtures.server.use(http.get(HISTORY, () => HttpResponse.error()));
-    expect(await load("the-copper-kettle")).toMatchObject({
-      init: { status: 503 },
-    });
-    expect(await load("no-such-piece")).toMatchObject({
-      data: { kind: "not_found" },
-      init: { status: 404 },
-    });
+    const response = await get("/pieces/the-copper-kettle/history");
+    expect(response.status).toBe(503);
+    expect(response.headers.get("Retry-After")).toBe("30");
+    expect(response.headers.get("Cache-Control")).toBe("private, no-cache");
   });
 
   it("is the piece's history, titled and noindex", async () => {

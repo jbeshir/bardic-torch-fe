@@ -29,8 +29,8 @@ import { wordDiff, type WordPart } from "./word-diff";
 
 /**
  * The changes a revision made (plan §4.11), as plain data for the page to
- * render: one row per changed field, in the API's order (`changed_fields`,
- * alphabetical), each labelled from the entity's field map and diffed by
+ * render: one row per changed field, in the page's order (the API's
+ * `changed_fields` are alphabetical), each labelled from the entity's field map and diffed by
  * the field's kind:
  *
  * - **scalar** (titles, kinds, flags, years, enums, URLs, references): its
@@ -606,6 +606,22 @@ function differs(diff: FieldDiff): boolean {
   }
 }
 
+/**
+ * The changed fields in the order the field map lists them, which is the
+ * page's order (the title first); a field the map doesn't list (a person's
+ * `profile`) goes last.
+ */
+function inPageOrder<Field extends string>(
+  fields: Readonly<Record<string, unknown>>,
+  changed: readonly Field[]
+): Field[] {
+  const rank = (field: string) => {
+    const place = Object.keys(fields).indexOf(field);
+    return place === -1 ? Infinity : place;
+  };
+  return [...changed].sort((a, b) => rank(a) - rank(b));
+}
+
 function rowsOf<Snapshot>(
   fields: Fields<Snapshot>,
   changed: readonly (keyof Snapshot & string)[],
@@ -613,7 +629,7 @@ function rowsOf<Snapshot>(
   base: Snapshot | null,
   context: Context
 ): DiffRow[] {
-  return changed.map(field => {
+  return inPageOrder(fields, changed).map(field => {
     const { label, read } = fields[field];
     return {
       field,
@@ -716,14 +732,15 @@ export function revisionChanges(revision: Revision): RevisionChanges {
       return {
         first,
         linksAsText: false,
-        rows: revision.changed_fields.flatMap(field =>
-          field === "profile"
-            ? profileRows(
-                snapshot.profile,
-                base === null ? undefined : base.profile,
-                context
-              )
-            : rowsOf(PERSON_FIELDS, [field], snapshot, base, context)
+        rows: inPageOrder(PERSON_FIELDS, revision.changed_fields).flatMap(
+          field =>
+            field === "profile"
+              ? profileRows(
+                  snapshot.profile,
+                  base === null ? undefined : base.profile,
+                  context
+                )
+              : rowsOf(PERSON_FIELDS, [field], snapshot, base, context)
         ),
       };
     }

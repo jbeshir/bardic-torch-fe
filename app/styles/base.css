@@ -112,8 +112,9 @@
   /*
    * Windows High Contrast: keep control edges and state marks visible. A
    * pressed, current or selected control is marked with a Highlight
-   * outline; focus is a thicker CanvasText one, and the state mark gives
-   * way to it, so focus on a marked control still changes what is drawn.
+   * outline (not the breadcrumb's current crumb, which is no control);
+   * focus is a thicker CanvasText one, and the state mark gives way to
+   * it, so focus on a marked control still changes what is drawn.
    */
   @media (forced-colors: active) {
     button {
@@ -124,7 +125,9 @@
       outline: 3px solid CanvasText;
     }
 
-    [aria-current]:not([aria-current="false"]):not(:focus-visible),
+    [aria-current]:not([aria-current="false"]):not(:focus-visible):not(
+        nav[aria-label="Breadcrumb"] *
+      ),
     [aria-pressed="true"]:not(:focus-visible),
     [aria-selected="true"]:not(:focus-visible) {
       outline: 2px solid Highlight;

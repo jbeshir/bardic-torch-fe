@@ -62,7 +62,7 @@ export function BardFilters({
     if (window.matchMedia(XL_QUERY).matches) apply(event.currentTarget);
   };
   return (
-    <Disclosure summary="Filters" openWhen={XL_QUERY}>
+    <Disclosure summary="Filters" openWhen={XL_QUERY} primary>
       <Form
         method="get"
         action="/bards"

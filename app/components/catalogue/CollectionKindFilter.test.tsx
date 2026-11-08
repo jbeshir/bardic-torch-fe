@@ -28,6 +28,15 @@ describe("CollectionKindFilter", () => {
     ).not.toHaveAttribute("open");
   });
 
+  it("shows a chevron on the summary, which the keyboard reaches", async () => {
+    await renderFilter("");
+    const user = userEvent.setup();
+    const summary = screen.getByText("Filter by kind").closest("summary");
+    expect(summary?.querySelector("svg")).toBeInTheDocument();
+    await user.tab();
+    expect(summary).toHaveFocus();
+  });
+
   it("opens on a chosen kind, saying how many", async () => {
     await renderFilter("?kind=blog&letter=C");
     const details = screen.getByText(/Filter by kind/).closest("details");

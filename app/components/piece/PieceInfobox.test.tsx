@@ -64,6 +64,20 @@ describe("PieceInfobox", () => {
     ]);
   });
 
+  it("names the part of a credit only when it adds something", async () => {
+    await render(
+      pieceOf({
+        credits: [
+          creditOf({ role: "lyrics", part: "verses" }),
+          creditOf({ role: "tune", part: "tune" }),
+        ],
+      })
+    );
+    expect(value("Words (verses)")).toBeVisible();
+    expect(value("Tune")).toBeVisible();
+    expect(within(box()).queryByText("Tune (tune)")).toBeNull();
+  });
+
   it("credits a named person with a link to their page, by role and part", async () => {
     await render(
       pieceOf({
@@ -72,7 +86,7 @@ describe("PieceInfobox", () => {
         ],
       })
     );
-    const credit = value("Tune (tune)");
+    const credit = value("Tune");
     expect(
       within(credit).getByRole("link", { name: "Wren of the Vale" })
     ).toHaveAttribute("href", "/bards/wren-of-the-vale");

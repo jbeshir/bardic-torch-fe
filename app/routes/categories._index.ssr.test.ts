@@ -117,6 +117,19 @@ describe("/categories loader", () => {
     expect(await load("")).toMatchObject({ counts: "failed" });
   });
 
+  it("is a bad gateway for a 400 on the counts: the query is ours, not the reader's", async () => {
+    quietErrors();
+    fixtures.fail({
+      operationId: "listPieces",
+      status: 400,
+      code: "invalid_request",
+    });
+    expect(await load("?facet=kind")).toMatchObject({
+      data: { kind: "bad_gateway" },
+      init: { status: 502 },
+    });
+  });
+
   it("is the page's failure when the counts are the page", async () => {
     quietErrors();
     fixtures.fail({ operationId: "listPieces", status: 500, code: "internal" });

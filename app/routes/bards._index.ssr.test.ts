@@ -184,15 +184,21 @@ describe("/bards loader", () => {
     });
   });
 
-  it("shows the list without the affiliations when only they fail", async () => {
-    quietErrors();
-    fixtures.fail({ operationId: "listTerms", status: 500, code: "internal" });
-    expect(await load("?letter=W")).toMatchObject({
-      failure: null,
-      affiliations: null,
-      list: { total: 2 },
-    });
-  });
+  it.each([
+    ["a 500", 500, "internal"],
+    ["a 400", 400, "invalid_request"],
+  ] as const)(
+    "shows the list without the affiliations when only they fail with %s",
+    async (_why, status, code) => {
+      quietErrors();
+      fixtures.fail({ operationId: "listTerms", status, code });
+      expect(await load("?letter=W")).toMatchObject({
+        failure: null,
+        affiliations: null,
+        list: { total: 2 },
+      });
+    }
+  );
 
   it("is search_timeout (500) for a 500 with q or a filter, and server for the plain A–Z", async () => {
     quietErrors();

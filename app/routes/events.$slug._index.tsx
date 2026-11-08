@@ -16,7 +16,10 @@ export default function EventReadRoute() {
   return (
     <>
       {description ? <UserMarkdown tree={description} /> : null}
-      <section aria-labelledby={headingId} className="not-prose mt-8">
+      <section
+        aria-labelledby={headingId}
+        className="not-prose clear-both mt-8"
+      >
         <h2 id={headingId} className="mb-3 text-h3 text-fg">
           Performances recorded here
         </h2>

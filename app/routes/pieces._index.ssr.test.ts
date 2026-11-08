@@ -627,6 +627,15 @@ describe("/pieces loader: the terms and stale categories (plan §2.4)", () => {
         }),
     ],
     [
+      "a 400",
+      () =>
+        fixtures.fail({
+          operationId: "listTerms",
+          status: 400,
+          code: "invalid_request",
+        }),
+    ],
+    [
       "a network failure",
       () =>
         fixtures.server.use(
