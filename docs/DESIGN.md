@@ -1220,6 +1220,27 @@ Read   Edit   History                         Last edited 3 Oct 2026
 - **Cells:** `min-h-9 min-w-9` (36 px) below lg, `min-h-8 min-w-8` from lg, `rounded-md body-sm`, `gap-1`; links `text-link` with the `surface-sunken` hover. They are not primary controls (WCAG 2.5.8 is met at 24 px).
 - **Built as:** `LetterBar({label, letters, current, href})` in `app/components/catalogue/`.
 
+### 6.30 Entity page parts (track B: C4, C5)
+
+**Tag: FE2.** The parts of a piece's and a bard's page, consumed by their routes (no styleguide specimens: the page checkpoints `piece/*`, `bard/*` cover them in both themes, plan §8 budget).
+
+- **EntityPage** (`app/components/EntityPage.tsx`): WikiPage (§10.2) with the entity's two views on the title rule, Read (`path`) and History (`{path}/history`, C8.1), as links in the "Page views" nav (§6.9 a′); `history={false}` leaves the single Read label (a person with no page). WikiPage gains the optional `subtitle` (the meta line under the h1, `body-sm text-fg-muted`, §5.4 item 3), `views` and `banners` (PageBanner, in a `grid gap-3` under the title rule). There is no Edit view until FE3.
+- **Sections** (`PageSection` / `pageSection` in `app/components/catalogue/PageSection.tsx`): each body section is a `<section aria-labelledby>` with a prose h2 (the h2 rule), and an entry of the page's contents (`TableOfContents`, from four h2s).
+- **Disclosure** (`app/components/catalogue/Disclosure.tsx`): a native `<details>`, closed; the summary is `summary-plain`, `min-h-6`, `body-sm font-medium text-link` with a 16 px chevron that turns on open. `openWhen` (a media query) opens it with JS where it matches (the bards' filters at xl). Used for the status history, the restricted links and the bards' filters.
+- **Credits** (`app/components/piece/Credits.tsx`): an infobox row per credit; the label is the role ("Words", "Tune", "Author", "Choreography", "Music", "Arrangement", "Translation") with the part in brackets ("Tune (tune)"); the value is the person's link or the attribution ("Traditional", "Unknown", "Anonymous", "Various"), the certainty qualifier in `text-fg-muted` ("(probably)", "(possibly)", and "(disputed)" after a 14 px `IconAlertTriangle`: the word carries it, never the icon alone) and the note as a caption. No credits is the empty value; never "unknown author".
+- **Origin** (`OriginRow`): the `origin`-facet terms as `sm` chips, the main source first with "(main source)", the others prefixed with their part ("Tune:").
+- **ConservationRow**: the `md` badge as a link (named "Conservation status: …", §6.13), and a Disclosure "Status history ({n})" with each change oldest first: `<time>` caption, the `sm` badge, the reason, and "Source ↗" (a reader's URL, `rel="nofollow ugc noopener"`).
+- **LinkGroups / LinkRow / Liveness** (`app/components/links/`): links grouped by role, an h3 each in `LinkRole` order (or `first` before the rest: a person's external profiles), a link under every role it has. A row (`ul.not-prose`, `border-b` rows, `wrap-anywhere`): the title or host as an external link (`nofollow ugc noopener`), a caption "{platform} · {place type} · Checked {date}" (the date only for `ok`), "In {collection} ({locator})" with the collection as an internal `plain` link, the description, and the liveness note: `dead` is `body-sm text-warning-fg` with a 16 px `IconAlertTriangle` (`text-warning-icon`; both pairs on `surface` are in §2.7) "This link may be broken" and "Archived copy ↗" when there is one and archives are allowed; `blocked` is the caption "This site wouldn’t let us check the link"; `ok` and `unknown` have no note.
+- **Performances** (`app/components/piece/Performances.tsx`): a prose table from md (Year, Performers, Event, Recording with "As described: ‘…’" in a `<q>`, Uploaded by), a bordered card per performance below md; newest year first, "Year unknown" last.
+- **The restricted disclosure** (`RestrictedLinks`, plan §4.0): under the h2 "Where it has been recorded", one closed Disclosure "Show links (the creator asks that this isn’t shared further)" whose body starts "The creator has asked that this work isn’t recorded or shared. These links are listed for reference only; please don’t repost them.", then the link groups without archived copies, then "Recorded performances". No "Add" or performance prompts. Off the piece's page a restricted piece's recording is the caption "Link not shown: see the piece page", with no anchor (`linkExposure`, `app/catalogue/restricted.ts`).
+- **LicensingCard** (`app/components/catalogue/LicensingCard.tsx`): the static Card (§6.11) with an h2 "Licensing" (`id="licensing"`, Card's new `headingId`), in a `not-prose` wrapper: "Licensing known" (`IconCircleCheck`) or "We don’t know how this piece is licensed yet" / "…how this person licenses their work yet" (`IconHelpCircle`), both icons `text-fg-muted`; a piece's licence by its family name (the 6 CC families link to `https://creativecommons.org/licenses/`, `CC_LICENCES_URL`, with the caption "The version isn’t recorded; check the source for the exact terms."); the notes (UserMarkdown); "Sources" (the `licensing_source` links, or "Sources are listed under Where it has been recorded." for a restricted piece); the etiquette caption linking to the bard preference checklist. `LicensingSummary` is the infobox row's link to it: "Known: CC BY-SA", "Known", "Unknown".
+- **RelatedPieces** and person **Relations**: one h3 per relation as read from this side ("Variant of" / "Variants", "Contrafactum of" / "Contrafacta", "Setting of" / "Settings", "Same text in another form"; "Member of" / "Members", "Heir of" / "Heirs", "Also recorded as"), PieceListItem rows or person links with their kind.
+- **Works** (`app/components/person/Works.tsx`): a prose table (Piece with its `sm` badge unless unassessed; "Credited for": the credit label and qualifier), split by role under h3s "Words (12)", "Tunes (3)" when there are two or more; "and {n} more not listed here" (caption) when the API's 200 cap cut it.
+- **PersonPerformances**: a row per performance (year, the piece or "No particular piece", the event, the recording, "As described"), the same caption past 200.
+- **UserMarkdown** (`app/components/UserMarkdown.tsx`): renders the loader's sanitised Markdown tree (`app/schemas/markdown.ts`) as plain elements inside `.prose-bt`; headings start at h3; links are `Link userContent` (or a mailto anchor with the same `rel`). The parser (`mdast-util-from-markdown`) runs only in loaders (`app/server/markdown.server.ts`); `check:prod-build` fails if a client chunk has micromark.
+- **LicenceLine** (`app/components/catalogue/LicenceLine.tsx`): the caption at the foot of every entity Read page: "Text is available under the Creative Commons Attribution-ShareAlike 4.0 licence. This page may be adapted from the original Bardic Torch wiki; its contributors are credited in the page history." (both links `inherit`); a person with no page ends at "…the original Bardic Torch wiki.".
+- **PersonListItem** (`app/components/catalogue/`): a row like PieceListItem: the name as a compact link, then the kind and "Stub" (caption).
+
 ---
 
 ## 7. States and feedback
@@ -1543,6 +1564,36 @@ The head is the h1 "Settings" with no tab row. Sections are separated by h2 plus
   - an answer we can't read (502): "Something went wrong" / the unexpected-answer copy / [Try again].
     The failure pages are titled by their h1 and `noindex`; the API's `message` is logged, never shown.
 - **Meta:** title "Pieces", "Pieces under T", "Pieces matching ‘kettle’", with ", page 2" from page 2; canonical is the canonical URL. A search, a filter or an order is `noindex, follow`; letter pages and later pages are indexable.
+
+### 10.8 Piece page (`/pieces/:slug`)
+
+**Tag: FE2.** `pieces.$slug.tsx` (the layout: `getPiece`, meta and JSON-LD, the boundary; it ignores search-only changes) and `pieces.$slug._index.tsx` (Read, `PiecePage` from the outlet). A slug that can't be one is our own 404, without an API call.
+
+- **Head:** breadcrumbs "Pieces › {title}", the h1, the meta line "{Kind}{ · secondary kinds}{ · period}" ("Song · Dance music · 1580–1600"), Read / History.
+- **Banners:** restricted (lock, "Read their statement ↗" from the newest restricted entry's source) or, if not restricted, stub ("How to contribute").
+- **Infobox** "About this piece": Details (Kind with "also: …", Period, Also known as with the alias kind; redirects never shown), Credits (§6.30), Origin, Conservation (badge and status history), Licensing (the summary linked to `#licensing`). Empty rows are left out except Credits.
+- **Sections** (the contents from four): Notes, Where to find it (or, restricted, Where it has been recorded), Performances (not restricted, when any), Licensing (the card), Versions, Historical source, Related pieces. With no links: "No links yet."; a stub's EmptyState "No links yet" / "Know where this piece lives online or in print? Add the first link." / [How to contribute].
+- **Then** every term as a chip "Facet: Name" (12 shown, "Show all {n}"), and the licence line.
+- **Meta:** the title, a description from the meta line, the canonical; a restricted piece is `noindex, nofollow` with no JSON-LD; any other has a schema.org `CreativeWork` (`MusicComposition` for songs, dance music and instrumentals) with its named credits (`author`; on a composition the tune's, music's and arrangement's as `composer`).
+- **Errors:** "We couldn’t find that piece" (404, the NotFound body), "We couldn’t load this piece" (500), the resting page (503), "Something went wrong" (502), inside the shell, `noindex`.
+
+### 10.9 Bard page (`/bards/:slug`)
+
+**Tag: FE2.** `bards.$slug.tsx` and `bards.$slug._index.tsx`, as the piece's.
+
+- **Head:** breadcrumbs "Bards › {name}", the h1, the meta line "{Community bard | Historical figure | Group}{ · pronouns}{ · Died / Disbanded {date}}", Read / History.
+- **A person with no page:** the h1, the kind, the no-page banner (with "Read their statement ↗" when there is a source), the single Read label, no infobox or sections, the licence line without the history; `noindex, nofollow`, no JSON-LD.
+- **Otherwise:** the stub banner when a stub; the infobox "About this bard" ("About this group"): Also known as (Name, SCA name, Stage name, Nickname, Former name), Roles, Affiliations (chips), Website (the `website` links), Status (not active only), Licensing; the sections About, Licensing, Works, Performances, Relations, Links (external profiles first); the licence line. JSON-LD `Person` or `MusicGroup` with `sameAs` the websites and profiles.
+
+### 10.10 Bards directory (`/bards`)
+
+**Tag: FE2.** `bards._index.tsx`, on `/pieces`' pattern (§10.7): `personQuery` (`q`, `kind`×n, `role`×n, `affiliation`, `letter`, `sort`, `page`), one 301 to the canonical form, one 302 past the end.
+
+- h1 "Bards" with "{n} bards", the search box (`BardSearch`, keeping kind, role and affiliation), the LetterBar "Bards by letter", the chips (`Search:`, `Kind:`, `Role:`, `Affiliation:`, `Letter:`), then from xl two columns: the results (PersonListItem rows, `aria-busy` during a same-route navigation, ResultsStatus "Showing {n} bards", Pagination) and the filters.
+- **Filters** (`BardFilters`): a GET form in a Disclosure "Filters" after the results (closed; with JS at xl opened, and a change applies at once): Kind and Role checkboxes, the Affiliation select (affiliation terms in tree order, "— " per level; "Any affiliation"), "Apply filters"; hidden `q`, `letter` and `sort` when set; keyed on the canonical query. If the terms fail, the select is a SectionError "We couldn’t load the affiliations" and the list still shows.
+- **A stale affiliation** (the API's 400 for an affiliation the terms no longer have) is left out with one re-query and an info Alert "That affiliation no longer exists, so we left it out." (`noindex, follow`).
+- **Empty:** with `q`, "Nothing matches ‘{q}’" / "Try a shorter search." / [Clear search]; with filters or a letter, "No bards match these filters" / "Try removing a filter." / [Clear all filters].
+- **Errors** as `/pieces`: a 500 to a search or filter is "That search took too long"; to the plain A–Z, "We couldn’t load the bards".
 
 ---
 

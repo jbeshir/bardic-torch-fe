@@ -3,14 +3,24 @@ import type { z } from "zod";
 import type { operations } from "~/api/schema.gen";
 import {
   BAD_GATEWAY,
+  detailFailure,
   searchFailure,
+  type PageFailure,
   type ReadFailure,
 } from "~/catalogue/read-failure";
 import { upstreamErrorSchema } from "~/schemas/api";
 import {
+  personListSchema,
+  personSchema,
   pieceListSchema,
+  pieceSchema,
   type ApiQuery,
+  type Person,
+  type PersonList,
+  type Piece,
   type PieceList,
+  termListSchema,
+  type TermList,
 } from "~/schemas/catalogue";
 import { appEnvContext } from "./context.server";
 import {
@@ -37,9 +47,9 @@ import {
  * (checked against the spec), and a typed function below.
  */
 
-type ReadResult<T> =
+type ReadResult<T, Failure extends ReadFailure = ReadFailure> =
   | { readonly ok: true; readonly data: T }
-  | { readonly ok: false; readonly failure: ReadFailure };
+  | { readonly ok: false; readonly failure: Failure };
 
 /**
  * Query parameters that only page or order a search, so a 500 for a
@@ -73,6 +83,25 @@ const ENDPOINTS = {
       "offset",
     ],
   },
+  // The bards directory (C5.2).
+  listPersons: {
+    method: "GET",
+    path: "/v1/persons",
+    query: [
+      "kind",
+      "role",
+      "affiliation",
+      "q",
+      "letter",
+      "sort",
+      "limit",
+      "offset",
+    ],
+  },
+  listTerms: { method: "GET", path: "/v1/terms", query: ["facet"] },
+  // Detail reads (C4.1 on): addressed by path parameters.
+  getPiece: { method: "GET", path: "/v1/pieces/{slug}", query: [] },
+  getPerson: { method: "GET", path: "/v1/persons/{slug}", query: [] },
 } as const satisfies {
   readonly [Id in keyof operations]?: EndpointOf<operations[Id]> & {
     readonly query: readonly (keyof NonNullable<
@@ -85,6 +114,11 @@ type ReadId = keyof typeof ENDPOINTS;
 
 type QueryValue = string | number | boolean | readonly string[] | undefined;
 
+/** An operation's query object; an empty one for an operation with none. */
+type QueryOf<Id extends ReadId> = [ApiQuery<Id>] extends [never]
+  ? Readonly<Record<string, never>>
+  : ApiQuery<Id>;
+
 /**
  * The query string for `query` (with its "?", or "" when empty), in the
  * operation's parameter order: arrays as repeated keys (form, explode),
@@ -93,11 +127,12 @@ type QueryValue = string | number | boolean | readonly string[] | undefined;
  */
 function queryString<Id extends ReadId>(
   operationId: Id,
-  query: ApiQuery<Id>
+  query: QueryOf<Id>
 ): string {
   const params = new URLSearchParams();
   const values: Readonly<Record<string, QueryValue>> = query;
-  for (const name of ENDPOINTS[operationId].query) {
+  const names: readonly string[] = ENDPOINTS[operationId].query;
+  for (const name of names) {
     const value = values[name];
     if (value === undefined) continue;
     if (typeof value === "object") {
@@ -120,15 +155,37 @@ function isFiltered(query: Readonly<Record<string, QueryValue>>): boolean {
   );
 }
 
+/**
+ * One catalogue read. `address` holds a detail read's path parameters,
+ * which the route has checked: its failures are a detail page's
+ * (`detailFailure`: a 404, or a 400 read as one). Without it the read is a
+ * list or a search, whose 500 depends on whether it was filtered.
+ */
+function callPublicApi<Id extends ReadId, T>(
+  context: Readonly<RouterContextProvider>,
+  operationId: Id,
+  query: QueryOf<Id>,
+  schema: z.ZodType<T>
+): Promise<ReadResult<T>>;
+function callPublicApi<Id extends ReadId, T>(
+  context: Readonly<RouterContextProvider>,
+  operationId: Id,
+  query: QueryOf<Id>,
+  schema: z.ZodType<T>,
+  address: Readonly<Record<string, string>>
+): Promise<ReadResult<T, PageFailure>>;
 async function callPublicApi<Id extends ReadId, T>(
   context: Readonly<RouterContextProvider>,
   operationId: Id,
-  query: ApiQuery<Id>,
-  schema: z.ZodType<T>
+  query: QueryOf<Id>,
+  schema: z.ZodType<T>,
+  address?: Readonly<Record<string, string>>
 ): Promise<ReadResult<T>> {
   const env = context.get(appEnvContext);
-  const url = `${upstreamUrl(env.BARDIC_TORCH_API_BASE_URL, ENDPOINTS[operationId].path)}${queryString(operationId, query)}`;
+  const url = `${upstreamUrl(env.BARDIC_TORCH_API_BASE_URL, ENDPOINTS[operationId].path, address)}${queryString(operationId, query)}`;
   const filtered = isFiltered(query);
+  const failureOf = (upstream: Parameters<typeof detailFailure>[0]) =>
+    address ? detailFailure(upstream) : searchFailure(upstream, { filtered });
 
   // The timeout covers the body too: a body that stalls or breaks off
   // ends like a request that never got an answer.
@@ -148,7 +205,7 @@ async function callPublicApi<Id extends ReadId, T>(
       `${operationId} ${isTimeout(error) ? "timed out" : "failed"}:`,
       error
     );
-    return { ok: false, failure: searchFailure("unreachable", { filtered }) };
+    return { ok: false, failure: failureOf("unreachable") };
   }
 
   const payload = parseJson(text);
@@ -174,10 +231,7 @@ async function callPublicApi<Id extends ReadId, T>(
   );
   return {
     ok: false,
-    failure: searchFailure(
-      { status: response.status, code: error.data?.code },
-      { filtered }
-    ),
+    failure: failureOf({ status: response.status, code: error.data?.code }),
   };
 }
 
@@ -187,4 +241,36 @@ export function listPieces(
   query: ApiQuery<"listPieces">
 ): Promise<ReadResult<PieceList>> {
   return callPublicApi(context, "listPieces", query, pieceListSchema);
+}
+
+/** A piece, with everything its page shows (`GET /v1/pieces/{slug}`). */
+export function getPiece(
+  context: Readonly<RouterContextProvider>,
+  slug: string
+): Promise<ReadResult<Piece, PageFailure>> {
+  return callPublicApi(context, "getPiece", {}, pieceSchema, { slug });
+}
+
+/** A person, with everything their page shows (`GET /v1/persons/{slug}`). */
+export function getPerson(
+  context: Readonly<RouterContextProvider>,
+  slug: string
+): Promise<ReadResult<Person, PageFailure>> {
+  return callPublicApi(context, "getPerson", {}, personSchema, { slug });
+}
+
+/** A page of persons with their letters (`GET /v1/persons`). */
+export function listPersons(
+  context: Readonly<RouterContextProvider>,
+  query: ApiQuery<"listPersons">
+): Promise<ReadResult<PersonList>> {
+  return callPublicApi(context, "listPersons", query, personListSchema);
+}
+
+/** The term tree, or one facet's (`GET /v1/terms`). */
+export function listTerms(
+  context: Readonly<RouterContextProvider>,
+  query: ApiQuery<"listTerms">
+): Promise<ReadResult<TermList>> {
+  return callPublicApi(context, "listTerms", query, termListSchema);
 }

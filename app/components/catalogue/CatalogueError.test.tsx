@@ -125,3 +125,34 @@ describe("FilterError", () => {
     }
   );
 });
+
+describe("CatalogueError on an entity page (C4.1)", () => {
+  it("titles a not-found failure with what wasn't found", () => {
+    expect(
+      failureTitle({ kind: "not_found" }, "this piece", "that piece")
+    ).toBe("We couldn’t find that piece");
+    expect(failureTitle({ kind: "not_found" }, "this piece")).toBe(
+      "We couldn’t find that page"
+    );
+  });
+
+  it("is the 404 page for not found, with the way home", async () => {
+    await renderWithRouter(
+      <CatalogueError
+        failure={{ kind: "not_found" }}
+        what="this piece"
+        missing="that piece"
+      />,
+      "/pieces/the-lost-lay"
+    );
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "We couldn’t find that piece",
+      })
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Go to the home page" })
+    ).toHaveAttribute("href", "/");
+  });
+});

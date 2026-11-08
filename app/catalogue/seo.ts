@@ -21,6 +21,12 @@ type PageMeta = {
   readonly type?: "website" | "profile" | undefined;
   /** The social preview line, when it differs from the description. */
   readonly preview?: string | undefined;
+  /**
+   * The page's schema.org description (JSON-LD, plan §4.5), given the
+   * site's origin for its absolute URLs; left out without one.
+   */
+  readonly structuredData?:
+    ((origin: string) => Readonly<Record<string, unknown>>) | undefined;
 };
 
 /**
@@ -68,6 +74,7 @@ export function pageMeta(
     robots,
     type = "website",
     preview = description,
+    structuredData,
   }: PageMeta
 ): MetaDescriptor[] {
   const origin = siteOrigin(matches);
@@ -84,5 +91,10 @@ export function pageMeta(
     { property: "og:locale", content: "en_GB" },
     { name: "twitter:card", content: "summary" },
     ...(robots ? [{ name: "robots", content: robots }] : []),
+    // A JSON data block, rendered escaped in the head; it is never run, so
+    // the CSP needs no nonce for it.
+    ...(origin && structuredData
+      ? [{ "script:ld+json": structuredData(origin) }]
+      : []),
   ];
 }

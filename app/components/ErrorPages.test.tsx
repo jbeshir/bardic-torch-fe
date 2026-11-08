@@ -159,3 +159,23 @@ describe("isResting", () => {
     expect(isResting({ kind: "resting" })).toBe(false);
   });
 });
+
+describe("NotFound with an entity's title (C4.1)", () => {
+  it("says what wasn't found, with the same actions", async () => {
+    await renderWithRouter(
+      <NotFound
+        pathname="/pieces/the-lost-lay"
+        title="We couldn’t find that piece"
+      />
+    );
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "We couldn’t find that piece",
+      })
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Go to the home page" })
+    ).toHaveAttribute("href", "/");
+  });
+});

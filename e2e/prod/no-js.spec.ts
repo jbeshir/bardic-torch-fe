@@ -229,3 +229,93 @@ test.describe("/pieces", () => {
     await expect(page).toHaveURL(/\/pieces\?page=2$/);
   });
 });
+
+// Track B (C4, C5): the piece and bard pages.
+test.describe("/pieces/:slug", () => {
+  test("every category chip shows, with no Show all button", async ({
+    page,
+  }) => {
+    await page.goto("/pieces/the-long-road-north");
+    const categories = page
+      .getByRole("main")
+      .getByRole("navigation", { name: "Categories" });
+    await expect(categories.getByRole("link")).toHaveCount(15);
+    await expect(categories.getByRole("button")).toHaveCount(0);
+  });
+
+  test("a restricted piece's links open from their disclosure", async ({
+    page,
+  }) => {
+    await page.goto("/pieces/the-dragons-hoard");
+    const main = page.getByRole("main");
+    const details = main.locator("details", {
+      hasText: "Show links (the creator asks that this isn’t shared further)",
+    });
+    await expect(details).not.toHaveAttribute("open");
+    await details.locator("summary").click();
+    await expect(details).toHaveAttribute("open", "");
+    await expect(
+      details.getByRole("link", {
+        name: "The text of the poem (external link)",
+      })
+    ).toBeVisible();
+  });
+
+  test("the Read and History tabs are links", async ({ page }) => {
+    await page.goto("/pieces/the-copper-kettle");
+    const views = page
+      .getByRole("main")
+      .getByRole("navigation", { name: "Page views" });
+    await expect(views.getByRole("link", { name: "History" })).toHaveAttribute(
+      "href",
+      "/pieces/the-copper-kettle/history"
+    );
+  });
+});
+
+test.describe("/bards/:slug", () => {
+  test("the works link to their pieces, and the tabs are links", async ({
+    page,
+  }) => {
+    await page.goto("/bards/wren-of-the-vale");
+    const main = page.getByRole("main");
+    await expect(
+      main
+        .getByRole("navigation", { name: "Page views" })
+        .getByRole("link", { name: "History" })
+    ).toHaveAttribute("href", "/bards/wren-of-the-vale/history");
+    await main
+      .getByRole("region", { name: "Works" })
+      .getByRole("link", { name: "The Copper Kettle" })
+      .click();
+    await expect(page).toHaveURL(/\/pieces\/the-copper-kettle$/);
+  });
+});
+
+test.describe("/bards", () => {
+  test("the filters are a plain GET form after the results, answered 200", async ({
+    page,
+  }) => {
+    await page.goto("/bards?q=wren&letter=W");
+    const main = page.getByRole("main");
+    const filters = main.locator("details", { hasText: "Filters" });
+    await expect(filters).not.toHaveAttribute("open");
+    await filters.locator("summary").click();
+    await main.getByRole("checkbox", { name: "Community bard" }).check();
+    await main
+      .getByRole("combobox", { name: "Affiliation" })
+      .selectOption("barony-of-ashdown");
+    const [response] = await Promise.all([
+      page.waitForResponse(r => new URL(r.url()).pathname === "/bards"),
+      main.getByRole("button", { name: "Apply filters" }).click(),
+    ]);
+    // The form's own GET, in DOM order: an order-only difference.
+    expect(response.status()).toBe(200);
+    await expect(page).toHaveURL(
+      /\/bards\?q=wren&letter=W&kind=community_bard&affiliation=barony-of-ashdown$/
+    );
+    await expect(
+      main.getByRole("link", { name: "Wren of the Vale" })
+    ).toBeVisible();
+  });
+});

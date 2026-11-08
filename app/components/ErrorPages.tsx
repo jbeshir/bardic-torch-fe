@@ -53,13 +53,20 @@ export function isResting(error: unknown): boolean {
 /**
  * The 404 page body (DESIGN §10.4): the unlit torch, what happened, the way
  * home and a search of the original wiki for the address's last part,
- * since its old pages don't redirect here yet.
+ * since its old pages don't redirect here yet. An entity page's 404 says
+ * what wasn't found in `title`: "We couldn’t find that piece".
  */
-export function NotFound({ pathname }: { readonly pathname: string }) {
+export function NotFound({
+  pathname,
+  title = "We couldn’t find that page",
+}: {
+  readonly pathname: string;
+  readonly title?: string;
+}) {
   return (
     <ErrorState
       art="missing"
-      title="We couldn’t find that page"
+      title={title}
       actions={
         <>
           <ButtonLink to="/" variant="primary">

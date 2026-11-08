@@ -80,6 +80,10 @@ export const CHECKPOINTS: Readonly<
     errors: ["not-found", "server-error", "resting"],
     settings: ["signed-out"],
     browse: ["index", "no-results"],
+    // Track B (C4, C5): the piece and bard pages.
+    piece: ["full", "stub", "restricted"],
+    bard: ["profile", "no-page"],
+    directories: ["bards"],
   },
   stub: {
     styleguide: [

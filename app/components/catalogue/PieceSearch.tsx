@@ -1,40 +1,13 @@
 import { IconSearch } from "@tabler/icons-react";
-import { useId, type FormEvent } from "react";
-import { Form, useNavigate } from "react-router";
+import { useId } from "react";
+import { Form } from "react-router";
 import { Button } from "~/components/ui/Button";
 import { Input } from "~/components/ui/Input";
 import { Select } from "~/components/ui/Select";
-import { canonicalFormHref } from "~/catalogue/form-href";
 import { pieceQuery, type PieceQueryState } from "~/catalogue/query-state";
+import { HiddenFields, useCanonicalSubmit } from "./canonical-form";
 
 const PIECES_ACTION = "/pieces";
-
-/**
- * The parameters of `href`'s query, to carry as hidden inputs: the state
- * a form keeps while it changes one value, in canonical form.
- */
-function HiddenFields({ href }: { readonly href: string }) {
-  const search = href.includes("?") ? href.slice(href.indexOf("?")) : "";
-  return [...new URLSearchParams(search)].map(([name, value]) => (
-    // Canonical, so no name and value repeats.
-    <input key={`${name}=${value}`} type="hidden" name={name} value={value} />
-  ));
-}
-
-/**
- * Submits a GET form the canonical way (plan §2.5): with JS the raw form
- * is never sent, the page goes straight to the canonical URL; without JS
- * the browser sends the fields, which the loader answers 200 all the same.
- */
-function useCanonicalSubmit() {
-  const navigate = useNavigate();
-  return (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    void navigate(canonicalFormHref(event.currentTarget, pieceQuery), {
-      preventScrollReset: true,
-    });
-  };
-}
 
 /**
  * The search box at the top of `/pieces` (plan §2.5): its own GET form,
@@ -43,7 +16,7 @@ function useCanonicalSubmit() {
  * every letter from its first page.
  */
 export function PieceSearch({ state }: { readonly state: PieceQueryState }) {
-  const onSubmit = useCanonicalSubmit();
+  const { onSubmit } = useCanonicalSubmit(pieceQuery);
   return (
     <Form
       method="get"
@@ -84,7 +57,7 @@ export function PieceSearch({ state }: { readonly state: PieceQueryState }) {
  * the rest of the state; it applies when submitted, never on change.
  */
 export function PieceSort({ state }: { readonly state: PieceQueryState }) {
-  const onSubmit = useCanonicalSubmit();
+  const { onSubmit } = useCanonicalSubmit(pieceQuery);
   const labelId = useId();
   return (
     <Form
