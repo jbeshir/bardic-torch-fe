@@ -3,6 +3,7 @@ import type { Phase } from "./checkpoints";
 import { createFixtureUser, outageNext } from "./fixture-api";
 import { waitForHydration } from "./hydration";
 import {
+  expectBarClearOfPageEnd,
   expectFocusNotObscured,
   expectNoHorizontalOverflow,
   expectPrimaryTargetsAtLeast44,
@@ -10,13 +11,16 @@ import {
 } from "./layout";
 import { accountTrigger, appBar } from "./shell";
 import { test } from "./test";
+import { applyWiderText, textAdvance } from "./text-spacing";
 
 /**
  * Every page a reader can land on, in one table, and the layout sweep each
  * one gets (R20, WCAG 2.2): no horizontal scrolling at 360 and 320 px,
  * every target at least 24 px (or spaced), focus never hidden behind the
  * header or the app bar at the page's width and at 360, and its primary
- * controls at least 44 px at 360. prod/sweeps.spec.ts and
+ * controls at least 44 px at 360; and below md, scrolled to its end, the
+ * app bar covers none of it, with the machine's sans and with wider text
+ * (expectBarClearOfPageEnd). prod/sweeps.spec.ts and
  * stub/sweeps.spec.ts run the rows of their phase; a page that needs stub
  * sign-in or the styleguide is a stub row.
  */
@@ -389,9 +393,29 @@ function shellPrimary(page: Page): Locator[] {
   ];
 }
 
-/** Registers one sweep test per journey page of `phase`. */
+/** Registers the sweep tests for each journey page of `phase`. */
 export function sweepJourneyPages(phase: Phase): void {
-  for (const journey of JOURNEY_PAGES.filter(row => row.phase === phase)) {
+  const rows = JOURNEY_PAGES.filter(row => row.phase === phase);
+  test.describe("below md the app bar never covers the end of the page", () => {
+    // The wider text is an injected <style>, which the nonce CSP would block.
+    test.use({ bypassCSP: true, viewport: MOBILE });
+    for (const journey of rows.filter(row => row.inShell)) {
+      test(`${journey.name}: with the machine's sans and with wider text`, async ({
+        page,
+      }) => {
+        await journey.open(page);
+        await expectBarClearOfPageEnd(page);
+        // Not vacuous: the wider text takes effect (measured on the page's
+        // heading, as a short page doesn't get longer).
+        const heading = main(page).getByRole("heading", { level: 1 }).first();
+        const ownAdvance = await textAdvance(heading);
+        await applyWiderText(page);
+        expect(await textAdvance(heading)).toBeGreaterThan(ownAdvance);
+        await expectBarClearOfPageEnd(page);
+      });
+    }
+  });
+  for (const journey of rows) {
     test(`${journey.name}: reflows, its targets are big enough and focus is never hidden`, async ({
       page,
     }) => {

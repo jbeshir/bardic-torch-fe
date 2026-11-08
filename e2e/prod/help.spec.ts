@@ -137,7 +137,8 @@ for (const help of PAGES.filter(({ infobox }) => infobox)) {
     if (wideBox && wideIntro) {
       // Floated right at its own width, starting level with the intro,
       // whose lines wrap beside it.
-      expect(wideBox.width).toBeLessThanOrEqual(321);
+      // At most w-infobox-xl (20rem).
+      expect(wideBox.width).toBeLessThan(320 + SUB_PIXEL);
       expect(wideBox.x).toBeGreaterThan(wideIntro.x + wideIntro.width / 2);
       expect(Math.abs(wideBox.y - wideIntro.y)).toBeLessThanOrEqual(24);
     }

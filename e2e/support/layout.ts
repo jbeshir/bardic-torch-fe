@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 import { waitForHydration } from "./hydration";
+import { appBar } from "./shell";
 
 /** Layout and WCAG 2.2 checks for journeys to run on their pages. */
 
@@ -17,6 +18,50 @@ const FOCUS_WIDTH = 360;
  * once hid one: the app bar's top border lay over the page's last pixel.
  */
 export const SUB_PIXEL = 0.5;
+
+/**
+ * Below md, scrolled to the end of the page, the app bar covers none of
+ * it: the footer ends at or above the bar's top. The page's room for the
+ * bar is the bar's whole box (`pb-app-bar` and `h-app-bar` are one
+ * expression), so this holds whatever the fonts make the page's height.
+ *
+ * The one allowance is sub-pixel, and measured rather than assumed: the
+ * scroll extent (`scrollHeight`) is the document's height rounded to a
+ * whole pixel, so when the height ends in a fraction rounded down (CI's
+ * DejaVu Sans: 3192.34375 → 3192) the last fraction of a pixel can't be
+ * scrolled into view, and the footer ends that fraction below the bar's
+ * top. That remainder is computed from the page, and is under half a pixel.
+ */
+export async function expectBarClearOfPageEnd(page: Page): Promise<void> {
+  // Instantly: under no-preference the page scrolls smoothly, and the
+  // boxes would be measured part-way there.
+  const { gap, unscrollable, room } = await page.evaluate(() => {
+    const root = document.documentElement;
+    window.scrollTo({ top: root.scrollHeight, behavior: "instant" });
+    // The shell, whose padding is the room under the page, holds the header.
+    const shell = document.querySelector("header")?.parentElement;
+    return {
+      gap: root.scrollHeight - (window.scrollY + window.innerHeight),
+      unscrollable: Math.max(
+        0,
+        root.getBoundingClientRect().height - root.scrollHeight
+      ),
+      room: shell
+        ? Number.parseFloat(getComputedStyle(shell).paddingBottom)
+        : 0,
+    };
+  });
+  expect(gap, "scrolled to the end of the page").toBeLessThanOrEqual(1);
+  expect(unscrollable, "only rounding is out of reach").toBeLessThan(SUB_PIXEL);
+  const footer = await page.getByRole("contentinfo").boundingBox();
+  const bar = await appBar(page).boundingBox();
+  if (!footer || !bar) throw new Error("not laid out");
+  // The room under the page is the bar's whole box, whatever the fonts.
+  expect(bar.height, "the bar is as tall as the room under the page").toBe(
+    room
+  );
+  expect(footer.y + footer.height).toBeLessThanOrEqual(bar.y + unscrollable);
+}
 
 /** What the sweeps (and the styleguide focus states) count as a control. */
 export const FOCUSABLE =

@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { findCutOffControls } from "./cut-off";
 
 /**
@@ -28,6 +28,21 @@ export async function applyTextSpacing(page: Page): Promise<void> {
 export async function applyWiderText(page: Page): Promise<void> {
   await page.addStyleTag({
     content: "* { letter-spacing: 0.1em !important; }",
+  });
+}
+
+/**
+ * The advance of the text in `locator`: the sum of its line boxes' widths,
+ * so wrapping doesn't shorten it. Wider text (applyWiderText) lengthens
+ * it, whatever the font: the variants use it to show the widening took.
+ */
+export async function textAdvance(locator: Locator): Promise<number> {
+  return locator.evaluate(element => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    const lines = [...range.getClientRects()];
+    if (lines.length === 0) throw new Error("not laid out");
+    return lines.reduce((sum, line) => sum + line.width, 0);
   });
 }
 

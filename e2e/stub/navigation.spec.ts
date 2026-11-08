@@ -2,6 +2,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import { waitForHydration } from "../support/hydration";
 import { checkpoint } from "../support/journey";
 import {
+  expectBarClearOfPageEnd,
   expectNoHorizontalOverflow,
   expectPrimaryTargetsAtLeast44,
   expectTargetSizesAtLeast24,
@@ -19,6 +20,7 @@ import {
   applyTextSpacing,
   applyWiderText,
   expectNothingCutOff,
+  textAdvance,
 } from "../support/text-spacing";
 
 /**
@@ -61,50 +63,6 @@ async function showSiteMenu(page: Page): Promise<void> {
   }
   await expect(drawer).toBeVisible();
   await settled(drawer);
-}
-
-/**
- * Below md, scrolled to the end of the page, the app bar covers none of
- * it: the footer ends at or above the bar's top. The page's room for the
- * bar is the bar's whole box (`pb-app-bar` and `h-app-bar` are one
- * expression), so this holds whatever the fonts make the page's height.
- *
- * The one allowance is sub-pixel, and measured rather than assumed: the
- * scroll extent (`scrollHeight`) is the document's height rounded to a
- * whole pixel, so when the height ends in a fraction rounded down (CI's
- * DejaVu Sans: 3192.34375 → 3192) the last fraction of a pixel can't be
- * scrolled into view, and the footer ends that fraction below the bar's
- * top. That remainder is computed from the page, and is under half a pixel.
- */
-async function expectBarClearOfPageEnd(page: Page): Promise<void> {
-  // Instantly: under no-preference the page scrolls smoothly, and the
-  // boxes would be measured part-way there.
-  const { gap, unscrollable, room } = await page.evaluate(() => {
-    const root = document.documentElement;
-    window.scrollTo({ top: root.scrollHeight, behavior: "instant" });
-    // The shell, whose padding is the room under the page, holds the header.
-    const shell = document.querySelector("header")?.parentElement;
-    return {
-      gap: root.scrollHeight - (window.scrollY + window.innerHeight),
-      unscrollable: Math.max(
-        0,
-        root.getBoundingClientRect().height - root.scrollHeight
-      ),
-      room: shell
-        ? Number.parseFloat(getComputedStyle(shell).paddingBottom)
-        : 0,
-    };
-  });
-  expect(gap, "scrolled to the end of the page").toBeLessThanOrEqual(1);
-  expect(unscrollable, "only rounding is out of reach").toBeLessThan(SUB_PIXEL);
-  const footer = await page.getByRole("contentinfo").boundingBox();
-  const bar = await appBar(page).boundingBox();
-  if (!footer || !bar) throw new Error("not laid out");
-  // The room under the page is the bar's whole box, whatever the fonts.
-  expect(bar.height, "the bar is as tall as the room under the page").toBe(
-    room
-  );
-  expect(footer.y + footer.height).toBeLessThanOrEqual(bar.y + unscrollable);
 }
 
 /**
@@ -645,26 +603,17 @@ test.describe("with wider text (0.1em more letter spacing) the shell's room hold
   test("at 1280 × 800 the sidebar shows the current page and the Help group, and says when there is more below", async ({
     page,
   }) => {
-    // The longest label. Its text's advance (the sum of its line boxes,
-    // so wrapping doesn't shorten it) is what the font's metrics decide.
+    // The longest label: its text's advance is what the font decides.
     const label = page
       .getByRole("navigation", { name: "Site" })
       .getByRole("link", { name: "Bard preference checklist" });
-    const textAdvance = () =>
-      label.evaluate(element => {
-        const range = document.createRange();
-        range.selectNodeContents(element);
-        const lines = [...range.getClientRects()];
-        if (lines.length === 0) throw new Error("not laid out");
-        return lines.reduce((sum, line) => sum + line.width, 0);
-      });
     await page.setViewportSize({ width: 1280, height: 800 });
     await openHydrated(page, "/");
-    const ownAdvance = await textAdvance();
+    const ownAdvance = await textAdvance(label);
     let widenedAdvance = 0;
     await expectSidebarFold(page, async () => {
       await applyWiderText(page);
-      widenedAdvance = await textAdvance();
+      widenedAdvance = await textAdvance(label);
     });
     // Not vacuous: the widening reached the sidebar's labels.
     expect(widenedAdvance).toBeGreaterThan(ownAdvance);

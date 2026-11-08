@@ -6,9 +6,11 @@ import {
   expectNoLayoutShift,
   expectPrimaryTargetsAtLeast44,
   expectTargetSizesAtLeast24,
+  SUB_PIXEL,
 } from "../support/layout";
 import { checkpoint } from "../support/journey";
 import { test } from "../support/test";
+import { applyWiderText } from "../support/text-spacing";
 
 /**
  * `/pieces`, the A–Z of every piece (plan §4.2), against the fixture
@@ -199,6 +201,49 @@ test("a search too slow keeps the search box and offers Try again", async ({
 
 const filters = (page: Page) =>
   main(page).getByRole("region", { name: "Filters", exact: true });
+
+test.describe("at 1280 the facet column", () => {
+  // The wider text is an injected <style>, which the nonce CSP would block.
+  test.use({ bypassCSP: true });
+
+  test("sits left of the results, level with their top, also with wider text", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await open(page, "/pieces?kind=poem&term=eerie");
+    const column = filters(page);
+    // The results column starts with the search form.
+    const results = main(page).getByRole("search");
+    const boxes = async () => {
+      const [columnBox, resultsBox] = await Promise.all([
+        column.boundingBox(),
+        results.boundingBox(),
+      ]);
+      if (!columnBox || !resultsBox) throw new Error("not laid out");
+      return { column: columnBox, results: resultsBox };
+    };
+    const own = await boxes();
+    await applyWiderText(page);
+    const widened = await boxes();
+    // Not vacuous: the column's labels wrap further, so it grows.
+    expect(widened.column.height).toBeGreaterThan(own.column.height);
+    for (const [label, { column: left, results: right }] of [
+      ["own sans", own],
+      ["wider text", widened],
+    ] as const) {
+      expect(left.x + left.width, label).toBeLessThanOrEqual(right.x);
+      expect(Math.abs(left.y - right.y), label).toBeLessThan(SUB_PIXEL);
+    }
+    // And the widened page still fits the window's width.
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth
+      )
+    ).toBeLessThanOrEqual(0);
+  });
+});
 
 test("at 1280 the facet column applies each tick at once, and its chips take them off", async ({
   page,
