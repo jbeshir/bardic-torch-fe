@@ -416,7 +416,24 @@ describe("the Worker's CSRF check (React Router's, answered before it runs)", ()
     }
     await collect(await routes, "");
     vi.unstubAllEnvs();
-    expect(found.filter(route => !route.page).length).toBe(10);
+    // The resource routes by name, so a new or swapped one shows here.
+    expect(
+      found
+        .filter(route => !route.page)
+        .map(route => route.path)
+        .sort()
+    ).toEqual([
+      "/api/me",
+      "/api/tokens",
+      "/api/tokens/x",
+      "/auth/callback",
+      "/auth/login",
+      "/auth/logout",
+      "/resources/theme",
+      "/robots.txt",
+      "/sitemap.xml",
+      "/sitemap/x",
+    ]);
 
     const fetch = worker();
     for (const route of found) {

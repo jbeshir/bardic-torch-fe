@@ -118,6 +118,13 @@ describe("/bards loader", () => {
     expect(await redirectOf(search)).toEqual({ status: 301, location });
   });
 
+  it.each(["?affiliation=&kind=group", "?q=&letter=W"])(
+    "answers %s, the forms' empty defaults, without a redirect",
+    async search => {
+      expect(await redirectOf(search)).toBeNull();
+    }
+  );
+
   it("answers an order-only difference without a redirect", async () => {
     expect(await redirectOf("?role=singer&kind=group")).toBeNull();
   });
@@ -138,14 +145,32 @@ describe("/bards loader", () => {
   it("leaves out an affiliation that no longer exists, with one re-query", async () => {
     const seen = upstreamRequests("/v1/persons");
     const answer = (await load("?affiliation=gone-kingdom&kind=group")) as {
+      state: { affiliation?: string; kind: string[] };
       list: { total: number };
       staleAffiliation: boolean;
     };
     expect(answer.staleAffiliation).toBe(true);
+    // The page shows, and links from, the state it asked for.
+    expect(answer.state.affiliation).toBeUndefined();
+    expect(answer.state.kind).toEqual(["group"]);
     expect(answer.list.total).toBeGreaterThan(0);
     expect(seen.map(params => params.toString())).toEqual([
       "kind=group&affiliation=gone-kingdom&limit=50&offset=0",
       "kind=group&limit=50&offset=0",
+    ]);
+  });
+
+  it("cleans a stale affiliation past the API too, keeping it in the redirect", async () => {
+    const seen = upstreamRequests("/v1/persons");
+    expect(
+      await redirectOf("?kind=group&affiliation=gone-kingdom&page=999")
+    ).toEqual({
+      status: 302,
+      location: "/bards?kind=group&affiliation=gone-kingdom",
+    });
+    expect(seen.map(params => params.toString())).toEqual([
+      "kind=group&affiliation=gone-kingdom&limit=1&offset=0",
+      "kind=group&limit=1&offset=0",
     ]);
   });
 
@@ -262,6 +287,9 @@ describe("/bards document", () => {
     expect(mainOf(stale)).toContain(
       "That affiliation no longer exists, so we left it out."
     );
+    // No chip, letter or page link carries it on to the next request.
+    expect(mainOf(stale)).not.toContain("gone-kingdom");
+    expect(mainOf(stale)).toContain("All bards");
   });
 
   it("answers the filter form's own GET in DOM order with 200", async () => {

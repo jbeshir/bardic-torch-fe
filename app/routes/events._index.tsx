@@ -21,7 +21,11 @@ import { ViewTabs } from "~/components/ui/Tabs";
 import { TagList } from "~/components/ui/TagList";
 import { formatCount } from "~/catalogue/format";
 import { catalogueHeaders } from "~/catalogue/headers";
-import { isBeyondApi, redirectPastTheEnd } from "~/catalogue/paging";
+import {
+  isBeyondApi,
+  redirectPastTheEnd,
+  showingText,
+} from "~/catalogue/paging";
 import {
   eventQuery,
   redirectIfNotCanonical,
@@ -35,6 +39,7 @@ import {
 import { pageMeta } from "~/catalogue/seo";
 import { EVENT_KIND_LABELS } from "~/constants/vocabulary";
 import { useErrorReference } from "~/hooks/useErrorReference";
+import { useResultsFocus } from "~/hooks/useResultsFocus";
 import type { EventList } from "~/schemas/catalogue";
 import { listEvents } from "~/server/catalogue.server";
 
@@ -131,9 +136,10 @@ function NoEvents({ state }: { readonly state: EventQueryState }) {
 }
 
 export default function EventsRoute() {
-  const { state, list } = useLoaderData<typeof loader>();
+  const { state, canonical, list } = useLoaderData<typeof loader>();
   const navigation = useNavigation();
   const headingId = useId();
+  const resultsRef = useResultsFocus(canonical);
   const busy =
     navigation.state === "loading" &&
     navigation.location.pathname === ALL_EVENTS;
@@ -171,7 +177,12 @@ export default function EventsRoute() {
           />
         </nav>
         <section aria-labelledby={headingId} aria-busy={busy || undefined}>
-          <h2 id={headingId} className="text-h3 text-fg">
+          <h2
+            ref={resultsRef}
+            id={headingId}
+            tabIndex={-1}
+            className="text-h3 text-fg focus-visible:outline-hidden"
+          >
             {state.kind === "venue"
               ? "Venues"
               : state.kind === "event"
@@ -180,7 +191,13 @@ export default function EventsRoute() {
           </h2>
           <ResultsStatus>
             {list.total > 0
-              ? `Showing ${formatCount(list.total, "event or venue", "events and venues")}`
+              ? showingText(
+                  state.page,
+                  list.data.length,
+                  list.total,
+                  "event or venue",
+                  "events and venues"
+                )
               : "No results"}
           </ResultsStatus>
           {list.data.length > 0 ? (

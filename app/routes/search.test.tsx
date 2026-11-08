@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { data } from "react-router";
 import { describe, expect, it } from "vitest";
@@ -54,12 +54,13 @@ const TERMS = {
   total: 1,
 } as const;
 
-function renderSearch(search: string, answer: () => unknown) {
+function renderSearch(search: string, answer: (q: string | null) => unknown) {
   return renderRoutes(
     [
       {
         path: "/search",
-        loader: () => answer(),
+        loader: ({ request }) =>
+          answer(new URL(request.url).searchParams.get("q")),
         Component: SearchRoute,
         ErrorBoundary,
         HydrateFallback: () => null,
@@ -210,6 +211,46 @@ describe("/search page", () => {
     await user.clear(box);
     await user.type(box, "kettle{Enter}");
     expect(router.state.location.search).toBe("?q=kettle");
+  });
+
+  it("keeps focus in its box after a new search, and shows each search's words", async () => {
+    const user = userEvent.setup();
+    const router = await renderSearch("?q=northmarch", q =>
+      found({ q: q ?? undefined })()
+    );
+    const box = screen.getByRole("searchbox", { name: "Search the catalogue" });
+    await user.click(box);
+    await user.clear(box);
+    await user.type(box, "kettle{Enter}");
+    expect(router.state.location.search).toBe("?q=kettle");
+    // The same box, still focused: not rebuilt for the new search.
+    expect(
+      screen.getByRole("searchbox", { name: "Search the catalogue" })
+    ).toBe(box);
+    expect(box).toHaveFocus();
+    // A search made elsewhere (Back, the header) shows its words here.
+    await user.tab();
+    await act(() => router.navigate("/search?q=wren"));
+    expect(box).toHaveValue("wren");
+  });
+
+  it("has its status from the start, empty before a search, then filled", async () => {
+    const router = await renderSearch("", q =>
+      q === null ? { q: undefined } : found({ q })()
+    );
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent(/^$/);
+    await act(() => router.navigate("/search?q=northmarch"));
+    // The same live region, its text changed: announced.
+    expect(screen.getByRole("status")).toBe(status);
+    expect(status).toHaveTextContent("match ‘northmarch’");
+  });
+
+  it("names its search landmark apart from the site's", async () => {
+    await renderSearch("?q=northmarch", found());
+    expect(
+      screen.getByRole("search", { name: "Search the catalogue" })
+    ).toBeVisible();
   });
 
   it("has the same markup in both themes", async () => {

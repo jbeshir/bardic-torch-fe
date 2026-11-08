@@ -206,6 +206,22 @@ describe("/categories/:slug page", () => {
     expect(calls).toEqual({ layout: 1, members: 2 });
   });
 
+  it("moves focus to the members heading on a new page, and says which rows it shows", async () => {
+    await renderCategory("/categories/swords", SWORDS);
+    const status = screen.getByRole("status");
+    expect(status.textContent).toMatch(/^Showing 1–50 of /);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("link", { name: "Page 2" }));
+    await waitFor(() => {
+      expect(screen.getByRole("status").textContent).toMatch(
+        /^Showing 51–100 of /
+      );
+    });
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Pieces" })
+    ).toHaveFocus();
+  });
+
   it("lists an affiliation's bards, with a search link", async () => {
     await renderCategory("/categories/northmarch", NORTHMARCH);
     expect(screen.getByText("Affiliation · 1 bard")).toBeVisible();

@@ -5,6 +5,7 @@ import {
   expectNoHorizontalOverflow,
   expectTargetSizesAtLeast24,
 } from "../support/layout";
+import { appBar } from "../support/shell";
 import { test } from "../support/test";
 
 /**
@@ -89,4 +90,16 @@ test("a venue with more than 200 performances says how many more", async ({
   await page.setViewportSize({ width: 360, height: 800 });
   await expectNoHorizontalOverflow(page);
   await expectTargetSizesAtLeast24(page);
+  // Focus on the last row's link isn't hidden under the app bar, as the
+  // sweep's Tab walk would check on a shorter page.
+  await main(page).locator("a:visible").last().focus();
+  const focused = await page.evaluate(() => {
+    const rect = document.activeElement?.getBoundingClientRect();
+    return rect ? { top: rect.top, bottom: rect.bottom } : null;
+  });
+  const bar = await appBar(page).boundingBox();
+  expect(focused, "a focused link").not.toBeNull();
+  expect(bar, "the app bar").not.toBeNull();
+  expect((focused?.bottom ?? Infinity) <= (bar?.y ?? 0)).toBe(true);
+  expect((focused?.top ?? -1) >= 0).toBe(true);
 });

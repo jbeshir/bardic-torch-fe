@@ -25,7 +25,7 @@ import { renderMarkdown } from "~/server/markdown.server";
 
 /**
  * `/pieces/:slug`, a piece (plan §4.5): the layout of its views, Read
- * (`pieces.$slug._index.tsx`) and History (C8.1). It loads the piece once
+ * (`pieces.$slug._index.tsx`) and History. It loads the piece once
  * for both; moving between history pages (a search-only change) doesn't
  * load it again.
  *

@@ -260,6 +260,12 @@ describe("document theme", () => {
     expect(themeColours[1]).toContain('media="(prefers-color-scheme: dark)"');
   });
 
+  it("names British English as the page's language, matching og:locale", async () => {
+    const { html, metas } = await head(await get("/"));
+    expect(html).toContain('lang="en-GB"');
+    expect(metas).toContain('<meta property="og:locale" content="en_GB"/>');
+  });
+
   it("ignores an unknown theme cookie", async () => {
     const { html } = await head(await get("/", "theme=sepia"));
     expect(html).not.toContain("data-theme");

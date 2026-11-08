@@ -21,14 +21,15 @@ function NavItem({
 }: {
   readonly label: string;
   readonly href: string;
-  readonly current: boolean;
+  /** "page" for the page shown, "true" for the section it is in. */
+  readonly current: "page" | "true" | false;
 }) {
   return (
     <RouterLink
       to={href}
       prefetch="intent"
-      aria-current={current ? "page" : undefined}
-      className={`${ITEM} ${current ? ITEM_CURRENT : ITEM_IDLE}`}
+      aria-current={current === false ? undefined : current}
+      className={`${ITEM} ${current === false ? ITEM_IDLE : ITEM_CURRENT}`}
     >
       {label}
     </RouterLink>
@@ -40,15 +41,23 @@ function NavItem({
  * marks its whole section: `/pieces` is current on `/pieces/the-copper-kettle`
  * and its history. An entry with a query (`/categories?facet=mood`) is
  * current only for that query, and `/categories` is not current while a
- * facet is picked, so one entry per page is.
+ * facet is picked, so one entry per page is. Only the page itself is
+ * `aria-current="page"`; the section of a page inside it is `"true"`.
  */
-function isCurrent(href: string, pathname: string, search: string): boolean {
+function isCurrent(
+  href: string,
+  pathname: string,
+  search: string
+): "page" | "true" | false {
   const [path = "", query = ""] = href.split("?");
   const wanted = new URLSearchParams(query).get("facet");
   const facet = new URLSearchParams(search).get("facet");
-  if (wanted !== null) return pathname === path && facet === wanted;
-  if (pathname === path) return facet === null;
-  return pathname.startsWith(`${path}/`);
+  if (wanted !== null) {
+    return pathname === path && facet === wanted ? "page" : false;
+  }
+  if (pathname === path) return facet === null ? "page" : false;
+  // A page inside the section: the entry is its section, not the page.
+  return pathname.startsWith(`${path}/`) ? "true" : false;
 }
 
 /**

@@ -554,6 +554,20 @@ describe("/pieces loader: the terms and stale categories (plan §2.4)", () => {
     }
   );
 
+  it("keeps the stale slugs in a past-the-end redirect, so the notice survives", async () => {
+    quietErrors();
+    const location = (await redirectOf("?term=gone&term=warlike&page=4"))
+      ?.location;
+    expect(location).toMatch(/^\/pieces\?/);
+    const params = new URLSearchParams(location?.split("?")[1]);
+    expect(params.getAll("term")).toEqual(["gone", "warlike"]);
+    expect(params.get("page")).toBeNull();
+    quietErrors();
+    expect(
+      (await redirectOf("?term=gone&term=warlike&page=900"))?.location
+    ).toBe(location);
+  });
+
   it("is the filters page (400) when the 400 persists after the cleaning", async () => {
     quietErrors();
     fixtures.fail({
@@ -656,14 +670,25 @@ describe("/pieces loader: the terms and stale categories (plan §2.4)", () => {
 
   it("cleans the total's request too, for a page past the API", async () => {
     quietErrors();
+    const seen = upstreamRequests();
+    // The redirect keeps the stale slug, so the page it lands on says so.
     expect(await redirectOf("?term=no-such-term&term=eerie&page=500")).toEqual({
       status: 302,
-      location: "/pieces?term=eerie",
+      location: "/pieces?term=eerie&term=no-such-term",
     });
+    expect(seen.map(params => params.getAll("term"))).toEqual([
+      ["eerie", "no-such-term"],
+      ["eerie"],
+    ]);
   });
 
-  it.each(["?stub=", "?kind=song&stub=&sort=", "?q=lament&sort="])(
-    "answers %s, the facet form's empty defaults, without a redirect",
+  it.each([
+    "?stub=",
+    "?kind=song&stub=&sort=",
+    "?q=lament&sort=",
+    "?q=&kind=song",
+  ])(
+    "answers %s, the forms' empty defaults, without a redirect",
     async search => {
       expect(await redirectOf(search)).toBeNull();
     }

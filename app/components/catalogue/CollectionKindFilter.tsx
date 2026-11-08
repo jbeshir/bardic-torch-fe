@@ -1,3 +1,4 @@
+import { COLLECTION_KINDS } from "~/constants/enums";
 import { Form, useNavigate } from "react-router";
 import { Button } from "~/components/ui/Button";
 import { Checkbox, CheckboxGroup } from "~/components/ui/Checkbox";
@@ -8,7 +9,6 @@ import {
 } from "~/catalogue/query-state";
 import { formatNumber } from "~/catalogue/format";
 import { COLLECTION_KIND_LABELS } from "~/constants/vocabulary";
-import { collectionKindSchema } from "~/schemas/catalogue";
 
 /**
  * The kind filter of `/collections` (plan §4.9, §2.5): a GET form of
@@ -53,7 +53,7 @@ export function CollectionKindFilter({
         )}
         <CheckboxGroup legend="Kind">
           <div className="grid gap-1 sm:grid-cols-2">
-            {collectionKindSchema.options.map(kind => (
+            {COLLECTION_KINDS.map(kind => (
               <Checkbox
                 key={kind}
                 name="kind"

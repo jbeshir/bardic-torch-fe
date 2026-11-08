@@ -203,7 +203,8 @@ const JOURNEY_PAGES: readonly JourneyPage[] = [
     name: "/categories",
     phase: "prod",
     open: visit("/categories"),
-    // The section chips are filter chips, 36 px tall on a 44 px pitch (DESIGN §6.12), not primary controls.
+    // The section chips are `sm` filter chips, 28 px tall on a 36 px pitch:
+    // above 2.5.8's 24 px, and not held to the 44 px primary bar.
     primary: () => [],
     inShell: true,
     // Every term of every facet: a long Tab walk.
@@ -224,7 +225,8 @@ const JOURNEY_PAGES: readonly JourneyPage[] = [
     name: "/collections",
     phase: "prod",
     open: visit("/collections"),
-    // The A–Z are filter chips, 36 px tall on a 44 px pitch (DESIGN §6.12), not primary controls.
+    // The A–Z is LetterBar's 36 px cells on a 40 px pitch: above 2.5.8's
+    // 24 px, and not held to the 44 px primary bar.
     primary: () => [],
     inShell: true,
     // A full page of collections and the A–Z: a long Tab walk.
@@ -245,7 +247,8 @@ const JOURNEY_PAGES: readonly JourneyPage[] = [
     name: "/events",
     phase: "prod",
     open: visit("/events"),
-    // The kind chips are filter chips, 36 px tall on a 44 px pitch (DESIGN §6.12), not primary controls.
+    // The kind chips are `sm` filter chips, 28 px tall on a 36 px pitch:
+    // above 2.5.8's 24 px, and not held to the 44 px primary bar.
     primary: () => [],
     inShell: true,
   },
@@ -257,6 +260,17 @@ const JOURNEY_PAGES: readonly JourneyPage[] = [
       main(page)
         .getByRole("navigation", { name: "Page views" })
         .getByRole("link", { name: "History" }),
+    ],
+    inShell: true,
+  },
+  {
+    name: "/bards/wren-of-the-vale/history",
+    phase: "prod",
+    open: visit("/bards/wren-of-the-vale/history"),
+    primary: page => [
+      main(page)
+        .getByRole("navigation", { name: "Page views" })
+        .getByRole("link", { name: "Read" }),
     ],
     inShell: true,
   },
@@ -384,6 +398,21 @@ export function sweepJourneyPages(phase: Phase): void {
       await expectNoHorizontalOverflow(page);
       await expectTargetSizesAtLeast24(page);
       await expectFocusNotObscured(page);
+      // Again with every disclosure open: their content is out of the
+      // checks while closed (a restricted piece's links, a status history,
+      // a filter).
+      const opened = await main(page)
+        .locator("details:not([open])")
+        .evaluateAll(closed => {
+          for (const details of closed) {
+            if (details instanceof HTMLDetailsElement) details.open = true;
+          }
+          return closed.length;
+        });
+      if (opened > 0) {
+        await expectNoHorizontalOverflow(page);
+        await expectTargetSizesAtLeast24(page);
+      }
       await page.setViewportSize(MOBILE);
       await expectPrimaryTargetsAtLeast44([
         ...(journey.inShell ? shellPrimary(page) : []),

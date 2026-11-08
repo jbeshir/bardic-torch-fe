@@ -1,16 +1,18 @@
 import {
+  CONSERVATION_STATUS_VALUES,
+  FACETS,
+  PIECE_KINDS,
+} from "~/constants/enums";
+import {
   CONSERVATION_LABELS,
   FACET_LABELS,
   PIECE_KIND_LABELS,
 } from "~/constants/vocabulary";
-import {
-  conservationStatusSchema,
-  facetSchema,
-  pieceKindSchema,
-  type ConservationStatus,
-  type Facet,
-  type PieceFacets,
-  type PieceKind,
+import type {
+  ConservationStatus,
+  Facet,
+  PieceFacets,
+  PieceKind,
 } from "~/schemas/catalogue";
 import type { TermIndex, TermNode } from "./term-index";
 
@@ -23,7 +25,7 @@ import type { TermIndex, TermNode } from "./term-index";
 /** The facets that classify pieces, in the API's order. */
 type PieceFacet = Exclude<Facet, "affiliation">;
 
-const PIECE_FACETS = facetSchema.options.filter(
+const PIECE_FACETS = FACETS.filter(
   (facet): facet is PieceFacet => facet !== "affiliation"
 );
 
@@ -104,7 +106,8 @@ function group(
 /**
  * A facet's options: its terms that classify any piece at all, so the set
  * doesn't change as other filters do (an option never vanishes under the
- * pointer), in tree order. Two options with one display name show their
+ * pointer), in tree order, and any selected term even if it classifies
+ * none (so the next Apply, built from the form, keeps it). Two options with one display name show their
  * full names, which carry the disambiguation.
  */
 function termOptions(
@@ -112,7 +115,9 @@ function termOptions(
   counts: ReadonlyMap<string, number>,
   selected: readonly string[]
 ): readonly FacetOption[] {
-  const listed = terms.filter(term => term.piece_count > 0);
+  const listed = terms.filter(
+    term => term.piece_count > 0 || selected.includes(term.slug)
+  );
   const names = listed.map(term => term.display_name);
   return listed.map(term =>
     option(
@@ -153,7 +158,7 @@ export function facetGroups(
     "kind",
     "kind",
     "Kind",
-    pieceKindSchema.options.map(kind =>
+    PIECE_KINDS.map(kind =>
       option(
         kind,
         PIECE_KIND_LABELS[kind],
@@ -179,7 +184,7 @@ export function facetGroups(
     "status",
     "status",
     "Conservation status",
-    conservationStatusSchema.options.map(status =>
+    CONSERVATION_STATUS_VALUES.map(status =>
       option(
         status,
         CONSERVATION_LABELS[status],

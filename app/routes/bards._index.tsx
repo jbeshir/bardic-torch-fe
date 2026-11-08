@@ -1,5 +1,5 @@
 import { IconBook2 } from "@tabler/icons-react";
-import { useId } from "react";
+import { useId, useRef } from "react";
 import {
   data,
   useLoaderData,
@@ -10,6 +10,7 @@ import {
 } from "react-router";
 import { BardFilters } from "~/components/catalogue/BardFilters";
 import { BardSearch } from "~/components/catalogue/BardSearch";
+import { KeptFocus } from "~/components/catalogue/KeptFocus";
 import {
   CatalogueError,
   FilterError,
@@ -27,7 +28,11 @@ import { EmptyState } from "~/components/ui/EmptyState";
 import { ViewTabs } from "~/components/ui/Tabs";
 import { formatCount } from "~/catalogue/format";
 import { catalogueHeaders } from "~/catalogue/headers";
-import { isBeyondApi, redirectPastTheEnd } from "~/catalogue/paging";
+import {
+  isBeyondApi,
+  redirectPastTheEnd,
+  showingText,
+} from "~/catalogue/paging";
 import {
   personQuery,
   redirectIfNotCanonical,
@@ -48,6 +53,7 @@ import {
   PERSON_ROLE_LABELS,
 } from "~/constants/vocabulary";
 import { useErrorReference } from "~/hooks/useErrorReference";
+import { useResultsFocus } from "~/hooks/useResultsFocus";
 import type { PersonList, TermList } from "~/schemas/catalogue";
 import { listPersons, listTerms } from "~/server/catalogue.server";
 
@@ -89,65 +95,97 @@ type BardsData = {
 );
 
 export async function loader({ url, context }: LoaderFunctionArgs) {
-  const { state, canonical } = personQuery.parse(url.searchParams);
-  redirectIfNotCanonical(url, canonical);
-  const pageHref = (page: number) => personQuery.href(state, { page });
-  const failed = (failure: ReadFailure, affiliations: Affiliations | null) => {
+  const asked = personQuery.parse(url.searchParams);
+  const { canonical } = asked;
+  redirectIfNotCanonical(url, canonical, personQuery.blankable);
+
+  // The terms fill the select, and tell a stale affiliation from another
+  // refusal; asked for alongside the list, so the common case is one
+  // round trip.
+  const termsRead = listTerms(context, { facet: "affiliation" });
+  const affiliationsData = async () => {
+    const terms = await termsRead;
+    return terms.ok ? terms.data.data : null;
+  };
+
+  /**
+   * The persons for `state` (only the total with `totalOnly`). An
+   * affiliation the API no longer knows makes it answer 400: with the
+   * terms at hand, it is left out and the list asked for once more (§2.4),
+   * and the cleaned state is what the page shows and links from.
+   */
+  async function readPersons(state: PersonQueryState, totalOnly = false) {
+    const query = (from: PersonQueryState) =>
+      totalOnly
+        ? { ...personQuery.toApi({ ...from, page: 1 }), limit: 1 }
+        : personQuery.toApi(from);
+    const first = await listPersons(context, query(state));
+    const unchanged = { state, staleAffiliation: false, result: first };
+    if (
+      first.ok ||
+      first.failure.kind !== "invalid_filters" ||
+      state.affiliation === undefined
+    ) {
+      return unchanged;
+    }
+    const affiliations = await affiliationsData();
+    if (
+      affiliations === null ||
+      affiliations.some(term => term.slug === state.affiliation)
+    ) {
+      return unchanged;
+    }
+    const cleaned: PersonQueryState = { ...state, affiliation: undefined };
+    return {
+      state: cleaned,
+      staleAffiliation: true,
+      result: await listPersons(context, query(cleaned)),
+    };
+  }
+
+  const failed = (
+    failure: ReadFailure,
+    page: Omit<BardsData, "failure" | "list" | "staleAffiliation">
+  ) => {
     if (isPageFailure(failure)) throwPageFailure(failure);
-    const page: BardsData = {
-      state,
-      canonical,
-      affiliations,
+    const answer: BardsData = {
+      ...page,
       failure,
       list: null,
       staleAffiliation: false,
     };
-    return data(page, failureInit(failure));
+    return data(answer, failureInit(failure));
   };
+  // A past-the-end page goes to the last page of the URL asked for, stale
+  // affiliation and all, so the page it lands on still says it was left
+  // out.
+  const pageHref = (page: number) => personQuery.href(asked.state, { page });
 
-  if (isBeyondApi(state.page)) {
-    const first = await listPersons(context, {
-      ...personQuery.toApi({ ...state, page: 1 }),
-      limit: 1,
-    });
-    if (!first.ok) return failed(first.failure, null);
-    redirectPastTheEnd(state.page, first.data.total, pageHref);
+  if (isBeyondApi(asked.state.page)) {
+    // An offset the API would refuse: ask for the total, then go to the
+    // last page there is.
+    const head = await readPersons(asked.state, true);
+    if (!head.result.ok) {
+      return failed(head.result.failure, {
+        state: head.state,
+        canonical,
+        affiliations: await affiliationsData(),
+      });
+    }
+    redirectPastTheEnd(asked.state.page, head.result.data.total, pageHref);
   }
 
-  // Both at once: the list, and the terms for the select (and for telling
-  // a stale affiliation from another refusal).
-  const [persons, terms] = await Promise.all([
-    listPersons(context, personQuery.toApi(state)),
-    listTerms(context, { facet: "affiliation" }),
-  ]);
-  const affiliations = terms.ok ? terms.data.data : null;
-  let result = persons;
-  let staleAffiliation = false;
-  if (
-    !persons.ok &&
-    persons.failure.kind === "invalid_filters" &&
-    state.affiliation !== undefined &&
-    affiliations !== null &&
-    !affiliations.some(term => term.slug === state.affiliation)
-  ) {
-    // The affiliation no longer exists: ask once more without it (§2.4).
-    result = await listPersons(
-      context,
-      personQuery.toApi({ ...state, affiliation: undefined })
-    );
-    staleAffiliation = true;
-  }
-  if (!result.ok) return failed(result.failure, affiliations);
+  const { state, staleAffiliation, result } = await readPersons(asked.state);
+  const page = { state, canonical, affiliations: await affiliationsData() };
+  if (!result.ok) return failed(result.failure, page);
   redirectPastTheEnd(state.page, result.data.total, pageHref);
-  const page: BardsData = {
-    state,
-    canonical,
-    affiliations,
+  const answer: BardsData = {
+    ...page,
     failure: null,
     list: result.data,
     staleAffiliation,
   };
-  return page;
+  return answer;
 }
 
 function isFiltered(state: PersonQueryState): boolean {
@@ -293,6 +331,10 @@ export default function BardsRoute() {
   const { state, affiliations } = loaded;
   const navigation = useNavigation();
   const headingId = useId();
+  // The filter control focused last, kept across the remount each change
+  // of URL causes.
+  const focusRef = useRef<string | null>(null);
+  const resultsRef = useResultsFocus(loaded.canonical);
   const busy =
     navigation.state === "loading" &&
     navigation.location.pathname === ALL_BARDS;
@@ -338,15 +380,29 @@ export default function BardsRoute() {
             aria-busy={busy || undefined}
             className="xl:col-span-2"
           >
-            <h2 id={headingId} className="text-h3 text-fg">
+            <h2
+              ref={resultsRef}
+              id={headingId}
+              tabIndex={-1}
+              className="text-h3 text-fg focus-visible:outline-hidden"
+            >
               {resultsHeading(state)}
             </h2>
+            {/* The stale-affiliation notice is said here too: the Alert
+                above isn't a live region, and this is the one status. */}
             <ResultsStatus>
-              {list.total > 0
-                ? `Showing ${formatCount(list.total, "bard")}`
-                : state.q === undefined
-                  ? "No bards match these filters"
-                  : "No results"}
+              {`${
+                list.total > 0
+                  ? showingText(
+                      state.page,
+                      list.data.length,
+                      list.total,
+                      "bard"
+                    )
+                  : state.q === undefined
+                    ? "No bards match these filters"
+                    : "No results"
+              }${loaded.staleAffiliation ? ". That affiliation no longer exists, so we left it out." : ""}`}
             </ResultsStatus>
             {list.data.length > 0 ? (
               <ul role="list" className="mt-2">
@@ -362,15 +418,14 @@ export default function BardsRoute() {
                 page={state.page}
                 total={list.total}
                 href={page => personQuery.href(state, { page })}
+                narrowable={isFiltered(state)}
               />
             </div>
           </section>
           <div id="filters">
-            <BardFilters
-              key={loaded.canonical}
-              state={state}
-              affiliations={affiliations}
-            />
+            <KeptFocus key={loaded.canonical} focusRef={focusRef}>
+              <BardFilters state={state} affiliations={affiliations} />
+            </KeptFocus>
           </div>
         </div>
       </div>

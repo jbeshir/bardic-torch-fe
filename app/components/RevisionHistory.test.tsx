@@ -51,7 +51,7 @@ describe("RevisionHistory", () => {
   it("says when there is no history yet", async () => {
     await renderWithRouter(<RevisionHistory revisions={[]} />);
     expect(
-      screen.getByRole("heading", { name: "No history yet" })
+      screen.getByRole("heading", { level: 3, name: "No history yet" })
     ).toBeVisible();
     expect(
       screen.getByText("Changes to this page will be listed here.")

@@ -1,6 +1,6 @@
 /**
  * Transport pieces shared by every server-side call to the Bardic Torch API:
- * the authenticated client (`api.server.ts`) and, from FE2, the anonymous
+ * the authenticated client (`api.server.ts`) and the anonymous
  * catalogue reads. Nothing here knows about sessions or schemas.
  */
 
@@ -71,16 +71,4 @@ export function isTimeout(error: unknown): boolean {
     error !== null &&
     (error as { name?: unknown }).name === "TimeoutError"
   );
-}
-
-/**
- * Whether an error answer means the API (or the platform in front of it) is
- * briefly out of service: any 503, whatever its body, or the Error code
- * `unavailable` at any status.
- */
-export function isUnavailable(
-  status: number,
-  code: string | undefined
-): boolean {
-  return status === 503 || code === "unavailable";
 }

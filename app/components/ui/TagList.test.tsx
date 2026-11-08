@@ -133,7 +133,9 @@ describe("TagList", () => {
     it("shows the first 12 and a Show all disclosure for the rest", async () => {
       await renderWithRouter(<TagList tags={tags(15)} />);
       expect(shown()).toEqual(tags(12).map(({ label }) => label));
-      const toggle = screen.getByRole("button", { name: "Show all 15" });
+      const toggle = screen.getByRole("button", {
+        name: "Show all 15 categories",
+      });
       expect(toggle).toHaveAttribute("aria-expanded", "false");
       expect(toggle).toHaveAttribute(
         "aria-controls",
@@ -145,7 +147,9 @@ describe("TagList", () => {
     it("shows and hides the rest from the keyboard, keeping focus on the toggle", async () => {
       const user = userEvent.setup();
       await renderWithRouter(<TagList tags={tags(13)} />);
-      const toggle = screen.getByRole("button", { name: "Show all 13" });
+      const toggle = screen.getByRole("button", {
+        name: "Show all 13 categories",
+      });
       act(() => toggle.focus());
       await act(() => user.keyboard("{Enter}"));
       expect(toggle).toHaveFocus();
@@ -155,7 +159,7 @@ describe("TagList", () => {
       await act(() => user.keyboard(" "));
       expect(toggle).toHaveFocus();
       expect(toggle).toHaveAttribute("aria-expanded", "false");
-      expect(toggle).toHaveAccessibleName("Show all 13");
+      expect(toggle).toHaveAccessibleName("Show all 13 categories");
       expect(shown()).toHaveLength(12);
     });
 
@@ -165,7 +169,9 @@ describe("TagList", () => {
       for (let step = 0; step < 13; step += 1) {
         await act(() => user.tab());
       }
-      expect(screen.getByRole("button", { name: "Show all 13" })).toHaveFocus();
+      expect(
+        screen.getByRole("button", { name: "Show all 13 categories" })
+      ).toHaveFocus();
     });
 
     it("keeps exactly 12 chips as they are", async () => {

@@ -13,13 +13,18 @@ import {
 import { ListPagination } from "~/components/catalogue/ListPagination";
 import { PersonListItem } from "~/components/catalogue/PersonListItem";
 import { PieceListItem } from "~/components/catalogue/PieceListItem";
+import { ResultsStatus } from "~/components/catalogue/ResultsStatus";
 import { SERVER_ERROR_META, ServerError } from "~/components/ErrorPages";
 import { UnderPageHead } from "~/components/ui/ErrorState";
 import { ButtonLink } from "~/components/ui/Button";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { Link } from "~/components/ui/Link";
 import { catalogueHeaders } from "~/catalogue/headers";
-import { isBeyondApi, redirectPastTheEnd } from "~/catalogue/paging";
+import {
+  isBeyondApi,
+  redirectPastTheEnd,
+  showingText,
+} from "~/catalogue/paging";
 import {
   redirectIfNotCanonical,
   termMembersQuery,
@@ -38,6 +43,7 @@ import {
   memberTotal,
 } from "~/catalogue/term-page";
 import { useErrorReference } from "~/hooks/useErrorReference";
+import { useResultsFocus } from "~/hooks/useResultsFocus";
 import { isSlug } from "~/schemas/address";
 import type { Term } from "~/schemas/catalogue";
 import { getTerm } from "~/server/catalogue.server";
@@ -138,12 +144,13 @@ function NoMembers({ term }: { readonly term: Term }) {
 }
 
 export default function CategoryMembersRoute() {
-  const { state, term } = useLoaderData<typeof loader>();
+  const { state, canonical, term } = useLoaderData<typeof loader>();
   const navigation = useNavigation();
   const headingId = useId();
   const path = categoryPath(term.slug);
   const total = memberTotal(term);
   const affiliation = term.facet === "affiliation";
+  const resultsRef = useResultsFocus(canonical);
   // A members page loading keeps the old rows, marked busy meanwhile.
   const busy =
     navigation.state === "loading" && navigation.location.pathname === path;
@@ -153,9 +160,24 @@ export default function CategoryMembersRoute() {
       aria-busy={busy || undefined}
       className="not-prose mt-8"
     >
-      <h2 id={headingId} className="text-h3 text-fg">
+      <h2
+        ref={resultsRef}
+        id={headingId}
+        tabIndex={-1}
+        className="text-h3 text-fg focus-visible:outline-hidden"
+      >
         {affiliation ? "Bards" : "Pieces"}
       </h2>
+      <ResultsStatus>
+        {total > 0
+          ? showingText(
+              state.page,
+              affiliation ? term.persons.length : term.pieces.length,
+              total,
+              affiliation ? "bard" : "piece"
+            )
+          : "No results"}
+      </ResultsStatus>
       {total > 0 ? (
         <>
           <p className="mt-1 flex flex-wrap gap-x-3 text-body-sm text-fg-muted">

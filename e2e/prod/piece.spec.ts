@@ -174,7 +174,9 @@ test("shows 12 of 15 categories, and the rest on request", async ({ page }) => {
     name: "Categories",
   });
   await expect(categories.getByRole("link")).toHaveCount(12);
-  const more = categories.getByRole("button", { name: "Show all 15" });
+  const more = categories.getByRole("button", {
+    name: "Show all 15 categories",
+  });
   await more.focus();
   await page.keyboard.press("Enter");
   await expect(categories.getByRole("link")).toHaveCount(15);

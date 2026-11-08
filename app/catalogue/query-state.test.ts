@@ -366,7 +366,7 @@ describe("redirectIfNotCanonical with blankable names (stub, sort)", () => {
   });
 
   it("still redirects another empty value, and a stub given two values", () => {
-    expect(redirectWith("?stub=&q=")).toBe("/pieces");
+    expect(redirectWith("?stub=&letter=")).toBe("/pieces");
     expect(redirectWith("?stub=true&stub=false")).toBe("/pieces?stub=true");
   });
 

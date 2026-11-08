@@ -68,9 +68,12 @@ describe("Sidebar", () => {
           .filter(link => link.hasAttribute("aria-current"))
           .map(link => link.textContent)
       ).toEqual([name]);
+      // The page itself is "page"; a page inside the section, "true".
+      const inside =
+        new URL(url, "https://x.test").pathname.split("/").length > 2;
       expect(screen.getByRole("link", { name })).toHaveAttribute(
         "aria-current",
-        "page"
+        inside ? "true" : "page"
       );
     }
   );

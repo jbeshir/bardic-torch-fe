@@ -153,6 +153,24 @@ describe("/pieces/:slug/history page", () => {
     );
   });
 
+  it("moves focus to the heading on a new page, and says which revisions it shows", async () => {
+    await renderHistory(pages(120));
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Showing 1–50 of 120 revisions"
+    );
+    const user = userEvent.setup();
+    // The page link used becomes the current page's text.
+    await user.click(screen.getByRole("link", { name: "Page 2" }));
+    await waitFor(() => {
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "Showing 51–100 of 120 revisions"
+      );
+    });
+    expect(
+      screen.getByRole("heading", { level: 2, name: "History" })
+    ).toHaveFocus();
+  });
+
   it("says when there is no history yet", async () => {
     await renderHistory(() => ({
       state: { page: 1 },

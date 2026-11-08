@@ -70,6 +70,17 @@ describe("/events page", () => {
     ).toHaveAttribute("href", "/events");
   });
 
+  it("says which rows a page shows, so a new page is announced", async () => {
+    const list = { data: LIST.data, total: 160 };
+    await renderEvents("?page=3", loaded("?page=3", list));
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Showing 101–102 of 160 events and venues"
+    );
+    expect(
+      screen.getByRole("heading", { level: 2, name: "All events and venues" })
+    ).toHaveAttribute("tabindex", "-1");
+  });
+
   it("is the server error for a thrown 500", async () => {
     await renderEvents("", () => {
       throw data({ kind: "server" }, { status: 500 });

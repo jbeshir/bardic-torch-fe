@@ -39,7 +39,7 @@ function get(type: string | undefined) {
 }
 
 describe("the sitemap index", () => {
-  it("lists the three sitemaps on this origin, as XML cacheable for an hour", async () => {
+  it("lists the six sitemaps on this origin, as XML cacheable for an hour", async () => {
     const response = sitemapIndex(ORIGIN);
     expect(response.headers.get("Content-Type")).toBe(
       "application/xml; charset=utf-8"
@@ -54,6 +54,9 @@ describe("the sitemap index", () => {
       `${ORIGIN}/sitemap/pages.xml`,
       `${ORIGIN}/sitemap/pieces.xml`,
       `${ORIGIN}/sitemap/bards.xml`,
+      `${ORIGIN}/sitemap/categories.xml`,
+      `${ORIGIN}/sitemap/collections.xml`,
+      `${ORIGIN}/sitemap/events.xml`,
     ]);
   });
 });
@@ -115,7 +118,8 @@ describe("the pieces sitemap", () => {
     expect(paths).toHaveLength(all.total - restricted.total);
   });
 
-  it("asks for no more than 100 pages, however many pieces the API has", async () => {
+  it("asks for no more than 101 pages, up to the API's greatest offset, and says the rest are left out", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const offsets: number[] = [];
     fixtures.server.use(
       http.get(`${API_BASE_URL}/v1/pieces`, ({ request }) => {
@@ -134,8 +138,34 @@ describe("the pieces sitemap", () => {
     );
     const response = await get("pieces.xml");
     expect(response.status).toBe(200);
-    expect(offsets).toHaveLength(100);
-    expect(Math.max(...offsets)).toBe(9900);
+    expect(offsets).toHaveLength(101);
+    expect(Math.max(...offsets)).toBe(10_000);
+    expect(warn).toHaveBeenCalledWith(
+      "A sitemap lists the first 10100 of 500000 entries: the API reads no further."
+    );
+  });
+
+  it("reads the last page the API serves without a warning when that is all there is", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const offsets: number[] = [];
+    fixtures.server.use(
+      http.get(`${API_BASE_URL}/v1/pieces`, ({ request }) => {
+        offsets.push(Number(new URL(request.url).searchParams.get("offset")));
+        return contractResponse("listPieces", 200, {
+          data: [],
+          total: 10_100,
+          facets: {
+            terms: [],
+            kinds: [],
+            conservation_statuses: [],
+            letters: [],
+          },
+        });
+      })
+    );
+    expect((await get("pieces.xml")).status).toBe(200);
+    expect(Math.max(...offsets)).toBe(10_000);
+    expect(warn).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -208,6 +238,43 @@ describe("the bards sitemap", () => {
       code: "internal",
     });
     const response = await get("bards.xml");
+    expect(response.status).toBe(503);
+    expect(response.headers.get("Retry-After")).toBe("60");
+  });
+});
+
+describe("the categories, collections and events sitemaps", () => {
+  it("lists every category from one unpaged read", async () => {
+    const seen = upstreamRequests();
+    const response = await get("categories.xml");
+    expect(response.status).toBe(200);
+    expect(seen).toEqual(["/v1/terms"]);
+    const paths = locations(await response.text());
+    expect(paths).toContain(`${ORIGIN}/categories/warlike`);
+    expect(paths).toContain(`${ORIGIN}/categories/northmarch`);
+  });
+
+  it("lists every collection by id, and every event and venue by slug", async () => {
+    const seen = upstreamRequests();
+    const collections = locations(await (await get("collections.xml")).text());
+    expect(collections).toContain(`${ORIGIN}/collections/12`);
+    const events = locations(await (await get("events.xml")).text());
+    expect(events).toContain(`${ORIGIN}/events/muster-field`);
+    expect(events).toContain(`${ORIGIN}/events/midwinter-revel`);
+    expect(seen).toEqual([
+      "/v1/collections?limit=100&offset=0",
+      "/v1/events?limit=100&offset=0",
+    ]);
+  });
+
+  it.each([
+    ["categories.xml", "listTerms"],
+    ["collections.xml", "listCollections"],
+    ["events.xml", "listEvents"],
+  ] as const)("is a 503 for %s when %s fails", async (type, operationId) => {
+    quietErrors();
+    fixtures.fail({ operationId, status: 500, code: "internal" });
+    const response = await get(type);
     expect(response.status).toBe(503);
     expect(response.headers.get("Retry-After")).toBe("60");
   });

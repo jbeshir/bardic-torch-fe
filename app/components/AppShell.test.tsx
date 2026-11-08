@@ -1,12 +1,12 @@
 import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { useLocation } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import { ErrorState } from "~/components/ui/ErrorState";
 import { ToastProvider } from "~/components/ui/Toast";
-import { renderWithRouter } from "~/test/router";
+import { renderRoutes, renderWithRouter } from "~/test/router";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
-import { AppShell } from "./AppShell";
+import { AppShell, type PageHandle } from "./AppShell";
 
 function renderShell(url = "/") {
   // As in root.tsx: the shell's theme toggles report offline saves in a toast.
@@ -19,6 +19,21 @@ function renderShell(url = "/") {
     </ToastProvider>,
     url
   );
+}
+
+/** The shell around a route's page, as root.tsx renders it. */
+function ShellOutlet() {
+  return (
+    <ToastProvider>
+      <AppShell account={{ state: "signed-out" }}>
+        <Outlet />
+      </AppShell>
+    </ToastProvider>
+  );
+}
+
+function Elsewhere() {
+  return <button type="button">Elsewhere</button>;
 }
 
 afterEach(() => {
@@ -194,6 +209,36 @@ describe("AppShell", () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  it("treats a change of the query part a route names as a new page", async () => {
+    vi.stubGlobal("requestAnimationFrame", (callback: () => void) => {
+      callback();
+      return 0;
+    });
+    const handle: PageHandle = {
+      pageKey: search => search.get("facet") ?? "",
+    };
+    const router = await renderRoutes(
+      [
+        {
+          path: "/",
+          Component: ShellOutlet,
+          HydrateFallback: () => null,
+          children: [{ path: "categories", handle, Component: Elsewhere }],
+        },
+      ],
+      "/categories?facet=mood"
+    );
+    const main = screen.getByRole("main");
+    // Another facet is another page: focus to the main content.
+    screen.getByRole("button", { name: "Elsewhere" }).focus();
+    await act(() => router.navigate("/categories?facet=topic"));
+    expect(main).toHaveFocus();
+    // Any other part of the query is the same page.
+    screen.getByRole("button", { name: "Elsewhere" }).focus();
+    await act(() => router.navigate("/categories?facet=topic&x=1"));
+    expect(screen.getByRole("button", { name: "Elsewhere" })).toHaveFocus();
   });
 
   it("shows no fade when the whole sidebar fits", async () => {

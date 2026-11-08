@@ -193,7 +193,7 @@ describe("/pieces/:slug, Read", () => {
     const categories = screen.getByRole("navigation", { name: "Categories" });
     expect(within(categories).getAllByRole("link")).toHaveLength(12);
     const more = within(categories).getByRole("button", {
-      name: "Show all 15",
+      name: "Show all 15 categories",
     });
     expect(more).toHaveAttribute("aria-expanded", "false");
     expect(

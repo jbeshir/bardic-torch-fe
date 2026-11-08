@@ -1,6 +1,7 @@
+import { LETTERS } from "~/constants/enums";
 import { Link as RouterLink } from "react-router";
 import { letterLabel } from "~/constants/vocabulary";
-import { letterSchema, type Letter } from "~/schemas/catalogue";
+import type { Letter } from "~/schemas/catalogue";
 
 const CELL =
   "inline-flex min-h-9 min-w-9 items-center justify-center rounded-md px-2 text-body-sm lg:min-h-8 lg:min-w-8";
@@ -45,10 +46,7 @@ export function LetterBar({
   readonly href: (letter: Letter | undefined) => string;
 }) {
   const present = new Set(letters.map(({ letter }) => letter));
-  const cells: readonly (Letter | undefined)[] = [
-    undefined,
-    ...letterSchema.options,
-  ];
+  const cells: readonly (Letter | undefined)[] = [undefined, ...LETTERS];
   return (
     <nav aria-label={label}>
       <ul role="list" className="flex flex-wrap gap-1">

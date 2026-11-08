@@ -182,6 +182,8 @@ describe("/revisions/:id document", () => {
     const main = mainOf(html);
     expect(main).toContain("its links are shown as text only");
     expect(main).not.toMatch(/<a[^>]*href="https?:\/\/(?!creativecommons)/);
+    // Not in the data the page hydrates from either: no snapshot goes there.
+    expect(html).not.toContain("private-recordings.example");
   });
 
   it("is the 404 page titled for the revision", async () => {

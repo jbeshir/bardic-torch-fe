@@ -16,13 +16,13 @@ import {
   throwPageFailure,
   thrownPageFailure,
 } from "~/catalogue/read-failure";
-import { linkExposure } from "~/catalogue/restricted";
+import { withoutRestrictedRecording } from "~/catalogue/restricted";
 import { failureMeta, ignoreSearchChanges } from "~/catalogue/entity-route";
 import { pageMeta } from "~/catalogue/seo";
 import { EVENT_KIND_LABELS } from "~/constants/vocabulary";
 import { useErrorReference } from "~/hooks/useErrorReference";
 import { isSlug } from "~/schemas/address";
-import type { Event, EventPerformance } from "~/schemas/catalogue";
+import type { Event } from "~/schemas/catalogue";
 import { getEvent } from "~/server/catalogue.server";
 import { renderMarkdown } from "~/server/markdown.server";
 
@@ -41,15 +41,6 @@ const MISSING = "that event or venue";
 export const headers = catalogueHeaders;
 
 export const shouldRevalidate = ignoreSearchChanges;
-
-/** A performance without its recording when its piece is restricted. */
-function withoutRestrictedRecording(
-  performance: EventPerformance
-): EventPerformance {
-  return linkExposure(performance.piece) === "internal-only"
-    ? { ...performance, link: { url: "", title: null, platform: null } }
-    : performance;
-}
 
 export async function loader({ params, context }: LoaderFunctionArgs) {
   const slug = params.slug ?? "";

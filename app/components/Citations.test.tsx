@@ -1,5 +1,5 @@
 import { screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { CollectionCitation } from "~/schemas/catalogue";
 import { renderWithRouter } from "~/test/router";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
@@ -86,6 +86,28 @@ describe("Citations", () => {
     expect(hoard).toHaveTextContent("Link not shown: see the piece page");
     expect(hoard).toHaveTextContent("Restricted");
     expect(document.body.innerHTML).not.toContain("private.example");
+  });
+
+  it("keeps two stripped citations of one restricted piece apart", async () => {
+    const errors = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    try {
+      // As the loader sends them: the address and title emptied.
+      const stripped = { ...HOARD, url: "", title: null };
+      await renderWithRouter(
+        <Citations
+          citations={[stripped, { ...stripped, locator: "p. 9" }]}
+          total={2}
+        />
+      );
+      expect(within(table()).getAllByRole("row")).toHaveLength(3);
+      expect(
+        errors.mock.calls.some(call => String(call[0]).includes("same key"))
+      ).toBe(false);
+    } finally {
+      errors.mockRestore();
+    }
   });
 
   it("says how many more there are past the cap", async () => {

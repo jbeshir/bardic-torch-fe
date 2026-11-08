@@ -20,12 +20,10 @@ import {
   throwPageFailure,
   thrownPageFailure,
 } from "~/catalogue/read-failure";
-import { revisionCredit } from "~/catalogue/revision-credit";
+import { revisionHead, type RevisionHead } from "~/catalogue/revision-head";
 import { pageMeta } from "~/catalogue/seo";
-import { categoryPath } from "~/catalogue/term-page";
 import { useErrorReference } from "~/hooks/useErrorReference";
 import { isEntityId } from "~/schemas/address";
-import type { Revision } from "~/schemas/catalogue";
 import { getRevision } from "~/server/catalogue.server";
 
 /**
@@ -46,63 +44,23 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
   if (!isEntityId(id)) throwPageFailure({ kind: "not_found" });
   const result = await getRevision(context, id);
   if (!result.ok) throwPageFailure(asPageFailure(result.failure));
-  return { revision: result.data, changes: revisionChanges(result.data) };
-}
-
-/** Where a revision's entity lives, what it's called, and its section. */
-function entityOf(revision: Revision): {
-  readonly section: { readonly label: string; readonly to: string };
-  readonly noun: string;
-  readonly title: string;
-  readonly path: string;
-} {
-  switch (revision.entity_type) {
-    case "piece":
-      return {
-        section: { label: "Pieces", to: "/pieces" },
-        noun: "piece",
-        title: revision.entity.title,
-        path: `/pieces/${revision.entity.slug}`,
-      };
-    case "person":
-      return {
-        section: { label: "Bards", to: "/bards" },
-        noun: "bard",
-        title: revision.entity.name,
-        path: `/bards/${revision.entity.slug}`,
-      };
-    case "term":
-      return {
-        section: { label: "Categories", to: "/categories" },
-        noun: "category",
-        title: revision.entity.display_name,
-        path: categoryPath(revision.entity.slug),
-      };
-    case "collection":
-      return {
-        section: { label: "Collections", to: "/collections" },
-        noun: "collection",
-        title: revision.entity.name,
-        path: `/collections/${revision.entity.id}`,
-      };
-    case "event":
-      return {
-        section: { label: "Events and venues", to: "/events" },
-        noun: revision.entity.kind === "venue" ? "venue" : "event",
-        title: revision.entity.name,
-        path: `/events/${revision.entity.slug}`,
-      };
-  }
+  // Only what the page shows: the snapshots stay on the server, so a
+  // restricted piece's addresses (which the changes give as text) never
+  // reach the data the page hydrates from (§4.0).
+  return {
+    head: revisionHead(result.data),
+    changes: revisionChanges(result.data),
+  };
 }
 
 export const meta: MetaFunction = args => {
   if (args.error) return failureMeta(args.error, WHAT, MISSING);
   // The loader's answer: an error, if any, is handled above.
   const revision = (
-    args.loaderData as { readonly revision: Revision } | undefined
-  )?.revision;
+    args.loaderData as { readonly head: RevisionHead } | undefined
+  )?.head;
   if (!revision) return [...SERVER_ERROR_META];
-  const { title } = entityOf(revision);
+  const { title } = revision.entity;
   return pageMeta(args, {
     title: `Revision ${revision.id} of ${title}`,
     description: `What revision ${revision.id} of ${title} changed in the Bardic Torch catalogue, and who made it.`,
@@ -112,8 +70,8 @@ export const meta: MetaFunction = args => {
 };
 
 export default function RevisionRoute() {
-  const { revision, changes } = useLoaderData<typeof loader>();
-  const entity = entityOf(revision);
+  const { head: revision, changes } = useLoaderData<typeof loader>();
+  const { entity } = revision;
   return (
     <>
       <div className="mb-2">
@@ -130,10 +88,10 @@ export default function RevisionRoute() {
         Revision {revision.id} of {entity.title}
       </h1>
       <p className="mt-1 text-body-sm text-fg-muted">
-        <time dateTime={revision.created_at}>
-          {formatDate(revision.created_at)}
+        <time dateTime={revision.createdAt}>
+          {formatDate(revision.createdAt)}
         </time>
-        {` · ${revisionCredit(revision)}`}
+        {` · ${revision.credit}`}
       </p>
       {revision.summary === "" ? null : (
         <blockquote className="mt-4 border-l-3 border-border-strong pl-4 text-body text-fg">
@@ -149,9 +107,9 @@ export default function RevisionRoute() {
             View the {entity.noun} as it is now
           </Link>
         </li>
-        {revision.base_revision_id === null ? null : (
+        {revision.baseRevisionId === null ? null : (
           <li>
-            <ButtonLink to={`/revisions/${revision.base_revision_id}`}>
+            <ButtonLink to={`/revisions/${revision.baseRevisionId}`}>
               Older revision
             </ButtonLink>
           </li>

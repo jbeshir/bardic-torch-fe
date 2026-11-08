@@ -5,6 +5,7 @@ import {
   detailFailure,
   failureInit,
   isPageFailure,
+  isUnavailable,
   listFailure,
   searchFailure,
   thrownPageFailure,
@@ -285,5 +286,17 @@ describe("asPageFailure", () => {
     expect(asPageFailure({ kind: "search_timeout" })).toEqual({
       kind: "bad_gateway",
     });
+  });
+});
+
+describe("isUnavailable", () => {
+  it.each([
+    [503, undefined, true],
+    [503, "internal", true],
+    [500, "unavailable", true],
+    [500, "internal", false],
+    [404, undefined, false],
+  ])("%i with code %s is %s", (status, code, expected) => {
+    expect(isUnavailable(status, code)).toBe(expected);
   });
 });

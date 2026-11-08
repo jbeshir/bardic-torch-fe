@@ -18,7 +18,7 @@ export function RevisionHistory({
 }) {
   if (revisions.length === 0) {
     return (
-      <EmptyState title="No history yet" headingLevel={2}>
+      <EmptyState title="No history yet" headingLevel={3}>
         Changes to this page will be listed here.
       </EmptyState>
     );

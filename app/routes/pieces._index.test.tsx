@@ -138,7 +138,9 @@ describe("/pieces page", () => {
       "href",
       "/pieces?letter=T"
     );
-    expect(screen.getByRole("status")).toHaveTextContent("Showing 249 pieces");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Showing 1–50 of 249 pieces"
+    );
     // No search, so no order to choose and no chips.
     expect(screen.queryByRole("combobox", { name: "Sort by" })).toBeNull();
     expect(
@@ -796,5 +798,69 @@ describe("/pieces facet drawer", () => {
       await renderLive("?term=warlike");
       await userEvent.click(screen.getByRole("button", { name: /^Filters/ }));
     });
+  });
+});
+
+describe("/pieces focus and status after the list changes in place", () => {
+  it("moves focus to the results heading when the letter used becomes text", async () => {
+    const user = userEvent.setup();
+    const { router } = await renderLive("");
+    const bar = screen.getByRole("navigation", { name: "Pieces by letter" });
+    await user.click(within(bar).getByRole("link", { name: "T" }));
+    expect(router.state.location.search).toBe("?letter=T");
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { level: 2, name: "Pieces under T" })
+      ).toHaveFocus();
+    });
+  });
+
+  it("never pulls focus back into the facet column after a chip or a letter", async () => {
+    wideScreen();
+    const user = userEvent.setup();
+    const { router } = await renderLive("?term=warlike");
+    // A box had focus once; then the reader went on to a chip.
+    screen.getByRole("checkbox", { name: /^Warlike/ }).focus();
+    await user.click(
+      screen.getByRole("link", { name: "Remove Mood: Warlike" })
+    );
+    expect(router.state.location.search).toBe("");
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { level: 2, name: "All pieces" })
+      ).toHaveFocus();
+    });
+  });
+
+  it("keeps focus on the sort after a new order", async () => {
+    const user = userEvent.setup();
+    const { router } = await renderLive("?q=kettle");
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Sort by" }),
+      "title"
+    );
+    expect(router.state.location.search).toBe("?q=kettle&sort=title");
+    await waitFor(() => {
+      const select = screen.getByRole("combobox", { name: "Sort by" });
+      expect(select).toHaveValue("title");
+      expect(select).toHaveFocus();
+    });
+  });
+
+  it("says in the status that stale categories were left out", async () => {
+    await renderPieces(
+      "?term=gone",
+      loaded("", listOf(FIFTY.slice(0, 3), 3), { stale: ["gone"] })
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Showing 3 pieces. Some categories in this link no longer exist, so we left them out."
+    );
+  });
+
+  it("says which rows a page shows, so a new page is announced", async () => {
+    await renderPieces("?page=2", loaded("?page=2", listOf(FIFTY, 249)));
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Showing 51–100 of 249 pieces"
+    );
   });
 });

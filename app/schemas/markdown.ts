@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * The sanitised Markdown tree a loader sends for an API `*_md` field (plan
- * §0.7, C4.2): what `app/server/markdown.server.ts` makes of the text, and
+ * §0.7): what `app/server/markdown.server.ts` makes of the text, and
  * all `UserMarkdown` renders. Only these nodes exist, so raw HTML, scripts
  * and images can't reach the page: the parser runs on the server only, and
  * the browser gets plain data.

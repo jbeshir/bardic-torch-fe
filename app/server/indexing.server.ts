@@ -1,5 +1,5 @@
 /**
- * What search engines may crawl (plan C10.1). Only the production build is
+ * What search engines may crawl. Only the production build is
  * indexable (`__INDEXABLE__`, set from the build mode in vite.config.ts and
  * checked by `npm run check:prod-build`): preview, e2e and development
  * builds say `Disallow: /` and send a noindex robots header on every

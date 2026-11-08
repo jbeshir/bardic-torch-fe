@@ -157,9 +157,13 @@ test("a facet checkbox keeps its focus outline, and ticked differs from unticked
     element => getComputedStyle(element).appearance
   );
   expect(appearance).toBe("auto");
+  const unticked = await song.screenshot();
   await page.keyboard.press("Space");
-  await expect(song).toBeChecked();
   await expect(page).toHaveURL(/\/pieces\?kind=song$/);
+  // The rebuilt form's box: still focused, ticked, and drawn differently.
+  await expect(song).toBeChecked();
+  await expect(song).toBeFocused();
+  expect((await song.screenshot()).equals(unticked)).toBe(false);
 });
 
 test("a conservation badge keeps its border and its icon on a piece's page", async ({

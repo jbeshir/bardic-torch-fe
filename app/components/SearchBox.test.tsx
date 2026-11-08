@@ -22,6 +22,19 @@ describe("SearchBox", () => {
     expect(input).toHaveValue("");
   });
 
+  it("names its search landmark: the site's by default, or the page's own", async () => {
+    await renderWithRouter(
+      <>
+        <SearchBox size="md" />
+        <SearchBox size="lg" label="Search the catalogue" />
+      </>
+    );
+    expect(screen.getByRole("search", { name: "Site search" })).toBeVisible();
+    expect(
+      screen.getByRole("search", { name: "Search the catalogue" })
+    ).toBeVisible();
+  });
+
   it("works without JS: the server render is the plain GET form", async () => {
     const page = document.createElement("div");
     page.innerHTML = await renderOnServer(<SearchBox size="lg" />);

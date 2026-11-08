@@ -69,7 +69,7 @@ test("a piece's raw HTML has its canonical address, social card and JSON-LD", as
   expect(data["name"]).toBe("The Copper Kettle");
 });
 
-test("sitemap.xml indexes three sitemaps on this origin", async ({
+test("sitemap.xml indexes six sitemaps on this origin", async ({
   request,
   baseURL,
 }) => {
@@ -81,8 +81,25 @@ test("sitemap.xml indexes three sitemaps on this origin", async ({
   expect(response.headers()["cache-control"]).toBe("public, max-age=3600");
   const xml = await response.text();
   expect(xml).toContain("<sitemapindex");
-  for (const name of ["pages", "pieces", "bards"]) {
+  for (const name of [
+    "pages",
+    "pieces",
+    "bards",
+    "categories",
+    "collections",
+    "events",
+  ]) {
     expect(xml).toContain(`<loc>${baseURL}/sitemap/${name}.xml</loc>`);
+  }
+  // Each catalogue sitemap answers, with this origin's pages.
+  for (const [name, path] of [
+    ["categories", "/categories/warlike"],
+    ["collections", "/collections/12"],
+    ["events", "/events/muster-field"],
+  ] as const) {
+    const sitemap = await request.get(`/sitemap/${name}.xml`);
+    expect(sitemap.status(), name).toBe(200);
+    expect(await sitemap.text()).toContain(`<loc>${baseURL}${path}</loc>`);
   }
 });
 

@@ -3,6 +3,7 @@ import {
   isBeyondApi,
   isCapped,
   pageCount,
+  showingText,
   redirectPastTheEnd,
   SHOWN_MAX,
 } from "./paging";
@@ -68,5 +69,28 @@ describe("redirectPastTheEnd", () => {
     ["page 202 of a huge list goes to 201", 202, 1_000_000, "/pieces?page=201"],
   ])("%s", (_why, page, total, expected) => {
     expect(target(page, total)).toBe(expected);
+  });
+});
+
+describe("showingText", () => {
+  it("is the count alone when one page holds the list", () => {
+    expect(showingText(1, 12, 12, "piece")).toBe("Showing 12 pieces");
+    expect(showingText(1, 1, 1, "bard")).toBe("Showing 1 bard");
+  });
+
+  it("is the page's range of the total, so each page reads differently", () => {
+    expect(showingText(1, 50, 249, "piece")).toBe("Showing 1–50 of 249 pieces");
+    expect(showingText(2, 50, 249, "piece")).toBe(
+      "Showing 51–100 of 249 pieces"
+    );
+    expect(showingText(5, 49, 249, "piece")).toBe(
+      "Showing 201–249 of 249 pieces"
+    );
+  });
+
+  it("takes an irregular plural, and formats big numbers", () => {
+    expect(
+      showingText(3, 50, 12000, "event or venue", "events and venues")
+    ).toBe("Showing 101–150 of 12,000 events and venues");
   });
 });

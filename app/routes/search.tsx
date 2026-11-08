@@ -4,7 +4,7 @@ import {
   type LoaderFunctionArgs,
   type MetaFunction,
 } from "react-router";
-import { useId, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import {
   CatalogueError,
   failureTitle,
@@ -214,12 +214,31 @@ function statusText(loaded: Extract<SearchData, { q: string }>): string {
 
 export default function SearchRoute() {
   const loaded = useLoaderData<typeof loader>();
+  // The box stays mounted across searches, so the box or button just used
+  // keeps focus (WCAG 2.4.3); a search made elsewhere (the header's box,
+  // Back) shows its words here, unless the reader is typing in it.
+  const boxRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const box = boxRef.current;
+    if (box && document.activeElement !== box) box.value = loaded.q ?? "";
+  }, [loaded.q]);
+  // The status is always there, empty before a search, so the first
+  // search's count is announced as a change (a live region added already
+  // filled often isn't).
   const head = (
     <>
       <h1 className="text-h1 text-fg">Search</h1>
       <div className="mt-6 max-w-form">
-        <SearchBox key={loaded.q} size="lg" defaultValue={loaded.q} />
+        <SearchBox
+          ref={boxRef}
+          size="lg"
+          defaultValue={loaded.q}
+          label="Search the catalogue"
+        />
       </div>
+      <ResultsStatus>
+        {loaded.q === undefined ? "" : statusText(loaded)}
+      </ResultsStatus>
     </>
   );
   if (loaded.q === undefined) {
@@ -242,7 +261,6 @@ export default function SearchRoute() {
   return (
     <>
       {head}
-      <ResultsStatus>{statusText(loaded)}</ResultsStatus>
       {nothing ? (
         <EmptyState
           title={`Nothing matches ‘${q}’`}

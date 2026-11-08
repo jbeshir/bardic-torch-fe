@@ -107,6 +107,17 @@ describe("facetGroups", () => {
     expect(values).not.toContain("northmarch");
   });
 
+  it("keeps a selected term that classifies no piece, ticked, so Apply keeps it", () => {
+    const groups = facetGroups(index, facets(), {
+      ...NOTHING,
+      term: ["unused-mood"],
+    });
+    const mood = groups.find(group => group.key === "mood");
+    expect(
+      mood?.shown.find(option => option.value === "unused-mood")
+    ).toMatchObject({ selected: true, disabled: false });
+  });
+
   it("greys and disables an option nothing would match, unless it is ticked", () => {
     const [, mood] = facetGroups(
       index,

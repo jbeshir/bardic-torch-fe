@@ -67,7 +67,7 @@ export const BROWSE_STATUS_LABELS: Readonly<
 
 /**
  * Each status's row id on the conservation help page: the row's first cell
- * slugged like a heading, so hyphenated (FE1's anchors, which other pages and
+ * slugged like a heading, so hyphenated (the help page's anchors, which other pages and
  * the e2e specs link to). The help-content test checks every one exists.
  */
 const CONSERVATION_ANCHORS: Readonly<Record<ConservationStatus, string>> = {
@@ -102,7 +102,7 @@ export function letterLabel(letter: Letter): string {
 }
 
 // ---------------------------------------------------------------------------
-// Facets (C2.2, C4.1)
+// Facets
 
 /**
  * Each facet's label, in sentence case: the facet column's legends, the
@@ -122,7 +122,7 @@ export const FACET_LABELS: Readonly<Record<Facet, string>> = {
 };
 
 // ---------------------------------------------------------------------------
-// The piece page (C4.1): its infobox and category chips.
+// The piece page: its infobox and category chips.
 // ---------------------------------------------------------------------------
 
 /** Each credit role as its infobox row's label: "Words". */
@@ -179,7 +179,7 @@ export const PIECE_ALIAS_KIND_LABELS: Readonly<Record<PieceAliasKind, string>> =
   };
 
 // ---------------------------------------------------------------------------
-// Links (C4.3): where a piece or a person can be found.
+// Links: where a piece or a person can be found.
 // ---------------------------------------------------------------------------
 
 /** Each link role as the heading of its links: "Text sources". */
@@ -232,7 +232,7 @@ export const LINK_PLACE_TYPE_LABELS: Readonly<Record<LinkPlaceType, string>> = {
 };
 
 // ---------------------------------------------------------------------------
-// Licensing and relations (C4.4).
+// Licensing and relations.
 // ---------------------------------------------------------------------------
 
 /**
@@ -283,7 +283,7 @@ export const PIECE_RELATION_LABELS: Readonly<
 };
 
 // ---------------------------------------------------------------------------
-// Persons (C3.1, C5.1): search, the bards directory and the bard page.
+// Persons: search, the bards directory and the bard page.
 // ---------------------------------------------------------------------------
 
 /**
@@ -355,7 +355,7 @@ export const PERSON_RELATION_LABELS: Readonly<
 };
 
 // ---------------------------------------------------------------------------
-// Collections, events and revisions (C7, C8)
+// Collections, events and revisions
 // ---------------------------------------------------------------------------
 
 /** Each collection kind's label, in sentence case. */

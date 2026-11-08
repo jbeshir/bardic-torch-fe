@@ -1,5 +1,19 @@
 import { z } from "zod";
 import type { components, operations } from "~/api/schema.gen";
+import {
+  COLLECTION_KINDS,
+  CONSERVATION_STATUS_VALUES,
+  CREDIT_ROLES,
+  EVENT_KINDS,
+  FACETS,
+  LETTERS,
+  LINK_ROLES,
+  PERSON_KINDS,
+  PERSON_ROLES,
+  PERSON_SORTS,
+  PIECE_KINDS,
+  PIECE_SORTS,
+} from "~/constants/enums";
 import type { Assert, DeepReadonly, Matches } from "./contract";
 
 /**
@@ -8,62 +22,19 @@ import type { Assert, DeepReadonly, Matches } from "./contract";
  * spec's objects are closed, so every object here is strict: a field the
  * spec doesn't declare is a contract break (502), not data to pass on.
  *
- * The enum tuples are exported in the spec's order, which is the order the
- * API lists facet counts in and the order the URL state sorts values in
- * (`app/catalogue/query-state.ts`); read them as `schema.options`.
+ * The enum values are `app/constants/enums.ts`'s, in the spec's order: code
+ * the browser loads reads them there, never `schema.options`, so zod and
+ * these schemas stay out of the client bundle.
  * Schemas are added with the first loader that parses them.
  */
 
 type Schemas = components["schemas"];
 
-export const pieceKindSchema = z.enum([
-  "song",
-  "poem",
-  "story",
-  "dance_music",
-  "instrumental",
-  "comedy",
-]);
+const pieceKindSchema = z.enum(PIECE_KINDS);
 
-export const conservationStatusSchema = z.enum([
-  "unassessed",
-  "low_risk",
-  "endangered",
-  "critically_endangered",
-  "restricted",
-]);
+const conservationStatusSchema = z.enum(CONSERVATION_STATUS_VALUES);
 
-export const pieceSortSchema = z.enum(["title", "relevance"]);
-
-export const letterSchema = z.enum([
-  "0",
-  "A",
-  "B",
-  "C",
-  "D",
-  "E",
-  "F",
-  "G",
-  "H",
-  "I",
-  "J",
-  "K",
-  "L",
-  "M",
-  "N",
-  "O",
-  "P",
-  "Q",
-  "R",
-  "S",
-  "T",
-  "U",
-  "V",
-  "W",
-  "X",
-  "Y",
-  "Z",
-]);
+const letterSchema = z.enum(LETTERS);
 
 /** A count the API lists: only values with at least one match appear. */
 const countSchema = z.int().min(1);
@@ -102,19 +73,9 @@ export const pieceListSchema = z.strictObject({
 });
 
 // ---------------------------------------------------------------------------
-// Terms (C2.2, C6.1): the facet column's labels and tree, and /categories
+// Terms: the facet column's labels and tree, and /categories
 
-export const facetSchema = z.enum([
-  "mood",
-  "topic",
-  "culture",
-  "language",
-  "legendaria",
-  "form",
-  "origin",
-  "other",
-  "affiliation",
-]);
+const facetSchema = z.enum(FACETS);
 
 /** A term's member count: 0 for a term nothing is classified under yet. */
 const memberCountSchema = z.int().min(0);
@@ -134,14 +95,10 @@ export const termListSchema = z.strictObject({
 });
 
 // ---------------------------------------------------------------------------
-// Persons (C3.1): the search page's bards, the bards directory and every
+// Persons: the search page's bards, the bards directory and every
 // list that names a person
 
-export const personKindSchema = z.enum([
-  "community_bard",
-  "historical",
-  "group",
-]);
+const personKindSchema = z.enum(PERSON_KINDS);
 
 const personSummarySchema = z.strictObject({
   slug: z.string(),
@@ -157,11 +114,11 @@ export const personListSchema = z.strictObject({
 });
 
 // ---------------------------------------------------------------------------
-// Shared by the entity bodies and their revision snapshots (C4.1, C5.1,
-// C7, C8): the enums and the small nested objects.
+// Shared by the entity bodies and their revision snapshots: the enums and
+// the small nested objects.
 // ---------------------------------------------------------------------------
 
-export const eventKindSchema = z.enum(["venue", "event"]);
+const eventKindSchema = z.enum(EVENT_KINDS);
 
 const licensingStatusSchema = z.enum(["known", "unknown"]);
 
@@ -196,15 +153,7 @@ const personAliasKindSchema = z.enum([
 const piecePartSchema = z.enum(["words", "tune", "verses", "chorus"]);
 
 /** The credit roles, in the order a person's works are grouped by. */
-export const creditRoleSchema = z.enum([
-  "lyrics",
-  "tune",
-  "author",
-  "choreography",
-  "music",
-  "arrangement",
-  "translation",
-]);
+const creditRoleSchema = z.enum(CREDIT_ROLES);
 
 const attributionSchema = z.enum([
   "named",
@@ -229,16 +178,7 @@ const relationDirectionSchema = z.enum(["outgoing", "incoming"]);
 
 const personStatusSchema = z.enum(["active", "deceased", "prefers_no_page"]);
 
-export const personRoleSchema = z.enum([
-  "singer",
-  "songwriter",
-  "musician",
-  "instrumentalist",
-  "storyteller",
-  "poet",
-  "jester",
-  "dancer",
-]);
+const personRoleSchema = z.enum(PERSON_ROLES);
 
 const linkPlaceTypeSchema = z.enum([
   "recording_platform",
@@ -256,20 +196,7 @@ const linkPlaceTypeSchema = z.enum([
 const livenessSchema = z.enum(["unknown", "ok", "dead", "blocked"]);
 
 /** The link roles, in the order a page groups links by (the spec's). */
-export const linkRoleSchema = z.enum([
-  "official",
-  "lyrics",
-  "text",
-  "sheet_music",
-  "dance_instructions",
-  "text_source",
-  "translation",
-  "performance",
-  "licensing_source",
-  "website",
-  "external_profile",
-  "other",
-]);
+const linkRoleSchema = z.enum(LINK_ROLES);
 
 const termSummarySchema = z.strictObject({
   slug: z.string(),
@@ -359,7 +286,7 @@ const linkFields = {
 };
 
 // ---------------------------------------------------------------------------
-// The piece page (C4.1): `getPiece`'s body.
+// The piece page: `getPiece`'s body.
 // ---------------------------------------------------------------------------
 
 const pieceLinkSchema = z.strictObject({
@@ -404,7 +331,7 @@ export const pieceSchema = z.strictObject({
 });
 
 // ---------------------------------------------------------------------------
-// The bard page (C5.1): `getPerson`'s body.
+// The bard page: `getPerson`'s body.
 // ---------------------------------------------------------------------------
 
 const personLinkSchema = z.strictObject(linkFields);
@@ -472,13 +399,7 @@ export const personSchema = z
   );
 
 // ---------------------------------------------------------------------------
-// The bards directory (C5.2): its sort. `personListSchema` and
-// `termListSchema` are above, shared with search and the facets.
-
-export const personSortSchema = z.enum(["name", "relevance"]);
-
-// ---------------------------------------------------------------------------
-// A category (C6.2): `getTerm`'s body
+// A category: `getTerm`'s body
 
 const termChildSchema = z.strictObject({
   term: termSummarySchema,
@@ -503,23 +424,9 @@ export const termSchema = z.strictObject({
 });
 
 // ---------------------------------------------------------------------------
-// Collections (C7.1: /collections)
+// Collections (/collections)
 
-export const collectionKindSchema = z.enum([
-  "index_or_link_list",
-  "songbook_pdf",
-  "songbook_website",
-  "website",
-  "wiki_category",
-  "wiki",
-  "youtube_channel",
-  "youtube_playlist",
-  "google_doc_songbook",
-  "blog",
-  "archived_songbook",
-  "hosted_document",
-  "other",
-]);
+const collectionKindSchema = z.enum(COLLECTION_KINDS);
 
 const collectionEnumerableSchema = z.enum([
   "unknown",
@@ -569,7 +476,7 @@ export const collectionSchema = z.strictObject({
 });
 
 // ---------------------------------------------------------------------------
-// Events (C7.2: /events)
+// Events (/events)
 
 export const eventListSchema = z.strictObject({
   data: z.array(eventSummarySchema),
@@ -593,7 +500,7 @@ export const eventSchema = z.strictObject({
   performances_total: z.int().min(0),
 });
 // ---------------------------------------------------------------------------
-// Histories (C8.1: */history)
+// Histories (*/history)
 
 const revisionSourceSchema = z.enum(["user", "import", "mcp"]);
 
@@ -615,7 +522,7 @@ export const revisionHistorySchema = z.strictObject({
 
 // ---------------------------------------------------------------------------
 // Revisions (track C: /revisions/:id)
-// Revisions (C8.2: /revisions/:id). A snapshot is the entity as it was saved:
+// Revisions (/revisions/:id). A snapshot is the entity as it was saved:
 // its links have no liveness or archive copy, and its relations no direction.
 
 const snapshotPieceLinkSchema = z.strictObject({
@@ -795,7 +702,8 @@ export type ApiQuery<Id extends keyof operations> = DeepReadonly<
 export type ConservationStatus = z.output<typeof conservationStatusSchema>;
 export type Letter = z.output<typeof letterSchema>;
 export type PieceKind = z.output<typeof pieceKindSchema>;
-export type PieceSort = z.output<typeof pieceSortSchema>;
+/** Only a query parameter, never in a body: no schema, just its values. */
+export type PieceSort = (typeof PIECE_SORTS)[number];
 export type PieceSummary = DeepReadonly<z.output<typeof pieceSummarySchema>>;
 export type PieceList = DeepReadonly<z.output<typeof pieceListSchema>>;
 export type PieceFacets = PieceList["facets"];
@@ -824,7 +732,8 @@ export type LinkRole = z.output<typeof linkRoleSchema>;
 export type TermSummary = DeepReadonly<z.output<typeof termSummarySchema>>;
 export type Piece = DeepReadonly<z.output<typeof pieceSchema>>;
 export type Person = DeepReadonly<z.output<typeof personSchema>>;
-export type PersonSort = z.output<typeof personSortSchema>;
+/** Only a query parameter, never in a body: no schema, just its values. */
+export type PersonSort = (typeof PERSON_SORTS)[number];
 export type Term = DeepReadonly<z.output<typeof termSchema>>;
 export type CollectionKind = z.output<typeof collectionKindSchema>;
 export type CollectionEnumerable = z.output<typeof collectionEnumerableSchema>;
@@ -854,12 +763,12 @@ export type Revision = DeepReadonly<z.output<typeof revisionSchema>>;
 // Compile-time contract checks: each schema's output must equal the generated
 // type in both directions (see `Matches`). Each schema is checked once.
 type _ContractChecks = [
-  // Pieces, terms and persons (C2.2, C3.1)
+  // Pieces, terms and persons
   Assert<Matches<typeof pieceKindSchema, Schemas["PieceKind"]>>,
   Assert<
     Matches<typeof conservationStatusSchema, Schemas["ConservationStatus"]>
   >,
-  Assert<Matches<typeof pieceSortSchema, Schemas["PieceSort"]>>,
+  Assert<Matches<z.ZodType<PieceSort>, Schemas["PieceSort"]>>,
   Assert<Matches<typeof letterSchema, Schemas["Letter"]>>,
   Assert<Matches<typeof letterCountSchema, Schemas["LetterCount"]>>,
   Assert<Matches<typeof pieceSummarySchema, Schemas["PieceSummary"]>>,
@@ -900,14 +809,14 @@ type _ContractChecks = [
   Assert<Matches<typeof pieceCreditSchema, Schemas["PieceCredit"]>>,
   Assert<Matches<typeof piecePerformanceSchema, Schemas["PiecePerformance"]>>,
   Assert<Matches<typeof performanceLinkSchema, Schemas["PerformanceLink"]>>,
-  // The piece and bard pages, the bards directory (C4.1, C5.1, C5.2)
+  // The piece and bard pages, the bards directory
   Assert<Matches<typeof pieceLinkSchema, Schemas["PieceLink"]>>,
   Assert<Matches<typeof pieceSchema, Schemas["Piece"]>>,
   Assert<Matches<typeof personLinkSchema, Schemas["PersonLink"]>>,
   Assert<Matches<typeof personProfileSchema, Schemas["PersonProfile"]>>,
   Assert<Matches<typeof personSchema, Schemas["Person"]>>,
-  Assert<Matches<typeof personSortSchema, Schemas["PersonSort"]>>,
-  // Categories, collections and events (C6, C7)
+  Assert<Matches<z.ZodType<PersonSort>, Schemas["PersonSort"]>>,
+  // Categories, collections and events
   Assert<Matches<typeof termChildSchema, Schemas["TermChild"]>>,
   Assert<Matches<typeof termSchema, Schemas["Term"]>>,
   Assert<Matches<typeof collectionKindSchema, Schemas["CollectionKind"]>>,
@@ -923,7 +832,7 @@ type _ContractChecks = [
   Assert<Matches<typeof eventListSchema, Schemas["EventList"]>>,
   Assert<Matches<typeof eventPerformanceSchema, Schemas["EventPerformance"]>>,
   Assert<Matches<typeof eventSchema, Schemas["Event"]>>,
-  // Histories and revisions (C8)
+  // Histories and revisions
   Assert<Matches<typeof revisionSourceSchema, Schemas["RevisionSource"]>>,
   Assert<Matches<typeof revisionAuthorSchema, Schemas["RevisionAuthor"]>>,
   Assert<Matches<typeof revisionSummarySchema, Schemas["RevisionSummary"]>>,

@@ -80,7 +80,7 @@ describe("pieceStructuredData", () => {
         },
       ],
       url: `${ORIGIN}/pieces/the-long-road`,
-      inLanguage: ["Middle English"],
+      inLanguage: [{ "@type": "Language", name: "Middle English" }],
     });
   });
 

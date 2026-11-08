@@ -219,10 +219,13 @@ describe("/bards/:slug document", () => {
   });
 
   it("names a restricted piece's performance, never its recording", async () => {
-    const main = mainOf(await (await get("/bards/wren-of-the-vale")).text());
+    const html = await (await get("/bards/wren-of-the-vale")).text();
+    const main = mainOf(html);
     expect(main).toContain('href="/pieces/the-dragons-hoard"');
     expect(main).toContain("Link not shown: see the piece page");
-    expect(main).not.toContain("private-recordings.example");
+    // Not in the page, nor in the data it hydrates from.
+    expect(html).not.toContain("private-recordings.example");
+    expect(html).not.toContain("The Dragon’s Hoard, live");
   });
 
   it("is a group's MusicGroup, disbanded", async () => {

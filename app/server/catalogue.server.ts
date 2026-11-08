@@ -108,8 +108,8 @@ const ENDPOINTS = {
     ],
     reads: "search",
   },
-  // The facet column (C2.2), search (C3.1), the bards directory (C5.2) and
-  // the categories (C6.1).
+  // The facet column, search, the bards directory and
+  // the categories.
   listTerms: {
     method: "GET",
     path: "/v1/terms",
@@ -131,7 +131,7 @@ const ENDPOINTS = {
     ],
     reads: "search",
   },
-  // The piece page (C4.1) and the bard page (C5.1).
+  // The piece page and the bard page.
   getPiece: {
     method: "GET",
     path: "/v1/pieces/{slug}",
@@ -144,7 +144,7 @@ const ENDPOINTS = {
     query: [],
     reads: "detail",
   },
-  // A category (C6.2), collections (C7.1) and events (C7.2).
+  // A category, collections and events.
   getTerm: {
     method: "GET",
     path: "/v1/terms/{slug}",
@@ -175,7 +175,7 @@ const ENDPOINTS = {
     query: [],
     reads: "detail",
   },
-  // Histories (C8.1) and revisions (C8.2).
+  // Histories and revisions.
   listPieceRevisions: {
     method: "GET",
     path: "/v1/pieces/{slug}/history",
@@ -412,7 +412,7 @@ export function getPerson(
 }
 
 // ---------------------------------------------------------------------------
-// Categories, collections, events, histories and revisions (C6–C8)
+// Categories, collections, events, histories and revisions
 
 /**
  * A term with one page of its members (`GET /v1/terms/{slug}`): `slug`

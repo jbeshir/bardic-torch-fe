@@ -62,9 +62,10 @@ test("a letter lists its pieces, and an empty letter is not a link", async ({
   );
   await letters(page).getByRole("link", { name: "T", exact: true }).click();
   await expect(page).toHaveURL(/\/pieces\?letter=T$/);
+  // The letter used is now text: focus goes to the results heading.
   await expect(
     main(page).getByRole("heading", { level: 2, name: "Pieces under T" })
-  ).toBeVisible();
+  ).toBeFocused();
   await expect(letters(page).getByText("T", { exact: true })).toHaveAttribute(
     "aria-current",
     "page"
@@ -89,8 +90,20 @@ test("the pages go on to page 2 and back", async ({ page }) => {
   await pagination.getByRole("link", { name: "Next" }).click();
   await expect(page).toHaveURL(/\/pieces\?page=2$/);
   await expect(pagination.locator("[aria-current=page]")).toHaveText("Page 2");
+  // The new page is announced by its range, and Next keeps focus.
+  await expect(main(page).getByRole("status")).toHaveText(
+    /^Showing 51–100 of \d[\d,]* pieces$/
+  );
+  await expect(pagination.getByRole("link", { name: "Next" })).toBeFocused();
   await pagination.getByRole("link", { name: "Previous" }).click();
   await expect(page).toHaveURL(/\/pieces$/);
+  // Previous is now text on page 1: focus goes to the results heading.
+  await expect(
+    main(page).getByRole("heading", { level: 2, name: "All pieces" })
+  ).toBeFocused();
+  await expect(main(page).getByRole("status")).toHaveText(
+    /^Showing 1–50 of \d[\d,]* pieces$/
+  );
 });
 
 test("a page past the end goes to the last page, and a messy URL to its canonical form", async ({
@@ -228,12 +241,22 @@ test("at 1280 the facet column applies each tick at once, and its chips take the
   await expect(
     filters(page).getByRole("checkbox", { name: /^Warlike\b/ })
   ).not.toBeChecked();
-  await expect(main(page).getByRole("status")).toHaveText("Showing 229 pieces");
+  // The chip is gone: focus goes to the results heading, not back into
+  // the facet column to the box focused before.
+  await expect(
+    main(page).getByRole("heading", { level: 2, name: "Matching pieces" })
+  ).toBeFocused();
+  await expect(main(page).getByRole("status")).toHaveText(
+    "Showing 1–50 of 229 pieces"
+  );
   await main(page)
     .getByRole("navigation", { name: "Pagination" })
     .getByRole("link", { name: "Next" })
     .click();
   await expect(page).toHaveURL(/\/pieces\?kind=song&page=2$/);
+  await expect(main(page).getByRole("status")).toHaveText(
+    "Showing 51–100 of 229 pieces"
+  );
 });
 
 test("checkpoint: filtered, a kind and a mood", async ({ page }) => {

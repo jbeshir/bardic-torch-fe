@@ -1,6 +1,5 @@
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { createRef, type RefObject } from "react";
 import { describe, expect, it } from "vitest";
 import { facetGroups } from "~/catalogue/facet-groups";
 import { pieceQuery } from "~/catalogue/query-state";
@@ -46,12 +45,7 @@ const stateOf = (search: string) =>
 
 function form(
   search: string,
-  {
-    termsFailed = false,
-    autoSubmit = false,
-    apply = true,
-    focusRef = createRef<string | null>() as RefObject<string | null>,
-  } = {}
+  { termsFailed = false, autoSubmit = false, apply = true } = {}
 ) {
   const state = stateOf(search);
   return (
@@ -66,7 +60,6 @@ function form(
       termsFailed={termsFailed}
       autoSubmit={autoSubmit}
       apply={apply}
-      focusRef={focusRef}
     />
   );
 }
@@ -186,13 +179,6 @@ describe("FacetForm", () => {
   it("can leave Apply to its container", async () => {
     await renderOnPage("", { apply: false });
     expect(screen.queryByRole("button", { name: "Apply filters" })).toBeNull();
-  });
-
-  it("remembers the control focused last", async () => {
-    const focusRef = createRef<string | null>() as RefObject<string | null>;
-    await renderOnPage("", { focusRef });
-    screen.getByRole("checkbox", { name: /^Eerie/ }).focus();
-    expect(focusRef.current).toBe("term=eerie");
   });
 
   it("works without JS: the server render is the plain GET form", async () => {

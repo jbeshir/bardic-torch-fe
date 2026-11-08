@@ -1,4 +1,4 @@
-import { act, screen, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { data } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -123,7 +123,9 @@ describe("/bards page", () => {
       "href",
       "/bards?letter=W"
     );
-    expect(screen.getByRole("status")).toHaveTextContent("Showing 14 bards");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Showing 1–3 of 14 bards"
+    );
     // The filters come after the results, closed.
     const filters = screen.getByText("Filters").closest("details");
     expect(filters).not.toHaveAttribute("open");
@@ -215,6 +217,10 @@ describe("/bards page", () => {
     expect(
       screen.getByText("That affiliation no longer exists, so we left it out.")
     ).toBeVisible();
+    // Said in the status too, so a client navigation announces it.
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Showing 3 bards. That affiliation no longer exists, so we left it out."
+    );
   });
 
   it("says nothing matches a search, offering to clear it", async () => {
@@ -280,6 +286,68 @@ describe("/bards page", () => {
     expect(router.state.location.search).toBe(
       "?q=wren&kind=group&role=singer&affiliation=caer-wyn"
     );
+  });
+
+  it("keeps focus on the box just used at xl, so the next Tab goes on from it", async () => {
+    vi.stubGlobal("matchMedia", () => ({ matches: true }));
+    const user = userEvent.setup();
+    const router = await renderBards("", byUrl(listOf(PEOPLE)));
+    screen.getByRole("checkbox", { name: "Group" }).focus();
+    await user.keyboard(" ");
+    expect(router.state.location.search).toBe("?kind=group");
+    await screen.findByRole("link", { name: "Remove Kind: Group" });
+    await waitFor(() => {
+      const group = screen.getByRole("checkbox", { name: "Group" });
+      expect(group).toBeChecked();
+      expect(group).toHaveFocus();
+    });
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Affiliation" }),
+      "caer-wyn"
+    );
+    expect(router.state.location.search).toBe(
+      "?kind=group&affiliation=caer-wyn"
+    );
+    await screen.findByRole("link", { name: "Remove Affiliation: Caer Wyn" });
+    await waitFor(() => {
+      expect(
+        screen.getByRole("combobox", { name: "Affiliation" })
+      ).toHaveFocus();
+    });
+  });
+
+  it("keeps the filters open and Apply focused after an Apply below xl", async () => {
+    vi.stubGlobal("matchMedia", () => ({ matches: false }));
+    const user = userEvent.setup();
+    const router = await renderBards("", byUrl(listOf(PEOPLE)));
+    await user.click(screen.getByText("Filters"));
+    await user.click(screen.getByRole("checkbox", { name: "Group" }));
+    screen.getByRole("button", { name: "Apply filters" }).focus();
+    await user.keyboard("{Enter}");
+    expect(router.state.location.search).toBe("?kind=group");
+    await screen.findByRole("link", { name: "Remove Kind: Group" });
+    await waitFor(() => {
+      const apply = screen.getByRole("button", { name: "Apply filters" });
+      expect(apply).toHaveFocus();
+      expect(apply.closest("details")).toHaveAttribute("open");
+    });
+  });
+
+  it("moves focus to the results heading after a letter, and says which rows a page shows", async () => {
+    vi.stubGlobal("matchMedia", () => ({ matches: false }));
+    const user = userEvent.setup();
+    const router = await renderBards("?page=2", byUrl(listOf(PEOPLE, 120)));
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Showing 51–53 of 120 bards"
+    );
+    const bar = screen.getByRole("navigation", { name: "Bards by letter" });
+    await user.click(within(bar).getByRole("link", { name: "W" }));
+    expect(router.state.location.search).toBe("?letter=W");
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { level: 2, name: "Bards under W" })
+      ).toHaveFocus();
+    });
   });
 
   it("searches every letter from the search box, keeping the filters", async () => {

@@ -1,27 +1,14 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { parse } from "yaml";
 import {
-  conservationStatusSchema,
-  facetSchema,
-  letterSchema,
   personListSchema,
-  pieceKindSchema,
   pieceListSchema,
-  pieceSortSchema,
   termListSchema,
   termSchema,
 } from "./catalogue";
 
 // Type equality with the generated contract is asserted at compile time in
-// catalogue.ts; these tests cover what types can't: the enum order the URL
-// state and the facet lists rely on, and the runtime strictness.
-
-const schemas = (
-  parse(readFileSync("api/openapi.yaml", "utf8")) as {
-    components: { schemas: Record<string, { enum?: string[] }> };
-  }
-).components.schemas;
+// catalogue.ts; these tests cover what types can't: the runtime strictness
+// (the enum order is `app/constants/enums.test.ts`'s).
 
 const piece = {
   slug: "the-copper-kettle",
@@ -42,17 +29,6 @@ const list = {
     letters: [{ letter: "C", count: 1 }],
   },
 };
-
-describe("enum order", () => {
-  it.each([
-    ["PieceKind", pieceKindSchema.options],
-    ["ConservationStatus", conservationStatusSchema.options],
-    ["PieceSort", pieceSortSchema.options],
-    ["Letter", letterSchema.options],
-  ] as const)("%s is in the spec's order", (name, options) => {
-    expect(options).toEqual(schemas[name]?.enum);
-  });
-});
 
 describe("pieceListSchema", () => {
   it("reads the spec's example", () => {
@@ -107,12 +83,6 @@ describe("pieceListSchema", () => {
 
 // ---------------------------------------------------------------------------
 // C2.2 terms and C3.1 persons
-
-describe("facetSchema", () => {
-  it("is in the spec's order", () => {
-    expect(facetSchema.options).toEqual(schemas.Facet?.enum);
-  });
-});
 
 describe("termListSchema", () => {
   const term = {

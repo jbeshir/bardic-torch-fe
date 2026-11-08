@@ -1,6 +1,7 @@
 import type { RouterContextProvider } from "react-router";
 import { z } from "zod";
 import type { operations } from "~/api/schema.gen";
+import { isUnavailable } from "~/catalogue/read-failure";
 import {
   apiTokenListSchema,
   createdApiTokenSchema,
@@ -31,7 +32,6 @@ import {
   aborted,
   type EndpointOf,
   isTimeout,
-  isUnavailable,
   parseJson,
   type Method,
   UPSTREAM_TIMEOUT_MS,
@@ -69,7 +69,10 @@ type ApiResult<T> = (
 /** Largest form body the proxy routes accept. */
 const MAX_BODY_BYTES = 8 * 1024;
 
-/** Where each FE1 operation lives; the compiler checks it against the spec. */
+/**
+ * Where each authenticated operation lives; the compiler checks it against
+ * the spec.
+ */
 const ENDPOINTS = {
   getMe: { method: "GET", path: "/v1/me" },
   updateMe: { method: "PATCH", path: "/v1/me" },

@@ -1,18 +1,22 @@
 import type { RouterContextProvider } from "react-router";
 import { HELP_HREF, HELP_PAGES, helpHref } from "~/constants/navigation";
-import type { PersonList, PieceList } from "~/schemas/catalogue";
+import { categoryPath } from "~/catalogue/term-page";
 import {
+  listCollections,
+  listEvents,
   listPersons,
   listPieces,
+  listTerms,
   type ReadResult,
 } from "~/server/catalogue.server";
 
 /**
- * The sitemaps (plan C10.2): an index of `/sitemap/{name}.xml`, each a
- * `urlset`. The catalogue's lists are read in full, 100 at a time (the
- * API's limit): the first page gives `total`, then the rest in parallel
- * batches, up to offset 10,000, so a sitemap costs at most 101 API calls
- * (the Workers subrequest ceiling is in DEPLOY).
+ * The sitemaps: an index of `/sitemap/{name}.xml`, each a
+ * `urlset`. The catalogue's paged lists are read in full, 100 at a time
+ * (the API's limit): the first page gives `total`, then the rest in
+ * parallel batches, up to offset 10,000 (the API's greatest), so a sitemap
+ * costs at most 101 API calls and lists at most 10,100 entries; a longer
+ * list is logged as cut short. The categories are one unpaged read.
  */
 
 const PAGE_SIZE = 100;
@@ -26,7 +30,14 @@ const NAMESPACE = "http://www.sitemaps.org/schemas/sitemap/0.9";
 const XML_HEAD = '<?xml version="1.0" encoding="UTF-8"?>';
 
 /** The sitemaps, in the index's order. */
-const SITEMAP_NAMES = ["pages", "pieces", "bards"] as const;
+const SITEMAP_NAMES = [
+  "pages",
+  "pieces",
+  "bards",
+  "categories",
+  "collections",
+  "events",
+] as const;
 type SitemapName = (typeof SITEMAP_NAMES)[number];
 
 /** The pages that aren't a catalogue entry: the home page, help and directories. */
@@ -81,18 +92,24 @@ function urlset(origin: string, paths: readonly string[]): Response {
 type Page<T> = { readonly data: readonly T[]; readonly total: number };
 
 /** Every entry of a list: the first page, then the others in batches. */
-async function readAll<T, List extends Page<T>>(
-  read: (offset: number) => Promise<ReadResult<List>>
+async function readAll<T>(
+  read: (offset: number) => Promise<ReadResult<Page<T>>>
 ): Promise<ReadResult<readonly T[]>> {
   const first = await read(0);
   if (!first.ok) return first;
+  const { total } = first.data;
   const offsets: number[] = [];
   for (
     let offset = PAGE_SIZE;
-    offset < Math.min(first.data.total, MAX_OFFSET);
+    offset < total && offset <= MAX_OFFSET;
     offset += PAGE_SIZE
   ) {
     offsets.push(offset);
+  }
+  if (total > MAX_OFFSET + PAGE_SIZE) {
+    console.warn(
+      `A sitemap lists the first ${MAX_OFFSET + PAGE_SIZE} of ${total} entries: the API reads no further.`
+    );
   }
   const entries: T[] = [...first.data.data];
   for (let start = 0; start < offsets.length; start += BATCH_SIZE) {
@@ -122,6 +139,57 @@ function isSitemapName(name: string): name is SitemapName {
   return SITEMAP_NAMES.some(known => known === name);
 }
 
+/** The paths of one catalogue sitemap, read from the API. */
+function catalogueSitemapPaths(
+  context: Readonly<RouterContextProvider>,
+  name: Exclude<SitemapName, "pages">
+): Promise<ReadResult<readonly string[]>> {
+  const paths = <T>(
+    result: ReadResult<readonly T[]>,
+    path: (entry: T) => readonly string[]
+  ): ReadResult<readonly string[]> =>
+    result.ok ? { ok: true, data: result.data.flatMap(path) } : result;
+  switch (name) {
+    case "pieces":
+      return readAll(offset =>
+        listPieces(context, { limit: PAGE_SIZE, offset })
+      ).then(result =>
+        paths(result, piece =>
+          piece.conservation_status === "restricted"
+            ? []
+            : [`/pieces/${encodeURIComponent(piece.slug)}`]
+        )
+      );
+    case "bards":
+      return readAll(offset =>
+        listPersons(context, { limit: PAGE_SIZE, offset })
+      ).then(result =>
+        paths(result, person =>
+          person.is_stub ? [] : [`/bards/${encodeURIComponent(person.slug)}`]
+        )
+      );
+    case "categories":
+      return listTerms(context, {}).then(result =>
+        paths(
+          result.ok ? { ok: true, data: result.data.data } : result,
+          term => [categoryPath(encodeURIComponent(term.slug))]
+        )
+      );
+    case "collections":
+      return readAll(offset =>
+        listCollections(context, { limit: PAGE_SIZE, offset })
+      ).then(result =>
+        paths(result, collection => [`/collections/${collection.id}`])
+      );
+    case "events":
+      return readAll(offset =>
+        listEvents(context, { limit: PAGE_SIZE, offset })
+      ).then(result =>
+        paths(result, event => [`/events/${encodeURIComponent(event.slug)}`])
+      );
+  }
+}
+
 /**
  * `/sitemap/{type}`, where `type` is `{name}.xml`: restricted pieces and
  * stub persons are left out (a restricted piece asks not to be shared; a
@@ -139,14 +207,7 @@ export async function sitemap(
   }
   if (name === "pages") return urlset(origin, PAGE_PATHS);
 
-  const result =
-    name === "pieces"
-      ? await readAll<PieceList["data"][number], PieceList>(offset =>
-          listPieces(context, { limit: PAGE_SIZE, offset })
-        )
-      : await readAll<PersonList["data"][number], PersonList>(offset =>
-          listPersons(context, { limit: PAGE_SIZE, offset })
-        );
+  const result = await catalogueSitemapPaths(context, name);
   if (!result.ok) {
     return unavailable(
       result.failure.kind === "resting"
@@ -154,14 +215,5 @@ export async function sitemap(
         : RETRY_AFTER_SECONDS
     );
   }
-  const paths = result.data.flatMap(entry =>
-    "conservation_status" in entry
-      ? entry.conservation_status === "restricted"
-        ? []
-        : [`/pieces/${encodeURIComponent(entry.slug)}`]
-      : entry.is_stub
-        ? []
-        : [`/bards/${encodeURIComponent(entry.slug)}`]
-  );
-  return urlset(origin, paths);
+  return urlset(origin, result.data);
 }

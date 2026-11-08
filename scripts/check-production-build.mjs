@@ -22,10 +22,11 @@ import { fixtureAppEnv } from "./dev-fixtures.mjs";
  * - each deploys to its own Worker (bardic-torch-fe, bardic-torch-fe-preview);
  * - neither carries a `.dev.vars` copy or an AUTH_MODE variable;
  * - neither's client build has the Markdown parser (micromark), which runs
- *   in loaders only (plan §0.7, C4.2);
+ *   in loaders only, or zod, which checks API answers on the server only
+ *   (the browser reads enum values from `app/constants/enums.ts`);
  * - `__INDEXABLE__` is true in production only: its server build has the
  *   crawlable robots.txt rules and no X-Robots-Tag, and the preview build
- *   has the opposite (plan C10.1).
+ *   has the opposite.
  *
  * Building rewrites .wrangler/deploy/config.json, which points `wrangler
  * dev` and `wrangler deploy` at a build; it is put back as it was.
@@ -69,6 +70,13 @@ export const MARKDOWN_PARSER_MARKERS = [
   "codeFencedFenceSequence",
   "characterReferenceMarkerHexadecimal",
 ];
+
+/**
+ * Strings zod's code keeps when minified (its classes are named by string
+ * literals), so a client chunk that has one has zod, and with it the
+ * response schemas that import it.
+ */
+export const ZOD_MARKERS = ["ZodError"];
 
 /** The marker string stub-auth.server.ts puts into every build it is in. */
 export function readStubMarker(source) {
@@ -119,6 +127,12 @@ export function inspectBuild({ buildDir, mode, marker }) {
       MARKDOWN_PARSER_MARKERS.some(parser => content.includes(parser))
     ) {
       problems.push(`${mode}: the Markdown parser (micromark) in ${name}`);
+    }
+    if (
+      name.startsWith("client") &&
+      ZOD_MARKERS.some(zod => content.includes(zod))
+    ) {
+      problems.push(`${mode}: zod in ${name}`);
     }
     if (path.basename(name) === ".dev.vars") {
       problems.push(`${mode}: local variables copied into ${name}`);

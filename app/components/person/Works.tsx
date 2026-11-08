@@ -1,10 +1,11 @@
+import { CREDIT_ROLES } from "~/constants/enums";
 import { Fragment } from "react";
 import { formatNumber } from "~/catalogue/format";
 import { ConservationBadge } from "~/components/ui/ConservationBadge";
 import { Link } from "~/components/ui/Link";
 import { WORK_ROLE_HEADINGS } from "~/constants/vocabulary";
 import { CertaintyQualifier, creditLabel } from "~/components/piece/Credits";
-import { creditRoleSchema, type Person } from "~/schemas/catalogue";
+import type { Person } from "~/schemas/catalogue";
 
 type Profile = NonNullable<Person["profile"]>;
 type Work = Profile["works"][number];
@@ -69,7 +70,7 @@ export function MoreNotListed({
  * "and N more not listed here".
  */
 export function Works({ profile }: { readonly profile: Profile }) {
-  const roles = creditRoleSchema.options.filter(role =>
+  const roles = CREDIT_ROLES.filter(role =>
     profile.works.some(work => work.role === role)
   );
   return (

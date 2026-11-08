@@ -110,7 +110,10 @@ export function LicensingCard({
       <Card title="Licensing" headingLevel={2} headingId={LICENSING_ID}>
         <div className="grid gap-3 text-body text-fg">
           <Status status={status} subject={subject} />
-          {licence ? <LicenceName licence={licence} /> : null}
+          {/* A licence is named only when it is known, as in the infobox. */}
+          {licence && status === "known" ? (
+            <LicenceName licence={licence} />
+          ) : null}
           {notes ? (
             <div className="prose-bt text-body">
               <UserMarkdown tree={notes} />

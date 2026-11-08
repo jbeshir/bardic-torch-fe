@@ -17,6 +17,7 @@ import {
   MARKDOWN_PARSER_MARKERS,
   readStubMarker,
   withDeployConfigRestored,
+  ZOD_MARKERS,
 } from "./check-production-build.mjs";
 
 const MARKER = "bardic-torch-stub-auth";
@@ -90,6 +91,18 @@ describe("inspectBuild", () => {
       ).toEqual([
         "production: the Markdown parser (micromark) in client/assets/notes-abc.js",
       ]);
+    }
+  );
+
+  it.each(ZOD_MARKERS)(
+    "finds zod in a client chunk by %s, and allows it on the server",
+    zod => {
+      expect(
+        inspect({
+          "client/assets/catalogue-abc.js": `class e extends Error{name="${zod}"}`,
+          "server/assets/server-build.js": `var t="${zod}";`,
+        })
+      ).toEqual(["production: zod in client/assets/catalogue-abc.js"]);
     }
   );
 
@@ -328,7 +341,7 @@ describe("inspectBuild on a real e2e build", () => {
     ).toEqual([]);
   });
 
-  it("parses Markdown on the server, so the client check looks for something real", () => {
+  it("parses Markdown and checks answers on the server, so the client checks look for something real", () => {
     const server = readdirSync(path.join(buildDir, "server"), {
       recursive: true,
       encoding: "utf8",
@@ -339,5 +352,8 @@ describe("inspectBuild on a real e2e build", () => {
     for (const parser of MARKDOWN_PARSER_MARKERS.slice(1)) {
       expect(server).toContain(parser);
     }
+    // The markers find zod where it is, so its absence from the client
+    // (no problem above) means something.
+    for (const zod of ZOD_MARKERS) expect(server).toContain(zod);
   });
 });

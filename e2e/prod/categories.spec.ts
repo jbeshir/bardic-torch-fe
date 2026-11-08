@@ -50,6 +50,10 @@ test("a facet alone, from the section nav, and back by the breadcrumb", async ({
   await expect(
     main(page).getByRole("heading", { level: 1, name: "Mood" })
   ).toBeVisible();
+  // A facet is a page of its own: focus goes to the main content, and the
+  // new title is announced.
+  await expect(main(page)).toBeFocused();
+  await expect(page).toHaveTitle(/^Mood/);
   await expect(main(page).getByRole("link", { name: "Warlike" })).toBeVisible();
   await expect(main(page).getByRole("link", { name: "Swords" })).toHaveCount(0);
   await main(page)

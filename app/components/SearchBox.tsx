@@ -30,15 +30,19 @@ const SIZES = {
  * trimmed, one request); without JS the browser sends `q`, which the page
  * answers the same. The submit button means it works without Enter too.
  * No suggestions, no shortcut. `defaultValue` prefills it (the search
- * page's own box).
+ * page's own box). Its search landmark is named by `label`, so the site's
+ * box and a page's own read differently in a landmark list.
  */
 export function SearchBox({
   size,
   defaultValue,
+  label = "Site search",
   ref,
 }: {
   readonly size: keyof typeof SIZES;
   readonly defaultValue?: string | undefined;
+  /** The search landmark's name: the site's box unless a page names its own. */
+  readonly label?: string;
   readonly ref?: Ref<HTMLInputElement>;
 }) {
   const inputId = useId();
@@ -46,7 +50,13 @@ export function SearchBox({
   const { input, button, placeholder } = SIZES[size];
   const longPlaceholder = SIZES.lg.placeholder;
   return (
-    <Form role="search" method="get" action={SEARCH.action} onSubmit={onSubmit}>
+    <Form
+      role="search"
+      aria-label={label}
+      method="get"
+      action={SEARCH.action}
+      onSubmit={onSubmit}
+    >
       <label htmlFor={inputId} className="sr-only">
         Search the catalogue
       </label>

@@ -49,6 +49,10 @@ test("a letter and a kind narrow the list, straight to the canonical URL", async
   await expect(page).toHaveURL(
     /\/collections\?kind=youtube_playlist&letter=H$/
   );
+  // The filter is rebuilt from the new URL; Apply keeps focus.
+  await expect(
+    main(page).getByRole("button", { name: "Apply filters" })
+  ).toBeFocused();
   await expect(
     main(page).getByRole("link", { name: "Harvest Playlist", exact: true })
   ).toBeVisible();

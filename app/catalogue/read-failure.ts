@@ -96,10 +96,23 @@ function classify<Failure extends ReadFailure>(
   if (upstream === "unreachable") {
     return { kind: "resting", retryAfter: RETRY_AFTER_UNREACHABLE };
   }
-  if (upstream.status === 503 || upstream.code === "unavailable") {
+  if (isUnavailable(upstream.status, upstream.code)) {
     return { kind: "resting", retryAfter: RETRY_AFTER_UNAVAILABLE };
   }
   return answered(upstream);
+}
+
+/**
+ * Whether an error answer means the API (or the platform in front of it) is
+ * briefly out of service (for the catalogue's reads and the
+ * authenticated proxy alike): any 503, whatever its body, or the Error code
+ * `unavailable` at any status.
+ */
+export function isUnavailable(
+  status: number,
+  code: string | undefined
+): boolean {
+  return status === 503 || code === "unavailable";
 }
 
 /** Whether `answer` is the spec's `status` with `code`. */
@@ -222,5 +235,5 @@ export function thrownPageFailure(error: unknown): PageFailure | null {
  * page can't use (502).
  */
 export function asPageFailure(failure: ReadFailure): PageFailure {
-  return isPageFailure(failure) ? failure : { kind: "bad_gateway" };
+  return isPageFailure(failure) ? failure : BAD_GATEWAY;
 }

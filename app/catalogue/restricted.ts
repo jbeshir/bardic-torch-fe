@@ -36,3 +36,24 @@ export function withoutRestrictedLink<
     ? { ...row, url: "", title: null }
     : row;
 }
+
+/**
+ * `performance` with its recording emptied when its piece is restricted,
+ * as an event or a bard page lists it: like {@link withoutRestrictedLink},
+ * so the address never reaches the page, and the row still names the
+ * piece.
+ */
+export function withoutRestrictedRecording<
+  Performance extends {
+    readonly piece: Pick<PieceSummary, "conservation_status"> | null;
+    readonly link: {
+      readonly url: string;
+      readonly title: string | null;
+      readonly platform: string | null;
+    };
+  },
+>(performance: Performance): Performance {
+  return linkExposure(performance.piece) === "internal-only"
+    ? { ...performance, link: { url: "", title: null, platform: null } }
+    : performance;
+}

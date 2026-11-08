@@ -1,3 +1,4 @@
+import { LG_QUERY, XL_QUERY } from "~/constants/breakpoints";
 import { useLocation } from "react-router";
 import { IconX } from "@tabler/icons-react";
 import { useEffect, useId, useRef, type ReactNode } from "react";
@@ -9,10 +10,7 @@ import { useModalDialog } from "~/hooks/useModalDialog";
  * Where a persistent version takes over from the drawer: Tailwind's `lg`
  * (the sidebar) or `xl` (the piece browse's facet column).
  */
-const CLOSE_FROM_QUERIES = {
-  lg: "(min-width: 1024px)",
-  xl: "(min-width: 1280px)",
-} as const;
+const CLOSE_FROM_QUERIES = { lg: LG_QUERY, xl: XL_QUERY } as const;
 
 /**
  * The navigation drawer (DESIGN §6.21) on a native modal `<dialog>`, opened

@@ -2,7 +2,7 @@ import type { LoaderFunctionArgs } from "react-router";
 import { robotsTxt } from "~/server/indexing.server";
 
 /**
- * `/robots.txt` (plan C10.1): the rules for this build (see
+ * `/robots.txt`: the rules for this build (see
  * app/server/indexing.server.ts), with the sitemap's address on this
  * request's origin. A resource route, so it has no root data and isn't
  * personalised.

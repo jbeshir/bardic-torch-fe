@@ -1,4 +1,5 @@
 import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { data } from "react-router";
 import { describe, expect, it } from "vitest";
 import { collectionQuery } from "~/catalogue/query-state";
@@ -137,6 +138,33 @@ describe("/collections page", () => {
       })
     ).toBeVisible();
     expect(screen.getByRole("checkbox", { name: "Wiki" })).toBeChecked();
+  });
+
+  it("keeps focus on Apply after the kind filter is applied, and says which rows show", async () => {
+    const router = await renderRoutes(
+      [
+        {
+          path: "/collections",
+          loader: ({ request }) => loaded(new URL(request.url).search, LIST)(),
+          Component: CollectionsRoute,
+          ErrorBoundary,
+          HydrateFallback: () => null,
+        },
+      ],
+      "/collections"
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Showing 3 collections"
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByText("Filter by kind"));
+    await user.click(screen.getByRole("checkbox", { name: "Other" }));
+    screen.getByRole("button", { name: "Apply filters" }).focus();
+    await user.keyboard("{Enter}");
+    // Once the new list is in (its chip), the rebuilt form's Apply.
+    await screen.findByRole("link", { name: "Remove Kind: Other" });
+    expect(router.state.location.search).toBe("?kind=other");
+    expect(screen.getByRole("button", { name: "Apply filters" })).toHaveFocus();
   });
 
   it("is the server error for a thrown 500", async () => {

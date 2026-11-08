@@ -1,6 +1,7 @@
+import { LINK_ROLES } from "~/constants/enums";
 import { useId } from "react";
 import { LINK_ROLE_HEADINGS } from "~/constants/vocabulary";
-import { linkRoleSchema, type LinkRole } from "~/schemas/catalogue";
+import type { LinkRole } from "~/schemas/catalogue";
 import { LinkRow, type AnyLink } from "./LinkRow";
 
 /** One role's heading and its links. */
@@ -42,10 +43,7 @@ export function LinkGroups({
   readonly first?: readonly LinkRole[];
   readonly archive?: boolean;
 }) {
-  const roles = [
-    ...first,
-    ...linkRoleSchema.options.filter(role => !first.includes(role)),
-  ];
+  const roles = [...first, ...LINK_ROLES.filter(role => !first.includes(role))];
   return roles.map(role => {
     const under = links.filter(link => link.roles.includes(role));
     return under.length > 0 ? (

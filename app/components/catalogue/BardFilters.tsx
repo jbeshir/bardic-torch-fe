@@ -1,3 +1,5 @@
+import { XL_QUERY } from "~/constants/breakpoints";
+import { PERSON_KINDS, PERSON_ROLES } from "~/constants/enums";
 import { useId, type ChangeEvent } from "react";
 import { Form } from "react-router";
 import { personQuery, type PersonQueryState } from "~/catalogue/query-state";
@@ -7,11 +9,7 @@ import { Checkbox, CheckboxGroup } from "~/components/ui/Checkbox";
 import { SectionError } from "~/components/ui/ErrorState";
 import { Select } from "~/components/ui/Select";
 import { PERSON_KIND_LABELS, PERSON_ROLE_LABELS } from "~/constants/vocabulary";
-import {
-  personKindSchema,
-  personRoleSchema,
-  type TermList,
-} from "~/schemas/catalogue";
+import type { TermList } from "~/schemas/catalogue";
 import {
   HiddenFields,
   useCanonicalNavigate,
@@ -19,9 +17,6 @@ import {
 } from "./canonical-form";
 
 type Terms = TermList["data"];
-
-/** Where the filters apply as soon as one changes: the xl column. */
-const XL_QUERY = "(min-width: 1280px)";
 
 /**
  * The affiliation terms in tree order (as the API lists them), each named
@@ -45,8 +40,9 @@ function affiliationOptions(terms: Terms) {
  * The bards directory's filters (plan §4.7): a GET form of Kind and Role
  * checkboxes and an Affiliation select (from the affiliation terms, or a
  * SectionError when they couldn't load), with the search, the letter and
- * the order kept as hidden inputs, only when set. It is mounted with the canonical
- * query as its key, so it always shows the URL's state. With JS it goes
+ * the order kept as hidden inputs, only when set. Its page mounts it in a
+ * `KeptFocus` keyed on the canonical query, so it always shows the URL's
+ * state and the control just used stays focused. With JS it goes
  * straight to the canonical URL; at xl a change applies at once. Below
  * xl (and without JS) it is a closed "Filters" disclosure; at xl, with
  * JS, the page opens it.
@@ -84,7 +80,7 @@ export function BardFilters({
           })}
         />
         <CheckboxGroup legend="Kind">
-          {personKindSchema.options.map(kind => (
+          {PERSON_KINDS.map(kind => (
             <Checkbox
               key={kind}
               name="kind"
@@ -95,7 +91,7 @@ export function BardFilters({
           ))}
         </CheckboxGroup>
         <CheckboxGroup legend="Role">
-          {personRoleSchema.options.map(role => (
+          {PERSON_ROLES.map(role => (
             <Checkbox
               key={role}
               name="role"

@@ -78,8 +78,10 @@ export function Citations({
       <RowTable
         label="Citations"
         rows={citations}
-        rowKey={citation =>
-          `${citation.piece?.slug ?? citation.person?.slug ?? ""} ${citation.url}`
+        // With the index: a restricted piece's citations all have an empty
+        // URL once the loader has stripped it.
+        rowKey={(citation, index) =>
+          `${citation.piece?.slug ?? citation.person?.slug ?? ""} ${citation.url} ${index}`
         }
         columns={[
           {

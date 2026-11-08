@@ -1,5 +1,5 @@
 import { IconBook2 } from "@tabler/icons-react";
-import { useId } from "react";
+import { useId, useRef } from "react";
 import {
   data,
   useLoaderData,
@@ -14,6 +14,7 @@ import {
   failureTitle,
 } from "~/components/catalogue/CatalogueError";
 import { CollectionKindFilter } from "~/components/catalogue/CollectionKindFilter";
+import { KeptFocus } from "~/components/catalogue/KeptFocus";
 import { LetterBar } from "~/components/catalogue/LetterBar";
 import { ListPagination } from "~/components/catalogue/ListPagination";
 import { ResultsStatus } from "~/components/catalogue/ResultsStatus";
@@ -26,7 +27,11 @@ import { Link } from "~/components/ui/Link";
 import { ViewTabs } from "~/components/ui/Tabs";
 import { formatCount } from "~/catalogue/format";
 import { catalogueHeaders } from "~/catalogue/headers";
-import { isBeyondApi, redirectPastTheEnd } from "~/catalogue/paging";
+import {
+  isBeyondApi,
+  redirectPastTheEnd,
+  showingText,
+} from "~/catalogue/paging";
 import {
   collectionQuery,
   redirectIfNotCanonical,
@@ -43,6 +48,7 @@ import {
 import { pageMeta } from "~/catalogue/seo";
 import { COLLECTION_KIND_LABELS, letterLabel } from "~/constants/vocabulary";
 import { useErrorReference } from "~/hooks/useErrorReference";
+import { useResultsFocus } from "~/hooks/useResultsFocus";
 import type { CollectionList, CollectionSummary } from "~/schemas/catalogue";
 import { listCollections } from "~/server/catalogue.server";
 
@@ -192,13 +198,21 @@ export default function CollectionsRoute() {
   const { state, canonical } = loaded;
   const navigation = useNavigation();
   const headingId = useId();
+  // The filter control focused last, kept across the remount each change
+  // of URL causes.
+  const focusRef = useRef<string | null>(null);
+  const resultsRef = useResultsFocus(canonical);
   const busy =
     navigation.state === "loading" &&
     navigation.location.pathname === ALL_COLLECTIONS;
   const chips = (
     <SelectedFilters chips={filterChips(state)} clearHref={ALL_COLLECTIONS} />
   );
-  const filter = <CollectionKindFilter key={canonical} state={state} />;
+  const filter = (
+    <KeptFocus key={canonical} focusRef={focusRef}>
+      <CollectionKindFilter state={state} />
+    </KeptFocus>
+  );
 
   if (loaded.failure) {
     return (
@@ -229,7 +243,12 @@ export default function CollectionsRoute() {
         />
         {chips}
         <section aria-labelledby={headingId} aria-busy={busy || undefined}>
-          <h2 id={headingId} className="text-h3 text-fg">
+          <h2
+            ref={resultsRef}
+            id={headingId}
+            tabIndex={-1}
+            className="text-h3 text-fg focus-visible:outline-hidden"
+          >
             {state.letter === undefined
               ? filtered
                 ? "Matching collections"
@@ -238,7 +257,12 @@ export default function CollectionsRoute() {
           </h2>
           <ResultsStatus>
             {list.total > 0
-              ? `Showing ${formatCount(list.total, "collection")}`
+              ? showingText(
+                  state.page,
+                  list.data.length,
+                  list.total,
+                  "collection"
+                )
               : "No collections match these filters"}
           </ResultsStatus>
           {list.data.length > 0 ? (

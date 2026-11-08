@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { data } from "react-router";
 import { describe, expect, it } from "vitest";
 import { revisionChanges } from "~/catalogue/diff";
+import { revisionHead } from "~/catalogue/revision-head";
 import type { Revision } from "~/schemas/catalogue";
 import { renderRoutes } from "~/test/router";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
@@ -42,7 +43,7 @@ function renderRevision(answer: () => unknown) {
 }
 
 const loaded = (revision: Revision) => () => ({
-  revision,
+  head: revisionHead(revision),
   changes: revisionChanges(revision),
 });
 

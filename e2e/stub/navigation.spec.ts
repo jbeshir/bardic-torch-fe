@@ -533,6 +533,10 @@ test.describe("from md", () => {
     await page.goto("/pieces/the-copper-kettle/history");
     await waitForHydration(page);
     await expect(nav.locator("[aria-current]")).toHaveText(["Pieces"]);
+    // The section, not the page being shown.
+    await expect(
+      nav.getByRole("link", { name: "Pieces", exact: true })
+    ).toHaveAttribute("aria-current", "true");
 
     // A facet entry is current alone; the categories entry is not.
     await nav.getByRole("link", { name: "Mood", exact: true }).click();

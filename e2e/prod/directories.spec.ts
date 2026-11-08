@@ -51,13 +51,22 @@ test.describe("/bards", () => {
   }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await open(page, "/bards");
-    await main(page).getByRole("checkbox", { name: "Group" }).check();
+    await main(page).getByRole("checkbox", { name: "Group" }).focus();
+    await page.keyboard.press("Space");
     await expect(page).toHaveURL(/\/bards\?kind=group$/);
     await expect(
       main(page).getByRole("link", { name: "Northmarch Bards" })
     ).toBeVisible();
+    // Focus stays on the box the form was rebuilt with.
+    await expect(
+      main(page).getByRole("checkbox", { name: "Group" })
+    ).toBeFocused();
     await main(page).getByRole("link", { name: "Remove Kind: Group" }).click();
     await expect(page).toHaveURL(/\/bards$/);
+    // The chip is gone: focus goes to the results heading.
+    await expect(
+      main(page).getByRole("heading", { level: 2, name: "All bards" })
+    ).toBeFocused();
     await expect(
       main(page).getByRole("checkbox", { name: "Group" })
     ).not.toBeChecked();

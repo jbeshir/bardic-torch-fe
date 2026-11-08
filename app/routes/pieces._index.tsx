@@ -1,3 +1,4 @@
+import { XL_QUERY } from "~/constants/breakpoints";
 import { IconBook2, IconFilter } from "@tabler/icons-react";
 import { useCallback, useId, useMemo, useRef, useState } from "react";
 import {
@@ -14,6 +15,7 @@ import {
   failureTitle,
 } from "~/components/catalogue/CatalogueError";
 import { LetterBar } from "~/components/catalogue/LetterBar";
+import { KeptFocus } from "~/components/catalogue/KeptFocus";
 import { ListPagination } from "~/components/catalogue/ListPagination";
 import { PieceListItem } from "~/components/catalogue/PieceListItem";
 import { PieceSearch, PieceSort } from "~/components/catalogue/PieceSearch";
@@ -30,7 +32,11 @@ import { ViewTabs } from "~/components/ui/Tabs";
 import { facetGroups, termChipLabel } from "~/catalogue/facet-groups";
 import { formatCount } from "~/catalogue/format";
 import { catalogueHeaders } from "~/catalogue/headers";
-import { isBeyondApi, redirectPastTheEnd } from "~/catalogue/paging";
+import {
+  isBeyondApi,
+  redirectPastTheEnd,
+  showingText,
+} from "~/catalogue/paging";
 import {
   pieceQuery,
   redirectIfNotCanonical,
@@ -57,6 +63,7 @@ import {
 } from "~/constants/vocabulary";
 import type { PieceList, TermListItem } from "~/schemas/catalogue";
 import { useErrorReference } from "~/hooks/useErrorReference";
+import { useResultsFocus } from "~/hooks/useResultsFocus";
 import { useHydrated } from "~/hooks/useHydrated";
 import { useMediaQuery } from "~/hooks/useMediaQuery";
 import { listPieces, listTerms } from "~/server/catalogue.server";
@@ -146,6 +153,11 @@ export async function loader({ url, context }: LoaderFunctionArgs) {
     };
   }
 
+  // A past-the-end page goes to the last page of the URL asked for, stale
+  // categories and all, so the page it lands on still says they were left
+  // out.
+  const pageHref = (page: number) => pieceQuery.href(asked.state, { page });
+
   if (isBeyondApi(asked.state.page)) {
     // An offset the API would refuse: ask for the total, then go to the
     // last page there is.
@@ -158,18 +170,13 @@ export async function loader({ url, context }: LoaderFunctionArgs) {
         stale: head.stale,
       });
     }
-    const { total } = head.result.data;
-    redirectPastTheEnd(asked.state.page, total, page =>
-      pieceQuery.href(head.state, { page })
-    );
+    redirectPastTheEnd(asked.state.page, head.result.data.total, pageHref);
   }
 
   const { state, stale, result } = await readPieces(asked.state);
   const page = { state, canonical, terms: await termsData(), stale };
   if (!result.ok) return failed(result.failure, page);
-  redirectPastTheEnd(state.page, result.data.total, n =>
-    pieceQuery.href(state, { page: n })
-  );
+  redirectPastTheEnd(state.page, result.data.total, pageHref);
   const answer: PiecesData = { ...page, failure: null, list: result.data };
   return answer;
 }
@@ -332,9 +339,6 @@ function quotedList(slugs: readonly string[]): string {
   return slugs.map(slug => `‘${slug}’`).join(", ");
 }
 
-/** The breakpoint where the facet column sits beside the results. */
-const XL_QUERY = "(min-width: 1280px)";
-
 /** The facet column's section, the skip link's and the Filters link's target. */
 const FILTERS_ID = "filters";
 
@@ -345,7 +349,11 @@ export default function PiecesRoute() {
   const headingId = useId();
   const filtersHeadingId = useId();
   const formId = useId();
+  // The control focused last in the facet form and in the sort, kept
+  // across the remount each change of URL causes.
   const focusRef = useRef<string | null>(null);
+  const sortFocusRef = useRef<string | null>(null);
+  const resultsRef = useResultsFocus(canonical);
   const wide = useMediaQuery(XL_QUERY);
   // Below xl with JS the filters are the drawer's, and only the drawer's:
   // one form at a time, so its ids stay unique.
@@ -387,7 +395,6 @@ export default function PiecesRoute() {
     state,
     groups: facetGroups(index, list.facets, state),
     termsFailed: index === null,
-    focusRef,
   };
   return (
     <>
@@ -420,7 +427,9 @@ export default function PiecesRoute() {
             href={letter => pieceQuery.href(state, { letter })}
           />
           {state.q === undefined ? null : (
-            <PieceSort key={canonical} state={state} form={formId} />
+            <KeptFocus key={canonical} focusRef={sortFocusRef}>
+              <PieceSort state={state} form={formId} />
+            </KeptFocus>
           )}
           <SelectedFilters chips={chips} clearHref={ALL_PIECES} />
           <div className="xl:hidden">
@@ -445,15 +454,29 @@ export default function PiecesRoute() {
             </Alert>
           ) : null}
           <section aria-labelledby={headingId} aria-busy={busy || undefined}>
-            <h2 id={headingId} className="text-h3 text-fg">
+            <h2
+              ref={resultsRef}
+              id={headingId}
+              tabIndex={-1}
+              className="text-h3 text-fg focus-visible:outline-hidden"
+            >
               {resultsHeading(state)}
             </h2>
+            {/* The stale-category notice is said here too: the Alert above
+                isn't a live region, and this is the one status. */}
             <ResultsStatus>
-              {list.total > 0
-                ? `Showing ${formatCount(list.total, "piece")}`
-                : state.q === undefined
-                  ? "No pieces match these filters"
-                  : "No results"}
+              {`${
+                list.total > 0
+                  ? showingText(
+                      state.page,
+                      list.data.length,
+                      list.total,
+                      "piece"
+                    )
+                  : state.q === undefined
+                    ? "No pieces match these filters"
+                    : "No results"
+              }${loaded.stale.length > 0 ? ". Some categories in this link no longer exist, so we left them out." : ""}`}
             </ResultsStatus>
             {list.data.length > 0 ? (
               <ul role="list" className="mt-2">
@@ -469,6 +492,7 @@ export default function PiecesRoute() {
                 page={state.page}
                 total={list.total}
                 href={page => pieceQuery.href(state, { page })}
+                narrowable={isFiltered(state)}
               />
             </div>
           </section>
@@ -483,7 +507,9 @@ export default function PiecesRoute() {
               Filters
             </h2>
             <div className="mt-4">
-              <FacetForm key={canonical} {...form} autoSubmit={wide} apply />
+              <KeptFocus key={canonical} focusRef={focusRef}>
+                <FacetForm {...form} autoSubmit={wide} apply />
+              </KeptFocus>
             </div>
           </section>
         )}
@@ -501,12 +527,9 @@ export default function PiecesRoute() {
             stub: undefined,
           })}
         >
-          <FacetForm
-            key={canonical}
-            {...form}
-            autoSubmit={false}
-            apply={false}
-          />
+          <KeptFocus key={canonical} focusRef={focusRef}>
+            <FacetForm {...form} autoSubmit={false} apply={false} />
+          </KeptFocus>
         </FacetDrawer>
       ) : null}
     </>

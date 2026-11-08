@@ -52,9 +52,11 @@ export function pieceStructuredData(piece: Piece) {
     const aliases = piece.aliases
       .filter(({ kind }) => kind !== "redirect")
       .map(({ text }) => text);
+    // The API names a language, with no BCP 47 code: a Language by name,
+    // never a name where schema.org expects a code.
     const languages = piece.terms
       .filter(({ term }) => term.facet === "language")
-      .map(({ term }) => term.display_name);
+      .map(({ term }) => ({ "@type": "Language", name: term.display_name }));
     return {
       "@context": "https://schema.org",
       "@type": music ? "MusicComposition" : "CreativeWork",

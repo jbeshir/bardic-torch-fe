@@ -1,3 +1,4 @@
+import { FACETS } from "~/constants/enums";
 import { IconBook2 } from "@tabler/icons-react";
 import { useId, type ReactNode } from "react";
 import {
@@ -10,6 +11,7 @@ import {
   CatalogueError,
   failureTitle,
 } from "~/components/catalogue/CatalogueError";
+import type { PageHandle } from "~/components/AppShell";
 import { SERVER_ERROR_META, ServerError } from "~/components/ErrorPages";
 import { TermTree } from "~/components/TermTree";
 import { Breadcrumbs } from "~/components/ui/Breadcrumbs";
@@ -42,11 +44,7 @@ import {
   PIECE_KIND_LABELS,
 } from "~/constants/vocabulary";
 import { useErrorReference } from "~/hooks/useErrorReference";
-import {
-  facetSchema,
-  type PieceList,
-  type TermList,
-} from "~/schemas/catalogue";
+import type { PieceList, TermList } from "~/schemas/catalogue";
 import { listPieces, listTerms } from "~/server/catalogue.server";
 
 /**
@@ -68,6 +66,15 @@ const ALL_CATEGORIES = "/categories";
 
 export const headers = catalogueHeaders;
 
+/**
+ * Each `?facet=` is a page of its own (its h1, breadcrumbs and title), so
+ * going from one to another moves focus and announces the title as a new
+ * page does (WCAG 2.4.3, 4.1.3).
+ */
+export const handle: PageHandle = {
+  pageKey: search => search.get("facet") ?? "",
+};
+
 /** The facet counts the kind and status sections show. */
 type PieceCounts = Pick<PieceList["facets"], "kinds" | "conservation_statuses">;
 
@@ -86,7 +93,7 @@ type CategoriesData = {
 /** Whether `facet` is a term facet, the only kind `listTerms` takes. */
 function isTermFacet(
   facet: CategoryFacet | undefined
-): facet is (typeof facetSchema.options)[number] {
+): facet is (typeof FACETS)[number] {
   return facet !== undefined && facet !== "kind" && facet !== "conservation";
 }
 
@@ -156,8 +163,8 @@ export const meta: MetaFunction = args => {
         : `${sectionLabel(facet)} · Categories`,
     description:
       facet === undefined
-        ? "Every category in the Bardic Torch catalogue: moods, topics, cultures, languages, legendaria, forms, origins and affiliations, with how many pieces each has."
-        : `The ${sectionLabel(facet).toLowerCase()} categories of the Bardic Torch catalogue, with how many pieces each has.`,
+        ? "Every category in the Bardic Torch catalogue: moods, topics, cultures, languages, legendaria, forms, origins and affiliations, with their pieces and bards."
+        : `The ${sectionLabel(facet).toLowerCase()} categories of the Bardic Torch catalogue, with how many ${facet === "affiliation" ? "bards" : "pieces"} each has.`,
     path: `${ALL_CATEGORIES}${loaded.canonical}`,
   });
 };
@@ -257,11 +264,7 @@ function Section({
 }
 
 /** The sections a page shows, in the index's order. */
-const SECTIONS: readonly CategoryFacet[] = [
-  "kind",
-  ...facetSchema.options,
-  "conservation",
-];
+const SECTIONS: readonly CategoryFacet[] = ["kind", ...FACETS, "conservation"];
 
 export default function CategoriesRoute() {
   const { state, terms, counts } = useLoaderData<typeof loader>();

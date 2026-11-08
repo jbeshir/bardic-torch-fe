@@ -3,6 +3,7 @@ import {
   linkExposure,
   LINK_NOT_SHOWN,
   withoutRestrictedLink,
+  withoutRestrictedRecording,
 } from "./restricted";
 
 describe("linkExposure (plan §4.0)", () => {
@@ -51,5 +52,34 @@ describe("withoutRestrictedLink", () => {
     expect(withoutRestrictedLink(open)).toBe(open);
     const noPiece = { ...row, piece: null };
     expect(withoutRestrictedLink(noPiece)).toBe(noPiece);
+  });
+});
+
+describe("withoutRestrictedRecording", () => {
+  const performance = {
+    piece: { conservation_status: "restricted" as const },
+    link: {
+      url: "https://private.example/hoard",
+      title: "Live",
+      platform: "Videohall",
+    },
+    year: 2026,
+  };
+
+  it("empties a restricted piece's recording, keeping the rest", () => {
+    expect(withoutRestrictedRecording(performance)).toEqual({
+      ...performance,
+      link: { url: "", title: null, platform: null },
+    });
+  });
+
+  it("keeps every other recording", () => {
+    const open = {
+      ...performance,
+      piece: { conservation_status: "endangered" as const },
+    };
+    expect(withoutRestrictedRecording(open)).toBe(open);
+    const noPiece = { ...performance, piece: null };
+    expect(withoutRestrictedRecording(noPiece)).toBe(noPiece);
   });
 });

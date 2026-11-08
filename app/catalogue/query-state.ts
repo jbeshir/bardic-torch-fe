@@ -1,27 +1,29 @@
+import {
+  COLLECTION_KINDS,
+  CONSERVATION_STATUS_VALUES,
+  EVENT_KINDS,
+  FACETS,
+  LETTERS,
+  PERSON_KINDS,
+  PERSON_ROLES,
+  PERSON_SORTS,
+  PIECE_KINDS,
+  PIECE_SORTS,
+} from "~/constants/enums";
 import { redirect } from "react-router";
 import { isSlug, PAGE_SIZE } from "~/schemas/address";
-import {
-  collectionKindSchema,
-  conservationStatusSchema,
-  eventKindSchema,
-  facetSchema,
-  letterSchema,
-  personKindSchema,
-  personRoleSchema,
-  personSortSchema,
-  pieceKindSchema,
-  pieceSortSchema,
-  type ApiQuery,
-  type CollectionKind,
-  type ConservationStatus,
-  type EventKind,
-  type Facet,
-  type Letter,
-  type PersonKind,
-  type PersonRole,
-  type PersonSort,
-  type PieceKind,
-  type PieceSort,
+import type {
+  ApiQuery,
+  CollectionKind,
+  ConservationStatus,
+  EventKind,
+  Facet,
+  Letter,
+  PersonKind,
+  PersonRole,
+  PersonSort,
+  PieceKind,
+  PieceSort,
 } from "~/schemas/catalogue";
 
 /**
@@ -138,7 +140,7 @@ function searchText(value: string): string | undefined {
 /** `letter`: A–Z in either case (upper-cased), or `0`. */
 function letter(value: string): Letter | undefined {
   const upper = value.toUpperCase();
-  return oneOf(letterSchema.options)(upper) ? upper : undefined;
+  return oneOf(LETTERS)(upper) ? upper : undefined;
 }
 
 /** `page`: 2 or more in plain decimal; 1, 0 and junk are the first page. */
@@ -262,7 +264,7 @@ function pieceSort(
 ): PieceSort | undefined {
   const sort = scalar(params, "sort", value => {
     const normalised = normaliseEnum(value);
-    return oneOf(pieceSortSchema.options)(normalised) ? normalised : undefined;
+    return oneOf(PIECE_SORTS)(normalised) ? normalised : undefined;
   });
   // Without q, title is the default and relevance is refused (400); with
   // q, relevance is the default.
@@ -275,12 +277,12 @@ function parsePieces(params: URLSearchParams): PieceQueryState {
     q,
     term: repeated(params, "term", { valid: slug, max: TERMS_MAX }),
     kind: repeated(params, "kind", {
-      valid: oneOf(pieceKindSchema.options),
-      order: pieceKindSchema.options,
+      valid: oneOf(PIECE_KINDS),
+      order: PIECE_KINDS,
     }),
     status: repeated(params, "status", {
-      valid: oneOf(conservationStatusSchema.options),
-      order: conservationStatusSchema.options,
+      valid: oneOf(CONSERVATION_STATUS_VALUES),
+      order: CONSERVATION_STATUS_VALUES,
     }),
     stub: scalar(params, "stub", flag),
     letter: scalar(params, "letter", letter),
@@ -306,11 +308,11 @@ function serialisePieces(state: PieceQueryState): string {
 /** `/pieces`: the piece browse, search and A–Z (plan §4.2). */
 export const pieceQuery = {
   /**
-   * What the facet form sends empty for its defaults (see
-   * redirectIfNotCanonical): the "All pages" radio, `stub=`, and "Best
-   * match", `sort=`.
+   * What the facet and search forms send empty for their defaults (see
+   * redirectIfNotCanonical): the "All pages" radio, `stub=`, "Best
+   * match", `sort=`, and an empty search box, `q=`.
    */
-  blankable: ["stub", "sort"],
+  blankable: ["stub", "sort", "q"],
 
   parse(params: URLSearchParams): {
     readonly state: PieceQueryState;
@@ -351,7 +353,7 @@ export const pieceQuery = {
 export const NO_PIECE_FILTERS = pieceQuery.parse(new URLSearchParams()).state;
 
 // ---------------------------------------------------------------------------
-// /search (C3.1)
+// /search
 
 type SearchQueryState = {
   /** The search, as `q` rules have it; undefined for none (no API call). */
@@ -376,7 +378,7 @@ export const searchQuery = {
 };
 
 // ---------------------------------------------------------------------------
-// /bards (C5.2)
+// /bards
 
 export type PersonQueryState = {
   readonly q: string | undefined;
@@ -397,17 +399,17 @@ function parsePersons(params: URLSearchParams): PersonQueryState {
   const q = scalar(params, "q", searchText);
   const sort = scalar(params, "sort", value => {
     const normalised = normaliseEnum(value);
-    return oneOf(personSortSchema.options)(normalised) ? normalised : undefined;
+    return oneOf(PERSON_SORTS)(normalised) ? normalised : undefined;
   });
   return {
     q,
     kind: repeated(params, "kind", {
-      valid: oneOf(personKindSchema.options),
-      order: personKindSchema.options,
+      valid: oneOf(PERSON_KINDS),
+      order: PERSON_KINDS,
     }),
     role: repeated(params, "role", {
-      valid: oneOf(personRoleSchema.options),
-      order: personRoleSchema.options,
+      valid: oneOf(PERSON_ROLES),
+      order: PERSON_ROLES,
     }),
     affiliation: scalar(params, "affiliation", value => {
       const normalised = normaliseEnum(value);
@@ -434,6 +436,13 @@ function serialisePersons(state: PersonQueryState): string {
 
 /** `/bards`: the bards directory, its search and A–Z (plan §4.7). */
 export const personQuery = {
+  /**
+   * What the filter and search forms send empty for their defaults (see
+   * redirectIfNotCanonical): "Any affiliation", `affiliation=`, and an
+   * empty search box, `q=`.
+   */
+  blankable: ["affiliation", "q"],
+
   parse(params: URLSearchParams): {
     readonly state: PersonQueryState;
     readonly canonical: string;
@@ -468,7 +477,7 @@ export const personQuery = {
 };
 
 // ---------------------------------------------------------------------------
-// /categories (C6.1)
+// /categories
 
 /**
  * The sections the categories index can show alone: a term facet, or one
@@ -485,7 +494,7 @@ const CATEGORIES_PATH = "/categories";
 
 const CATEGORY_FACETS: readonly CategoryFacet[] = [
   "kind",
-  ...facetSchema.options,
+  ...FACETS,
   "conservation",
 ];
 
@@ -515,7 +524,7 @@ export const categoryIndexQuery = {
 };
 
 // ---------------------------------------------------------------------------
-// Pages with only `page` (C6.2, C8.1): a category’s members, the histories
+// Pages with only `page`: a category’s members, the histories
 
 export type PageQueryState = {
   /** From 1. */
@@ -561,7 +570,7 @@ export const termMembersQuery = pageOnlyQuery();
 export const historyQuery = pageOnlyQuery();
 
 // ---------------------------------------------------------------------------
-// /collections (C7.1)
+// /collections
 
 export type CollectionQueryState = {
   readonly kind: readonly CollectionKind[];
@@ -588,8 +597,8 @@ export const collectionQuery = {
   } {
     const state: CollectionQueryState = {
       kind: repeated(params, "kind", {
-        valid: oneOf(collectionKindSchema.options),
-        order: collectionKindSchema.options,
+        valid: oneOf(COLLECTION_KINDS),
+        order: COLLECTION_KINDS,
       }),
       letter: scalar(params, "letter", letter),
       page: scalar(params, "page", pageNumber) ?? 1,
@@ -619,7 +628,7 @@ export const collectionQuery = {
 };
 
 // ---------------------------------------------------------------------------
-// /events (C7.2)
+// /events
 
 export type EventQueryState = {
   /** Venues or events only; undefined for both. */
@@ -646,9 +655,7 @@ export const eventQuery = {
     const state: EventQueryState = {
       kind: scalar(params, "kind", value => {
         const normalised = normaliseEnum(value);
-        return oneOf(eventKindSchema.options)(normalised)
-          ? normalised
-          : undefined;
+        return oneOf(EVENT_KINDS)(normalised) ? normalised : undefined;
       }),
       page: scalar(params, "page", pageNumber) ?? 1,
     };

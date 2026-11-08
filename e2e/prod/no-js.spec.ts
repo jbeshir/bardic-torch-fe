@@ -520,6 +520,57 @@ test.describe("history", () => {
     await views.getByRole("link", { name: "Read" }).click();
     await expect(page).toHaveURL(/\/events\/midwinter-revel$/);
   });
+  test("a history row leads to its revision, and Older revision to the one before", async ({
+    page,
+  }) => {
+    await page.goto("/pieces/the-copper-kettle/history");
+    const main = page.getByRole("main");
+    await main
+      .getByRole("table", { name: "Revisions" })
+      .getByRole("link", { name: /^View changes/ })
+      .first()
+      .click();
+    await expect(page).toHaveURL(/\/revisions\/1014$/);
+    await expect(
+      main.getByRole("heading", { level: 1, name: /^Revision 1014 of / })
+    ).toBeVisible();
+    await main.getByRole("link", { name: "Older revision" }).click();
+    await expect(page).toHaveURL(/\/revisions\/1004$/);
+    await main
+      .getByRole("link", { name: "View the piece as it is now" })
+      .click();
+    await expect(page).toHaveURL(/\/pieces\/the-copper-kettle$/);
+  });
+});
+
+test.describe("/collections/:id", () => {
+  test("its citations link to their pieces", async ({ page }) => {
+    await page.goto("/collections/12");
+    const main = page.getByRole("main");
+    await main
+      .getByRole("table", { name: "Citations" })
+      .getByRole("link", { name: "The Copper Kettle" })
+      .first()
+      .click();
+    await expect(page).toHaveURL(/\/pieces\/the-copper-kettle$/);
+  });
+});
+
+test.describe("/categories index", () => {
+  test("a section chip is a plain link to that facet alone", async ({
+    page,
+  }) => {
+    await page.goto("/categories");
+    const main = page.getByRole("main");
+    await main
+      .getByRole("navigation", { name: "Category sections" })
+      .getByRole("link", { name: "Mood" })
+      .click();
+    await expect(page).toHaveURL(/\/categories\?facet=mood$/);
+    await expect(
+      main.getByRole("heading", { level: 1, name: "Mood" })
+    ).toBeVisible();
+  });
 });
 
 // ---------------------------------------------------------------------------

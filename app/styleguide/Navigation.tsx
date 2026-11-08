@@ -20,7 +20,7 @@ export function PageTabs() {
       title="Tabs"
       summary="Page views on the title rule (DESIGN §6.9): one view is a plain Read label, two or more are a nav of links. The segmented tablist is for in-page panels."
     >
-      <Example label="One view: the Read label (every FE1 page)" wide>
+      <Example label="One view: the Read label" wide>
         <div className="w-full">
           <ViewTabs views={[READ]} current={READ.to} />
         </div>
@@ -113,7 +113,7 @@ export function Pages() {
     <Specimen
       id="pagination"
       title="Pagination"
-      summary="Styleguide-only in FE1: links to the pages of a long list (DESIGN §6.20). Below sm it shows ‘Page n of m’."
+      summary="Links to the pages of a long list (DESIGN §6.20): every catalogue list and history. Below sm it shows ‘Page n of m’."
     >
       <Example label="First page" wide>
         <Pagination page={1} pageCount={12} href={pageHref} />

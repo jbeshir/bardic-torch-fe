@@ -10,7 +10,7 @@ import {
 
 /**
  * An API `*_md` field (a reader's Markdown) as the sanitised tree the page
- * renders (plan §0.7, C4.2). It runs in the loader, so the parser never
+ * renders (plan §0.7). It runs in the loader, so the parser never
  * reaches the browser (`check:prod-build` checks the client build has no
  * micromark).
  *

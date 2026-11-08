@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  aborted,
-  isTimeout,
-  isUnavailable,
-  parseJson,
-  upstreamUrl,
-} from "./upstream.server";
+import { aborted, isTimeout, parseJson, upstreamUrl } from "./upstream.server";
 
 describe("upstreamUrl", () => {
   it("fills and percent-encodes path parameters", () => {
@@ -53,17 +47,5 @@ describe("isTimeout", () => {
     expect(isTimeout(new DOMException("t", "TimeoutError"))).toBe(true);
     expect(isTimeout(new Error("t"))).toBe(false);
     expect(isTimeout(null)).toBe(false);
-  });
-});
-
-describe("isUnavailable", () => {
-  it.each([
-    [503, undefined, true],
-    [503, "internal", true],
-    [500, "unavailable", true],
-    [500, "internal", false],
-    [404, undefined, false],
-  ])("%i with code %s is %s", (status, code, expected) => {
-    expect(isUnavailable(status, code)).toBe(expected);
   });
 });

@@ -218,6 +218,19 @@ describe("/categories document", () => {
     expect(main).not.toContain('href="/categories/swords"');
   });
 
+  it("describes what each section counts: bards for affiliations", async () => {
+    const affiliations = await (
+      await get("/categories?facet=affiliation")
+    ).text();
+    expect(affiliations).toContain(
+      "categories of the Bardic Torch catalogue, with how many bards each has."
+    );
+    const moods = await (await get("/categories?facet=mood")).text();
+    expect(moods).toContain("with how many pieces each has.");
+    const index = await (await get("/categories")).text();
+    expect(index).toContain('affiliations, with their pieces and bards."');
+  });
+
   it("is a SectionError for the counts, the tree still 200", async () => {
     quietErrors();
     fixtures.fail({ operationId: "listPieces", status: 500, code: "internal" });

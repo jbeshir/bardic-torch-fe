@@ -139,6 +139,30 @@ function findSmallTargets(selector: string): string[] {
     return `${element.tagName.toLowerCase()}${type} "${label.trim().replace(/\s+/g, " ").slice(0, 40)}"`;
   };
 
+  /**
+   * Whether the centre of `element` is scrolled out of its nearest
+   * scrolling region's visible box (a checkbox under a drawer's footer):
+   * nobody can reach it there until it scrolls into view.
+   */
+  function clippedByScroller(element: HTMLElement, rect: DOMRect): boolean {
+    for (
+      let node = element.parentElement;
+      node && node !== document.body && node !== document.documentElement;
+      node = node.parentElement
+    ) {
+      const { overflowX, overflowY } = getComputedStyle(node);
+      const scrolls = [overflowX, overflowY].some(
+        value => value === "auto" || value === "scroll"
+      );
+      if (!scrolls) continue;
+      const box = node.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      return x < box.left || x > box.right || y < box.top || y > box.bottom;
+    }
+    return false;
+  }
+
   const targets = [...root.querySelectorAll<HTMLElement>(selector)]
     .filter(element => {
       const rect = element.getBoundingClientRect();
@@ -152,7 +176,8 @@ function findSmallTargets(selector: string): string[] {
         // see or focus it.
         element.checkVisibility() &&
         !element.closest("[inert]") &&
-        !inSentence(element)
+        !inSentence(element) &&
+        !clippedByScroller(element, rect)
       );
     })
     .map(element => {
@@ -168,25 +193,18 @@ function findSmallTargets(selector: string): string[] {
     });
 
   /**
-   * The fixed or sticky box, or the scrolling region (a drawer's body), a
-   * target rides in (the header, the app bar, a toast), or null for the
-   * page. Spacing is between targets of one layer: a link that has
-   * scrolled under the app bar, or a checkbox under a drawer's footer
-   * buttons, isn't "next to" them (whether focus is hidden there is
-   * expectFocusNotObscured's question).
+   * The fixed or sticky box a target rides in (the header, the app bar, a
+   * toast, a drawer), or null for the page. Spacing is between targets of
+   * one layer: a link that has scrolled under the app bar isn't "next to"
+   * its cells (whether focus is hidden there is expectFocusNotObscured's
+   * question). A scrolling region (a drawer's body, the sidebar) is not a
+   * layer of its own: its targets are checked against those beside it,
+   * such as a drawer's Close and footer buttons.
    */
   function layerOf(element: HTMLElement): Element | null {
     for (let node: Element | null = element; node; node = node.parentElement) {
-      const { position, overflowY } = getComputedStyle(node);
+      const { position } = getComputedStyle(node);
       if (position === "fixed" || position === "sticky") return node;
-      const scrolls = overflowY === "auto" || overflowY === "scroll";
-      if (
-        scrolls &&
-        node !== document.body &&
-        node !== document.documentElement
-      ) {
-        return node;
-      }
     }
     return null;
   }

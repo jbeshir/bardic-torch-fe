@@ -92,6 +92,23 @@ describe("LicensingCard", () => {
     expect(screen.queryByRole("heading", { name: "Sources" })).toBeNull();
   });
 
+  it("names no licence while the licensing isn't known, as the infobox doesn't", async () => {
+    await renderWithRouter(
+      <LicensingCard
+        subject="piece"
+        status="unknown"
+        licence="cc_by_sa"
+        notes={null}
+        sources={[]}
+      />
+    );
+    expect(
+      screen.getByText("We don’t know how this piece is licensed yet")
+    ).toBeVisible();
+    expect(screen.queryByText(/Creative Commons/)).toBeNull();
+    expect(screen.queryByText(/CC BY-SA/)).toBeNull();
+  });
+
   it("has no licence for a person", async () => {
     await renderWithRouter(
       <LicensingCard

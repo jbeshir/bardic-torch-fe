@@ -129,7 +129,7 @@ function Block({ node }: { readonly node: MarkdownBlock }) {
 
 /**
  * A reader's Markdown (an API `*_md` field), from the sanitised tree its
- * loader made of it (`renderMarkdown`, C4.2): plain elements the prose
+ * loader made of it (`renderMarkdown`): plain elements the prose
  * styles (`.prose-bt`, around it) dress, links through our `Link` as a
  * reader's URLs (`nofollow ugc`). Nothing here parses Markdown or HTML.
  */

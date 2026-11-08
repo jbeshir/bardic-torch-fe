@@ -152,7 +152,7 @@ export default function Index() {
           </ButtonLink>
         </div>
         <div className="mt-6 max-w-form">
-          <SearchBox size="lg" />
+          <SearchBox size="lg" label="Search the catalogue" />
         </div>
         {totals ? (
           <p className="mt-3 text-body-sm text-fg-muted">

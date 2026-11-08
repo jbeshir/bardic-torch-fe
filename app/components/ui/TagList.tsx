@@ -119,7 +119,15 @@ export function TagList({
         aria-controls={listId}
         onClick={() => setExpanded(!expanded)}
       >
-        {expanded ? "Show fewer" : `Show all ${formatNumber(tags.length)}`}
+        {expanded ? (
+          "Show fewer"
+        ) : (
+          <>
+            Show all {formatNumber(tags.length)}
+            {/* Named for what it shows, out of context too (a list of buttons). */}
+            <span className="sr-only"> categories</span>
+          </>
+        )}
       </Button>
     </div>
   );

@@ -94,6 +94,22 @@ test("at 360 the app bar's search sheet lands on the results and closes", async 
   ).toBeVisible();
 });
 
+test("a new search from the page's own box keeps focus there", async ({
+  page,
+}) => {
+  await page.goto("/search?q=northmarch");
+  await waitForHydration(page);
+  const box = main(page).getByRole("searchbox", {
+    name: "Search the catalogue",
+  });
+  await box.fill("drill");
+  await box.press("Enter");
+  await expect(page).toHaveURL(/\/search\?q=drill$/);
+  await expect(main(page).getByRole("status")).toHaveText(/match ‘drill’$/);
+  await expect(box).toBeFocused();
+  await expect(box).toHaveValue("drill");
+});
+
 test("an empty search says what to type, and a search for nothing says so", async ({
   page,
 }) => {

@@ -5,7 +5,7 @@ import { categoryIndexQuery } from "~/catalogue/query-state";
 import type { TermListItem } from "~/schemas/catalogue";
 import { renderRoutes } from "~/test/router";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
-import CategoriesRoute, { ErrorBoundary } from "./categories._index";
+import CategoriesRoute, { ErrorBoundary, handle } from "./categories._index";
 import { data } from "react-router";
 
 // The /categories page from stubbed loader data: the full index, one facet
@@ -218,5 +218,13 @@ describe("/categories page", () => {
     await expectSameMarkupInBothThemes(() =>
       renderCategories("", loaded("", TERMS, COUNTS))
     );
+  });
+});
+
+describe("/categories page identity", () => {
+  it("makes each facet a page of its own for the shell's focus and title", () => {
+    expect(handle.pageKey(new URLSearchParams("facet=mood"))).toBe("mood");
+    expect(handle.pageKey(new URLSearchParams("facet=topic"))).toBe("topic");
+    expect(handle.pageKey(new URLSearchParams(""))).toBe("");
   });
 });

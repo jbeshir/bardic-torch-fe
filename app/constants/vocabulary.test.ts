@@ -1,3 +1,8 @@
+import {
+  CONSERVATION_STATUS_VALUES,
+  FACETS,
+  PIECE_KINDS,
+} from "~/constants/enums";
 import { describe, expect, it } from "vitest";
 import {
   ATTRIBUTION_LABELS,
@@ -29,11 +34,6 @@ import {
   WORK_ROLE_HEADINGS,
 } from "~/constants/vocabulary";
 import { loadSpec } from "../../test/contract/openapi";
-import {
-  conservationStatusSchema,
-  facetSchema,
-  pieceKindSchema,
-} from "~/schemas/catalogue";
 
 describe("conservation vocabulary", () => {
   it("lists exactly the statuses that have a label (the labels are typed against the generated schema)", () => {
@@ -58,14 +58,14 @@ describe("conservation vocabulary", () => {
 
 describe("piece kind vocabulary", () => {
   it("labels every kind the API has, in sentence case", () => {
-    expect(Object.keys(PIECE_KIND_LABELS)).toEqual(pieceKindSchema.options);
+    expect(Object.keys(PIECE_KIND_LABELS)).toEqual(PIECE_KINDS);
     for (const label of Object.values(PIECE_KIND_LABELS)) {
       expect(label).toMatch(/^[A-Z][a-z ]+$/);
     }
   });
 
   it("orders the conservation statuses the API's way in the schema, the help page's way here", () => {
-    expect([...conservationStatusSchema.options].sort()).toEqual(
+    expect([...CONSERVATION_STATUS_VALUES].sort()).toEqual(
       [...CONSERVATION_STATUSES].sort()
     );
   });
@@ -76,7 +76,7 @@ describe("piece kind vocabulary", () => {
 
 describe("facet and person kind vocabulary", () => {
   it("labels every facet, in the API's order and sentence case", () => {
-    expect(Object.keys(FACET_LABELS)).toEqual(facetSchema.options);
+    expect(Object.keys(FACET_LABELS)).toEqual(FACETS);
     for (const label of Object.values(FACET_LABELS)) {
       expect(label).toMatch(/^[A-Z][a-z ]+$/);
     }

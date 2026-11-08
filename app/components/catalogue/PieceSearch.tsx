@@ -1,54 +1,32 @@
-import { IconSearch } from "@tabler/icons-react";
 import { useId } from "react";
-import { Form, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { Button } from "~/components/ui/Button";
-import { Input } from "~/components/ui/Input";
 import { Select } from "~/components/ui/Select";
 import { useHydrated } from "~/hooks/useHydrated";
 import { pieceQuery, type PieceQueryState } from "~/catalogue/query-state";
-import { HiddenFields, useCanonicalSubmit } from "./canonical-form";
+import { CatalogueSearch } from "./CatalogueSearch";
 
 const PIECES_ACTION = "/pieces";
 
 /**
- * The search box at the top of `/pieces` (plan §2.5): its own GET form,
- * which keeps the filters (`term`, `kind`, `status`, `stub`) as hidden
- * inputs and drops the letter, the order and the page, so a search covers
- * every letter from its first page.
+ * The search box at the top of `/pieces` (plan §2.5): it keeps the filters
+ * (`term`, `kind`, `status`, `stub`) and drops the letter, the order and
+ * the page, so a search covers every letter from its first page.
  */
 export function PieceSearch({ state }: { readonly state: PieceQueryState }) {
-  const onSubmit = useCanonicalSubmit(pieceQuery);
   return (
-    <Form
-      method="get"
+    <CatalogueSearch
+      query={pieceQuery}
       action={PIECES_ACTION}
-      role="search"
-      aria-label="Pieces"
-      onSubmit={onSubmit}
-      className="flex gap-2"
-    >
-      <HiddenFields
-        href={pieceQuery.href(state, {
-          q: undefined,
-          letter: undefined,
-          sort: undefined,
-        })}
-      />
-      <div className="min-w-0 flex-1">
-        <Input
-          type="search"
-          name="q"
-          aria-label="Search pieces"
-          icon={IconSearch}
-          defaultValue={state.q ?? ""}
-          autoComplete="off"
-          enterKeyHint="search"
-        />
-      </div>
-      <Button type="submit" variant="secondary">
-        Search
-      </Button>
-    </Form>
+      landmark="Pieces"
+      label="Search pieces"
+      q={state.q}
+      keepHref={pieceQuery.href(state, {
+        q: undefined,
+        letter: undefined,
+        sort: undefined,
+      })}
+    />
   );
 }
 
