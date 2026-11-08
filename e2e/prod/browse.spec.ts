@@ -60,7 +60,7 @@ test("a letter lists its pieces, and an empty letter is not a link", async ({
     "aria-disabled",
     "true"
   );
-  await letters(page).getByRole("link", { name: "T" }).click();
+  await letters(page).getByRole("link", { name: "T", exact: true }).click();
   await expect(page).toHaveURL(/\/pieces\?letter=T$/);
   await expect(
     main(page).getByRole("heading", { level: 2, name: "Pieces under T" })
