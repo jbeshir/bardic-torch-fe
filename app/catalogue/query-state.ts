@@ -1,12 +1,18 @@
 import { redirect } from "react-router";
 import { isSlug, PAGE_SIZE } from "~/schemas/address";
 import {
+  collectionKindSchema,
   conservationStatusSchema,
+  eventKindSchema,
+  facetSchema,
   letterSchema,
   pieceKindSchema,
   pieceSortSchema,
   type ApiQuery,
+  type CollectionKind,
   type ConservationStatus,
+  type EventKind,
+  type Facet,
   type Letter,
   type PieceKind,
   type PieceSort,
@@ -306,5 +312,206 @@ export const pieceQuery = {
     // sort) still gives the canonical form.
     const params = new URLSearchParams(serialisePieces(next));
     return `${PIECES_PATH}${pieceQuery.parse(params).canonical}`;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Track C: /categories
+
+/**
+ * The sections the categories index can show alone: a term facet, or one
+ * of the two piece fields the API lists as facet counts rather than terms.
+ */
+export type CategoryFacet = Facet | "kind" | "conservation";
+
+export type CategoryIndexQueryState = {
+  /** One section alone; undefined for the whole index. */
+  readonly facet: CategoryFacet | undefined;
+};
+
+const CATEGORIES_PATH = "/categories";
+
+const CATEGORY_FACETS: readonly CategoryFacet[] = [
+  "kind",
+  ...facetSchema.options,
+  "conservation",
+];
+
+function serialiseCategoryIndex(state: CategoryIndexQueryState): string {
+  return serialise([["facet", state.facet]]);
+}
+
+/** `/categories`: every term by facet, or one section (plan §4.8). */
+export const categoryIndexQuery = {
+  parse(params: URLSearchParams): {
+    readonly state: CategoryIndexQueryState;
+    readonly canonical: string;
+  } {
+    const state: CategoryIndexQueryState = {
+      facet: scalar(params, "facet", value => {
+        const normalised = normaliseEnum(value);
+        return oneOf(CATEGORY_FACETS)(normalised) ? normalised : undefined;
+      }),
+    };
+    return { state, canonical: serialiseCategoryIndex(state) };
+  },
+
+  /** The link to `/categories` showing `facet` alone (or everything). */
+  href(facet: CategoryFacet | undefined): string {
+    return `${CATEGORIES_PATH}${serialiseCategoryIndex({ facet })}`;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Track C: pages with only `page` (a category's members, the histories)
+
+export type PageQueryState = {
+  /** From 1. */
+  readonly page: number;
+};
+
+/**
+ * The query of a list addressed by its page alone, under the path of the
+ * entity it belongs to (`/categories/swords?page=2`).
+ */
+function pageOnlyQuery() {
+  return {
+    parse(params: URLSearchParams): {
+      readonly state: PageQueryState;
+      readonly canonical: string;
+    } {
+      const state = { page: scalar(params, "page", pageNumber) ?? 1 };
+      return { state, canonical: serialisePage(state) };
+    },
+
+    toApi(state: PageQueryState): {
+      readonly limit: number;
+      readonly offset: number;
+    } {
+      return { limit: PAGE_SIZE, offset: offsetOf(state.page) };
+    },
+
+    /** The link to page `page` of the list at `path`. */
+    href(path: string, page: number): string {
+      return `${path}${serialisePage({ page })}`;
+    },
+  };
+}
+
+function serialisePage(state: PageQueryState): string {
+  return serialise([["page", state.page > 1 ? String(state.page) : undefined]]);
+}
+
+/** `/categories/:slug`: the term's members, a page at a time (plan §4.8). */
+export const termMembersQuery = pageOnlyQuery();
+
+/** `…/history`: an entity's revisions, a page at a time (plan §4.11). */
+export const historyQuery = pageOnlyQuery();
+
+// ---------------------------------------------------------------------------
+// Track C: /collections
+
+export type CollectionQueryState = {
+  readonly kind: readonly CollectionKind[];
+  readonly letter: Letter | undefined;
+  /** From 1. */
+  readonly page: number;
+};
+
+const COLLECTIONS_PATH = "/collections";
+
+function serialiseCollections(state: CollectionQueryState): string {
+  return serialise([
+    ["kind", state.kind],
+    ["letter", state.letter],
+    ["page", state.page > 1 ? String(state.page) : undefined],
+  ]);
+}
+
+/** `/collections`: the collections by sort name, A–Z and kind (plan §4.9). */
+export const collectionQuery = {
+  parse(params: URLSearchParams): {
+    readonly state: CollectionQueryState;
+    readonly canonical: string;
+  } {
+    const state: CollectionQueryState = {
+      kind: repeated(params, "kind", {
+        valid: oneOf(collectionKindSchema.options),
+        order: collectionKindSchema.options,
+      }),
+      letter: scalar(params, "letter", letter),
+      page: scalar(params, "page", pageNumber) ?? 1,
+    };
+    return { state, canonical: serialiseCollections(state) };
+  },
+
+  toApi(state: CollectionQueryState): ApiQuery<"listCollections"> {
+    return {
+      ...(state.kind.length > 0 ? { kind: state.kind } : {}),
+      ...(state.letter === undefined ? {} : { letter: state.letter }),
+      limit: PAGE_SIZE,
+      offset: offsetOf(state.page),
+    };
+  },
+
+  href(
+    state: CollectionQueryState,
+    change: Partial<CollectionQueryState> = {}
+  ): string {
+    return `${COLLECTIONS_PATH}${serialiseCollections({
+      ...state,
+      page: 1,
+      ...change,
+    })}`;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Track C: /events
+
+export type EventQueryState = {
+  /** Venues or events only; undefined for both. */
+  readonly kind: EventKind | undefined;
+  /** From 1. */
+  readonly page: number;
+};
+
+const EVENTS_PATH = "/events";
+
+function serialiseEvents(state: EventQueryState): string {
+  return serialise([
+    ["kind", state.kind],
+    ["page", state.page > 1 ? String(state.page) : undefined],
+  ]);
+}
+
+/** `/events`: the events and venues by name (plan §4.10). */
+export const eventQuery = {
+  parse(params: URLSearchParams): {
+    readonly state: EventQueryState;
+    readonly canonical: string;
+  } {
+    const state: EventQueryState = {
+      kind: scalar(params, "kind", value => {
+        const normalised = normaliseEnum(value);
+        return oneOf(eventKindSchema.options)(normalised)
+          ? normalised
+          : undefined;
+      }),
+      page: scalar(params, "page", pageNumber) ?? 1,
+    };
+    return { state, canonical: serialiseEvents(state) };
+  },
+
+  toApi(state: EventQueryState): ApiQuery<"listEvents"> {
+    return {
+      ...(state.kind === undefined ? {} : { kind: state.kind }),
+      limit: PAGE_SIZE,
+      offset: offsetOf(state.page),
+    };
+  },
+
+  href(state: EventQueryState, change: Partial<EventQueryState> = {}): string {
+    return `${EVENTS_PATH}${serialiseEvents({ ...state, page: 1, ...change })}`;
   },
 };

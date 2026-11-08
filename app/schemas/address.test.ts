@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
-import { isSlug, MAX_PAGE, PAGE_SIZE } from "./address";
+import { isEntityId, isSlug, MAX_PAGE, PAGE_SIZE } from "./address";
 
 // The paging limits and the slug rule, read from the spec itself, so the
 // constants can't drift from it.
@@ -66,5 +66,33 @@ describe("isSlug", () => {
     expect(max).toBe(191);
     expect(isSlug("a".repeat(191))).toBe(true);
     expect(isSlug("a".repeat(192))).toBe(false);
+  });
+});
+
+describe("isEntityId (collections and revisions)", () => {
+  const id = parameters["CollectionID"]?.schema ?? {};
+  const revision = parameters["RevisionID"]?.schema ?? {};
+
+  it("is the spec's id: an int64 from 1", () => {
+    expect(id.minimum).toBe(1);
+    expect(revision.minimum).toBe(1);
+  });
+
+  it.each([
+    ["1", true],
+    ["12", true],
+    ["9223372036854775807", true],
+    ["9223372036854775808", false],
+    ["99999999999999999999", false],
+    ["0", false],
+    ["01", false],
+    ["-1", false],
+    ["+1", false],
+    ["1.0", false],
+    ["abc", false],
+    ["", false],
+    [" 1", false],
+  ])("reads %j as %s", (value, valid) => {
+    expect(isEntityId(value)).toBe(valid);
   });
 });

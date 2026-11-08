@@ -3,10 +3,13 @@ import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import {
   conservationStatusSchema,
+  facetSchema,
   letterSchema,
   pieceKindSchema,
   pieceListSchema,
   pieceSortSchema,
+  termListSchema,
+  termSchema,
 } from "./catalogue";
 
 // Type equality with the generated contract is asserted at compile time in
@@ -98,5 +101,73 @@ describe("pieceListSchema", () => {
     expect(pieceListSchema.safeParse({ ...list, total: 1.5 }).success).toBe(
       false
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Track C
+
+describe("terms", () => {
+  const item = {
+    slug: "battles",
+    facet: "topic",
+    name: "Battles",
+    display_name: "Battles",
+    parent_slug: "war",
+    piece_count: 3,
+    person_count: 0,
+  };
+  const summary = { slug: "war", facet: "topic", display_name: "War" };
+  const term = {
+    slug: "battles",
+    facet: "topic",
+    name: "Battles",
+    display_name: "Battles",
+    description_md: null,
+    aliases: ["Fights"],
+    ancestors: [summary],
+    children: [
+      {
+        term: { slug: "swords", facet: "topic", display_name: "Swords" },
+        piece_count: 2,
+        person_count: 0,
+      },
+    ],
+    related_affiliation: null,
+    piece_count: 3,
+    person_count: 0,
+    pieces: [piece],
+    persons: [
+      {
+        slug: "wren-of-the-vale",
+        name: "Wren of the Vale",
+        kind: "community_bard",
+        is_stub: false,
+      },
+    ],
+  };
+
+  it("lists the facets in the spec's order", () => {
+    expect(facetSchema.options).toEqual(schemas.Facet?.enum);
+  });
+
+  it("reads a term list and a term, with counts of 0", () => {
+    const empty = { ...item, piece_count: 0 };
+    expect(termListSchema.parse({ data: [item, empty] })).toEqual({
+      data: [item, empty],
+    });
+    expect(termSchema.parse(term)).toEqual(term);
+  });
+
+  it("refuses a field the spec doesn't declare, and an unknown person kind", () => {
+    expect(
+      termListSchema.safeParse({ data: [{ ...item, depth: 1 }] }).success
+    ).toBe(false);
+    expect(
+      termSchema.safeParse({
+        ...term,
+        persons: [{ ...term.persons[0], kind: "bard" }],
+      }).success
+    ).toBe(false);
   });
 });

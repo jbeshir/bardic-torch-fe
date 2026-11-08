@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { Resting, ServerError } from "~/components/ErrorPages";
+import { useLocation } from "react-router";
+import { NotFound, Resting, ServerError } from "~/components/ErrorPages";
 import { ButtonLink } from "~/components/ui/Button";
 import { ErrorState, TryAgain } from "~/components/ui/ErrorState";
 import type {
@@ -11,10 +12,17 @@ import { UNEXPECTED_ANSWER } from "~/schemas/proxy";
 
 /**
  * The h1 of a failed catalogue read (plan §3.3), which the route's `meta`
- * titles the page with too. `what` names what didn't load: "the pieces".
+ * titles the page with too. `what` names what didn't load: "the pieces";
+ * `missing` what isn't there, for a 404: "that category".
  */
-export function failureTitle(failure: ReadFailure, what: string): string {
+export function failureTitle(
+  failure: ReadFailure,
+  what: string,
+  missing = "that page"
+): string {
   switch (failure.kind) {
+    case "not_found":
+      return `We couldn’t find ${missing}`;
     case "resting":
       return "Bardic Torch is resting";
     case "server":
@@ -33,17 +41,29 @@ export function failureTitle(failure: ReadFailure, what: string): string {
  * the route's ErrorBoundary inside the shell, by the failure's kind:
  * `resting` (the API is out of reach, 503) is the Resting page; `server`
  * (500) is "We couldn’t load {what}" with Try again; `bad_gateway` (502,
- * an answer we couldn't read) says so, with Try again.
+ * an answer we couldn't read) says so, with Try again; `not_found` (404)
+ * is the 404 page titled for what is missing.
  */
 export function CatalogueError({
   failure,
   what,
+  missing,
 }: {
   readonly failure: PageFailure;
   /** What failed to load, for the title: "the pieces". */
   readonly what: string;
+  /** What isn't there, for a 404's title: "that category". */
+  readonly missing?: string;
 }) {
+  const { pathname } = useLocation();
   switch (failure.kind) {
+    case "not_found":
+      return (
+        <NotFound
+          pathname={pathname}
+          title={failureTitle(failure, what, missing)}
+        />
+      );
     case "resting":
       return <Resting />;
     case "server":

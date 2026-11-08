@@ -1,8 +1,11 @@
 import { data } from "react-router";
 import { describe, expect, it } from "vitest";
 import {
+  asPageFailure,
+  detailFailure,
   failureInit,
   isPageFailure,
+  listFailure,
   searchFailure,
   thrownPageFailure,
   throwPageFailure,
@@ -149,5 +152,119 @@ describe("page failures", () => {
     expect(thrownPageFailure(response({ kind: "other" }, 500))).toBeNull();
     expect(thrownPageFailure(new Error("boom"))).toBeNull();
     expect(thrownPageFailure(undefined)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Track C: other lists, details and histories
+
+describe("listFailure (listTerms, listEvents)", () => {
+  it.each([
+    ["500 internal", { status: 500, code: "internal" }, { kind: "server" }],
+    // The loader sends only values it checked: the API disagrees with us.
+    [
+      "400 invalid_request",
+      { status: 400, code: "invalid_request" },
+      { kind: "bad_gateway" },
+    ],
+    [
+      "503 of any body",
+      { status: 503, code: undefined },
+      { kind: "resting", retryAfter: 60 },
+    ],
+    [
+      "unavailable at another status",
+      { status: 500, code: "unavailable" },
+      { kind: "resting", retryAfter: 60 },
+    ],
+    [
+      "404 not_found",
+      { status: 404, code: "not_found" },
+      { kind: "bad_gateway" },
+    ],
+    [
+      "500 without an Error body",
+      { status: 500, code: undefined },
+      { kind: "bad_gateway" },
+    ],
+  ] as const)("maps %s", (_name, upstream, expected) => {
+    expect(listFailure(upstream)).toEqual(expected);
+  });
+
+  it("maps no answer to resting for 30 s", () => {
+    expect(listFailure("unreachable")).toEqual({
+      kind: "resting",
+      retryAfter: 30,
+    });
+  });
+});
+
+describe("detailFailure (getTerm, getCollection, getEvent, histories, getRevision)", () => {
+  it.each([
+    [
+      "404 not_found",
+      { status: 404, code: "not_found" },
+      { kind: "not_found" },
+    ],
+    // After the loader's own address check: the address still leads nowhere.
+    [
+      "400 invalid_request",
+      { status: 400, code: "invalid_request" },
+      { kind: "not_found" },
+    ],
+    ["500 internal", { status: 500, code: "internal" }, { kind: "server" }],
+    [
+      "503",
+      { status: 503, code: undefined },
+      { kind: "resting", retryAfter: 60 },
+    ],
+    [
+      "404 without an Error body",
+      { status: 404, code: undefined },
+      { kind: "bad_gateway" },
+    ],
+    ["418", { status: 418, code: "internal" }, { kind: "bad_gateway" }],
+  ] as const)("maps %s", (_name, upstream, expected) => {
+    expect(detailFailure(upstream)).toEqual(expected);
+  });
+
+  it("maps no answer to resting for 30 s", () => {
+    expect(detailFailure("unreachable")).toEqual({
+      kind: "resting",
+      retryAfter: 30,
+    });
+  });
+
+  it("is a page failure, answered 404", () => {
+    expect(isPageFailure({ kind: "not_found" })).toBe(true);
+    expect(failureInit({ kind: "not_found" }).status).toBe(404);
+  });
+
+  it("is read back from a thrown 404", () => {
+    const thrown = data({ kind: "not_found" }, { status: 404 });
+    expect(
+      thrownPageFailure({
+        status: 404,
+        statusText: "",
+        internal: false,
+        data: thrown.data,
+      })
+    ).toEqual({ kind: "not_found" });
+  });
+});
+
+describe("asPageFailure", () => {
+  it("keeps a page failure", () => {
+    expect(asPageFailure({ kind: "server" })).toEqual({ kind: "server" });
+    expect(asPageFailure({ kind: "not_found" })).toEqual({ kind: "not_found" });
+  });
+
+  it("reads a filter failure of a read with no filters as a contract break", () => {
+    expect(asPageFailure({ kind: "invalid_filters" })).toEqual({
+      kind: "bad_gateway",
+    });
+    expect(asPageFailure({ kind: "search_timeout" })).toEqual({
+      kind: "bad_gateway",
+    });
   });
 });

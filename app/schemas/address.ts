@@ -27,3 +27,17 @@ const SLUG_MAX = 191;
 export function isSlug(value: string): boolean {
   return value.length <= SLUG_MAX && SLUG_PATTERN.test(value);
 }
+
+/** A positive int64 in decimal, without leading zeros (its digits). */
+const ENTITY_ID_PATTERN = /^[1-9][0-9]{0,18}$/;
+
+/** The largest id the API takes: int64's maximum. */
+const ENTITY_ID_MAX = 9_223_372_036_854_775_807n;
+
+/**
+ * Whether `value` is a valid collection or revision id: a positive int64
+ * written in plain decimal (no sign, no leading zero), as the API reads it.
+ */
+export function isEntityId(value: string): boolean {
+  return ENTITY_ID_PATTERN.test(value) && BigInt(value) <= ENTITY_ID_MAX;
+}

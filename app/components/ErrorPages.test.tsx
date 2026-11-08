@@ -42,6 +42,21 @@ describe("NotFound", () => {
     ).toHaveAttribute("href", wikiSearchUrl("the reeve's tale"));
   });
 
+  it("says what is missing on an entity's 404", async () => {
+    await renderWithRouter(
+      <NotFound
+        pathname="/categories/no-such"
+        title="We couldn’t find that category"
+      />
+    );
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "We couldn’t find that category",
+      })
+    ).toBeInTheDocument();
+  });
+
   it("copes with an address that isn't valid percent-encoding", async () => {
     await renderWithRouter(<NotFound pathname="/%E0%A4%A" />);
     expect(

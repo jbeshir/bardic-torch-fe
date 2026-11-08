@@ -3,7 +3,17 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { API_BASE_URL, loadContext } from "~/test/context";
 import { contractResponse, offContractResponse } from "~/test/contract";
 import { serveFixtureApi } from "~/test/msw";
-import { listPieces } from "./catalogue.server";
+import {
+  getCollection,
+  getEvent,
+  getRevision,
+  getTerm,
+  listCollections,
+  listEvents,
+  listPieces,
+  listRevisions,
+  listTerms,
+} from "./catalogue.server";
 
 // The anonymous read client against the fixture API through msw: what it
 // sends, and how each upstream answer maps to a ReadFailure (plan §3.3).
@@ -262,6 +272,243 @@ describe("listPieces: answers", () => {
     expect(await listPieces(loadContext(), {})).toEqual({
       ok: false,
       failure: { kind: "bad_gateway" },
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Track C: listTerms and getTerm
+
+describe("listTerms", () => {
+  it("reads the whole tree, or one facet's, sending only the facet", async () => {
+    const seen: string[] = [];
+    fixtures.server.events.on("request:start", ({ request }) => {
+      seen.push(request.url);
+    });
+    const all = await listTerms(loadContext(), {});
+    expect(all.ok && all.data.data.length).toBeGreaterThan(50);
+    const mood = await listTerms(loadContext(), { facet: "mood" });
+    expect(mood.ok && mood.data.data.every(t => t.facet === "mood")).toBe(true);
+    expect(seen).toEqual([
+      `${API_BASE_URL}/v1/terms`,
+      `${API_BASE_URL}/v1/terms?facet=mood`,
+    ]);
+  });
+
+  it("is a plain server error for its 500, even with a facet", async () => {
+    quietErrors();
+    fixtures.server.use(
+      http.get(`${API_BASE_URL}/v1/terms`, () =>
+        contractResponse("listTerms", 500, {
+          code: "internal",
+          message: "boom",
+        })
+      )
+    );
+    expect(await listTerms(loadContext(), { facet: "mood" })).toEqual({
+      ok: false,
+      failure: { kind: "server" },
+    });
+  });
+
+  it("reads its 400 as an answer the app can't use", async () => {
+    quietErrors();
+    fixtures.server.use(
+      http.get(`${API_BASE_URL}/v1/terms`, () =>
+        contractResponse("listTerms", 400, {
+          code: "invalid_request",
+          message: "invalid facet",
+        })
+      )
+    );
+    expect(await listTerms(loadContext(), {})).toEqual({
+      ok: false,
+      failure: { kind: "bad_gateway" },
+    });
+  });
+});
+
+describe("getTerm", () => {
+  it("reads a term with a page of its members, the slug in the path", async () => {
+    const result = await getTerm(loadContext(), "swords", {
+      limit: 50,
+      offset: 0,
+    });
+    expect(result).toMatchObject({
+      ok: true,
+      data: {
+        slug: "swords",
+        ancestors: [{ slug: "war" }, { slug: "battles" }],
+        piece_count: 2,
+      },
+    });
+  });
+
+  it("is not_found for the API's 404", async () => {
+    quietErrors();
+    expect(await getTerm(loadContext(), "no-such-term", {})).toEqual({
+      ok: false,
+      failure: { kind: "not_found" },
+    });
+  });
+
+  it("percent-encodes the path, so a slash never makes another path", async () => {
+    const seen: string[] = [];
+    fixtures.server.events.on("request:start", ({ request }) => {
+      seen.push(new URL(request.url).pathname);
+    });
+    quietErrors();
+    await getTerm(loadContext(), "a/b", {});
+    expect(seen).toEqual(["/v1/terms/a%2Fb"]);
+  });
+});
+
+describe("listCollections and getCollection", () => {
+  it("sends the kinds, letter and paging in the spec's order", async () => {
+    const seen: string[] = [];
+    fixtures.server.events.on("request:start", ({ request }) => {
+      seen.push(new URL(request.url).search);
+    });
+    await listCollections(loadContext(), {
+      offset: 0,
+      limit: 50,
+      letter: "N",
+      kind: ["wiki", "blog"],
+    });
+    expect(seen).toEqual(["?kind=wiki&kind=blog&letter=N&limit=50&offset=0"]);
+  });
+
+  it("is search_timeout for a 500 to a kind filter, server for a 500 to a letter", async () => {
+    quietErrors();
+    const internal = () =>
+      contractResponse("listCollections", 500, {
+        code: "internal",
+        message: "search took too long",
+      });
+    fixtures.server.use(http.get(`${API_BASE_URL}/v1/collections`, internal));
+    expect(await listCollections(loadContext(), { kind: ["wiki"] })).toEqual({
+      ok: false,
+      failure: { kind: "search_timeout" },
+    });
+    expect(await listCollections(loadContext(), { letter: "T" })).toEqual({
+      ok: false,
+      failure: { kind: "server" },
+    });
+  });
+
+  it("reads a collection by its id, sent as written", async () => {
+    const seen: string[] = [];
+    fixtures.server.events.on("request:start", ({ request }) => {
+      seen.push(new URL(request.url).pathname);
+    });
+    expect(await getCollection(loadContext(), "12")).toMatchObject({
+      ok: true,
+      data: { id: 12, name: "The Northmarch Songbook", citations_total: 5 },
+    });
+    quietErrors();
+    expect(await getCollection(loadContext(), "9223372036854775807")).toEqual({
+      ok: false,
+      failure: { kind: "not_found" },
+    });
+    expect(seen).toEqual([
+      "/v1/collections/12",
+      "/v1/collections/9223372036854775807",
+    ]);
+  });
+});
+
+describe("listEvents and getEvent", () => {
+  it("sends the kind, and reads a page of events", async () => {
+    const seen: string[] = [];
+    fixtures.server.events.on("request:start", ({ request }) => {
+      seen.push(new URL(request.url).search);
+    });
+    const result = await listEvents(loadContext(), {
+      kind: "venue",
+      limit: 50,
+      offset: 0,
+    });
+    expect(result.ok && result.data.data.every(e => e.kind === "venue")).toBe(
+      true
+    );
+    expect(seen).toEqual(["?kind=venue&limit=50&offset=0"]);
+  });
+
+  it("is a plain server error for its 500, even with a kind", async () => {
+    quietErrors();
+    fixtures.server.use(
+      http.get(`${API_BASE_URL}/v1/events`, () =>
+        contractResponse("listEvents", 500, { code: "internal", message: "x" })
+      )
+    );
+    expect(await listEvents(loadContext(), { kind: "venue" })).toEqual({
+      ok: false,
+      failure: { kind: "server" },
+    });
+  });
+
+  it("reads an event, and is not_found for an unknown one", async () => {
+    expect(await getEvent(loadContext(), "midwinter-revel")).toMatchObject({
+      ok: true,
+      data: { name: "Midwinter Revel", performances_total: 3 },
+    });
+    quietErrors();
+    expect(await getEvent(loadContext(), "no-such-event")).toEqual({
+      ok: false,
+      failure: { kind: "not_found" },
+    });
+  });
+});
+
+describe("listRevisions", () => {
+  it.each([
+    ["term", "war", "/v1/terms/war/history"],
+    ["collection", "12", "/v1/collections/12/history"],
+    ["event", "midwinter-revel", "/v1/events/midwinter-revel/history"],
+  ] as const)("reads a %s's history", async (entity, address, path) => {
+    const seen: string[] = [];
+    fixtures.server.events.on("request:start", ({ request }) => {
+      const url = new URL(request.url);
+      seen.push(`${url.pathname}${url.search}`);
+    });
+    const result = await listRevisions(loadContext(), entity, address, {
+      limit: 50,
+      offset: 0,
+    });
+    expect(result).toMatchObject({ ok: true, data: { total: 2 } });
+    expect(seen).toEqual([`${path}?limit=50&offset=0`]);
+  });
+
+  it("is not_found for an entity that isn't there", async () => {
+    quietErrors();
+    expect(
+      await listRevisions(loadContext(), "event", "no-such-event", {
+        limit: 50,
+        offset: 0,
+      })
+    ).toEqual({ ok: false, failure: { kind: "not_found" } });
+  });
+});
+
+describe("getRevision", () => {
+  it.each([
+    ["1003", "piece"],
+    ["1007", "person"],
+    ["1009", "term"],
+    ["1011", "collection"],
+    ["1013", "event"],
+  ])("reads revision %s, a %s's", async (id, entityType) => {
+    expect(await getRevision(loadContext(), id)).toMatchObject({
+      ok: true,
+      data: { id: Number(id), entity_type: entityType },
+    });
+  });
+
+  it("is not_found for a revision that isn't approved", async () => {
+    quietErrors();
+    expect(await getRevision(loadContext(), "1015")).toEqual({
+      ok: false,
+      failure: { kind: "not_found" },
     });
   });
 });

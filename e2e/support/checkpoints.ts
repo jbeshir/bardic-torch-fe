@@ -80,6 +80,11 @@ export const CHECKPOINTS: Readonly<
     errors: ["not-found", "server-error", "resting"],
     settings: ["signed-out"],
     browse: ["index", "no-results"],
+    // Track C (categories, collections, events, history).
+    categories: ["index", "term"],
+    collections: ["directory", "collection"],
+    events: ["directory", "event"],
+    history: ["collection-history", "revision"],
   },
   stub: {
     styleguide: [
