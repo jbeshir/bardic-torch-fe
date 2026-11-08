@@ -77,6 +77,34 @@ describe("LetterBar", () => {
     );
   });
 
+  it("styles each state as DESIGN §6.29 says: idle, hover, focus, empty and current", async () => {
+    await renderBar("T");
+    const link = screen.getByRole("link", { name: "A" });
+    // Idle: link colour, no fill; hover: the sunken wash and the hover
+    // colour; focus: the shared ring, inset in this dense row.
+    expect(link).toHaveClass(
+      "font-medium",
+      "text-link",
+      "hover:bg-surface-sunken",
+      "hover:text-link-hover",
+      "focus-visible:-outline-offset-2"
+    );
+    expect(link.className).not.toMatch(/(^|\s)bg-/);
+    // Empty: the same weight, subtle, with no fill, hover or ring.
+    const empty = screen.getByText("Q");
+    expect(empty).toHaveClass(
+      "font-medium",
+      "text-fg-subtle",
+      "cursor-not-allowed"
+    );
+    expect(empty.className).not.toMatch(/bg-|hover:|outline/);
+    // Current: the accent fill, never focusable, so no ring on accent.
+    const current = screen.getByText("T");
+    expect(current).toHaveClass("bg-accent", "text-accent-fg", "font-semibold");
+    expect(current).not.toHaveAttribute("tabindex");
+    expect(current.className).not.toMatch(/hover:|outline/);
+  });
+
   it("has targets of at least 24 px", async () => {
     await renderBar("T");
     for (const link of screen.getAllByRole("link")) {

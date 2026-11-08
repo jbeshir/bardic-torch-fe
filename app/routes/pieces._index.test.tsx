@@ -141,6 +141,9 @@ describe("/pieces page", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "Showing 1–50 of 249 pieces"
     );
+    // Shown under the heading too, not only said.
+    expect(screen.getByRole("status")).not.toHaveClass("sr-only");
+    expect(screen.getByRole("status")).toHaveClass("text-fg-muted");
     // No search, so no order to choose and no chips.
     expect(screen.queryByRole("combobox", { name: "Sort by" })).toBeNull();
     expect(
@@ -200,7 +203,13 @@ describe("/pieces page", () => {
   });
 
   it("says nothing matches a search, and offers to browse", async () => {
-    await renderPieces("?q=zzz", loaded("?q=zzz", listOf([], 0)));
+    // A search that matches nothing has no letters either (the API's
+    // counts ignore only the letter filter).
+    const none = listOf([], 0);
+    await renderPieces(
+      "?q=zzz",
+      loaded("?q=zzz", { ...none, facets: { ...none.facets, letters: [] } })
+    );
     expect(
       screen.getByRole("heading", { name: "Nothing matches ‘zzz’" })
     ).toBeVisible();
@@ -212,6 +221,15 @@ describe("/pieces page", () => {
       "/pieces"
     );
     expect(screen.getByRole("status")).toHaveTextContent("No results");
+    // The empty state shows it; the status only says it.
+    expect(screen.getByRole("status")).toHaveClass("sr-only");
+    // Nothing to put in order, so no order to choose; with no entries
+    // under any letter, no letter is a link, only All (the current cell).
+    expect(screen.queryByRole("combobox", { name: "Sort by" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Sort" })).toBeNull();
+    const bar = screen.getByRole("navigation", { name: "Pieces by letter" });
+    expect(within(bar).queryAllByRole("link")).toEqual([]);
+    expect(within(bar).getByText("D")).toHaveAttribute("aria-disabled", "true");
   });
 
   it("says no pieces match the filters, and offers to clear them", async () => {
@@ -226,6 +244,14 @@ describe("/pieces page", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "No pieces match these filters"
     );
+    // The letters that have entries still lead somewhere; the rest are text.
+    const bar = screen.getByRole("navigation", { name: "Pieces by letter" });
+    expect(
+      within(bar)
+        .getAllByRole("link")
+        .map(link => link.textContent)
+    ).toEqual(["All", "D", "T"]);
+    expect(within(bar).getByText("Q")).toHaveAttribute("aria-current", "page");
   });
 
   it("says when the catalogue has no pieces at all", async () => {

@@ -5,9 +5,13 @@ import type { Letter } from "~/schemas/catalogue";
 
 const CELL =
   "inline-flex min-h-9 min-w-9 items-center justify-center rounded-md px-2 text-body-sm lg:min-h-8 lg:min-w-8";
-const LINK = `${CELL} font-medium text-link transition-colors hover:bg-surface-sunken hover:text-link-hover`;
+// A dense row (gap-1): the ring is inset, on the link's own canvas or its
+// surface-sunken hover, so it never overlaps a neighbour (DESIGN §6.1).
+const LINK = `${CELL} font-medium text-link transition-colors hover:bg-surface-sunken hover:text-link-hover focus-visible:-outline-offset-2`;
 const CURRENT = `${CELL} bg-accent font-semibold text-accent-fg`;
-const EMPTY = `${CELL} cursor-not-allowed text-fg-subtle`;
+// The links' weight, with no fill and no hover: lighter than a link, as
+// Pagination's disabled steps are.
+const EMPTY = `${CELL} cursor-not-allowed font-medium text-fg-subtle`;
 
 /** A cell's visible text and, where it differs, its accessible name. */
 function CellText({ letter }: { readonly letter: Letter | undefined }) {

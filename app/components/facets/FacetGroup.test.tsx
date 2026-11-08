@@ -100,6 +100,57 @@ describe("FacetGroup", () => {
     expect(summary).toHaveFocus();
   });
 
+  it("ticks and unticks a box with Space, focus staying on it", async () => {
+    const user = userEvent.setup();
+    render(<FacetGroup group={MOOD} />);
+    await user.tab();
+    const warlike = screen.getByRole("checkbox", { name: /^Warlike/ });
+    expect(warlike).toHaveFocus();
+    expect(warlike).toBeChecked();
+    await user.keyboard(" ");
+    expect(warlike).not.toBeChecked();
+    expect(warlike).toHaveFocus();
+    // The disabled box is skipped: Tab goes on to the next live one.
+    await user.tab();
+    const child = screen.getByRole("checkbox", { name: /^Battle-cries/ });
+    expect(child).toHaveFocus();
+    await user.keyboard(" ");
+    expect(child).toBeChecked();
+    expect(child).toHaveFocus();
+  });
+
+  it("reaches Show all with Tab, keeps focus on it as it opens and closes, and ticks the rest with Space", async () => {
+    const user = userEvent.setup();
+    render(<FacetGroup group={LONG} />);
+    const summary = screen.getByText("Show all 10").closest("summary");
+    const details = summary?.closest("details");
+    if (!summary || !details) throw new Error("no disclosure");
+    // After the eight boxes shown, the disclosure is the next stop.
+    for (let i = 0; i < 9; i++) await user.tab();
+    expect(summary).toHaveFocus();
+    // Enter and Space on a summary are the browser's own activation, which
+    // jsdom doesn't dispatch: activate it as they do, with a click on the
+    // focused summary.
+    await user.click(summary);
+    expect(details).toHaveAttribute("open");
+    expect(summary).toHaveFocus();
+    await user.tab();
+    const more = screen.getByRole("checkbox", { name: /^Mood8/ });
+    expect(more).toHaveFocus();
+    await user.keyboard(" ");
+    expect(more).toBeChecked();
+    expect(more).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(summary).toHaveFocus();
+    await user.click(summary);
+    expect(details).not.toHaveAttribute("open");
+    expect(summary).toHaveFocus();
+    // Closed, the ticked box is still in the form.
+    expect(
+      screen.getByRole("checkbox", { name: /^Mood8/, hidden: true })
+    ).toBeChecked();
+  });
+
   it("has no disclosure for a short group", () => {
     render(<FacetGroup group={MOOD} />);
     expect(screen.queryByText(/Show all/)).toBeNull();

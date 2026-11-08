@@ -390,19 +390,19 @@ export default function BardsRoute() {
             </h2>
             {/* The stale-affiliation notice is said here too: the Alert
                 above isn't a live region, and this is the one status. */}
-            <ResultsStatus>
-              {`${
-                list.total > 0
-                  ? showingText(
-                      state.page,
-                      list.data.length,
-                      list.total,
-                      "bard"
-                    )
-                  : state.q === undefined
-                    ? "No bards match these filters"
-                    : "No results"
-              }${loaded.staleAffiliation ? ". That affiliation no longer exists, so we left it out." : ""}`}
+            <ResultsStatus
+              visible={list.total > 0}
+              note={
+                loaded.staleAffiliation
+                  ? "That affiliation no longer exists, so we left it out."
+                  : undefined
+              }
+            >
+              {list.total > 0
+                ? showingText(state.page, list.data.length, list.total, "bard")
+                : state.q === undefined
+                  ? "No bards match these filters"
+                  : "No results"}
             </ResultsStatus>
             {list.data.length > 0 ? (
               <ul role="list" className="mt-2">

@@ -126,6 +126,9 @@ describe("/bards page", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "Showing 1–3 of 14 bards"
     );
+    // Shown under the heading too, not only said.
+    expect(screen.getByRole("status")).not.toHaveClass("sr-only");
+    expect(screen.getByRole("status")).toHaveClass("text-fg-muted");
     // The filters come after the results, closed.
     const filters = screen.getByText("Filters").closest("details");
     expect(filters).not.toHaveAttribute("open");
@@ -221,6 +224,12 @@ describe("/bards page", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "Showing 3 bards. That affiliation no longer exists, so we left it out."
     );
+    // Only the count is shown: the Alert above already shows the notice.
+    expect(
+      screen.getByText(
+        ". That affiliation no longer exists, so we left it out."
+      )
+    ).toHaveClass("sr-only");
   });
 
   it("says nothing matches a search, offering to clear it", async () => {
@@ -234,6 +243,8 @@ describe("/bards page", () => {
       "/bards?kind=group"
     );
     expect(screen.getByRole("status")).toHaveTextContent("No results");
+    // The empty state shows it; the status only says it.
+    expect(screen.getByRole("status")).toHaveClass("sr-only");
   });
 
   it("says no bards match the filters, offering to clear them all", async () => {

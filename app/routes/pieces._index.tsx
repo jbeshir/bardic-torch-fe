@@ -426,7 +426,9 @@ export default function PiecesRoute() {
             current={state.letter}
             href={letter => pieceQuery.href(state, { letter })}
           />
-          {state.q === undefined ? null : (
+          {/* An order only for a search that found something: with no
+              results there is nothing to put in order. */}
+          {state.q === undefined || list.total === 0 ? null : (
             <KeptFocus key={canonical} focusRef={sortFocusRef}>
               <PieceSort state={state} form={formId} />
             </KeptFocus>
@@ -464,19 +466,19 @@ export default function PiecesRoute() {
             </h2>
             {/* The stale-category notice is said here too: the Alert above
                 isn't a live region, and this is the one status. */}
-            <ResultsStatus>
-              {`${
-                list.total > 0
-                  ? showingText(
-                      state.page,
-                      list.data.length,
-                      list.total,
-                      "piece"
-                    )
-                  : state.q === undefined
-                    ? "No pieces match these filters"
-                    : "No results"
-              }${loaded.stale.length > 0 ? ". Some categories in this link no longer exist, so we left them out." : ""}`}
+            <ResultsStatus
+              visible={list.total > 0}
+              note={
+                loaded.stale.length > 0
+                  ? "Some categories in this link no longer exist, so we left them out."
+                  : undefined
+              }
+            >
+              {list.total > 0
+                ? showingText(state.page, list.data.length, list.total, "piece")
+                : state.q === undefined
+                  ? "No pieces match these filters"
+                  : "No results"}
             </ResultsStatus>
             {list.data.length > 0 ? (
               <ul role="list" className="mt-2">

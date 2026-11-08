@@ -141,6 +141,23 @@ describe("/collections page", () => {
       screen.getByRole("link", { name: "Remove Kind: Wiki" })
     ).toHaveAttribute("href", "/collections?letter=Q");
     expect(screen.getByRole("checkbox", { name: "Wiki" })).toBeChecked();
+    // The empty state shows it; the status only says it.
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "No collections match these filters"
+    );
+    expect(screen.getByRole("status")).toHaveClass("sr-only");
+  });
+
+  it("shows how many collections the list has, under the results heading", async () => {
+    await renderCollections("", loaded("", LIST));
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("Showing 3 collections");
+    expect(status).not.toHaveClass("sr-only");
+    expect(status).toHaveClass("text-body-sm", "text-fg-muted");
+    expect(
+      screen.getByRole("heading", { level: 2, name: "All collections" })
+        .nextElementSibling
+    ).toBe(status);
   });
 
   it("keeps the filter under a slow search's message", async () => {

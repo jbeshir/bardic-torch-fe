@@ -75,6 +75,32 @@ describe("FacetDrawer", () => {
     expect(clear).toHaveAttribute("rel", "nofollow");
   });
 
+  it("keeps its footer in view outside the scrolling body: a separator and 44 px targets", async () => {
+    const user = userEvent.setup();
+    await renderWithRouter(<Filters />);
+    await user.click(screen.getByRole("button", { name: "Filters" }));
+    const show = within(dialog()).getByRole("button", { name: "Show results" });
+    const clear = within(dialog()).getByRole("link", { name: "Clear all" });
+    const [, bottomClose] = within(dialog()).getAllByRole("button", {
+      name: "Close filters",
+    });
+    const body = within(dialog())
+      .getByRole("checkbox")
+      .closest("form")?.parentElement;
+    // The body scrolls on its own; the footer is its sibling, never inside
+    // it, so the body's content can't scroll under it or hide it.
+    expect(body).toHaveClass("min-h-0", "flex-1", "overflow-y-auto");
+    const footer = bottomClose?.parentElement;
+    expect(footer).toHaveClass("shrink-0", "border-t", "border-border");
+    expect(footer).toBe(body?.nextElementSibling);
+    expect(footer).toContainElement(show);
+    expect(footer).toContainElement(clear);
+    for (const control of [show, clear, bottomClose]) {
+      expect(body).not.toContainElement(control ?? null);
+      expect(control).toHaveClass("min-h-11", "w-full");
+    }
+  });
+
   it("keeps Tab inside, and Escape returns focus to Filters", async () => {
     const user = userEvent.setup();
     await renderWithRouter(<Filters />);
