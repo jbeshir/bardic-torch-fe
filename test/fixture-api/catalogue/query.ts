@@ -1,5 +1,5 @@
 import type { components } from "../../../app/api/schema.gen";
-import { errorBody, type FixtureResponse } from "../operations";
+import { errorBody, type FixtureResponse } from "../responses";
 import {
   declaredErrorStatuses,
   specRoute,

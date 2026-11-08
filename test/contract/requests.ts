@@ -277,8 +277,23 @@ export const INVALID_REQUESTS: readonly InvalidRequest[] = [
   },
   {
     name: "an unknown term",
-    path: "/v1/pieces?term=swords",
-    message: "unknown term: swords",
+    path: "/v1/pieces?term=swords&term=no-such-term",
+    message: "unknown term: no-such-term",
+  },
+  {
+    name: "an unapproved term",
+    path: "/v1/pieces?term=draft-topic",
+    message: "unknown term: draft-topic",
+  },
+  {
+    name: "a term under an unapproved parent",
+    path: "/v1/pieces?term=draft-topic-child",
+    message: "unknown term: draft-topic-child",
+  },
+  {
+    name: "an affiliation as a term",
+    path: "/v1/pieces?term=war&term=northmarch",
+    message: "unknown term: northmarch",
   },
   {
     name: "an affiliation that isn't a slug",
@@ -292,8 +307,13 @@ export const INVALID_REQUESTS: readonly InvalidRequest[] = [
   },
   {
     name: "an unknown affiliation",
-    path: "/v1/persons?affiliation=northmarch",
-    message: "unknown affiliation: northmarch",
+    path: "/v1/persons?affiliation=no-such-place",
+    message: "unknown affiliation: no-such-place",
+  },
+  {
+    name: "a piece term as an affiliation",
+    path: "/v1/persons?affiliation=swords",
+    message: "unknown affiliation: swords",
   },
   {
     name: "pieces sorted by relevance without q",
@@ -307,10 +327,7 @@ export const INVALID_REQUESTS: readonly InvalidRequest[] = [
   },
 ];
 
-/**
- * Requests the parser accepts. Nothing is served for them yet beyond the
- * parser, so each must simply not be a 400.
- */
+/** Requests the parser accepts: each must not be a 400. */
 export const VALID_REQUESTS: readonly { name: string; path: string }[] = [
   {
     name: "every piece filter at its limits",

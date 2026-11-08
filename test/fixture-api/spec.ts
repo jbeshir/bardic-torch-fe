@@ -70,6 +70,11 @@ function toDefs(schema: unknown): unknown {
 
 const ajv = new Ajv2020({ allErrors: true, allowUnionTypes: true });
 addFormats(ajv);
+// OpenAPI's `discriminator` (on `Revision`) is an annotation for code
+// generators: the `oneOf` it sits on already validates, since each branch
+// is closed and has a one-value `entity_type` enum. ajv's own discriminator
+// support rejects `mapping`, so the keyword is declared as an annotation.
+ajv.addKeyword({ keyword: "discriminator", schemaType: "object" });
 ajv.addSchema({ $id: SPEC_ID, $defs: toDefs(spec.components.schemas) });
 
 const validators = new Map<string, ValidateFunction>();

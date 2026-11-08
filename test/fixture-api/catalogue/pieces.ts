@@ -351,9 +351,7 @@ const HAND_PIECES: readonly RawPiece[] = [
     ["sca-pieces", "joyful", "comforting"],
     {
       licence: "cc_by_nc_sa",
-      credits: [
-        credit("wynne-of-caer-wyn", "lyrics", { attribution: "various" }),
-      ],
+      credits: [credit(null, "lyrics", { attribution: "various" })],
     }
   ),
   piece(

@@ -1,20 +1,14 @@
 import type { components } from "../../app/api/schema.gen";
-import {
-  CATALOGUE_READS,
-  isCatalogueRead,
-  parseCatalogueRequest,
-  type CatalogueReadId,
-  type TermFacet,
-} from "./catalogue/query";
+import { isCatalogueRead, parseCatalogueRequest } from "./catalogue/query";
+import { publicTermFacet } from "./catalogue/visibility";
 import { SAMPLE_TOKENS, SEED_USERS, type SeedUserId } from "./data";
 import {
-  errorBody,
   OPERATIONS,
   type FixtureOperation,
   type FixtureOperationId,
-  type FixtureResponse,
   type UserState,
 } from "./operations";
+import { errorBody, type FixtureResponse } from "./responses";
 import { responseProblems, specRoute } from "./spec";
 
 /**
@@ -41,9 +35,8 @@ import { responseProblems, specRoute } from "./spec";
  *   Cloudflare): a plain-text 503 or an HTML 502. `match` is as for `fail`.
  *
  * Public catalogue reads are parsed strictly first (catalogue/query.ts), so
- * an invalid one answers 400 as the backend does. One the operation table
- * doesn't serve is still parsed and can still fail or have an outage; a
- * valid request to it answers 404 "no such route".
+ * an invalid one answers 400 as the backend does; a `term` or
+ * `affiliation` must be a public term (catalogue/visibility.ts).
  *
  * A path parameter containing `/` (a raw `%2F`), or not validly
  * percent-encoded, matches no route: 404 "no such route".
@@ -55,9 +48,6 @@ import { responseProblems, specRoute } from "./spec";
 
 type ErrorCode = components["schemas"]["Error"]["code"];
 
-/** An operation the router routes: one the table serves, or a public read. */
-type RoutedId = FixtureOperationId | CatalogueReadId;
-
 type Match = Readonly<Record<string, string>>;
 
 type PublicOperation = Extract<FixtureOperation, { authenticated: false }>;
@@ -67,7 +57,7 @@ type AuthenticatedOperation = Extract<
 >;
 
 type Failure = {
-  readonly operationId: RoutedId;
+  readonly operationId: FixtureOperationId;
   /** The user it fails for; empty for a public operation. */
   readonly owner: string;
   readonly match: Match;
@@ -79,7 +69,7 @@ type Failure = {
 type OutageMode = "503" | "html-502";
 
 type Outage = {
-  readonly operationId: RoutedId;
+  readonly operationId: FixtureOperationId;
   readonly match: Match;
   readonly mode: OutageMode;
   readonly remaining: number;
@@ -109,8 +99,6 @@ const BEARER = /^Bearer auth0\|fixture:([a-z0-9][a-z0-9-]{0,63})$/;
 /** The backend rejects request bodies above 16 KiB. */
 const MAX_BODY_BYTES = 16 * 1024;
 const INVALID_JSON = Symbol("invalid JSON");
-/** The fixture serves no terms, so every term and affiliation is unknown. */
-const NO_PUBLIC_TERMS: TermFacet = () => undefined;
 
 const NO_SUCH_ROUTE: FixtureResponse = {
   status: 404,
@@ -129,26 +117,6 @@ const OUTAGE_RESPONSES: Readonly<Record<OutageMode, FixtureResponse>> = {
     body: "<html>\n<head><title>502 Bad Gateway</title></head>\n<body>\n<center><h1>502 Bad Gateway</h1></center>\n<hr><center>cloudflare</center>\n</body>\n</html>\n",
   },
 };
-
-/** Every routed operation: the table's, then the public reads it lacks. */
-const ROUTES: readonly {
-  operationId: RoutedId;
-  method: string;
-  path: string;
-}[] = [
-  ...(Object.keys(OPERATIONS) as FixtureOperationId[]).map(operationId => ({
-    operationId,
-    method: OPERATIONS[operationId].method,
-    path: OPERATIONS[operationId].path,
-  })),
-  ...(Object.keys(CATALOGUE_READS) as CatalogueReadId[])
-    .filter(operationId => !Object.hasOwn(OPERATIONS, operationId))
-    .map(operationId => ({
-      operationId,
-      method: "GET",
-      path: CATALOGUE_READS[operationId].path,
-    })),
-];
 
 function newUser(
   me: UserState["me"],
@@ -251,26 +219,12 @@ function createUser(state: FixtureState, body: unknown): FixtureResponse {
   return { status: 201, body: { id } };
 }
 
-function isRouted(value: unknown): value is RoutedId {
-  return (
-    typeof value === "string" &&
-    (Object.hasOwn(OPERATIONS, value) || isCatalogueRead(value))
-  );
+function isRouted(value: unknown): value is FixtureOperationId {
+  return typeof value === "string" && Object.hasOwn(OPERATIONS, value);
 }
 
-function isAuthenticated(operationId: RoutedId): boolean {
-  return (
-    Object.hasOwn(OPERATIONS, operationId) &&
-    OPERATIONS[operationId as FixtureOperationId].authenticated
-  );
-}
-
-function operationErrors(
-  operationId: RoutedId
-): Readonly<Record<number, readonly ErrorCode[]>> {
-  return Object.hasOwn(OPERATIONS, operationId)
-    ? OPERATIONS[operationId as FixtureOperationId].errors
-    : CATALOGUE_READS[operationId as CatalogueReadId].errors;
+function isAuthenticated(operationId: FixtureOperationId): boolean {
+  return OPERATIONS[operationId].authenticated;
 }
 
 function isPositiveInteger(value: unknown): value is number {
@@ -280,7 +234,7 @@ function isPositiveInteger(value: unknown): value is number {
 /** A `match` object's pairs, or the control error to answer. */
 function parseMatch(
   state: FixtureState,
-  operationId: RoutedId,
+  operationId: FixtureOperationId,
   match: unknown
 ): Match | FixtureResponse {
   const required = state.requireMatch && !isAuthenticated(operationId);
@@ -310,7 +264,11 @@ function isMatch(value: Match | FixtureResponse): value is Match {
   return !("status" in value && typeof value.status === "number");
 }
 
-function stateKey(owner: string, operationId: RoutedId, match: Match): string {
+function stateKey(
+  owner: string,
+  operationId: FixtureOperationId,
+  match: Match
+): string {
   const pairs = Object.entries(match).sort(([a], [b]) => a.localeCompare(b));
   return JSON.stringify([owner, operationId, pairs]);
 }
@@ -321,7 +279,7 @@ function injectFailure(state: FixtureState, body: unknown): FixtureResponse {
   if (!isRouted(operationId)) {
     return controlError("operationId must be a served operationId");
   }
-  const errors = operationErrors(operationId);
+  const errors = OPERATIONS[operationId].errors;
   const codes = typeof status === "number" ? errors[status] : null;
   if (!codes) {
     return controlError(
@@ -445,7 +403,7 @@ function take<T extends { readonly remaining: number }>(
 function takeFailure(
   state: FixtureState,
   owner: string,
-  operationId: RoutedId,
+  operationId: FixtureOperationId,
   parameters: Parameters
 ): FixtureResponse | null {
   const failure = take(
@@ -464,7 +422,7 @@ function takeFailure(
 
 function takeOutage(
   state: FixtureState,
-  operationId: RoutedId,
+  operationId: FixtureOperationId,
   parameters: Parameters
 ): FixtureResponse | null {
   const outage = take(
@@ -475,14 +433,13 @@ function takeOutage(
   return outage ? OUTAGE_RESPONSES[outage.mode] : null;
 }
 
-/** Answers a public operation; null when the table doesn't serve it. */
 function handlePublic(
   state: FixtureState,
-  operationId: RoutedId,
-  operation: PublicOperation | undefined,
+  operationId: FixtureOperationId,
+  operation: PublicOperation,
   parameters: Parameters,
   search: string
-): FixtureResponse | null {
+): FixtureResponse {
   const outage = takeOutage(state, operationId, parameters);
   if (outage) return outage;
   let query = parameters.query;
@@ -491,14 +448,14 @@ function handlePublic(
       operationId,
       parameters.params,
       search,
-      NO_PUBLIC_TERMS
+      publicTermFacet
     );
     if (!parsed.ok) return parsed.response;
     query = parsed.query;
   }
   const failure = takeFailure(state, "", operationId, parameters);
   if (failure) return failure;
-  return operation?.handle({ params: parameters.params, query }) ?? null;
+  return operation.handle({ params: parameters.params, query });
 }
 
 function handleAuthenticated(
@@ -562,24 +519,15 @@ export function handleFixtureRequest(
     return injectOutage(state, parseBody(request.body));
   }
 
-  for (const { operationId, method, path } of ROUTES) {
-    if (method !== request.method) continue;
-    const params = matchPath(path, request.pathname);
+  for (const operationId of Object.keys(OPERATIONS) as FixtureOperationId[]) {
+    const operation = OPERATIONS[operationId];
+    if (operation.method !== request.method) continue;
+    const params = matchPath(operation.path, request.pathname);
     if (!params) continue;
     const parameters = { params, query: new URLSearchParams(request.search) };
-    const served = Object.hasOwn(OPERATIONS, operationId)
-      ? OPERATIONS[operationId as FixtureOperationId]
-      : undefined;
-    const response = served?.authenticated
-      ? handleAuthenticated(
-          state,
-          operationId as FixtureOperationId,
-          served,
-          parameters,
-          request
-        )
-      : handlePublic(state, operationId, served, parameters, request.search);
-    if (!response) return NO_SUCH_ROUTE;
+    const response = operation.authenticated
+      ? handleAuthenticated(state, operationId, operation, parameters, request)
+      : handlePublic(state, operationId, operation, parameters, request.search);
     // An outage is what a proxy answers before the backend sees the
     // request, and is deliberately outside the spec: it alone skips the
     // response validation.

@@ -51,9 +51,9 @@ function directSend(state: FixtureState): Send {
 }
 
 describe("operation table", () => {
-  it("serves the FE1 operations and the health check", () => {
+  it("serves the FE1 operations, the health check and the catalogue reads", () => {
     expect(Object.keys(OPERATIONS).sort()).toEqual(
-      [...FE1_OPERATIONS, "getHealthz"].sort()
+      [...FE1_OPERATIONS, "getHealthz", ...Object.keys(CATALOGUE_READS)].sort()
     );
   });
 

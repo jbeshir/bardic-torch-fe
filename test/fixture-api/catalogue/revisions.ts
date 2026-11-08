@@ -14,7 +14,8 @@ import { rawTerm, termSummary } from "./terms";
  * uses. Two revisions are traps for the redaction: the restricted piece's
  * base snapshot predates its restriction (1005), and the last Copper Kettle
  * revision (1014) snapshots a link that is hidden now and a credit to a
- * person who now has no page.
+ * person who now has no page. `UNAPPROVED_REVISIONS` holds one that is
+ * still pending, so it is never served.
  */
 
 type Schemas = components["schemas"];
@@ -34,7 +35,7 @@ function isEmpty(value: unknown): boolean {
 }
 
 /** The spec's rule: fields that differ from the base's or, with no base, aren't empty. */
-function changedFields<K extends string>(
+export function changedFields<K extends string>(
   snapshot: Readonly<Record<K, unknown>>,
   base: Readonly<Record<K, unknown>> | null
 ): K[] {
@@ -515,5 +516,27 @@ export const REVISIONS: readonly Revision[] = [
     ),
     KETTLE_WITH_HIDDEN,
     KETTLE_MCP
+  ),
+];
+
+/** The text of the pending revision, which must never appear in a served body. */
+const HIDDEN_PENDING_SUMMARY = "HIDDEN-pending-summary";
+
+/** Revisions not approved (yet): never listed, and 404 by id. */
+export const UNAPPROVED_REVISIONS: readonly Revision[] = [
+  pieceRevision(
+    "the-copper-kettle",
+    userMeta(
+      {
+        id: 1015,
+        createdAt: "2026-04-01T12:00:00Z",
+        summary: HIDDEN_PENDING_SUMMARY,
+      },
+      1014
+    ),
+    pieceSnapshot("the-copper-kettle", {
+      overrides: { title: "HIDDEN-pending-title" },
+    }),
+    KETTLE_WITH_HIDDEN
   ),
 ];
