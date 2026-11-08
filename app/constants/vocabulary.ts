@@ -1,11 +1,18 @@
+import type { components } from "~/api/schema.gen";
+
 /**
  * Display labels for the API's enums (DESIGN §11), one `Record` per enum so
  * a new value is a type error until it has a label.
  */
 
+/** How at risk a piece is of being lost, as the generated schema has it. */
+export type ConservationStatus = components["schemas"]["ConservationStatus"];
+
 /**
- * How at risk a piece is of being lost (the API's `ConservationStatus`), in
- * the order the conservation help page lists them.
+ * Every status, in the order the conservation help page lists them.
+ * `satisfies` fails the type check if the API renames or drops a value;
+ * a value it adds is a type error in `CONSERVATION_LABELS` and fails the
+ * vocabulary test, so the list can't drift.
  */
 export const CONSERVATION_STATUSES = [
   "low_risk",
@@ -13,9 +20,7 @@ export const CONSERVATION_STATUSES = [
   "critically_endangered",
   "restricted",
   "unassessed",
-] as const;
-
-export type ConservationStatus = (typeof CONSERVATION_STATUSES)[number];
+] as const satisfies readonly ConservationStatus[];
 
 /** Each status's label, in sentence case (DESIGN §2.5). */
 export const CONSERVATION_LABELS: Readonly<Record<ConservationStatus, string>> =
