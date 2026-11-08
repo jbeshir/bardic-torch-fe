@@ -134,9 +134,16 @@ test("the members page on, reloading only the members", async ({ page }) => {
   await expect(
     main(page).getByRole("heading", { level: 1, name: "Joyful" })
   ).toBeVisible();
-  // One request, for the members' route alone: the head stays.
-  expect(requests).toHaveLength(1);
-  expect(requests[0]).toContain("_routes=routes%2Fcategories.%24slug._index");
+  // Every request (the click, and the hover prefetches of its neighbours) is
+  // for the members' route alone: the head stays.
+  expect(requests).toContain(
+    "?page=2&_routes=routes%2Fcategories.%24slug._index"
+  );
+  for (const search of requests) {
+    expect(search).toMatch(
+      /^\?page=\d+&_routes=routes%2Fcategories\.%24slug\._index$/
+    );
+  }
   // Past the end, one 302 to the last page.
   await page.goto("/categories/joyful?page=99");
   await expect(page).toHaveURL(/\/categories\/joyful\?page=5$/);

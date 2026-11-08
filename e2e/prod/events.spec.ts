@@ -1,6 +1,10 @@
 import { expect, type Page } from "@playwright/test";
 import { waitForHydration } from "../support/hydration";
 import { checkpoint } from "../support/journey";
+import {
+  expectNoHorizontalOverflow,
+  expectTargetSizesAtLeast24,
+} from "../support/layout";
 import { test } from "../support/test";
 
 /**
@@ -81,4 +85,8 @@ test("a venue with more than 200 performances says how many more", async ({
 }) => {
   await open(page, "/events/muster-field");
   await expect(main(page).getByText("and 3 more")).toBeVisible();
+  // 200 rows are too many for the Tab-walk sweep: check their layout here.
+  await page.setViewportSize({ width: 360, height: 800 });
+  await expectNoHorizontalOverflow(page);
+  await expectTargetSizesAtLeast24(page);
 });

@@ -40,7 +40,7 @@ test("a letter and a kind narrow the list, straight to the canonical URL", async
   await open(page, "/collections");
   await main(page)
     .getByRole("navigation", { name: "Collections by letter" })
-    .getByRole("link", { name: "H" })
+    .getByRole("link", { name: "H", exact: true })
     .click();
   await expect(page).toHaveURL(/\/collections\?letter=H$/);
   await main(page).getByText("Filter by kind").click();
@@ -50,7 +50,7 @@ test("a letter and a kind narrow the list, straight to the canonical URL", async
     /\/collections\?kind=youtube_playlist&letter=H$/
   );
   await expect(
-    main(page).getByRole("link", { name: "Harvest Playlist" })
+    main(page).getByRole("link", { name: "Harvest Playlist", exact: true })
   ).toBeVisible();
   await expect(
     main(page).getByRole("link", { name: "Hall Recordings" })
@@ -64,7 +64,7 @@ test("checkpoint: collection, its infobox, parts and citations", async ({
 }) => {
   await open(page, "/collections");
   await main(page)
-    .getByRole("link", { name: "The Northmarch Songbook" })
+    .getByRole("link", { name: "The Northmarch Songbook", exact: true })
     .click();
   await expect(page).toHaveURL(/\/collections\/12$/);
   await expect(main(page)).toContainText("Songbook website · Northmarch");

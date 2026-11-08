@@ -12,6 +12,7 @@ import { SERVER_ERROR_META, ServerError } from "~/components/ErrorPages";
 import { RevisionDiff } from "~/components/revision/RevisionDiff";
 import { Alert } from "~/components/ui/Alert";
 import { Breadcrumbs } from "~/components/ui/Breadcrumbs";
+import { ButtonLink } from "~/components/ui/Button";
 import { Link } from "~/components/ui/Link";
 import { revisionChanges } from "~/catalogue/diff";
 import { formatDate } from "~/catalogue/format";
@@ -158,9 +159,9 @@ export default function RevisionRoute() {
         </li>
         {revision.base_revision_id === null ? null : (
           <li>
-            <Link to={`/revisions/${revision.base_revision_id}`} compact>
+            <ButtonLink to={`/revisions/${revision.base_revision_id}`}>
               Older revision
-            </Link>
+            </ButtonLink>
           </li>
         )}
       </ul>

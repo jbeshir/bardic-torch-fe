@@ -147,6 +147,8 @@ function findSmallTargets(selector: string): string[] {
         rect.width > 0 &&
         rect.height > 0 &&
         style.visibility !== "hidden" &&
+        // Content of a closed <details> is laid out but never shown.
+        element.checkVisibility() &&
         !element.closest("[inert]") &&
         !inSentence(element)
       );

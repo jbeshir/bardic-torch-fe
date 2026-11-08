@@ -167,11 +167,8 @@ const JOURNEY_PAGES: readonly JourneyPage[] = [
     name: "/categories",
     phase: "prod",
     open: visit("/categories"),
-    primary: page => [
-      main(page)
-        .getByRole("navigation", { name: "Category sections" })
-        .getByRole("link", { name: "Mood" }),
-    ],
+    // The section chips are filter chips, 36 px tall on a 44 px pitch (DESIGN §6.12), not primary controls.
+    primary: () => [],
     inShell: true,
     // Every term of every facet: a long Tab walk.
     long: true,
@@ -191,12 +188,11 @@ const JOURNEY_PAGES: readonly JourneyPage[] = [
     name: "/collections",
     phase: "prod",
     open: visit("/collections"),
-    primary: page => [
-      main(page)
-        .getByRole("navigation", { name: "Collections by letter" })
-        .getByRole("link", { name: "N" }),
-    ],
+    // The A–Z are filter chips, 36 px tall on a 44 px pitch (DESIGN §6.12), not primary controls.
+    primary: () => [],
     inShell: true,
+    // A full page of collections and the A–Z: a long Tab walk.
+    long: true,
   },
   {
     name: "/collections/12",
@@ -213,11 +209,8 @@ const JOURNEY_PAGES: readonly JourneyPage[] = [
     name: "/events",
     phase: "prod",
     open: visit("/events"),
-    primary: page => [
-      main(page)
-        .getByRole("navigation", { name: "Kinds" })
-        .getByRole("link", { name: "Venues" }),
-    ],
+    // The kind chips are filter chips, 36 px tall on a 44 px pitch (DESIGN §6.12), not primary controls.
+    primary: () => [],
     inShell: true,
   },
   {
@@ -230,19 +223,6 @@ const JOURNEY_PAGES: readonly JourneyPage[] = [
         .getByRole("link", { name: "History" }),
     ],
     inShell: true,
-  },
-  {
-    name: "/events/muster-field",
-    phase: "prod",
-    open: visit("/events/muster-field"),
-    primary: page => [
-      main(page)
-        .getByRole("navigation", { name: "Page views" })
-        .getByRole("link", { name: "History" }),
-    ],
-    inShell: true,
-    // 200 performances: a long Tab walk.
-    long: true,
   },
   {
     name: "/collections/12/history",

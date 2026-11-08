@@ -279,7 +279,7 @@ test.describe("/collections", () => {
       /\/collections\?letter=H&kind=youtube_playlist$/
     );
     await expect(
-      main.getByRole("link", { name: "Harvest Playlist" })
+      main.getByRole("link", { name: "Harvest Playlist", exact: true })
     ).toBeVisible();
   });
 });
