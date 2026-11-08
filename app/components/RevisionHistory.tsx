@@ -31,6 +31,7 @@ export function RevisionHistory({
       columns={[
         {
           header: "When",
+          nowrap: true,
           cell: revision => (
             <time dateTime={revision.created_at}>
               {formatDate(revision.created_at)}
@@ -49,6 +50,7 @@ export function RevisionHistory({
         },
         {
           header: "Changes",
+          nowrap: true,
           cell: revision => (
             <Link to={`/revisions/${revision.id}`} compact>
               View changes

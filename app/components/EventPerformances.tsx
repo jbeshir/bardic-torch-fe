@@ -95,6 +95,7 @@ export function EventPerformances({
         columns={[
           {
             header: "Year",
+            nowrap: true,
             cell: performance =>
               performance.year === null ? (
                 <span className="text-fg-subtle">Unknown</span>

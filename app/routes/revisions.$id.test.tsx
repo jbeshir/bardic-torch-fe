@@ -56,7 +56,7 @@ describe("/revisions/:id page", () => {
       })
     ).toBeVisible();
     expect(screen.getByText("12 Mar 2026").closest("p")).toHaveTextContent(
-      "12 Mar 2026 · Morwen of the Marches (via the MCP tool)"
+      "12 Mar 2026 · Morwen of the Marches (edited with an app)"
     );
     expect(screen.getByText("Described the field").tagName).toBe("BLOCKQUOTE");
     const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
@@ -73,7 +73,7 @@ describe("/revisions/:id page", () => {
       screen.getByRole("link", { name: "View the venue as it is now" })
     ).toHaveAttribute("href", "/events/muster-field");
     expect(
-      screen.getByRole("link", { name: "Older revision" })
+      screen.getByRole("link", { name: "Previous revision" })
     ).toHaveAttribute("href", "/revisions/1012");
     expect(
       screen.getByText("This is how the revision looks today.")
@@ -98,7 +98,9 @@ describe("/revisions/:id page", () => {
     expect(
       screen.getByText("This is how the revision looks today.")
     ).toBeVisible();
-    expect(screen.queryByRole("link", { name: "Older revision" })).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: "Previous revision" })
+    ).toBeNull();
     expect(screen.queryByRole("blockquote")).toBeNull();
     expect(
       screen.getByText(/Imported from the original wiki, by Archivist/)
@@ -108,7 +110,7 @@ describe("/revisions/:id page", () => {
   it("goes to the older revision from the keyboard", async () => {
     const router = await renderRevision(loaded(REVISION));
     const user = userEvent.setup();
-    screen.getByRole("link", { name: "Older revision" }).focus();
+    screen.getByRole("link", { name: "Previous revision" }).focus();
     await user.keyboard("{Enter}");
     expect(router.state.location.pathname).toBe("/revisions/1012");
   });

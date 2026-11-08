@@ -51,14 +51,14 @@ function Credited({ credit }: { readonly credit: Credit }) {
 }
 
 /**
- * A credit's row label: its role, with the part it is for, "Tune (tune)",
- * "Words (verses)".
+ * A credit's row label: its role, with the part it is for, "Words (verses)"; just
+ * the role when the part is the same word.
  */
 export function creditLabel(credit: Pick<Credit, "role" | "part">): string {
   const role = CREDIT_ROLE_LABELS[credit.role];
-  return credit.part
-    ? `${role} (${PIECE_PART_LABELS[credit.part].toLowerCase()})`
-    : role;
+  const part = credit.part ? PIECE_PART_LABELS[credit.part] : null;
+  // "Tune (tune)" says it twice.
+  return part && part !== role ? `${role} (${part.toLowerCase()})` : role;
 }
 
 /**

@@ -293,7 +293,7 @@ test("the conservation infobox jumps to its statuses, and the table fits at 320"
   // The other statuses each go to their own row of the table.
   await main
     .getByRole("complementary", { name: "At a glance" })
-    .getByRole("link", { name: "Critically Endangered" })
+    .getByRole("link", { name: "Critically endangered" })
     .click();
   await expect(page).toHaveURL(/#critically-endangered$/);
   await expect(main.locator("tr#critically-endangered")).toBeInViewport();

@@ -21,7 +21,7 @@ export function ConservationRow({
   const history = piece.conservation_history;
   return (
     <div className="grid justify-items-start gap-2">
-      <ConservationBadge status={piece.conservation_status} link />
+      <ConservationBadge status={piece.conservation_status} size="sm" link />
       {history.length > 0 ? (
         <Disclosure
           summary={`Status history (${formatNumber(history.length)})`}

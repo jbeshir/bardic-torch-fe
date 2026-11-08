@@ -23,6 +23,8 @@ Read [README.md](README.md) first for the concepts. The visual rules are in [doc
 
     New pages and states also get e2e checkpoints (see docs/TESTING.md).
 
+14. **The config files stay loadable by Node.** `vite.config.ts`, `vitest.config.ts` and everything they import use `.ts` import specifiers and relative paths (no `~/` alias), and only erasable TypeScript (no enums or parameter properties), so Vite's native config loader raises no warning (`test/config-imports.test.ts`).
+
 ## Validation
 
 Run these automated checks before every commit:

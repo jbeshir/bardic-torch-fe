@@ -16,11 +16,13 @@ function Cited({ citation }: { readonly citation: CollectionCitation }) {
   const { piece, person } = citation;
   if (piece) {
     return (
-      <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <Link to={`/pieces/${piece.slug}`} appearance="prose">
           {piece.title}
         </Link>
-        <span className="text-fg-muted">{PIECE_KIND_LABELS[piece.kind]}</span>
+        <span className="text-caption text-fg-muted">
+          {PIECE_KIND_LABELS[piece.kind]}
+        </span>
         {piece.conservation_status === "restricted" ? (
           <ConservationBadge status="restricted" size="sm" />
         ) : null}
@@ -29,11 +31,13 @@ function Cited({ citation }: { readonly citation: CollectionCitation }) {
   }
   if (person) {
     return (
-      <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <Link to={`/bards/${person.slug}`} appearance="prose">
           {person.name}
         </Link>
-        <span className="text-fg-muted">{PERSON_KIND_LABELS[person.kind]}</span>
+        <span className="text-caption text-fg-muted">
+          {PERSON_KIND_LABELS[person.kind]}
+        </span>
       </span>
     );
   }

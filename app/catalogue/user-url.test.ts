@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isUserUrl } from "./user-url";
+import { isUserUrl, urlHost } from "./user-url";
 
 describe("isUserUrl", () => {
   it.each([
@@ -22,5 +22,19 @@ describe("isUserUrl", () => {
     "",
   ])("keeps %s as text", url => {
     expect(isUserUrl(url)).toBe(false);
+  });
+});
+
+describe("urlHost", () => {
+  it.each([
+    ["https://collections.example/12", "collections.example"],
+    ["https://www.example.org/a/b?c=1", "example.org"],
+    ["http://sub.example.org:8080/", "sub.example.org"],
+  ])("labels %s as %s", (url, host) => {
+    expect(urlHost(url)).toBe(host);
+  });
+
+  it("returns what isn't a URL as it is", () => {
+    expect(urlHost("not a url")).toBe("not a url");
   });
 });

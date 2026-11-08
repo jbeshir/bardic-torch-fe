@@ -29,7 +29,7 @@ describe("NotFound", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", {
-        name: "Search the catalogue for ‘Ballad of Bell’",
+        name: "Search for ‘Ballad of Bell’",
       })
     ).toHaveAttribute("href", "/search?q=Ballad+of+Bell");
     expect(
@@ -42,11 +42,24 @@ describe("NotFound", () => {
     ).toHaveAttribute("href", wikiSearchUrl("Ballad of Bell"));
   });
 
+  it("cuts a long address short in the search button, not in the search", async () => {
+    const long = "a-very-long-ballad-title-from-a-mistyped-link-indeed";
+    await renderWithRouter(<NotFound pathname={`/pieces/${long}`} />);
+    const search = screen.getByRole("link", { name: /^Search for ‘/ });
+    expect(search.textContent).toBe(
+      "Search for ‘a very long ballad title from a…’"
+    );
+    expect(search).toHaveAttribute(
+      "href",
+      "/search?q=a+very+long+ballad+title+from+a+mistyped+link+indeed"
+    );
+  });
+
   it("searches for the last part of any address, decoded", async () => {
     await renderWithRouter(<NotFound pathname="/a/b/the%20reeve%27s-tale/" />);
     expect(
       screen.getByRole("link", {
-        name: "Search the catalogue for ‘the reeve's tale’",
+        name: "Search for ‘the reeve's tale’",
       })
     ).toHaveAttribute("href", "/search?q=the+reeve%27s+tale");
     expect(
@@ -79,7 +92,7 @@ describe("NotFound", () => {
   it("trims the spaces a leading or trailing dash leaves", async () => {
     await renderWithRouter(<NotFound pathname="/-kettle_" />);
     expect(
-      screen.getByRole("link", { name: "Search the catalogue for ‘kettle’" })
+      screen.getByRole("link", { name: "Search for ‘kettle’" })
     ).toHaveAttribute("href", "/search?q=kettle");
   });
 
@@ -98,9 +111,7 @@ describe("NotFound", () => {
       screen.getByRole("link", { name: "Go to the home page" })
     ).toHaveFocus();
     await user.tab();
-    expect(
-      screen.getByRole("link", { name: /^Search the catalogue/ })
-    ).toHaveFocus();
+    expect(screen.getByRole("link", { name: /^Search for/ })).toHaveFocus();
     await user.tab();
     expect(
       screen.getByRole("link", { name: /Look on the original wiki/ })
@@ -237,7 +248,7 @@ describe("NotFound with an entity's title (C4.1)", () => {
     ).toHaveAttribute("href", "/");
     expect(
       screen.getByRole("link", {
-        name: "Search the catalogue for ‘the lost lay’",
+        name: "Search for ‘the lost lay’",
       })
     ).toHaveAttribute("href", "/search?q=the+lost+lay");
   });

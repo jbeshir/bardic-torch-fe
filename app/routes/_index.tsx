@@ -184,10 +184,7 @@ export default function Index() {
             </p>
             <ul role="list" className="mt-3 grid gap-2">
               {CARD_STATUSES.map(status => (
-                <li
-                  key={status}
-                  className="flex flex-wrap items-center gap-x-3 gap-y-1"
-                >
+                <li key={status} className="flex flex-col items-start gap-1">
                   <ConservationBadge status={status} size="sm" named />
                   <Link
                     to={pieceQuery.href(NO_PIECE_FILTERS, { status: [status] })}

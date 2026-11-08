@@ -167,13 +167,13 @@ describe("/revisions/:id document", () => {
         "Imported from the original wiki, by Archivist and Lorekeeper"
       );
       expect(main).toContain(CAVEAT);
-      expect(main).not.toContain("Older revision");
+      expect(main).not.toContain("Previous revision");
     }
   );
 
   it("names the MCP tool for a revision made through it", async () => {
     expect(mainOf(await (await get("/revisions/1004")).text())).toContain(
-      "Morwen of the Marches (via the MCP tool)"
+      "Morwen of the Marches (edited with an app)"
     );
   });
 
@@ -189,6 +189,22 @@ describe("/revisions/:id document", () => {
     expect(response.status).toBe(404);
     expect(await response.text()).toContain(
       "<title>We couldn’t find that revision · Bardic Torch</title>"
+    );
+  });
+});
+
+describe("/revisions/1007 outage document", () => {
+  it("is the resting page (503) with Retry-After and the document's Cache-Control", async () => {
+    quietErrors();
+    fixtures.server.use(
+      http.get(`${API_BASE_URL}/v1/revisions/1007`, () => HttpResponse.error())
+    );
+    const response = await get("/revisions/1007");
+    expect(response.status).toBe(503);
+    expect(response.headers.get("Retry-After")).toBe("30");
+    expect(response.headers.get("Cache-Control")).toBe("private, no-cache");
+    expect(await response.text()).toContain(
+      "<title>Bardic Torch is resting · Bardic Torch</title>"
     );
   });
 });

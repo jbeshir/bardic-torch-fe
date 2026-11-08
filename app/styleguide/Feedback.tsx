@@ -179,7 +179,7 @@ export function ErrorStates() {
                   Go to the home page
                 </ButtonLink>
                 <ButtonLink to="/search?q=styleguide">
-                  Search the catalogue for ‘styleguide’
+                  Search for ‘styleguide’
                 </ButtonLink>
                 <Link to={wikiSearchUrl("styleguide")}>
                   Look on the original wiki

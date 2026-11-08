@@ -108,14 +108,12 @@ describe("/pieces/:slug, Read", () => {
   it("says a stub is one, pointing at the contributing guide", async () => {
     await renderPiece(loaded(pieceOf({ is_stub: true })));
     expect(screen.getByText("This page is a stub.")).toBeVisible();
-    // The banner's action, and the empty links' (a stub with no links).
+    // The banner's action alone: the empty links don't repeat it.
     const contribute = screen.getAllByRole("link", {
       name: "How to contribute",
     });
-    expect(contribute).toHaveLength(2);
-    for (const link of contribute) {
-      expect(link).toHaveAttribute("href", "/help/contributing");
-    }
+    expect(contribute).toHaveLength(1);
+    expect(contribute[0]).toHaveAttribute("href", "/help/contributing");
   });
 
   it("shows a restricted piece's banner with the creator's statement, instead of the stub's", async () => {

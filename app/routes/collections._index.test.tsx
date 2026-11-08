@@ -1,4 +1,5 @@
-import { screen, within } from "@testing-library/react";
+import { act, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { data } from "react-router";
 import { describe, expect, it } from "vitest";
 import { collectionQuery } from "~/catalogue/query-state";
@@ -69,6 +70,28 @@ const LIST = listOf([
 ]);
 
 describe("/collections page", () => {
+  it("marks the results busy while a letter loads, keeping the old ones", async () => {
+    const user = userEvent.setup();
+    let release: () => void = () => undefined;
+    let calls = 0;
+    await renderCollections("", () => {
+      calls += 1;
+      if (calls === 1) return loaded("", LIST)();
+      return new Promise(resolve => {
+        release = () => resolve(loaded("?letter=N", LIST)());
+      });
+    });
+    await user.click(screen.getByRole("link", { name: "N" }));
+    expect(document.querySelector('[aria-busy="true"]')).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Eastmarch Archive" })
+    ).toBeVisible();
+    await act(async () => {
+      release();
+    });
+    expect(document.querySelector("[aria-busy]")).toBeNull();
+  });
+
   it("lists the collections in the API's order, each with its kind and link", async () => {
     await renderCollections("", loaded("", LIST));
     expect(

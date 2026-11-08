@@ -12,7 +12,7 @@ describe("revisionCredit (plan §4.11)", () => {
 
   it("says when a revision came through the MCP tool", () => {
     expect(revisionCredit({ source: "mcp", author, contributors: [] })).toBe(
-      "Morwen of the Marches (via the MCP tool)"
+      "Morwen of the Marches (edited with an app)"
     );
   });
 

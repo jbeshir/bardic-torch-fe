@@ -18,7 +18,7 @@ Your page holds links to where your work already lives (your website, albums, vi
 
 ## Can I edit my own page?
 
-Yes, please do. You know more about your work than anyone. You’ll need to log in with a Google or Facebook account. Like everyone’s, your edits are checked by a moderator before they go live. See the [contributing guide](/help/contributing).
+Not yet: editing arrives in a later release. Until then, send us the link to where your work lives through our [contact form](https://forms.gle/wUwWnMKtWZSUisWCA). You don’t need an account. Once editing opens, like everyone’s, your edits will be checked by a moderator before they go live. See the [contributing guide](/help/contributing).
 
 ## Why can’t I just tell you I’m the bard?
 
@@ -34,7 +34,7 @@ Make sure the page is:
 
 ## I have rules about how people use my work. How can I share them?
 
-Write them down somewhere public, then send us the link or add it to your page. We’ll show your wishes on your bard page and on the pages for your pieces. If one piece has different rules from the rest, say so; the piece’s own rules come first.
+Write them down somewhere public, then send us the link. We’ll show your wishes on your bard page and on the pages for your pieces. If one piece has different rules from the rest, say so; the piece’s own rules come first.
 
 Not sure what to cover? The [Bard preference checklist](/help/bard-preference-checklist) lists everything you might want to say, from performance permission to sing-alongs to recording.
 

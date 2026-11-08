@@ -305,7 +305,7 @@ export default function SearchRoute() {
                   <TagList
                     tags={terms.data.shown.map(term => ({
                       label: term.display_name,
-                      prefix: FACET_LABELS[term.facet],
+                      prefix: `${FACET_LABELS[term.facet]}:`,
                       to: `/categories/${term.slug}`,
                     }))}
                   />

@@ -91,6 +91,21 @@ const row = (rows: readonly DiffRow[], field: string) =>
   rows.find(r => r.field === field);
 
 describe("revisionChanges: a piece", () => {
+  it("lists the rows in the page's order, not the API's alphabetical one", () => {
+    const { rows } = revisionChanges(
+      piece(
+        { title: "The Copper Pot", period_start: 1600, period_end: 1700 },
+        PIECE,
+        ["period_end", "period_start", "title"]
+      )
+    );
+    expect(rows.map(r => r.label)).toEqual([
+      "Title",
+      "Period from",
+      "Period to",
+    ]);
+  });
+
   it("diffs scalars, labelling enums, null as none", () => {
     const { rows, first } = revisionChanges(
       piece(
@@ -106,8 +121,8 @@ describe("revisionChanges: a piece", () => {
     );
     expect(first).toBe(false);
     expect(rows.map(r => r.label)).toEqual([
-      "Stub",
       "Kind",
+      "Stub",
       "Licence",
       "Period from",
     ]);
@@ -436,9 +451,9 @@ describe("revisionChanges: a person", () => {
       )
     );
     expect(rows.map(r => r.label)).toEqual([
+      "Status",
       "Profile: Roles",
       "Profile: Affiliations",
-      "Status",
     ]);
     expect(row(rows, "profile.roles")?.diff).toMatchObject({
       added: [{ parts: [{ text: "Poet" }] }],
@@ -573,9 +588,9 @@ describe("revisionChanges: a term, a collection and an event", () => {
       changed_fields: ["aliases", "parent", "position"],
     });
     expect(rows.map(r => r.label)).toEqual([
-      "Also called",
       "Part of",
       "Position",
+      "Also called",
     ]);
     expect(row(rows, "parent")?.diff).toEqual({
       kind: "scalar",
@@ -645,8 +660,8 @@ describe("revisionChanges: a term, a collection and an event", () => {
       changed_fields: ["description_md", "kind"],
     });
     expect(rows.map(r => [r.label, r.diff.kind])).toEqual([
-      ["Description", "text"],
       ["Kind", "scalar"],
+      ["Description", "text"],
     ]);
   });
 });

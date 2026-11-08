@@ -3,8 +3,12 @@ import type { ReactNode } from "react";
 /** One column of a RowTable: its header and what each row shows in it. */
 type Column<Row> = {
   readonly header: string;
+  /** Keep the cell on one line: dates, years and short actions. */
+  readonly nowrap?: boolean;
   readonly cell: (row: Row) => ReactNode;
 };
+
+const NOWRAP = "whitespace-nowrap tabular-nums";
 
 /**
  * Rows of facts about things (citations, performances, revisions), as a
@@ -49,14 +53,14 @@ export function RowTable<Row>({
             <tr key={rowKey(row, index)} className="border-b border-border">
               <th
                 scope="row"
-                className="wrap-anywhere py-3 pr-4 align-top font-normal"
+                className={`break-words py-3 pr-4 align-top font-normal ${first.nowrap ? NOWRAP : ""}`}
               >
                 {first.cell(row)}
               </th>
               {rest.map(column => (
                 <td
                   key={column.header}
-                  className="wrap-anywhere py-3 pr-4 align-top last:pr-0"
+                  className={`break-words py-3 pr-4 align-top last:pr-0 ${column.nowrap ? NOWRAP : ""}`}
                 >
                   {column.cell(row)}
                 </td>

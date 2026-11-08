@@ -254,7 +254,7 @@ describe("/bards/:slug, a profile", () => {
     expect(within(works).queryByRole("heading", { level: 3 })).toBeNull();
     const rows = within(works).getAllByRole("row").slice(1);
     expect(rows[0]).toHaveTextContent(
-      "The Copper KettleConservation status: EndangeredTune (tune) (probably)"
+      "The Copper KettleConservation status: EndangeredTune (probably)"
     );
     expect(
       within(rows[0] as HTMLElement).getByRole("link", {

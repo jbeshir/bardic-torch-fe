@@ -60,20 +60,32 @@ describe("home loader", () => {
   it("offers at most three moods, then three topics, most-used first", async () => {
     const answer = await load();
     const labels = (answer.topTerms ?? []).map(({ label }) => label);
-    expect(labels.filter(label => label.startsWith("Mood: "))).toHaveLength(
-      Math.min(3, labels.filter(label => label.startsWith("Mood: ")).length)
-    );
-    expect(
-      labels.filter(label => label.startsWith("Mood: ")).length
-    ).toBeLessThanOrEqual(3);
-    expect(
-      labels.filter(label => label.startsWith("Topic: ")).length
-    ).toBeLessThanOrEqual(3);
-    expect(labels.length).toBeGreaterThan(0);
-    const firstTopic = labels.findIndex(label => label.startsWith("Topic: "));
-    expect(
-      labels.slice(firstTopic).every(label => label.startsWith("Topic: "))
-    ).toBe(true);
+    // Three moods, then three topics, each group by use (the fixture's
+    // piece counts, read from the API), ties by name.
+    expect(labels).toEqual([
+      "Mood: Joyful",
+      "Mood: Relaxed",
+      "Mood: Sentimental",
+      "Topic: War",
+      "Topic: Wandering",
+      "Topic: Battles",
+    ]);
+    const terms = (await (await fetch(`${API_BASE_URL}/v1/terms`)).json()) as {
+      readonly data: readonly {
+        readonly facet: string;
+        readonly display_name: string;
+        readonly piece_count: number;
+      }[];
+    };
+    const count = (label: string) =>
+      terms.data.find(
+        term => term.display_name === label.slice(label.indexOf(": ") + 2)
+      )?.piece_count ?? -1;
+    for (const group of [labels.slice(0, 3), labels.slice(3)]) {
+      expect(group.map(count)).toEqual(
+        [...group.map(count)].sort((a, b) => b - a)
+      );
+    }
   });
 
   it.each([

@@ -101,6 +101,16 @@ describe("/events/:slug loader", () => {
       404,
     ],
     [
+      "a 400 after our own check",
+      () =>
+        contractResponse("getEvent", 400, {
+          code: "invalid_request",
+          message: "x",
+        }),
+      { kind: "not_found" },
+      404,
+    ],
+    [
       "a 500",
       () =>
         contractResponse("getEvent", 500, { code: "internal", message: "x" }),
@@ -165,6 +175,24 @@ describe("/events/:slug document", () => {
     expect(response.status).toBe(404);
     expect(await response.text()).toContain(
       "<title>We couldn’t find that event or venue · Bardic Torch</title>"
+    );
+  });
+});
+
+describe("/events/midwinter-revel outage document", () => {
+  it("is the resting page (503) with Retry-After and the document's Cache-Control", async () => {
+    quietErrors();
+    fixtures.server.use(
+      http.get(`${API_BASE_URL}/v1/events/midwinter-revel`, () =>
+        HttpResponse.error()
+      )
+    );
+    const response = await get("/events/midwinter-revel");
+    expect(response.status).toBe(503);
+    expect(response.headers.get("Retry-After")).toBe("30");
+    expect(response.headers.get("Cache-Control")).toBe("private, no-cache");
+    expect(await response.text()).toContain(
+      "<title>Bardic Torch is resting · Bardic Torch</title>"
     );
   });
 });

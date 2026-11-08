@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { data } from "react-router";
 import { describe, expect, it } from "vitest";
@@ -204,6 +204,33 @@ describe("/categories/:slug page", () => {
       ).toHaveTextContent("Page 2");
     });
     expect(calls).toEqual({ layout: 1, members: 2 });
+  });
+
+  it("marks the members busy while a page loads, keeping the old ones", async () => {
+    const user = userEvent.setup();
+    let release: () => void = () => undefined;
+    let calls = 0;
+    await renderCategory(
+      "/categories/swords",
+      SWORDS,
+      { layout: 0, members: 0 },
+      request => {
+        const { state, canonical } = termMembersQuery.parse(
+          new URL(request.url).searchParams
+        );
+        calls += 1;
+        if (calls === 1) return { state, canonical, term: SWORDS };
+        return new Promise(resolve => {
+          release = () => resolve({ state, canonical, term: SWORDS });
+        });
+      }
+    );
+    await user.click(screen.getByRole("link", { name: "Next" }));
+    expect(document.querySelector('[aria-busy="true"]')).toBeInTheDocument();
+    await act(async () => {
+      release();
+    });
+    expect(document.querySelector("[aria-busy]")).toBeNull();
   });
 
   it("lists an affiliation's bards, with a search link", async () => {

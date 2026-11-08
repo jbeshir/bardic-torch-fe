@@ -384,11 +384,14 @@ describe("FAQ for bards", () => {
     ).toContain("removing our link doesn’t take the content down");
   });
 
-  it("says bards' edits are moderated like everyone's", async () => {
+  it("says editing isn't available yet, and will be moderated like everyone's", async () => {
     const main = await renderHelp(page("faq-for-bards"));
-    expect(section(main, "Can I edit my own page?")).toContain(
-      "Like everyone’s, your edits are checked by a moderator before they go live."
+    const answer = section(main, "Can I edit my own page?");
+    expect(answer).toContain("Not yet: editing arrives in a later release.");
+    expect(answer).toContain(
+      "like everyone’s, your edits will be checked by a moderator before they go live."
     );
+    expect(answer).not.toContain("Yes, please do");
   });
 });
 
@@ -408,14 +411,14 @@ describe("bard preference checklist", () => {
       )
       .map(heading => heading.textContent);
     expect(sections).toEqual([
-      "1. Licensing and copyright",
-      "2. Performance permission",
-      "3. Adaptations",
-      "4. Attribution",
-      "5. Commercial use",
-      "6. Recording and writing down",
-      "7. Performance etiquette",
-      "8. Objectionable use",
+      "Licensing and copyright",
+      "Performance permission",
+      "Adaptations",
+      "Attribution",
+      "Commercial use",
+      "Recording and writing down",
+      "Performance etiquette",
+      "Objectionable use",
     ]);
   });
 
@@ -448,13 +451,13 @@ describe("bard preference checklist", () => {
 });
 
 describe("conservation status", () => {
-  it("makes exactly three places Endangered, and four Low Risk", async () => {
+  it("makes exactly three places Endangered, and four Low risk", async () => {
     const main = await renderHelp(page("conservation-status"));
     const rows = within(within(main).getByRole("table")).getAllByRole("row");
     const meaning = (status: string) =>
       rows.find(row => row.firstElementChild?.textContent === status)
         ?.lastElementChild?.textContent;
-    expect(meaning("Low Risk")).toBe(
+    expect(meaning("Low risk")).toBe(
       "The work exists in at least 4 known places."
     );
     expect(meaning("Endangered")).toBe(
@@ -466,7 +469,7 @@ describe("conservation status", () => {
     expect(
       within(main).getByText(/^Information:/).parentElement
     ).toHaveTextContent(
-      "Exactly 3 places now counts as Endangered. The original wiki defined Low Risk as at least 4 places and Endangered as fewer than 3, which left exactly 3 undecided."
+      "Exactly 3 places now counts as Endangered. The original wiki defined Low risk as at least 4 places and Endangered as fewer than 3, which left exactly 3 undecided."
     );
     expect(textOf(main)).not.toMatch(/Endangered: found in fewer than 3/);
   });
@@ -491,9 +494,9 @@ describe("conservation status", () => {
     });
     const links = within(glance).getAllByRole("link");
     expect(links.map(link => link.textContent)).toEqual([
-      "Low Risk",
+      "Low risk",
       "Endangered",
-      "Critically Endangered",
+      "Critically endangered",
       "Restricted",
       "Unassessed",
     ]);
@@ -523,7 +526,7 @@ describe("conservation status", () => {
     const main = await renderHelp(page("conservation-status"));
     const restricted = section(main, "How Restricted works");
     expect(restricted).toContain(
-      "A Restricted piece is never marked Endangered or Critically Endangered"
+      "A Restricted piece is never marked Endangered or Critically endangered"
     );
     expect(restricted).toContain("No ‘help preserve’ prompts.");
     expect(restricted).toContain("It needs a source.");

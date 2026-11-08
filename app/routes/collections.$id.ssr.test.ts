@@ -177,3 +177,19 @@ describe("/collections/:id document", () => {
     );
   });
 });
+
+describe("/collections/12 outage document", () => {
+  it("is the resting page (503) with Retry-After and the document's Cache-Control", async () => {
+    quietErrors();
+    fixtures.server.use(
+      http.get(`${API_BASE_URL}/v1/collections/12`, () => HttpResponse.error())
+    );
+    const response = await get("/collections/12");
+    expect(response.status).toBe(503);
+    expect(response.headers.get("Retry-After")).toBe("30");
+    expect(response.headers.get("Cache-Control")).toBe("private, no-cache");
+    expect(await response.text()).toContain(
+      "<title>Bardic Torch is resting · Bardic Torch</title>"
+    );
+  });
+});

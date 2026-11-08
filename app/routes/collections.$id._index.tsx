@@ -29,11 +29,14 @@ export default function CollectionReadRoute() {
           </h2>
           <ul role="list" className="grid gap-1">
             {collection.children.map(child => (
-              <li key={child.id} className="flex flex-wrap gap-x-2">
+              <li
+                key={child.id}
+                className="flex flex-wrap items-baseline gap-x-2"
+              >
                 <Link to={`/collections/${child.id}`} compact>
                   {child.name}
                 </Link>
-                <span className="text-body-sm text-fg-muted">
+                <span className="text-caption text-fg-muted">
                   {COLLECTION_KIND_LABELS[child.kind]}
                 </span>
               </li>
@@ -41,7 +44,10 @@ export default function CollectionReadRoute() {
           </ul>
         </section>
       ) : null}
-      <section aria-labelledby={citationsId} className="not-prose mt-8">
+      <section
+        aria-labelledby={citationsId}
+        className="not-prose clear-both mt-8"
+      >
         <h2 id={citationsId} className="mb-3 text-h3 text-fg">
           Citations
         </h2>

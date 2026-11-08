@@ -184,9 +184,9 @@ function Counted({
 function KindSection({ counts }: { readonly counts: PieceCounts }) {
   if (counts.kinds.length === 0) return <Empty />;
   return (
-    <ul role="list" className="grid gap-1">
+    <ul role="list" className="gap-x-6 sm:columns-2 md:columns-3">
       {counts.kinds.map(({ kind, count }) => (
-        <li key={kind}>
+        <li key={kind} className="break-inside-avoid pb-1">
           <Counted count={count}>
             <Link
               to={pieceQuery.href(NO_PIECE_FILTERS, { kind: [kind] })}

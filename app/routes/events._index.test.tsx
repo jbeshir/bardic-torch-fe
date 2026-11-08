@@ -1,4 +1,5 @@
-import { screen, within } from "@testing-library/react";
+import { act, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { data } from "react-router";
 import { describe, expect, it } from "vitest";
 import { eventQuery } from "~/catalogue/query-state";
@@ -36,6 +37,27 @@ const LIST: EventList = {
 };
 
 describe("/events page", () => {
+  it("marks the results busy while another kind loads, keeping the old ones", async () => {
+    const user = userEvent.setup();
+    let release: () => void = () => undefined;
+    let calls = 0;
+    await renderEvents("", () => {
+      calls += 1;
+      if (calls === 1) return loaded("", LIST)();
+      return new Promise(resolve => {
+        release = () => resolve(loaded("?kind=venue", LIST)());
+      });
+    });
+    const kinds = screen.getByRole("navigation", { name: "Kinds" });
+    await user.click(within(kinds).getByRole("link", { name: "Venues" }));
+    expect(document.querySelector('[aria-busy="true"]')).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Muster Field" })).toBeVisible();
+    await act(async () => {
+      release();
+    });
+    expect(document.querySelector("[aria-busy]")).toBeNull();
+  });
+
   it("lists the events and venues with their kinds and the kind switch", async () => {
     await renderEvents("", loaded("", LIST));
     expect(

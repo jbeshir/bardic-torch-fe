@@ -633,10 +633,10 @@
   width: 16.5rem;
 }
 @utility w-infobox-xl {
-  width: 18rem;
+  width: 20rem;
 }
 @utility grid-cols-infobox {
-  grid-template-columns: 7rem 1fr;
+  grid-template-columns: 7rem minmax(0, 1fr);
 }
 @utility grid-cols-shell {
   grid-template-columns: 15rem minmax(0, 1fr);

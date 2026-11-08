@@ -672,7 +672,7 @@ Drawer (open, bottom sheet from the bar, max-height 85dvh):
 
 - **Tag: FE1.** It is an inline SVG component, `<LogoMark className="h-6 w-6" />` (`app/components/LogoMark.tsx`), with `viewBox="0 0 24 24"`. The class sets the size: `h-5 w-5` (20 px), `h-6 w-6` (24), `h-7 w-7` (28), `h-8 w-8` (32), `h-12 w-12` (48) or `h-16 w-16` (64). It is **always decorative** (`aria-hidden="true"`, `focusable="false"`). Wherever it identifies the site, the `Wordmark` component next to it supplies the accessible name as real text ("Bardic Torch"), so the name is never only in an image. It has no stroke, so it stays crisp at small sizes.
 - The path data lives in `app/components/logo-mark-paths.ts`. Both `LogoMark` and the favicon generator read it, so the two can't drift.
-- **Wordmark** (`app/components/Wordmark.tsx`, FE1): the mark plus the text "Bardic Torch" (§3.2). "Bardic" is `text-fg` and "Torch" is `text-accent-text`. The mark is `text-fg`, so its handle is ink. It renders inline, so the parent decides the semantics: a link to `/` in the header, or the h1 on the FE1 placeholder home page. Its mark is `h-6 w-6` below `md` and `h-7 w-7` from `md` up.
+- **Wordmark** (`app/components/Wordmark.tsx`, FE1): the mark plus the text "Bardic Torch" (§3.2). "Bardic" is `text-fg` and "Torch" is `text-accent-text`. The mark is `text-fg`, so its handle is ink. It renders inline, so the parent decides the semantics: a link to `/` in the header (and on the root error page). Its mark is `h-6 w-6` below `md` and `h-7 w-7` from `md` up.
 - **Handle:** a tapered shaft, `fill="currentColor"` (inherits `text-fg`): `M10.6 12.5h2.8l-0.75 9.25a0.9 0.9 0 0 1-0.9 0.75h-0.3a0.9 0.9 0 0 1-0.9-0.75z`.
 - **Cresset (the bound head):** `fill="currentColor"`: `<rect x="8.75" y="10" width="6.5" height="2.75" rx="1.1"/>`, plus one binding ring on the shaft, `<rect x="10.1" y="15.25" width="3.8" height="1.1" rx="0.55"/>` (also currentColor).
 - **Flame outer:** `class="fill-accent"`: `M12 1.25c2.9 2.6 4.6 4.75 4.6 6.75 0 1.3-0.95 2-2 2H9.4c-1.05 0-2-0.7-2-2 0-1.7 1.1-2.95 2.15-3.75 0.1 1.2 0.65 2.05 1.4 2.4C10.75 4.7 11.15 2.85 12 1.25z`.
@@ -695,7 +695,8 @@ Generic components live in `app/components/ui/`. App-specific ones (ThemeToggle,
 | Button (6.2)                               | FE1 | Everywhere                                                   |
 | Link (6.3)                                 | FE1 | Everywhere                                                   |
 | Field, Input (6.4, 6.5)                    | FE1 | Settings                                                     |
-| Textarea, Select (6.6, 6.7)                | SG  | None yet                                                     |
+| Textarea (6.6)                             | SG  | None yet                                                     |
+| Select (6.7)                               | FE2 | `/pieces` sort, `/bards` affiliation                         |
 | Checkbox (6.8)                             | FE2 | Facet filters, kind filters                                  |
 | Tabs (6.9): Read label                     | FE1 | Every page head                                              |
 | Tabs (6.9): page-link tabs (Read, History) | FE2 | Every entity page; the in-page tablist is SG (theme preview) |
@@ -843,7 +844,7 @@ Help text that explains format.       ← caption text-fg-muted, id="{id}-help"
 
 ### 6.7 Select
 
-**Tag: SG.**
+**Tag: FE2** (`/pieces` sort, `/bards` affiliation).
 
 - Use a native `<select>` styled like Input: `appearance-none pr-10`, with an `IconChevronDown` 18 `text-fg-muted` absolutely positioned, `pointer-events-none`.
 - No custom listbox in FE1. Options inherit the OS picker. Set `color-scheme` so the dropdown matches the theme.
@@ -1431,7 +1432,7 @@ Content pages write their meta one way, with `pageMeta(args, {title, description
 
 - **Hero copy**, adapted from the wiki Main Page:
   - Heading (h1): "Find the songs, stories and poems of the bardic community."
-  - Lead: "Bardic Torch helps bards find where a piece's words, music, history, context and etiquette live, and helps audiences find that song they loved around the campfire but forgot the title of. We gather the bardic community's scattered songbooks, playlists and album pages into one index, so works can be found, sung and passed on." (The judged home copy, `content-drafts/home.md`, except its opening: "find music, lyrics, history…" read as a lyrics site to a skimmer, against "links only, never lyrics"; "find where … live" says the same thing as an index. Longer than the first sketch, still ≤ 60ch per line.)
+  - Lead: "Bardic Torch helps bards find where a piece's words, music, history, context and etiquette live, and helps audiences find that song they loved around the campfire but forgot the title of. We gather the bardic community's scattered songbooks, playlists and album pages into one index, so works can be found, sung and passed on." (The judged home copy, except its opening: "find music, lyrics, history…" read as a lyrics site to a skimmer, against "links only, never lyrics"; "find where … live" says the same thing as an index. Longer than the first sketch, still ≤ 60ch per line.)
 - **Calls to action.** **"Browse pieces"** (primary `lg`, to `/pieces`) and **"How to contribute"** (secondary `lg`, to `/help/contributing`). The search under them searches the catalogue (`/search?q=`, §6.26). Under the search, a `body-sm fg-muted` line says how big the catalogue is: "{n} pieces and {m} people and groups so far" (`persons` include groups, historical figures and stubs, so "bards" would overstate). If either count can't be read the line is left out and a SectionError appears under "Start exploring".
 - **Why cards** (`static` Card variant, §6.11), from the judged home copy. The "links only" message is the end of card 1, creator's wishes included:
   1. **An index, not an archive**: "Bardic works are spread across many songbooks, playlists and album pages. We don't replace them. We link to them and make them findable by mood, topic, culture, origin and more. We never host lyrics, recordings or video: every piece points to where it already lives, and to its creator's wishes about sharing."

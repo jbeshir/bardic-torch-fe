@@ -243,8 +243,8 @@ const UTILITIES = {
   "w-dialog": { width: "min(32rem, calc(100vw - 2rem))" },
   "w-drawer": { width: "min(20rem, 85vw)" },
   "w-infobox": { width: "16.5rem" },
-  "w-infobox-xl": { width: "18rem" },
-  "grid-cols-infobox": { "grid-template-columns": "7rem 1fr" },
+  "w-infobox-xl": { width: "20rem" },
+  "grid-cols-infobox": { "grid-template-columns": "7rem minmax(0, 1fr)" },
   // The persistent sidebar and the main column, lg and xl.
   "grid-cols-shell": { "grid-template-columns": "15rem minmax(0, 1fr)" },
   "grid-cols-shell-xl": { "grid-template-columns": "16rem minmax(0, 1fr)" },

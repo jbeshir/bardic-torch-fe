@@ -46,7 +46,7 @@ describe("WhereToFind", () => {
     expect(screen.queryByRole("link")).toBeNull();
   });
 
-  it("asks a stub's readers for the first link, pointing at the guide", async () => {
+  it("asks a stub's readers for the first link, leaving the guide to the banner", async () => {
     await renderWithRouter(<WhereToFind piece={pieceOf({ is_stub: true })} />);
     expect(
       screen.getByRole("heading", { level: 3, name: "No links yet" })
@@ -57,12 +57,83 @@ describe("WhereToFind", () => {
       )
     ).toBeVisible();
     expect(
-      screen.getByRole("link", { name: "How to contribute" })
-    ).toHaveAttribute("href", "/help/contributing");
+      screen.queryByRole("link", { name: "How to contribute" })
+    ).toBeNull();
+  });
+
+  it("leaves the performance role's group to the Performances section", async () => {
+    await renderWithRouter(
+      <WhereToFind
+        piece={pieceOf({
+          links: [
+            linkOf({
+              url: "https://video.example/revel",
+              title: "At the revel",
+              roles: ["performance"],
+              performances: [performanceOf({ description_verbatim: "Told" })],
+            }),
+            linkOf({
+              url: "https://words.example/text",
+              title: "Words",
+              roles: ["lyrics"],
+            }),
+            linkOf({
+              url: "https://video.example/both",
+              title: "Both ways",
+              roles: ["performance", "website"],
+              performances: [performanceOf({ description_verbatim: "Sung" })],
+            }),
+          ],
+        })}
+      />
+    );
+    expect(
+      screen.queryByRole("heading", { level: 3, name: "Performances" })
+    ).toBeNull();
+    expect(
+      screen.getByRole("heading", { level: 3, name: "Lyrics" })
+    ).toBeVisible();
+    // A link with another role is still listed under that one.
+    expect(
+      screen.getByRole("heading", { level: 3, name: "Websites" })
+    ).toBeVisible();
+    expect(screen.getByRole("link", { name: /Both ways/ })).toBeVisible();
+    expect(screen.queryByRole("link", { name: /At the revel/ })).toBeNull();
+  });
+
+  it("points at the performances when they are all it has", async () => {
+    await renderWithRouter(
+      <WhereToFind
+        piece={pieceOf({
+          links: [
+            linkOf({
+              roles: ["performance"],
+              performances: [performanceOf({ description_verbatim: "Told" })],
+            }),
+          ],
+        })}
+      />
+    );
+    expect(
+      screen.getByText("Its recorded performances are listed below.")
+    ).toBeVisible();
   });
 });
 
 describe("RestrictedLinks", () => {
+  it("is reached with the keyboard: its summary is the first stop", async () => {
+    const user = userEvent.setup();
+    await renderWithRouter(<RestrictedLinks piece={RESTRICTED} />);
+    await user.tab();
+    expect(
+      screen
+        .getByText(
+          "Show links (the creator asks that this isn’t shared further)"
+        )
+        .closest("summary")
+    ).toHaveFocus();
+  });
+
   it("keeps every link, performance and source inside one closed disclosure that says why", async () => {
     const user = userEvent.setup();
     await renderWithRouter(<RestrictedLinks piece={RESTRICTED} />);

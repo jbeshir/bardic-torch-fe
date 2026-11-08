@@ -9,7 +9,6 @@ import { SERVER_ERROR_META, ServerError } from "~/components/ErrorPages";
 import { RevisionDiff } from "~/components/revision/RevisionDiff";
 import { Alert } from "~/components/ui/Alert";
 import { Breadcrumbs } from "~/components/ui/Breadcrumbs";
-import { ButtonLink } from "~/components/ui/Button";
 import { Link } from "~/components/ui/Link";
 import { revisionChanges } from "~/catalogue/diff";
 import { formatDate } from "~/catalogue/format";
@@ -142,7 +141,7 @@ export default function RevisionRoute() {
       )}
       <ul
         role="list"
-        className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-body-sm"
+        className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-body-sm"
       >
         <li>
           <Link to={entity.path} compact>
@@ -151,9 +150,9 @@ export default function RevisionRoute() {
         </li>
         {revision.base_revision_id === null ? null : (
           <li>
-            <ButtonLink to={`/revisions/${revision.base_revision_id}`}>
-              Older revision
-            </ButtonLink>
+            <Link to={`/revisions/${revision.base_revision_id}`} compact>
+              Previous revision
+            </Link>
           </li>
         )}
       </ul>
