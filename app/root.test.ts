@@ -22,11 +22,18 @@ const gone = {
   },
   default: () => null,
 };
+const resting = {
+  loader: () => {
+    throw data({ kind: "resting" }, { status: 503 });
+  },
+  default: () => null,
+};
 
 const get = serveApp([
   { id: "routes/_index", index: true, module: indexModule, hasLoader: false },
   { id: "routes/broken", path: "broken", module: failing, hasLoader: true },
   { id: "routes/gone", path: "gone/:slug", module: gone, hasLoader: true },
+  { id: "routes/resting", path: "resting", module: resting, hasLoader: true },
   { id: "routes/$", path: "*", module: notFoundModule, hasLoader: true },
 ]);
 
@@ -49,6 +56,13 @@ async function rootData(cookie?: string) {
 }
 
 describe("root loader", () => {
+  it("gives the site's origin, from the request, for canonical links", async () => {
+    const loaded = (await rootData()).data as unknown as {
+      siteOrigin: unknown;
+    };
+    expect(loaded.siteOrigin).toBe("https://app.test");
+  });
+
   it("is signed out without a session", async () => {
     expect((await rootData()).data.account).toEqual({ state: "signed-out" });
   });
@@ -119,6 +133,23 @@ describe("root document", () => {
     // vitest.config.ts aliases `~/styles/app.css?url` to this stub.
     expect(hrefs).toContain(stylesheetUrl);
     for (const href of hrefs) expect(href).toBeTruthy();
+  });
+
+  it("gives the home page its canonical address and link-preview tags", async () => {
+    const html = await (await get("/?utm_source=x")).text();
+    expect(html).toContain("<title>Bardic Torch</title>");
+    expect(html).toMatch(
+      /<link rel="canonical" href="https:\/\/app\.test\/"\/?>/
+    );
+    expect(html).toContain(
+      '<meta property="og:url" content="https://app.test/"'
+    );
+    expect(html).toContain(
+      '<meta property="og:site_name" content="Bardic Torch"'
+    );
+    expect(html).toContain('<meta property="og:locale" content="en_GB"');
+    expect(html).toContain('<meta name="twitter:card" content="summary"');
+    expect(html).not.toContain('name="robots"');
   });
 });
 
@@ -265,11 +296,28 @@ describe("root error boundary", () => {
     expect(html).toContain("<title>Page not found · Bardic Torch</title>");
   });
 
+  it("shows the resting page for an API outage, with a 503, kept out of search results", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const response = await get("/resting");
+    expect(response.status).toBe(503);
+    const html = await response.text();
+    expect(html).toContain("Bardic Torch is resting");
+    expect(html).toContain("briefly unreachable");
+    expect(html).not.toContain("Something went wrong");
+    expect(html).toContain('<main id="content"');
+    expect(html).toContain(
+      "<title>Bardic Torch is resting · Bardic Torch</title>"
+    );
+    expect(html).toMatch(/<meta name="robots" content="noindex"\/?>/);
+    // Try again reloads the page without JS.
+    expect(html).toMatch(/<a[^>]*href="\/resting"[^>]*>.*Try again/);
+  });
+
   it("has the same help links, in the same order, as every other page (WCAG 3.2.6)", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     const home = helpLinks(await (await get("/")).text());
     expect(home).toContain("Licence &amp; attribution");
-    for (const path of ["/no-such-page", "/broken", "/gone/x"]) {
+    for (const path of ["/no-such-page", "/broken", "/gone/x", "/resting"]) {
       expect(helpLinks(await (await get(path)).text()), path).toBe(home);
     }
   });

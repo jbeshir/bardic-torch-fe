@@ -47,6 +47,33 @@ describe("Link", () => {
     expect(icon?.parentElement).toHaveTextContent(/^4\.0/);
   });
 
+  it("tells search engines not to follow or credit a reader's URL", async () => {
+    await renderWithRouter(
+      <>
+        <Link to="https://example.org/songbook" userContent>
+          Songbook
+        </Link>
+        <Link to="https://example.org/ours">Ours</Link>
+      </>
+    );
+    const user = screen.getByRole("link", { name: "Songbook (external link)" });
+    expect(user).toHaveAttribute("rel", "nofollow ugc noopener");
+    expect(user).not.toHaveAttribute("target");
+    expect(
+      screen.getByRole("link", { name: "Ours (external link)" })
+    ).toHaveAttribute("rel", "noopener");
+  });
+
+  it("never routes a reader's URL, even one that isn't plainly absolute", async () => {
+    await renderWithRouter(
+      <Link to="httpsexample" userContent>
+        Odd
+      </Link>
+    );
+    const link = screen.getByRole("link", { name: "Odd (external link)" });
+    expect(link).toHaveAttribute("rel", "nofollow ugc noopener");
+  });
+
   it("says old-wiki links open the original wiki", async () => {
     await renderWithRouter(<Link to={WIKI}>Mood</Link>);
     expect(

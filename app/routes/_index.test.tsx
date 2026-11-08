@@ -121,9 +121,32 @@ describe("Index route", () => {
     ).toEqual(["H1", "H2", "H3", "H3", "H3", "H2", "H2"]);
   });
 
-  it("is titled Bardic Torch, with the site's description", () => {
-    const tags = meta({} as Parameters<typeof meta>[0]);
+  it("is titled Bardic Torch, with the site's description and its canonical address", () => {
+    const tags = meta({
+      matches: [
+        {
+          id: "root",
+          pathname: "/",
+          loaderData: { siteOrigin: "https://bardictorch.example" },
+          params: {},
+          meta: [],
+        },
+      ],
+    } as unknown as Parameters<typeof meta>[0]);
     expect(tags).toContainEqual({ title: "Bardic Torch" });
+    expect(tags).toContainEqual({
+      tagName: "link",
+      rel: "canonical",
+      href: "https://bardictorch.example/",
+    });
+    expect(tags).toContainEqual({
+      property: "og:title",
+      content: "Bardic Torch",
+    });
+    expect(tags).toContainEqual({ property: "og:type", content: "website" });
+    expect(tags).not.toContainEqual(
+      expect.objectContaining({ name: "robots" })
+    );
     expect(tags).toContainEqual({
       name: "description",
       content:

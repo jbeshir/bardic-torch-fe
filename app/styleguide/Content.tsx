@@ -1,9 +1,11 @@
 import { Card, CardList } from "~/components/ui/Card";
+import { ConservationBadge } from "~/components/ui/ConservationBadge";
 import { TryAgain } from "~/components/ui/ErrorState";
 import { Infobox } from "~/components/ui/Infobox";
 import { Link } from "~/components/ui/Link";
 import { TagList } from "~/components/ui/TagList";
 import { wikiPageUrl } from "~/constants/navigation";
+import { CONSERVATION_STATUSES } from "~/constants/vocabulary";
 import { Example, Specimen } from "./Specimen";
 
 const FACTS = [
@@ -106,6 +108,28 @@ export function Cards() {
   );
 }
 
+/** Fifteen topics, to show the overflow disclosure. */
+const MANY_TAGS = [
+  "Battle",
+  "Drinking",
+  "Dragons",
+  "Fireside",
+  "Harvest",
+  "Heraldry",
+  "Lament",
+  "Love",
+  "Midwinter",
+  "Mourning",
+  "Sea",
+  "Swords",
+  "Travel",
+  "Victory",
+  "Wassail",
+].map(label => ({
+  label,
+  to: `/styleguide?topic=${label.toLowerCase()}`,
+}));
+
 export function Tags() {
   return (
     <Specimen
@@ -139,6 +163,9 @@ export function Tags() {
           ]}
         />
       </Example>
+      <Example label="More than 12: “Show all 15” (all shown without JS)" wide>
+        <TagList tags={MANY_TAGS} />
+      </Example>
       <Example label="Small size">
         <TagList
           size="sm"
@@ -147,6 +174,34 @@ export function Tags() {
       </Example>
       <Example label="No categories">
         <TagList tags={[]} />
+      </Example>
+    </Specimen>
+  );
+}
+
+export function ConservationBadges() {
+  return (
+    <Specimen
+      id="conservation-badge"
+      title="ConservationBadge"
+      summary="A piece’s conservation status (DESIGN §6.13, §2.5): icon, label and border, never colour alone. As a link it goes to the status’s entry on the help page."
+    >
+      {(["md", "sm"] as const).map(size => (
+        <Example key={`static-${size}`} label={`Static, ${size}`}>
+          {CONSERVATION_STATUSES.map(status => (
+            <ConservationBadge key={status} status={status} size={size} />
+          ))}
+        </Example>
+      ))}
+      {(["md", "sm"] as const).map(size => (
+        <Example key={`link-${size}`} label={`Link to the help entry, ${size}`}>
+          {CONSERVATION_STATUSES.map(status => (
+            <ConservationBadge key={status} status={status} size={size} link />
+          ))}
+        </Example>
+      ))}
+      <Example label="In a row that already says “Conservation”">
+        <ConservationBadge status="endangered" named />
       </Example>
     </Specimen>
   );

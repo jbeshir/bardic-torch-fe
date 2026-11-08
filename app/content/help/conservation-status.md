@@ -12,9 +12,9 @@ Many bardic works have been lost because the only copy was on a website that wen
 
 :::infobox{title="At a glance"}
 
-- [Low Risk](#low-risk): found in at least 4 places
+- [Low Risk](#low_risk): found in at least 4 places
 - [Endangered](#endangered): found in 3 places or fewer
-- [Critically Endangered](#critically-endangered): can’t be found, or only in part
+- [Critically Endangered](#critically_endangered): can’t be found, or only in part
 - [Restricted](#how-restricted-works): the creator doesn’t want it recorded, archived or shared
 - [Unassessed](#unassessed): nobody has checked yet
 

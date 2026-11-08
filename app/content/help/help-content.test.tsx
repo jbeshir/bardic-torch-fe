@@ -6,6 +6,10 @@ import {
   NAV_GROUPS,
   wikiPageUrl,
 } from "~/constants/navigation";
+import {
+  CONSERVATION_STATUSES,
+  conservationHelpPath,
+} from "~/constants/vocabulary";
 import { renderWithRouter } from "~/test/router";
 import { findHelpPage, HELP_INDEX, type HelpContent } from "./pages";
 
@@ -412,6 +416,19 @@ describe("conservation status", () => {
       "Exactly 3 places now counts as Endangered. The original wiki defined Low Risk as at least 4 places and Endangered as fewer than 3, which left exactly 3 undecided."
     );
     expect(textOf(main)).not.toMatch(/Endangered: found in fewer than 3/);
+  });
+
+  it("has an entry whose id is each status's API value, the badges' link target", async () => {
+    const main = await renderHelp(page("conservation-status"));
+    const table = within(main).getByRole("table");
+    for (const status of CONSERVATION_STATUSES) {
+      const anchor = conservationHelpPath(status).split("#")[1] ?? "";
+      expect(anchor).toBe(status);
+      const entry = main.querySelector(`[id="${anchor}"]`);
+      expect(entry, status).not.toBeNull();
+      expect(table.contains(entry), status).toBe(true);
+      expect(entry?.tagName, status).toBe("TR");
+    }
   });
 
   it("lists the five statuses at a glance, each linking to its section", async () => {

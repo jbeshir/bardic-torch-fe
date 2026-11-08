@@ -1,6 +1,13 @@
 import { act, render } from "@testing-library/react";
 import type { ComponentProps, ReactElement } from "react";
-import { createMemoryRouter, UNSAFE_FrameworkContext } from "react-router";
+import { renderToString } from "react-dom/server";
+import {
+  createMemoryRouter,
+  createStaticHandler,
+  createStaticRouter,
+  StaticRouterProvider,
+  UNSAFE_FrameworkContext,
+} from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { ThemeChoiceProvider } from "~/contexts/ThemeChoiceContext";
 
@@ -71,4 +78,19 @@ export async function renderRoutes(
     );
   });
   return router;
+}
+
+/**
+ * The server render of `element` as the page at `url`: what a reader
+ * without JS gets, and what the page shows before hydration.
+ */
+export async function renderOnServer(element: ReactElement, url = "/") {
+  const routes = [{ path: "*", element }];
+  const handler = createStaticHandler(routes);
+  const context = await handler.query(new Request(`http://localhost${url}`));
+  if (context instanceof Response) throw new Error("unexpected redirect");
+  const router = createStaticRouter(routes, context);
+  return renderToString(
+    <StaticRouterProvider router={router} context={context} hydrate={false} />
+  );
 }

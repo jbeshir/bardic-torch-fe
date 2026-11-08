@@ -1,4 +1,3 @@
-import type { MetaDescriptor } from "react-router";
 import { Fragment } from "react";
 import { Link } from "~/components/ui/Link";
 import { HELP_HREF, LICENCE_URL, wikiPageUrl } from "~/constants/navigation";
@@ -14,20 +13,6 @@ const REVIEWED = new Intl.DateTimeFormat("en-GB", {
   year: "numeric",
   timeZone: "UTC",
 });
-
-/** A help page's title, description and social preview. */
-export function helpMeta({
-  title,
-  description,
-  summary,
-}: HelpFrontmatter): MetaDescriptor[] {
-  return [
-    { title: `${title} · Bardic Torch` },
-    { name: "description", content: description },
-    { property: "og:title", content: title },
-    { property: "og:description", content: summary },
-  ];
-}
 
 /** "‘A’", "‘A’ and ‘B’", "‘A’, ‘B’ and ‘C’", each a link to the wiki page. */
 function SourceList({ titles }: { readonly titles: readonly string[] }) {

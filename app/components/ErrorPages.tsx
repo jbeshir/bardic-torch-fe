@@ -1,3 +1,4 @@
+import { isRouteErrorResponse } from "react-router";
 import { ButtonLink } from "~/components/ui/Button";
 import { ErrorState, TryAgain } from "~/components/ui/ErrorState";
 import { Link } from "~/components/ui/Link";
@@ -27,6 +28,27 @@ export const SERVER_ERROR_META = [
   { title: "Something went wrong · Bardic Torch" },
   { name: "robots", content: "noindex" },
 ] as const;
+
+/** The resting page's title: the catalogue is out of reach, not broken. */
+export const RESTING_META = [
+  { title: "Bardic Torch is resting · Bardic Torch" },
+  { name: "robots", content: "noindex" },
+] as const;
+
+/**
+ * Whether a loader threw the resting answer, `data({kind: "resting"},
+ * {status: 503})`: the API was down, unreachable or too slow.
+ */
+export function isResting(error: unknown): boolean {
+  if (!isRouteErrorResponse(error)) return false;
+  const body: unknown = error.data;
+  return (
+    typeof body === "object" &&
+    body !== null &&
+    "kind" in body &&
+    body.kind === "resting"
+  );
+}
 
 /**
  * The 404 page body (DESIGN §10.4): the unlit torch, what happened, the way
@@ -86,6 +108,32 @@ export function ServerError({
         {reference
           ? " If it keeps happening, let us know and include the reference below."
           : null}
+      </p>
+    </ErrorState>
+  );
+}
+
+/**
+ * The page body when the catalogue is out of reach (DESIGN §10.5, 503): the
+ * API is down for upkeep, unreachable or too slow. The art is the unlit
+ * torch, not the broken one, and there is no reference: an outage isn't
+ * a bug to report (the server has logged it). Try again reloads without JS.
+ */
+export function Resting() {
+  return (
+    <ErrorState
+      art="missing"
+      title="Bardic Torch is resting"
+      actions={
+        <>
+          <TryAgain variant="primary" />
+          <ButtonLink to="/">Go to the home page</ButtonLink>
+        </>
+      }
+    >
+      <p>
+        We’re doing some upkeep or the catalogue is briefly unreachable. Please
+        try again in a few minutes.
       </p>
     </ErrorState>
   );

@@ -1,5 +1,6 @@
 import { screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { data } from "react-router";
 import { renderRoutes } from "~/test/router";
 import { ErrorBoundary } from "./root";
 
@@ -90,6 +91,21 @@ describe("root ErrorBoundary", () => {
         name: "Something went wrong",
       })
     ).toBeInTheDocument();
+    expect(sentry.captured).toEqual([]);
+    expect(screen.queryByText(/Reference/)).toBeNull();
+  });
+
+  it("shows the resting page for an API outage, and reports nothing", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    sentry.initialised = true;
+    await renderFailure(data({ kind: "resting" }, { status: 503 }));
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Bardic Torch is resting",
+      })
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
     expect(sentry.captured).toEqual([]);
     expect(screen.queryByText(/Reference/)).toBeNull();
   });

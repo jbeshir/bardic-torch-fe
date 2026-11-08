@@ -226,6 +226,7 @@ describe("data responses", () => {
     expect(await routeData(response, "root")).toEqual({
       theme: null,
       account: { state: "signed-out" },
+      siteOrigin: "https://app.test",
     });
   });
 
