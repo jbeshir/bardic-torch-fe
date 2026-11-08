@@ -40,6 +40,9 @@ describe("generated API types", () => {
     expectTypeOf<"token_limit_reached">().toMatchTypeOf<
       Schemas["Error"]["code"]
     >();
+    expectTypeOf<"method_not_allowed">().toMatchTypeOf<
+      Schemas["Error"]["code"]
+    >();
     expectTypeOf<"not_a_code">().not.toMatchTypeOf<Schemas["Error"]["code"]>();
   });
 });

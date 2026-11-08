@@ -129,6 +129,10 @@ function run<Result>(handler: Handler<Result>) {
     handler(routeArgs(await asApp(request), { params }));
 }
 
+function Loading() {
+  return <p>Loading…</p>;
+}
+
 function renderSettings() {
   return renderRoutes(
     [
@@ -137,6 +141,8 @@ function renderSettings() {
         path: "/",
         loader: run(rootLoader),
         shouldRevalidate: rootRevalidate,
+        // The loaders run before the first render, as on a hydrating page.
+        HydrateFallback: Loading,
         element: (
           <ToastProvider>
             <Outlet />
@@ -867,6 +873,7 @@ describe("a form posted to the settings page without JS", () => {
               statusText: "Method Not Allowed",
             });
           },
+          HydrateFallback: Loading,
           element: null,
           errorElement: <ErrorBoundary />,
         },

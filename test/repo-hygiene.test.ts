@@ -9,6 +9,13 @@ import { ENV_NAMES, parseEnv } from "~/server/env.server";
 const root = process.cwd();
 const THIS_FILE = "test/repo-hygiene.test.ts";
 
+/**
+ * Generated from the vendored spec, whose prose is the backend's (it says
+ * "articles" of the alphabetical sort). Like `api/openapi.yaml`, it is not
+ * ours to word, so the vocabulary scan skips it.
+ */
+const GENERATED_API_TYPES = "app/api/schema.gen.ts";
+
 type PackageJson = {
   scripts?: Record<string, string>;
   dependencies?: Record<string, string>;
@@ -75,7 +82,7 @@ const SCANNED_FILES = [
 function scannedFiles(): string[] {
   return [...SCANNED_DIRECTORIES.flatMap(filesUnder), ...SCANNED_FILES]
     .map(path => relative(".", path))
-    .filter(path => path !== THIS_FILE);
+    .filter(path => path !== THIS_FILE && path !== GENERATED_API_TYPES);
 }
 
 describe("no feed-only dependencies", () => {
