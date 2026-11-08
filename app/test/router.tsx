@@ -1,4 +1,4 @@
-import { act, render } from "@testing-library/react";
+import { act, render, waitFor } from "@testing-library/react";
 import type { ComponentProps, ReactElement } from "react";
 import { renderToString } from "react-dom/server";
 import {
@@ -9,6 +9,7 @@ import {
   UNSAFE_FrameworkContext,
 } from "react-router";
 import { RouterProvider } from "react-router/dom";
+import { expect } from "vitest";
 import { ThemeChoiceProvider } from "~/contexts/ThemeChoiceContext";
 
 type FrameworkContextValue = NonNullable<
@@ -77,6 +78,10 @@ export async function renderRoutes(
       </UNSAFE_FrameworkContext>
     );
   });
+  // The initial loaders may still be running: `act` waits for microtasks only,
+  // and a fetch through msw takes several macrotasks.
+  await waitFor(() => expect(router.state.initialized).toBe(true));
+  await act(async () => undefined);
   return router;
 }
 
