@@ -10,8 +10,8 @@ import { Link as RouterLink } from "react-router";
 import {
   CONSERVATION_LABELS,
   conservationHelpPath,
-  type ConservationStatus,
 } from "~/constants/vocabulary";
+import type { ConservationStatus } from "~/schemas/catalogue";
 
 /**
  * Each status's look (DESIGN §2.5): its icon, and full class strings so

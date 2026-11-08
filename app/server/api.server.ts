@@ -1,6 +1,6 @@
 import type { RouterContextProvider } from "react-router";
 import { z } from "zod";
-import type { operations, paths } from "~/api/schema.gen";
+import type { operations } from "~/api/schema.gen";
 import {
   apiTokenListSchema,
   createdApiTokenSchema,
@@ -29,9 +29,11 @@ import { appEnvContext } from "./context.server";
 import { jsonResponse } from "./json.server";
 import {
   aborted,
+  type EndpointOf,
   isTimeout,
   isUnavailable,
   parseJson,
+  type Method,
   UPSTREAM_TIMEOUT_MS,
   upstreamUrl,
 } from "./upstream.server";
@@ -66,23 +68,6 @@ type ApiResult<T> = (
 
 /** Largest form body the proxy routes accept. */
 const MAX_BODY_BYTES = 8 * 1024;
-
-type Method = "GET" | "PATCH" | "POST" | "DELETE";
-
-/**
- * The (path, method) pair at which `paths` declares `operation`. Methods a
- * path doesn't have are typed `never` there, which would match anything,
- * so they are excluded first.
- */
-type EndpointOf<Operation> = {
-  [Path in keyof paths]: {
-    [M in Method]: [paths[Path][Lowercase<M>]] extends [never]
-      ? never
-      : [paths[Path][Lowercase<M>]] extends [Operation]
-        ? { readonly path: Path; readonly method: M }
-        : never;
-  }[Method];
-}[keyof paths];
 
 /** Where each FE1 operation lives; the compiler checks it against the spec. */
 const ENDPOINTS = {

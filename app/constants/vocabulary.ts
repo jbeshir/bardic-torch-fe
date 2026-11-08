@@ -1,12 +1,13 @@
-import type { components } from "~/api/schema.gen";
+import type {
+  ConservationStatus,
+  Letter,
+  PieceKind,
+} from "~/schemas/catalogue";
 
 /**
  * Display labels for the API's enums (DESIGN §11), one `Record` per enum so
  * a new value is a type error until it has a label.
  */
-
-/** How at risk a piece is of being lost, as the generated schema has it. */
-export type ConservationStatus = components["schemas"]["ConservationStatus"];
 
 /**
  * Every status, in the order the conservation help page lists them.
@@ -48,4 +49,22 @@ const CONSERVATION_ANCHORS: Readonly<Record<ConservationStatus, string>> = {
 /** Where a status is explained: its row on the conservation help page. */
 export function conservationHelpPath(status: ConservationStatus): string {
   return `/help/conservation-status#${CONSERVATION_ANCHORS[status]}`;
+}
+
+/** Each piece kind's label, in sentence case: "Dance music". */
+export const PIECE_KIND_LABELS: Readonly<Record<PieceKind, string>> = {
+  song: "Song",
+  poem: "Poem",
+  story: "Story",
+  dance_music: "Dance music",
+  instrumental: "Instrumental",
+  comedy: "Comedy",
+};
+
+/**
+ * An A–Z letter as a reader reads it: `0` is the index's catch-all for
+ * sort keys that start with a digit, punctuation or another script.
+ */
+export function letterLabel(letter: Letter): string {
+  return letter === "0" ? "0–9 and others" : letter;
 }

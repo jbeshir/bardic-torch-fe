@@ -4,6 +4,25 @@
  * catalogue reads. Nothing here knows about sessions or schemas.
  */
 
+import type { paths } from "~/api/schema.gen";
+
+export type Method = "GET" | "PATCH" | "POST" | "DELETE";
+
+/**
+ * The (path, method) pair at which `paths` declares `operation`. Methods a
+ * path doesn't have are typed `never` there, which would match anything,
+ * so they are excluded first.
+ */
+export type EndpointOf<Operation> = {
+  [Path in keyof paths]: {
+    [M in Method]: [paths[Path][Lowercase<M>]] extends [never]
+      ? never
+      : [paths[Path][Lowercase<M>]] extends [Operation]
+        ? { readonly path: Path; readonly method: M }
+        : never;
+  }[Method];
+}[keyof paths];
+
 /**
  * How long a call waits for the API (its answer and the whole body) before
  * giving up, so a hung upstream still ends in a visible error instead of a

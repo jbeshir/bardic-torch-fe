@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 import type { Phase } from "./checkpoints";
-import { createFixtureUser } from "./fixture-api";
+import { createFixtureUser, outageNext } from "./fixture-api";
 import { waitForHydration } from "./hydration";
 import {
   expectFocusNotObscured,
@@ -121,6 +121,47 @@ const JOURNEY_PAGES: readonly JourneyPage[] = [
     primary: () => [],
     inShell: true,
   })),
+  {
+    name: "/pieces?letter=T",
+    phase: "prod",
+    open: visit("/pieces?letter=T"),
+    primary: page => [
+      main(page).getByRole("searchbox", { name: "Search pieces" }),
+    ],
+    inShell: true,
+  },
+  {
+    name: "/pieces",
+    phase: "prod",
+    open: visit("/pieces"),
+    primary: page => [
+      main(page).getByRole("searchbox", { name: "Search pieces" }),
+      main(page)
+        .getByRole("navigation", { name: "Pagination" })
+        .getByRole("link", { name: "Next" }),
+    ],
+    inShell: true,
+    // 50 rows, the A–Z and the pages: a long Tab walk.
+    long: true,
+  },
+  {
+    name: "resting (503)",
+    phase: "prod",
+    open: async page => {
+      const q = `resting-sweep-${test.info().workerIndex}-${Date.now()}`;
+      await outageNext(page.request, {
+        operationId: "listPieces",
+        match: { q },
+        mode: "503",
+      });
+      await visit(`/pieces?q=${q}`, 503)(page);
+    },
+    primary: page => [
+      main(page).getByRole("button", { name: "Try again" }),
+      main(page).getByRole("link", { name: "Go to the home page" }),
+    ],
+    inShell: true,
+  },
   {
     name: "settings, signed out",
     phase: "prod",

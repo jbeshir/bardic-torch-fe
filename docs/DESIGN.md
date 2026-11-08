@@ -698,37 +698,38 @@ Drawer (open, bottom sheet from the bar, max-height 85dvh):
 
 Generic components live in `app/components/ui/`. App-specific ones (ThemeToggle, LogoMark, Wordmark, AccountMenu, SearchBox, TOC, HelpLinks and so on) live in `app/components/`. Each has a styleguide entry (§10.6) and a `*.test.tsx`. Unless a component says otherwise, the shared rules below apply.
 
-| Component                               | Tag | FE1 use                                                   |
-| --------------------------------------- | --- | --------------------------------------------------------- |
-| Button (6.2)                            | FE1 | Everywhere                                                |
-| Link (6.3)                              | FE1 | Everywhere                                                |
-| Field, Input (6.4, 6.5)                 | FE1 | Settings                                                  |
-| Textarea, Select, Checkbox (6.6–6.8)    | SG  | None in FE1                                               |
-| Tabs (6.9): Read label                  | FE1 | Every page head                                           |
-| Tabs (6.9): page-link tabs and tablist  | SG  | Styleguide (the tablist drives the theme preview)         |
-| Infobox (6.10)                          | FE1 | Help pages ("At a glance")                                |
-| Card (6.11)                             | FE1 | Home, help index                                          |
-| Chip / TagList (6.12)                   | FE1 | Category chips, home facet chips                          |
-| ConservationBadge (6.13)                | FE2 | None. FE1 writes status names as text                     |
-| Alert (6.14)                            | FE1 | Settings, home, noscript notice                           |
-| Banner (6.14): page states (PageBanner) | FE2 | None in FE1 (stub, restricted, prefers no page)           |
-| EmptyState (6.15)                       | FE1 | No API tokens                                             |
-| ErrorState (6.16)                       | FE1 | 404, error boundaries                                     |
-| Spinner (6.17)                          | FE1 | Button loading                                            |
-| Skeleton (6.18)                         | SG  | None in FE1 (SSR pages render real content)               |
-| Breadcrumbs (6.19)                      | FE1 | Help pages                                                |
-| Pagination (6.20)                       | SG  | None in FE1                                               |
-| Drawer (6.21)                           | FE1 | Navigation <lg                                            |
-| Dialog (6.22)                           | FE1 | Revoke-token confirm                                      |
-| Toast (6.23)                            | FE1 | Settings feedback                                         |
-| ThemeToggle (6.24)                      | FE1 | Header from md; drawer (and the no-JS site menu) below md |
-| AccountMenu (6.25)                      | FE1 | Header / bottom bar                                       |
-| SearchBox (6.26)                        | FE1 | Header, drawer, home hero (searches the original wiki)    |
-| TOC (6.27)                              | FE1 | Help pages with ≥4 h2s                                    |
-| LogoMark, Wordmark (5.9)                | FE1 | Header, footer, EmptyState art                            |
-| SidebarNote, ContributeCard (5.3)       | FE1 | Sidebar and drawer                                        |
-| HelpLinks (5.7)                         | FE1 | Every footer and the root error page                      |
-| Progress indicator (7.1)                | FE1 | Client navigations                                        |
+| Component                               | Tag | FE1 use                                                        |
+| --------------------------------------- | --- | -------------------------------------------------------------- |
+| Button (6.2)                            | FE1 | Everywhere                                                     |
+| Link (6.3)                              | FE1 | Everywhere                                                     |
+| Field, Input (6.4, 6.5)                 | FE1 | Settings                                                       |
+| Textarea, Select, Checkbox (6.6–6.8)    | SG  | None in FE1                                                    |
+| Tabs (6.9): Read label                  | FE1 | Every page head                                                |
+| Tabs (6.9): page-link tabs and tablist  | SG  | Styleguide (the tablist drives the theme preview)              |
+| Infobox (6.10)                          | FE1 | Help pages ("At a glance")                                     |
+| Card (6.11)                             | FE1 | Home, help index                                               |
+| Chip / TagList (6.12)                   | FE1 | Category chips, home facet chips                               |
+| ConservationBadge (6.13)                | FE2 | Piece lists (`/pieces`, §10.7); FE1 wrote status names as text |
+| Alert (6.14)                            | FE1 | Settings, home, noscript notice                                |
+| Banner (6.14): page states (PageBanner) | FE2 | None in FE1 (stub, restricted, prefers no page)                |
+| EmptyState (6.15)                       | FE1 | No API tokens; no matching pieces (§10.7)                      |
+| ErrorState (6.16)                       | FE1 | 404, error boundaries, catalogue failures (§10.7)              |
+| Spinner (6.17)                          | FE1 | Button loading                                                 |
+| Skeleton (6.18)                         | SG  | None in FE1 (SSR pages render real content)                    |
+| Breadcrumbs (6.19)                      | FE1 | Help pages                                                     |
+| Pagination (6.20)                       | FE2 | `/pieces` (§10.7); none in FE1                                 |
+| Drawer (6.21)                           | FE1 | Navigation <lg                                                 |
+| Dialog (6.22)                           | FE1 | Revoke-token confirm                                           |
+| Toast (6.23)                            | FE1 | Settings feedback                                              |
+| ThemeToggle (6.24)                      | FE1 | Header from md; drawer (and the no-JS site menu) below md      |
+| AccountMenu (6.25)                      | FE1 | Header / bottom bar                                            |
+| SearchBox (6.26)                        | FE1 | Header, drawer, home hero (searches the original wiki)         |
+| TOC (6.27)                              | FE1 | Help pages with ≥4 h2s                                         |
+| LetterBar (6.29)                        | FE2 | `/pieces` (§10.7)                                              |
+| LogoMark, Wordmark (5.9)                | FE1 | Header, footer, EmptyState art                                 |
+| SidebarNote, ContributeCard (5.3)       | FE1 | Sidebar and drawer                                             |
+| HelpLinks (5.7)                         | FE1 | Every footer and the root error page                           |
+| Progress indicator (7.1)                | FE1 | Client navigations                                             |
 
 ### 6.1 Shared rules
 
@@ -1208,6 +1209,17 @@ Read   Edit   History                         Last edited 3 Oct 2026
 - **Built as (FE1):** `TableOfContents({ entries: [{ id, label, children? }] })`. It server-renders `<details open>` (so it is open without JS) and folds itself after hydration below md. That happens once, on mount: resizing or rotating later leaves it as the reader has it (unit-tested; e2e checks it folded at 360 on load). `WikiPage` shows it after `intro` when `contents` has four or more entries.
 - Headings get `id`s (and `scroll-margin-top`, §3.3). FE2+ adds a hover "§" anchor link, 24 × 24 px, `aria-label="Link to this section"`.
 
+### 6.29 LetterBar (A–Z index)
+
+**Tag: FE2.**
+
+- `<nav aria-label="{List} by letter">` ("Pieces by letter") holding a wrapping `ul role="list"` of 28 cells: **All**, then `0` and A to Z, the API's `Letter` order. `0` reads "0–9" and is named "0–9 and others" (the index's catch-all for digits, punctuation and other scripts; `letterLabel` in `app/constants/vocabulary.ts`).
+- A letter with entries (the list's `letters` counts) is a link to the list under it, `href(state, {letter})`; All is `href(state, {letter: undefined})`. Both keep the rest of the state and reset the page. The links stay followable (no `nofollow`): letter pages are indexable.
+- A letter with no entries is a `<span aria-disabled="true">` in `text-fg-subtle cursor-not-allowed`, not a link, so Tab skips it.
+- The current cell (the letter, or All with none) is `aria-current="page"` on `bg-accent text-accent-fg font-semibold`, a `span`, never focused, like Pagination's current page (no ring on accent, §2.6).
+- **Cells:** `min-h-9 min-w-9` (36 px) below lg, `min-h-8 min-w-8` from lg, `rounded-md body-sm`, `gap-1`; links `text-link` with the `surface-sunken` hover. They are not primary controls (WCAG 2.5.8 is met at 24 px).
+- **Built as:** `LetterBar({label, letters, current, href})` in `app/components/catalogue/`.
+
 ---
 
 ## 7. States and feedback
@@ -1235,7 +1247,7 @@ The shape is always a title, one or two sentences, and one action. See §11 for 
 
 - **Inline** (field-level, FE1): the field pattern (§6.4). The error summary is SG.
 - **Region-level** (part of a page failed, FE1): an ErrorState inline Alert. The rest of the page stays usable. Example: the root loader's profile call fails, and the account panel shows its warning (§6.25) while every page still renders.
-- **Page-level** (loader threw, 404, 500; FE1): the React Router `ErrorBoundary` renders the error page template (§10.5) _inside the app shell_, so header and nav still work. The `<title>` is "Page not found · Bardic Torch" or "Something went wrong · Bardic Torch". Focus moves to the h1 on client-side errors. The 503 "resting" variant is FE2+.
+- **Page-level** (loader threw, 404, 500; FE1): the React Router `ErrorBoundary` renders the error page template (§10.5) _inside the app shell_, so header and nav still work. The `<title>` is "Page not found · Bardic Torch" or "Something went wrong · Bardic Torch". Focus moves to the h1 on client-side errors. The 503 "resting" variant (FE2) is §10.5's.
 - **Network / offline** (fetch failure on a client action, FE1): a danger toast, "You seem to be offline. Your changes haven't been saved yet.", plus the inline error in the affected form. Form values are kept.
 - **A response the app didn't make** (a platform 503, a gateway's 502 or HTML error page, FE1): the inline error in the affected form, the form's "We couldn't … Check your connection and try again." Form values are kept. A mutation never ends in an error boundary: the settings forms submit to the settings route's `clientAction`, and the theme toggle saves with `fetch`; both read every outcome as a proxy body (`sendForm`).
 
@@ -1348,7 +1360,7 @@ Dark mode is a separately tuned palette with the same token names:
 
 Every page uses the app shell (header, bottom bar or sidebar, drawer, sheet, footer with HelpLinks), and has a unique `<title>` of the form "{Page} · Bardic Torch" plus a `meta description`.
 
-Content pages write their meta one way, with `pageMeta(args, {title, description, path, robots?, type?, preview?})` (`app/catalogue/seo.ts`) from the route's `meta`: the title ("{title} · Bardic Torch"; the site's name alone on Home), the description cut at a word to 160 characters with "…", an absolute `<link rel="canonical">` built from `path` and the root loader's `siteOrigin` (the request URL's origin), `og:title`, `og:description` (`preview` when given, e.g. a help page's `summary`), `og:url`, `og:type` (`website` by default; `profile` for bard pages), `og:site_name` "Bardic Torch", `og:locale` `en_GB`, `twitter:card` "summary", and `robots` only when asked. Home and the help pages use it; the error pages, Settings and the styleguide keep their fixed title and `noindex`.
+Content pages write their meta one way, with `pageMeta(args, {title, description, path, robots?, type?, preview?})` (`app/catalogue/seo.ts`) from the route's `meta`: the title ("{title} · Bardic Torch"; the site's name alone on Home), the description cut at a word to 160 characters with "…", an absolute `<link rel="canonical">` built from `path` and the root loader's `siteOrigin` (the request URL's origin), `og:title`, `og:description` (`preview` when given, e.g. a help page's `summary`), `og:url`, `og:type` (`website` by default; `profile` for bard pages), `og:site_name` "Bardic Torch", `og:locale` `en_GB`, `twitter:card` "summary", and `robots` only when asked. Home, the help pages and the catalogue pages use it (a list page's `path` is the pathname plus its canonical query, `/pieces?letter=T`, so an order-only variant names the ordered form); the error pages, Settings and the styleguide keep their fixed title and `noindex`.
 
 ### 10.1 Home (`/`)
 
@@ -1485,7 +1497,7 @@ The head is the h1 "Settings" with no tab row. Sections are separated by h2 plus
 - **Body:** "That's on us, not you. Try again in a moment. If it keeps happening, let us know and include the reference below." (Without Sentry there is no reference, so the last clause is dropped.)
 - The reference is the Sentry `eventId` in mono (§6.16). Actions: [Try again] (reload, primary) and [Go to the home page]. "Let us know" is the HelpLinks Contact link, not a separate one.
 - **Layout:** the minimal header and footer around a `min-h-dvh` column. Below lg the body is full-bleed `bg-surface`, as in the shell; from lg it is a centred `max-w-form` sheet (`rounded-xl border shadow-1`, 40 px of canvas above and below), like every other page's sheet, rather than a slab hugging the left edge.
-- **503 (API down):** h1 "Bardic Torch is resting", body "We're doing some upkeep or the catalogue is briefly unreachable. Please try again in a few minutes." Actions: [Try again] (primary; a reload link without JS) and [Go to the home page]. The art is the plain unlit torch (`art="missing"`), not the broken one, and there is no reference: an outage is logged by the server, never reported to Sentry. Built as `Resting` in `app/components/ErrorPages.tsx`, titled "Bardic Torch is resting · Bardic Torch" with `noindex` (`RESTING_META`). A loader signals it by throwing `data({kind: "resting"}, {status: 503})`; the root boundary shows it for that (`isResting`), and reports nothing.
+- **503 (API down):** h1 "Bardic Torch is resting", body "We're doing some upkeep or the catalogue is briefly unreachable. Please try again in a few minutes." Actions: [Try again] (primary; a reload link without JS) and [Go to the home page]. The art is the plain unlit torch (`art="missing"`), not the broken one, and there is no reference: an outage is logged by the server, never reported to Sentry. Built as `Resting` in `app/components/ErrorPages.tsx`, titled "Bardic Torch is resting · Bardic Torch" with `noindex` (`RESTING_META`). A loader signals it by throwing `data({kind: "resting"}, {status: 503})`; the root boundary shows it for that (`isResting`), and reports nothing. A catalogue route throws it with `throwPageFailure` (`app/catalogue/read-failure.ts`) for an upstream 503 or `unavailable` (`Retry-After: 60`), a network failure or the 10 s timeout (`Retry-After: 30`), and its own ErrorBoundary shows it inside the shell (`CatalogueError`, §10.7); every catalogue route exports `catalogueHeaders` as `headers`, which sends the `Retry-After` and keeps the root's `Cache-Control`.
 - **Built as (FE1):** `ServerError` in `app/components/ErrorPages.tsx`. The root `ErrorBoundary` reports the error with Sentry's `captureException` after mounting (`useErrorReference`, starting Sentry first if the page failed on its first render) and shows the returned event id only when `Sentry.isInitialized()`. Only real errors are reported, never an error response (a thrown `data()`, such as a 404). The server reports the same error on its side (`handleError`, docs/DEPLOY.md §6).
 - It is rendered within the shell. If the shell itself can't render (the root boundary), it uses a minimal standalone page with the same tokens and stylesheet, the Wordmark, and the **same HelpLinks block** (Contact · Help · Licence & attribution) as every other page (WCAG 3.2.6).
 
@@ -1507,6 +1519,30 @@ The head is the h1 "Settings" with no tab row. Sections are separated by h2 plus
   - `test/component-usage.test.ts` fails if anything exported from an app module (`app/components/` included) is imported only by tests. Components that no FE1 page uses yet (the SG ones) are used here.
 - **e2e** (`e2e/stub/styleguide.spec.ts`, the e2e build): one checkpoint per block (`checkpoint(page, id, { target: "section#id" })` scopes axe and the screenshot to the block), plus `account-menu-open-{signed-in,unavailable,blocked}`, `dialog-open` and `drawer-open`.
 - **States in the checkpoints.** The examples are the rest, disabled, loading, error and pressed states. Each block with a control is captured with its first control focused by keyboard, so a real `:focus-visible` ring is on record (the spec asserts it matches). The error-summary block is captured after a keyboard submit, with the focused summary. The toast block is captured as the viewport with one toast of each tone, held on screen by focus on a dismiss button. Each AccountMenu panel is captured open, one per state. The open Dialog and Drawer are opened by keyboard and captured as the viewport, so the initial focus ring and the scrim show. **Hover is not recorded:** a static capture can hold one pointer position, and the checkpoint moves the pointer to the corner before every capture, so no hover left by a click shows. Hover styles are covered by their classes (unit tests) and the contrast table (§2.7). During an element capture the sticky header and the app bar are hidden, so they are never stitched over a specimen. It also covers the real focus trap, Escape, the backdrop rules and focus return for Dialog and Drawer, the Drawer's placement below and above md, toast placement and timing, the forced-light/forced-dark preview, Windows forced colours (`emulateMedia({ forcedColors: "active" })`: button edges, checkbox `appearance: auto` with the drawn marks hidden, outlines on current, pressed and selected, the focus ring) and the WCAG 1.4.12 text-spacing override (nothing clipped, no horizontal overflow at 360 and 320 px).
+
+### 10.7 Piece browse and A–Z (`/pieces`)
+
+**Tag: FE2.** Every piece by title: the catalogue's A–Z index, its search and (C2.2) its filters. The URL is the state (`pieceQuery` in `app/catalogue/query-state.ts`): `q`, `term`×n, `kind`×n, `status`×n, `stub`, `letter`, `sort`, `page`, in that order. A URL that means something else is answered with one 301 to its canonical form, a page past the data with one 302 to the last page; an order-only difference is answered 200, with `<link rel="canonical">` to the ordered form.
+
+- **Page head:** h1 "Pieces", the single-view Read label, and the meta "{n} pieces" (`formatCount`, `app/catalogue/format.ts`).
+- **Then, in DOM order:**
+  1. the search box: its own `<Form method="get" action="/pieces" role="search">` ("Pieces"), an `Input type="search" name="q"` named "Search pieces" (44 px) and a secondary "Search" submit. It carries `term`, `kind`, `status` and `stub` as hidden inputs (each only when set) and drops `letter`, `sort` and `page`, so a search covers every letter from page 1 (`PieceSearch`);
+  2. the LetterBar (§6.29), "Pieces by letter";
+  3. with `q` only, the order: a "Sort by" Select, "Best match" (relevance, the default) or "Title A–Z", applied by its "Sort" button, never on change (`PieceSort`);
+  4. the selected filters: one chip per value, a link to the list without it ("Search: ‘kettle’ ✕", "Letter: W ✕"), then "Clear all", all `rel="nofollow"`, under a hidden h2 "Selected filters" (`SelectedFilters`, `app/components/facets/`);
+  5. the results: a section named by its h2 ("All pieces", "Pieces under T", "Results for ‘kettle’", "Matching pieces"), marked `aria-busy` during a same-route navigation (the old results stay), with a polite `sr-only` status (`ResultsStatus`: "Showing {n} pieces", "No results", "No pieces match these filters");
+  6. the rows (`PieceListItem`, a `ul role="list"`, not Cards): the title as a standalone link to `/pieces/{slug}`, then "Song · Dance music", the static `sm` ConservationBadge (not while `unassessed`) and "Stub" (`caption text-fg-subtle`); a restricted piece shows its Restricted badge and no other link;
+  7. Pagination (§6.20) over at most 201 pages; when the list is longer, the caption "Showing the first 10,050. Narrow your search to see the rest." (`ListPagination`).
+- **With JS** the two forms never submit themselves: they navigate straight to the canonical URL (`canonicalFormHref`, `app/catalogue/form-href.ts`), one request, never a 301. Without JS they GET in DOM order, which is answered 200.
+- **Empty:** with `q`, "Nothing matches ‘{q}’" / "Try a shorter search, or browse by mood or topic." / [Browse pieces]; with a letter or filters, "No pieces match these filters" / "Try removing a filter." / [Clear all filters]; with nothing set, "No pieces yet".
+- **Errors** (`app/components/catalogue/CatalogueError.tsx`, kinds from `ReadFailure`):
+  - the API refused a filter (400): the page is "We couldn’t apply these filters" (h1, HTTP 400) / "One of the filters in this link isn’t valid any more." / [Clear all filters], then the search box and chips (`FilterError`);
+  - a 500 to a search or a filter: "That search took too long" (HTTP 500) / "Try fewer words or fewer filters, or browse by category." / [Try again], then the search box and chips (`FilterError`);
+  - a 500 to the plain A–Z or a letter: ServerError "We couldn’t load the pieces" (`CatalogueError`, the route's ErrorBoundary);
+  - an outage, a network failure or a timeout: the resting page (§10.5), 503 with `Retry-After`;
+  - an answer we can't read (502): "Something went wrong" / the unexpected-answer copy / [Try again].
+    The failure pages are titled by their h1 and `noindex`; the API's `message` is logged, never shown.
+- **Meta:** title "Pieces", "Pieces under T", "Pieces matching ‘kettle’", with ", page 2" from page 2; canonical is the canonical URL. A search, a filter or an order is `noindex, follow`; letter pages and later pages are indexable.
 
 ---
 

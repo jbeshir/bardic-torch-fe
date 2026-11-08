@@ -12,7 +12,10 @@ type PageMeta = {
   readonly title?: string | undefined;
   /** What the page is, for search results: cut to 160 characters. */
   readonly description: string;
-  /** The canonical path, e.g. `/help/licence`: no query, no fragment. */
+  /**
+   * The canonical path, e.g. `/help/licence`, with a list page's canonical
+   * query (`/pieces?letter=T`); never a fragment.
+   */
   readonly path: `/${string}`;
   readonly robots?: Robots | undefined;
   readonly type?: "website" | "profile" | undefined;

@@ -3,7 +3,8 @@ import type { components } from "~/api/schema.gen";
 import { Button } from "~/components/ui/Button";
 import { Card } from "~/components/ui/Card";
 import { useHydrated } from "~/hooks/useHydrated";
-import { formatDate, tokenLabel } from "./format";
+import { formatDate } from "~/catalogue/format";
+import { tokenLabel } from "./format";
 
 type APIToken = components["schemas"]["APIToken"];
 

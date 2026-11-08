@@ -77,8 +77,9 @@ export const CHECKPOINTS: Readonly<
       "licence",
     ],
     theme: ["dark-choice"],
-    errors: ["not-found", "server-error"],
+    errors: ["not-found", "server-error", "resting"],
     settings: ["signed-out"],
+    browse: ["index", "no-results"],
   },
   stub: {
     styleguide: [

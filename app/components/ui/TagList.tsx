@@ -1,5 +1,6 @@
 import { useId, useState } from "react";
 import { Link as RouterLink } from "react-router";
+import { formatNumber } from "~/catalogue/format";
 import { useHydrated } from "~/hooks/useHydrated";
 import { Button } from "./Button";
 import { ExternalMark, externalKind } from "./Link";
@@ -118,7 +119,7 @@ export function TagList({
         aria-controls={listId}
         onClick={() => setExpanded(!expanded)}
       >
-        {expanded ? "Show fewer" : `Show all ${tags.length}`}
+        {expanded ? "Show fewer" : `Show all ${formatNumber(tags.length)}`}
       </Button>
     </div>
   );

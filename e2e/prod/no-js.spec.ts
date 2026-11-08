@@ -191,3 +191,41 @@ test.describe("help", () => {
     ).toHaveAttribute("href", "/auth/login?returnTo=%2Fsettings");
   });
 });
+
+test.describe("/pieces", () => {
+  test("the search box, the letters and the pages are plain GET forms and links", async ({
+    page,
+  }) => {
+    await page.goto("/pieces?kind=song&letter=W");
+    const main = page.getByRole("main");
+    // The search keeps the filters and drops the letter: the form's own GET,
+    // in DOM order, answered 200 (an order-only difference isn't redirected).
+    await main.getByRole("searchbox", { name: "Search pieces" }).fill("kettle");
+    const [response] = await Promise.all([
+      page.waitForResponse(r => new URL(r.url()).pathname === "/pieces"),
+      main.getByRole("button", { name: "Search" }).click(),
+    ]);
+    expect(response.status()).toBe(200);
+    await expect(page).toHaveURL(/\/pieces\?kind=song&q=kettle$/);
+    await expect(
+      main.getByRole("link", { name: "The Copper Kettle" })
+    ).toBeVisible();
+
+    await page.goto("/pieces");
+    await main
+      .getByRole("navigation", { name: "Pieces by letter" })
+      .getByRole("link", { name: "T" })
+      .click();
+    await expect(page).toHaveURL(/\/pieces\?letter=T$/);
+    await expect(
+      main.getByRole("link", { name: "Tavern Round" })
+    ).toBeVisible();
+
+    await page.goto("/pieces");
+    await main
+      .getByRole("navigation", { name: "Pagination" })
+      .getByRole("link", { name: "Next" })
+      .click();
+    await expect(page).toHaveURL(/\/pieces\?page=2$/);
+  });
+});
