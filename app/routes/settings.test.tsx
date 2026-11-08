@@ -180,11 +180,7 @@ function contributor() {
 }
 
 function fail(operationId: string, status: number, code: UpstreamErrorCode) {
-  fixtures.state().failures.set(`contributor:${operationId}`, {
-    status,
-    code,
-    remaining: 1,
-  });
+  fixtures.fail({ userId: "contributor", operationId, status, code });
 }
 
 async function openPage() {

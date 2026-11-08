@@ -5,6 +5,8 @@ import { createFixtureState, handleFixtureRequest } from "./router";
 /**
  * The fixture API over HTTP, for Playwright and `npm run dev:fixtures`:
  * `tsx test/fixture-api/server.ts` listens on 127.0.0.1:$PORT (default 4010).
+ * Parallel e2e workers share it, so a public operation's injected failure
+ * or outage must name the request it is for (`match`, see router.ts).
  */
 
 /** Hard cap on what is read; the router answers 413 above the API's limit. */
@@ -17,7 +19,7 @@ function sendJson(response: ServerResponse, status: number, body: unknown) {
 }
 
 export function createFixtureServer(): Server {
-  const state = createFixtureState();
+  const state = createFixtureState({ requireMatch: true });
   const server = createServer(async (request, response) => {
     const chunks: Buffer[] = [];
     let size = 0;
@@ -32,12 +34,16 @@ export function createFixtureServer(): Server {
       }
       chunks.push(chunk as Buffer);
     }
-    const { pathname } = new URL(request.url ?? "/", "http://fixture.invalid");
+    const { pathname, search } = new URL(
+      request.url ?? "/",
+      "http://fixture.invalid"
+    );
     let result;
     try {
       result = handleFixtureRequest(state, {
         method: request.method ?? "GET",
         pathname,
+        search,
         authorization: request.headers.authorization ?? null,
         contentType: request.headers["content-type"] ?? null,
         body: Buffer.concat(chunks).toString("utf8"),
@@ -49,6 +55,12 @@ export function createFixtureServer(): Server {
     }
     if (result.body === undefined) {
       response.writeHead(result.status).end();
+      return;
+    }
+    if (result.contentType !== undefined) {
+      response
+        .writeHead(result.status, { "Content-Type": result.contentType })
+        .end(String(result.body));
       return;
     }
     sendJson(response, result.status, result.body);

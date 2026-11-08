@@ -14,6 +14,11 @@ type ErrorCode = Schemas["Error"]["code"];
 export type FixtureResponse = {
   readonly status: number;
   readonly body?: unknown;
+  /**
+   * Set only on an outage (see router.ts): `body` is then text of this
+   * type, sent as-is, outside the spec.
+   */
+  readonly contentType?: string;
 };
 
 export type UserState = {
@@ -25,13 +30,19 @@ export type UserState = {
   revoked: Set<string>;
 };
 
-type OperationRequest = {
+/** What a public operation reads: the path and query parameters. */
+type PublicRequest = {
   readonly params: Readonly<Record<string, string>>;
+  /** Decoded; for a catalogue read, only the parameters the spec declares. */
+  readonly query: URLSearchParams;
+};
+
+type OperationRequest = PublicRequest & {
   readonly body: unknown;
   readonly nextId: () => number;
 };
 
-type FixtureOperation = {
+export type FixtureOperation = {
   readonly method: "GET" | "PATCH" | "POST" | "DELETE";
   /** The spec's path template. */
   readonly path: string;
@@ -45,7 +56,7 @@ type FixtureOperation = {
 } & (
   | {
       readonly authenticated: false;
-      readonly handle: () => FixtureResponse;
+      readonly handle: (request: PublicRequest) => FixtureResponse;
     }
   | {
       readonly authenticated: true;

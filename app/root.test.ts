@@ -66,10 +66,12 @@ describe("root loader", () => {
 
   it("still renders the page when /v1/me fails, with the account control saying so", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
-    fixtures.state().failures.set("contributor:getMe", {
+    fixtures.fail({
+      userId: "contributor",
+      operationId: "getMe",
       status: 500,
       code: "internal",
-      remaining: 2,
+      times: 2,
     });
     const { response, data } = await rootData(await contributor());
     expect(response.status).toBe(200);

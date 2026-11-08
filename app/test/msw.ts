@@ -4,6 +4,7 @@ import { http, HttpResponse } from "msw/http";
 import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll, expect } from "vitest";
 import {
+  addFailure,
   createFixtureState,
   handleFixtureRequest,
   type FixtureState,
@@ -59,16 +60,25 @@ export function serveMocks(...handlers: RequestHandler[]) {
 function fixtureHandlers(state: () => FixtureState, baseUrl = API_BASE_URL) {
   return [
     http.all(`${baseUrl}/*`, async ({ request }) => {
+      const { pathname, search } = new URL(request.url);
       const result = handleFixtureRequest(state(), {
         method: request.method,
-        pathname: new URL(request.url).pathname,
+        pathname,
+        search,
         authorization: request.headers.get("Authorization"),
         contentType: request.headers.get("Content-Type"),
         body: await request.text(),
       });
-      return result.body === undefined
-        ? new HttpResponse(null, { status: result.status })
-        : HttpResponse.json(result.body, { status: result.status });
+      if (result.body === undefined) {
+        return new HttpResponse(null, { status: result.status });
+      }
+      if (result.contentType !== undefined) {
+        return new HttpResponse(String(result.body), {
+          status: result.status,
+          headers: { "Content-Type": result.contentType },
+        });
+      }
+      return HttpResponse.json(result.body, { status: result.status });
     }),
   ];
 }
@@ -88,6 +98,9 @@ export function serveFixtureApi() {
   return {
     /** The current test's fixture state. */
     state: () => state,
+    /** Queue a failure in the current test's state (see `addFailure`). */
+    fail: (failure: Parameters<typeof addFailure>[1]) =>
+      addFailure(state, failure),
     ...mocks,
   };
 }

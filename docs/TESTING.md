@@ -68,7 +68,7 @@ Other FE1 differences from the plan's test list follow from the real API (no rev
 
 ## The fixture API
 
-`test/fixture-api/` is a fake of the backend for the FE1 operations: `getMe`, `updateMe`, `listAPITokens`, `createAPIToken`, `revokeAPIToken`, plus `getHealthz` for readiness.
+`test/fixture-api/` is a fake of the backend. It serves the FE1 operations (`getMe`, `updateMe`, `listAPITokens`, `createAPIToken`, `revokeAPIToken`) plus `getHealthz` for readiness, and routes and validates the 17 public catalogue reads (`listPieces`, `getPiece` and the rest). A valid catalogue read the table doesn't serve answers 404 "no such route".
 
 - **One operation table, three transports.** `operations.ts` is keyed by `operationId`, and `router.ts` routes requests to it. The same router serves:
   - msw in unit tests (`app/test/msw.ts`);
@@ -80,13 +80,28 @@ Other FE1 differences from the plan's test list follow from the real API (no rev
   - a user may have at most 10 active tokens (409 `token_limit_reached`);
   - the token list is active only, newest first;
   - non-JSON bodies get 415 and bodies over 16 KiB get 413.
+- **Catalogue requests are parsed strictly** (`catalogue/query.ts`), as the backend does (`api/openapi.yaml`, and the API docs' "Notes for FE2"). The rules come from each operation's parameter list in the spec; a parameter schema the parser doesn't understand throws when it loads. Each of these is 400 `invalid_request`:
+  - a path slug that doesn't match `^[a-z0-9]+(-[a-z0-9]+)*$` or is over 191 characters; an id that isn't a canonical positive int64 (no leading zero or sign, at most 9223372036854775807);
+  - a query string that isn't validly percent-encoded, or isn't UTF-8 (even in a parameter the operation ignores);
+  - a scalar parameter given more than once. Only `term`, `kind` and `conservation_status` (pieces), `kind` and `role` (persons) and collection `kind` repeat, as `?kind=song&kind=poem` (form, explode); a comma list is one unknown value;
+  - a value outside its enum (`letter` is `A`–`Z` or `0`), a repeated value of a `uniqueItems` parameter, or more values than `maxItems` (more than 20 distinct `term`s; a repeated `term` counts once);
+  - a `stub` other than `true` or `false`; a `limit` outside 1–100 or an `offset` outside 0–10000, or either not in canonical decimal (`05`, `+5`, `1e3` and empty are 400);
+  - a `q` that is empty, only ASCII blanks (space, tab, line feed, form feed, carriage return; a no-break space is a character) or over 200 code points;
+  - `sort=relevance` without `q`;
+  - a `term` no public piece term has ("unknown term: <slug>", also for an affiliation term), or an `affiliation` no public affiliation term has ("unknown affiliation: <slug>"). No terms are served yet, so every one is unknown.
+
+  Unknown query parameters are ignored, repeated or not. A path parameter that decodes to contain `/` (a raw `%2F`), or isn't validly percent-encoded, matches no route: 404 `not_found` "no such route", for every operation. Handlers get the decoded declared parameters only (`query`, a `URLSearchParams`). `test/contract/requests.ts` lists a request for every rule; they run through the router and over HTTP.
+
 - **It is checked against the contract.** Every response is validated against `api/openapi.yaml` (ajv, draft 2020-12) before it is returned. A fixture that breaks the contract throws, and the server answers 500.
 - **State is per user.** Only `Authorization: Bearer auth0|fixture:<userId>` authenticates; a stub session's access token is `fixture:<userId>`. Anything else gets 401 `unauthenticated`. The seed users are `contributor` ("Morwen of the Marches") and `moderator` ("Master Tobias Fiddler"). They are invented stage names, as every fixture name must be.
 - **Control endpoints** (Node server and msw):
   - `POST /__fixtures/users {role?, display_name?, tokens?: "sample" | "none", blocked?}` → 201 `{id}`. This creates an isolated user. A blocked user gets 403 `user_blocked` from every operation.
-  - `POST /__fixtures/fail {userId?, operationId, status, code?, times?}` → 204. The next `times` (default 1) calls fail with that status and code. Only pairs the spec allows for the operation are accepted.
+  - `POST /__fixtures/fail {operationId, status, code?, times?, userId?, match?}` → 204. The next `times` (default 1) calls fail with that status and code. Only pairs the spec allows for the operation are accepted. An authenticated operation fails for `userId` only. A public catalogue read is parsed first, so an invalid request still gets its 400 and leaves the failure queued.
+  - `POST /__fixtures/outage {operationId, match?, times?, mode: "503" | "html-502"}` → 204, for public operations only. The next matching `times` calls get what a proxy in front of the backend sends when it is down: a plain-text 503 (dokku) or an HTML 502 (Cloudflare). It answers before the backend would, so even an invalid request gets it. It is deliberately outside the spec: the only response the router doesn't validate.
+  - **`match`** is an object of path or query parameters of the operation, with string values: `{slug: "e2e-500-a1"}`, `{q: "timeout-7f2"}`. A failure or outage fires only for a request whose parameters include every pair (a repeated parameter matches if any of its values does). Failures and outages with different matches are kept apart.
+  - **On the Node server, a public operation's failure or outage needs a non-empty `match`**, because every e2e worker shares the server: an unmatched one would fail another test's request. Use a value unique to the test. In msw (fresh state per test) `match` is optional; without it every call fails.
 
-  In e2e use `createFixtureUser(request, options)` and `failNext(request, {...})` from `e2e/support/fixture-api.ts`.
+  In e2e use `createFixtureUser(request, options)`, `failNext(request, {...})` (with `userId` or `match`) and `outageNext(request, {operationId, match, mode, times?})` from `e2e/support/fixture-api.ts`; `e2e/prod/fixture-api.spec.ts` checks them against the shared server. In unit tests, `serveFixtureApi().fail({...})` queues a failure directly (`addFailure` in `router.ts`), without the endpoint's status and code check, for a pair the operation doesn't list (such as `unavailable` at 500); the response is still validated against the spec.
 
 - **Idle keep-alive sockets stay open.** The server sets `keepAliveTimeout = 0`, so only the client ever ends a keep-alive connection. With Node's default (5 s, plus a 1 s buffer) a client whose event loop runs late, such as a Playwright worker busy with axe and full-page screenshots, or workerd, can send on a socket the server has just closed, and gets `ECONNRESET` ("socket hang up"); a repro with a starved client failed 4/4 with the default and 0/4 with 0. `test/contract/server.test.ts` checks the setting, and that a second request on one socket after 6.5 s idle is answered (about 7 s). Retries would only hide it. The other hop, Playwright to `wrangler dev` on 8788, is covered too: wrangler dev 4.156.1 sends no `Keep-Alive` hint and doesn't close an idle socket within a test's lifetime (measured), and `e2e/prod/keepalive.spec.ts` pins it (a raw socket, `GET /favicon.svg`, 6.5 s idle, then a second request on the same socket answered 200). `test/repo-hygiene.test.ts` checks that every e2e API request uses the per-test `request` fixture or `page.request`, never an API context of its own. Which hop the original "socket hang up" came from is unknown: no trace of it exists, and the FE1 baseline run had none.
 - **Contract tests.** `test/contract/scenarios.ts` lists at least one success and one error per operation. They run through the router (`fixtures.test.ts`), over HTTP (`server.test.ts`) and through msw (`app/test/msw.test.ts`). `spec.test.ts` checks that the spec is valid OpenAPI 3.1 and has the FE1 operations; `generated-types.test.ts` pins the generated types FE1 relies on.

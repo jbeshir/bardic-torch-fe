@@ -30,11 +30,7 @@ function fail(
   code: UpstreamErrorCode,
   times = 1
 ) {
-  fixtures.state().failures.set(`contributor:${operationId}`, {
-    status,
-    code,
-    remaining: times,
-  });
+  fixtures.fail({ userId: "contributor", operationId, status, code, times });
 }
 
 describe("/settings document", () => {
