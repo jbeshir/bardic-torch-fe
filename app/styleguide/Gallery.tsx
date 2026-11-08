@@ -1,5 +1,5 @@
 import { Buttons, Links } from "./Actions";
-import { Cards, Infoboxes, Tags } from "./Content";
+import { Cards, ConservationBadges, Infoboxes, Tags } from "./Content";
 import { Alerts, EmptyStates, ErrorStates, Loading, Toasts } from "./Feedback";
 import {
   Checkboxes,
@@ -44,6 +44,11 @@ export const SPECIMENS = [
   { id: "infobox", title: "Infobox", Block: Infoboxes },
   { id: "card", title: "Card", Block: Cards },
   { id: "tag-list", title: "Chip and TagList", Block: Tags },
+  {
+    id: "conservation-badge",
+    title: "ConservationBadge",
+    Block: ConservationBadges,
+  },
   { id: "alert", title: "Alert and Banner", Block: Alerts },
   { id: "empty-state", title: "Empty state", Block: EmptyStates },
   { id: "error-state", title: "Error state", Block: ErrorStates },

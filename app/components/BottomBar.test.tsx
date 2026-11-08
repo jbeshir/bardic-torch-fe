@@ -56,7 +56,7 @@ describe("BottomBar", () => {
     expect(search).toHaveAttribute("aria-expanded", "true");
     expect(sheet).toBeVisible();
     expect(
-      screen.getByRole("searchbox", { name: "Search the original wiki" })
+      screen.getByRole("searchbox", { name: "Search the catalogue" })
     ).toHaveFocus();
 
     act(() => {
@@ -64,6 +64,22 @@ describe("BottomBar", () => {
     });
     expect(sheet).not.toBeVisible();
     expect(search).toHaveFocus();
+  });
+
+  it("searches the catalogue from the sheet, which closes on the way", async () => {
+    const user = userEvent.setup();
+    const router = await renderBar();
+    await user.click(screen.getByRole("button", { name: "Search" }));
+    await user.type(
+      screen.getByRole("searchbox", { name: "Search the catalogue" }),
+      "kettle{Enter}"
+    );
+    expect(router.state.location.pathname).toBe("/search");
+    expect(router.state.location.search).toBe("?q=kettle");
+    expect(screen.getByRole("button", { name: "Search" })).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
   });
 
   it("closes the search sheet with Cancel, returning focus", async () => {

@@ -3,8 +3,8 @@ import mdx from "@mdx-js/rollup";
 import { reactRouter } from "@react-router/dev/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
-import { MARKDOWN_OPTIONS } from "./app/content/markdown/options";
-import { ENV_NAMES } from "./app/server/env.server";
+import { MARKDOWN_OPTIONS } from "./app/content/markdown/options.ts";
+import { ENV_NAMES } from "./app/server/env.server.ts";
 
 // Under `react-router dev`, variables set in the process environment
 // override .dev.vars, so `npm run dev:fixtures` can point the app at the
@@ -26,6 +26,8 @@ export default defineConfig(({ command, mode }) => ({
   // Tests (vitest.config.ts) stub both per case instead.
   define: {
     __STUB_AUTH__: JSON.stringify(mode === "e2e" || mode === "development"),
+    // Only production is indexed (app/server/indexing.server.ts).
+    __INDEXABLE__: JSON.stringify(mode === "production"),
     // Builds get none: a deployed or e2e Worker reads only its bindings.
     __DEV_ENV_OVERRIDES__: JSON.stringify(
       command === "serve" ? devEnvOverrides() : {}

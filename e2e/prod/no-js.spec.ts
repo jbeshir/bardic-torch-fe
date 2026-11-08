@@ -42,8 +42,8 @@ test.describe("navigation below md", () => {
     await expect(nav.getByRole("search")).toBeVisible();
     await expect(nav.getByRole("group", { name: "Theme" })).toBeVisible();
     await expect(
-      nav.getByRole("link", { name: "Mood (opens original wiki)" })
-    ).toBeVisible();
+      nav.getByRole("link", { name: "Mood", exact: true })
+    ).toHaveAttribute("href", "/categories?facet=mood");
 
     // It comes after main and before the footer.
     const order = await page.evaluate(() => {
@@ -189,5 +189,436 @@ test.describe("help", () => {
     await expect(
       page.getByRole("main").getByRole("link", { name: "Log in" })
     ).toHaveAttribute("href", "/auth/login?returnTo=%2Fsettings");
+  });
+});
+
+test.describe("/pieces", () => {
+  test("the search box, the letters and the pages are plain GET forms and links", async ({
+    page,
+  }) => {
+    await page.goto("/pieces?kind=song&letter=W");
+    const main = page.getByRole("main");
+    // The search keeps the filters and drops the letter: the form's own GET,
+    // in DOM order, answered 200 (an order-only difference isn't redirected).
+    await main.getByRole("searchbox", { name: "Search pieces" }).fill("kettle");
+    const [response] = await Promise.all([
+      page.waitForResponse(r => new URL(r.url()).pathname === "/pieces"),
+      main.getByRole("button", { name: "Search" }).click(),
+    ]);
+    expect(response.status()).toBe(200);
+    await expect(page).toHaveURL(/\/pieces\?kind=song&q=kettle$/);
+    await expect(
+      main.getByRole("link", { name: "The Copper Kettle" })
+    ).toBeVisible();
+
+    await page.goto("/pieces");
+    await main
+      .getByRole("navigation", { name: "Pieces by letter" })
+      .getByRole("link", { name: "T", exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/pieces\?letter=T$/);
+    await expect(
+      main.getByRole("link", { name: "Tavern Round" })
+    ).toBeVisible();
+
+    await page.goto("/pieces");
+    await main
+      .getByRole("navigation", { name: "Pagination" })
+      .getByRole("link", { name: "Next" })
+      .click();
+    await expect(page).toHaveURL(/\/pieces\?page=2$/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C2.2: the facet form without JS
+
+test.describe("/pieces filters", () => {
+  test("ticking boxes and Apply filters is the form's own GET, answered 200", async ({
+    page,
+  }) => {
+    await page.goto("/pieces?letter=W");
+    const main = page.getByRole("main");
+    const filters = main.getByRole("region", { name: "Filters" });
+    // The Filters link jumps to the column after the results.
+    await expect(main.getByRole("link", { name: "Filters" })).toHaveAttribute(
+      "href",
+      "#filters"
+    );
+    await filters.getByRole("checkbox", { name: /^Song\b/ }).check();
+    await filters.getByRole("radio", { name: "Hide stubs" }).check();
+    const [response] = await Promise.all([
+      page.waitForResponse(r => new URL(r.url()).pathname === "/pieces"),
+      filters.getByRole("button", { name: "Apply filters" }).click(),
+    ]);
+    // In DOM order (the letter first, an empty sort never sent without q):
+    // an order-only difference, so no redirect.
+    expect(response.status()).toBe(200);
+    await expect(page).toHaveURL(/\/pieces\?letter=W&kind=song&stub=false$/);
+    await expect(
+      main.getByRole("link", { name: "Remove Kind: Song" })
+    ).toBeVisible();
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      "href",
+      /\/pieces\?kind=song&stub=false&letter=W$/
+    );
+  });
+
+  test("All pages sends an empty stub, answered 200 without it", async ({
+    page,
+  }) => {
+    await page.goto("/pieces?stub=true");
+    const filters = page
+      .getByRole("main")
+      .getByRole("region", { name: "Filters" });
+    await filters.getByRole("radio", { name: "All pages" }).check();
+    const [response] = await Promise.all([
+      page.waitForResponse(r => new URL(r.url()).pathname === "/pieces"),
+      filters.getByRole("button", { name: "Apply filters" }).click(),
+    ]);
+    expect(response.status()).toBe(200);
+    await expect(page).toHaveURL(/\/pieces\?stub=$/);
+  });
+
+  test("the order applies with its Sort button", async ({ page }) => {
+    await page.goto("/pieces?q=lament");
+    const main = page.getByRole("main");
+    await main.getByRole("combobox", { name: "Sort by" }).selectOption("title");
+    const [response] = await Promise.all([
+      page.waitForResponse(r => new URL(r.url()).pathname === "/pieces"),
+      main.getByRole("button", { name: "Sort" }).click(),
+    ]);
+    expect(response.status()).toBe(200);
+    await expect(page).toHaveURL(/sort=title/);
+    await expect(main.getByRole("combobox", { name: "Sort by" })).toHaveValue(
+      "title"
+    );
+  });
+});
+
+test.describe("/pieces filters below xl", () => {
+  test.use({ viewport: MOBILE });
+
+  test("Filters jumps to the filters after the results, which apply with their own button", async ({
+    page,
+  }) => {
+    await page.goto("/pieces?letter=T");
+    const main = page.getByRole("main");
+    const link = main.getByRole("link", { name: "Filters" });
+    await expect(link).toHaveAttribute("href", "#filters");
+    await expectPrimaryTargetsAtLeast44([link]);
+    await link.click();
+    await expect(page).toHaveURL(/\?letter=T#filters$/);
+    const filters = main.getByRole("region", {
+      name: "Filters",
+      exact: true,
+    });
+    await expect(filters).toBeInViewport();
+    await filters.getByRole("checkbox", { name: /^Song\b/ }).check();
+    const [response] = await Promise.all([
+      page.waitForResponse(r => new URL(r.url()).pathname === "/pieces"),
+      filters.getByRole("button", { name: "Apply filters" }).click(),
+    ]);
+    expect(response.status()).toBe(200);
+    await expect(page).toHaveURL(/\/pieces\?letter=T&kind=song/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C3.1: the catalogue search without JS
+
+test.describe("/search", () => {
+  test("the header search is a plain GET to /search, answered 200", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/help");
+    const header = page.getByRole("banner");
+    await header
+      .getByRole("searchbox", { name: "Search the catalogue" })
+      .fill("northmarch");
+    const [response] = await Promise.all([
+      page.waitForResponse(r => new URL(r.url()).pathname === "/search"),
+      header.getByRole("button", { name: "Search", exact: true }).click(),
+    ]);
+    expect(response.status()).toBe(200);
+    await expect(page).toHaveURL(/\/search\?q=northmarch$/);
+    await expect(
+      page.getByRole("main").getByRole("link", { name: "Northmarch Rising" })
+    ).toBeVisible();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Track B (C4, C5): the piece and bard pages.
+test.describe("/pieces/:slug", () => {
+  test("every category chip shows, with no Show all button", async ({
+    page,
+  }) => {
+    await page.goto("/pieces/the-long-road-north");
+    const categories = page
+      .getByRole("main")
+      .getByRole("navigation", { name: "Categories" });
+    await expect(categories.getByRole("link")).toHaveCount(15);
+    await expect(categories.getByRole("button")).toHaveCount(0);
+  });
+
+  test("a restricted piece's links open from their disclosure", async ({
+    page,
+  }) => {
+    await page.goto("/pieces/the-dragons-hoard");
+    const main = page.getByRole("main");
+    const details = main.locator("details", {
+      hasText: "Show links (the creator asks that this isn’t shared further)",
+    });
+    await expect(details).not.toHaveAttribute("open");
+    await details.locator("summary").click();
+    await expect(details).toHaveAttribute("open", "");
+    await expect(
+      details
+        .getByRole("link", { name: "The text of the poem (external link)" })
+        .first() // listed under Text and under Licensing sources
+    ).toBeVisible();
+  });
+
+  test("the Read and History tabs are links", async ({ page }) => {
+    await page.goto("/pieces/the-copper-kettle");
+    const views = page
+      .getByRole("main")
+      .getByRole("navigation", { name: "Page views" });
+    await expect(views.getByRole("link", { name: "History" })).toHaveAttribute(
+      "href",
+      "/pieces/the-copper-kettle/history"
+    );
+  });
+});
+
+test.describe("/bards/:slug", () => {
+  test("the works link to their pieces, and the tabs are links", async ({
+    page,
+  }) => {
+    await page.goto("/bards/wren-of-the-vale");
+    const main = page.getByRole("main");
+    await expect(
+      main
+        .getByRole("navigation", { name: "Page views" })
+        .getByRole("link", { name: "History" })
+    ).toHaveAttribute("href", "/bards/wren-of-the-vale/history");
+    await main
+      .getByRole("region", { name: "Works" })
+      .getByRole("link", { name: "The Copper Kettle" })
+      .click();
+    await expect(page).toHaveURL(/\/pieces\/the-copper-kettle$/);
+  });
+});
+
+test.describe("/bards", () => {
+  test("the filters are a plain GET form after the results, answered 200", async ({
+    page,
+  }) => {
+    await page.goto("/bards?q=wren&letter=W");
+    const main = page.getByRole("main");
+    const filters = main.locator("details", { hasText: "Filters" });
+    await expect(filters).not.toHaveAttribute("open");
+    await filters.locator("summary").click();
+    await main.getByRole("checkbox", { name: "Community bard" }).check();
+    await main
+      .getByRole("combobox", { name: "Affiliation" })
+      .selectOption("barony-of-ashdown");
+    const [response] = await Promise.all([
+      page.waitForResponse(r => new URL(r.url()).pathname === "/bards"),
+      main.getByRole("button", { name: "Apply filters" }).click(),
+    ]);
+    // The form's own GET, in DOM order: an order-only difference.
+    expect(response.status()).toBe(200);
+    await expect(page).toHaveURL(
+      /\/bards\?q=wren&letter=W&kind=community_bard&affiliation=barony-of-ashdown$/
+    );
+    await expect(
+      main.getByRole("link", { name: "Wren of the Vale" })
+    ).toBeVisible();
+  });
+});
+// Track C (categories, collections, events, history).
+
+test.describe("/categories", () => {
+  test.use({ viewport: MOBILE });
+
+  test("a term's breadcrumbs wrap whole, and its links and pages work", async ({
+    page,
+  }) => {
+    await page.goto("/categories/swords");
+    const main = page.getByRole("main");
+    const crumbs = main.getByRole("navigation", { name: "Breadcrumb" });
+    // Without JS nothing collapses: every crumb shows, wrapping.
+    await expect(crumbs.getByRole("button")).toHaveCount(0);
+    for (const name of ["Categories", "Topic", "War", "Battles"]) {
+      await expect(crumbs.getByRole("link", { name })).toBeVisible();
+    }
+    await crumbs.getByRole("link", { name: "Topic" }).click();
+    await expect(page).toHaveURL(/\/categories\?facet=topic$/);
+
+    await page.goto("/categories/joyful");
+    await main
+      .getByRole("navigation", { name: "Pagination" })
+      .getByRole("link", { name: "Next" })
+      .click();
+    await expect(page).toHaveURL(/\/categories\/joyful\?page=2$/);
+    await expect(
+      main.getByRole("heading", { level: 1, name: "Joyful" })
+    ).toBeVisible();
+  });
+});
+
+test.describe("/collections", () => {
+  test("the kind filter is a plain GET form, answered 200, and keeps the letter", async ({
+    page,
+  }) => {
+    await page.goto("/collections?letter=H");
+    const main = page.getByRole("main");
+    await main.getByText("Filter by kind").click();
+    await main.getByRole("checkbox", { name: "YouTube playlist" }).check();
+    const [response] = await Promise.all([
+      page.waitForResponse(r => new URL(r.url()).pathname === "/collections"),
+      main.getByRole("button", { name: "Apply filters" }).click(),
+    ]);
+    // The form's own order (the letter first) isn't redirected.
+    expect(response.status()).toBe(200);
+    await expect(page).toHaveURL(
+      /\/collections\?letter=H&kind=youtube_playlist$/
+    );
+    await expect(
+      main.getByRole("link", { name: "Harvest Playlist", exact: true })
+    ).toBeVisible();
+  });
+});
+
+test.describe("/events", () => {
+  test("the kind switch and the tabs are plain links", async ({ page }) => {
+    await page.goto("/events");
+    const main = page.getByRole("main");
+    await main
+      .getByRole("navigation", { name: "Kinds" })
+      .getByRole("link", { name: "Events" })
+      .click();
+    await expect(page).toHaveURL(/\/events\?kind=event$/);
+    await main.getByRole("link", { name: "Midwinter Revel" }).click();
+    await expect(
+      main.getByRole("heading", { level: 1, name: "Midwinter Revel" })
+    ).toBeVisible();
+  });
+});
+
+test.describe("history", () => {
+  test("the Read and History tabs are plain links", async ({ page }) => {
+    await page.goto("/events/midwinter-revel");
+    const main = page.getByRole("main");
+    const views = main.getByRole("navigation", { name: "Page views" });
+    await views.getByRole("link", { name: "History" }).click();
+    await expect(page).toHaveURL(/\/events\/midwinter-revel\/history$/);
+    await expect(main.getByText("2 revisions", { exact: true })).toBeVisible();
+    await views.getByRole("link", { name: "Read" }).click();
+    await expect(page).toHaveURL(/\/events\/midwinter-revel$/);
+  });
+  test("a history row leads to its revision, and Previous revision to the one before", async ({
+    page,
+  }) => {
+    await page.goto("/pieces/the-copper-kettle/history");
+    const main = page.getByRole("main");
+    await main
+      .getByRole("table", { name: "Revisions" })
+      .getByRole("link", { name: /^View changes/ })
+      .first()
+      .click();
+    await expect(page).toHaveURL(/\/revisions\/1014$/);
+    await expect(
+      main.getByRole("heading", { level: 1, name: /^Revision 1014 of / })
+    ).toBeVisible();
+    await main.getByRole("link", { name: "Previous revision" }).click();
+    await expect(page).toHaveURL(/\/revisions\/1004$/);
+    await main
+      .getByRole("link", { name: "View the piece as it is now" })
+      .click();
+    await expect(page).toHaveURL(/\/pieces\/the-copper-kettle$/);
+  });
+});
+
+test.describe("/collections/:id", () => {
+  test("its citations link to their pieces", async ({ page }) => {
+    await page.goto("/collections/12");
+    const main = page.getByRole("main");
+    await main
+      .getByRole("table", { name: "Citations" })
+      .getByRole("link", { name: "The Copper Kettle" })
+      .first()
+      .click();
+    await expect(page).toHaveURL(/\/pieces\/the-copper-kettle$/);
+  });
+});
+
+test.describe("/categories index", () => {
+  test("a section chip is a plain link to that facet alone", async ({
+    page,
+  }) => {
+    await page.goto("/categories");
+    const main = page.getByRole("main");
+    await main
+      .getByRole("navigation", { name: "Category sections" })
+      .getByRole("link", { name: "Mood" })
+      .click();
+    await expect(page).toHaveURL(/\/categories\?facet=mood$/);
+    await expect(
+      main.getByRole("heading", { level: 1, name: "Mood" })
+    ).toBeVisible();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C9, C11.1: the home page and the shell's catalogue links without JS
+
+test.describe("home", () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test("the hero search is a plain GET to /search, and Browse pieces and the chips are links", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const main = page.getByRole("main");
+    await expect(
+      main.getByRole("link", { name: "Browse pieces", exact: true })
+    ).toHaveAttribute("href", "/pieces");
+    await expect(
+      main.getByRole("region", { name: "Start exploring" }).getByRole("link", {
+        name: "All categories",
+      })
+    ).toHaveAttribute("href", "/categories");
+    await main
+      .getByRole("searchbox", { name: "Search the catalogue" })
+      .fill("kettle");
+    const [response] = await Promise.all([
+      page.waitForResponse(r => new URL(r.url()).pathname === "/search"),
+      main.getByRole("button", { name: "Search", exact: true }).click(),
+    ]);
+    expect(response.status()).toBe(200);
+    await expect(page).toHaveURL(/\/search\?q=kettle$/);
+  });
+
+  test("the sidebar's catalogue links navigate, and the current section is marked", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const nav = page.getByRole("navigation", { name: "Site" });
+    await nav
+      .getByRole("link", { name: "Events and venues", exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/events$/);
+    await expect(
+      page
+        .getByRole("main")
+        .getByRole("heading", { level: 1, name: "Events and venues" })
+    ).toBeVisible();
+    await expect(
+      nav.getByRole("link", { name: "Events and venues", exact: true })
+    ).toHaveAttribute("aria-current", "page");
   });
 });

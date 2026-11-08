@@ -20,7 +20,13 @@ import { fixtureAppEnv } from "./dev-fixtures.mjs";
  *   dev:fixtures`' values;
  * - `/styleguide` is excluded from production and present in preview;
  * - each deploys to its own Worker (bardic-torch-fe, bardic-torch-fe-preview);
- * - neither carries a `.dev.vars` copy or an AUTH_MODE variable.
+ * - neither carries a `.dev.vars` copy or an AUTH_MODE variable;
+ * - neither's client build has the Markdown parser (micromark), which runs
+ *   in loaders only, or zod, which checks API answers on the server only
+ *   (the browser reads enum values from `app/constants/enums.ts`);
+ * - `__INDEXABLE__` is true in production only: its server build has the
+ *   crawlable robots.txt rules and no X-Robots-Tag, and the preview build
+ *   has the opposite.
  *
  * Building rewrites .wrangler/deploy/config.json, which points `wrangler
  * dev` and `wrangler deploy` at a build; it is put back as it was.
@@ -30,6 +36,14 @@ const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const STUB_SOURCE = path.join(ROOT, "app/server/stub-auth.server.ts");
 const FIXTURE_HOSTS = ["fixture.invalid", "127.0.0.1:4010"];
 const STYLEGUIDE_ROUTE_ID = "routes/styleguide";
+/**
+ * Strings that survive in a server build only for the `__INDEXABLE__` value
+ * they are under (app/server/indexing.server.ts and
+ * security-headers.server.ts): the crawlable robots.txt rules, and the
+ * noindex header.
+ */
+export const INDEXABLE_ONLY_MARKER = "Disallow: /auth/";
+const NOT_INDEXABLE_ONLY_MARKER = "X-Robots-Tag";
 export const DEPLOY_CONFIG = ".wrangler/deploy/config.json";
 
 /**
@@ -45,6 +59,24 @@ const DEV_VALUES = [
       .map(([, value]) => value)
   ),
 ].filter(value => !FIXTURE_HOSTS.some(host => value.includes(host)));
+
+/**
+ * Strings micromark's code keeps when minified (the client build drops its
+ * name with the comments; its token types are string literals), so a
+ * client chunk that has any of them has the Markdown parser.
+ */
+export const MARKDOWN_PARSER_MARKERS = [
+  "micromark",
+  "codeFencedFenceSequence",
+  "characterReferenceMarkerHexadecimal",
+];
+
+/**
+ * Strings zod's code keeps when minified (its classes are named by string
+ * literals), so a client chunk that has one has zod, and with it the
+ * response schemas that import it.
+ */
+export const ZOD_MARKERS = ["ZodError"];
 
 /** The marker string stub-auth.server.ts puts into every build it is in. */
 export function readStubMarker(source) {
@@ -90,6 +122,18 @@ export function inspectBuild({ buildDir, mode, marker }) {
         problems.push(`${mode}: dev:fixtures value ${value} in ${name}`);
       }
     }
+    if (
+      name.startsWith("client") &&
+      MARKDOWN_PARSER_MARKERS.some(parser => content.includes(parser))
+    ) {
+      problems.push(`${mode}: the Markdown parser (micromark) in ${name}`);
+    }
+    if (
+      name.startsWith("client") &&
+      ZOD_MARKERS.some(zod => content.includes(zod))
+    ) {
+      problems.push(`${mode}: zod in ${name}`);
+    }
     if (path.basename(name) === ".dev.vars") {
       problems.push(`${mode}: local variables copied into ${name}`);
     }
@@ -109,6 +153,28 @@ export function inspectBuild({ buildDir, mode, marker }) {
   if (server.length === 0) problems.push(`${mode}: no server build`);
   if (manifests.length !== 1) {
     problems.push(`${mode}: expected one client manifest`);
+  }
+  // The code, not its source maps, which hold every source file's text.
+  const serverSource = server
+    .filter(({ name }) => /\.m?js$/.test(name))
+    .map(({ content }) => content)
+    .join("\n");
+  const indexable = mode === "production";
+  if (
+    server.length > 0 &&
+    serverSource.includes(INDEXABLE_ONLY_MARKER) !== indexable
+  ) {
+    problems.push(
+      `${mode}: the crawlable robots.txt rules are ${indexable ? "missing from" : "present in"} the server build`
+    );
+  }
+  if (
+    server.length > 0 &&
+    serverSource.includes(NOT_INDEXABLE_ONLY_MARKER) === indexable
+  ) {
+    problems.push(
+      `${mode}: X-Robots-Tag is ${indexable ? "present in" : "missing from"} the server build`
+    );
   }
   const has = list =>
     list.some(({ content }) => content.includes(`"${STYLEGUIDE_ROUTE_ID}"`));
@@ -164,7 +230,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     } else {
       console.log(
         "check:prod-build: production and preview builds are free of stub auth, fixture hosts and local variables, " +
-          `deploy to their own Workers, and ${STYLEGUIDE_ROUTE_ID} is only in preview`
+          `keep the Markdown parser out of the browser, deploy to their own Workers, and ${STYLEGUIDE_ROUTE_ID} is only in preview`
       );
     }
   } finally {

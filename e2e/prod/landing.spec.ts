@@ -53,7 +53,7 @@ test("checkpoint: server-html, the home page as served, before or without JS", a
   await checkpoint(page, "server-html");
 });
 
-test("the home page says what the site is and leads to contributing here, then to the wiki", async ({
+test("the home page says what the site is and leads into the catalogue and to contributing", async ({
   page,
 }) => {
   await page.goto("/");
@@ -77,22 +77,35 @@ test("the home page says what the site is and leads to contributing here, then t
     )
   ).toBeVisible();
 
-  // Until the catalogue opens, browsing is on the original wiki.
-  const browse = main.getByRole("link", {
-    name: "Browse on the original wiki (opens original wiki)",
-  });
-  await expect(browse).toHaveAttribute("href", /\/wiki\/Category:Pieces$/);
-  const chips = main
-    .getByRole("region", { name: "Start exploring on the original wiki" })
-    .getByRole("link");
-  await expect(chips).toHaveCount(8);
-  await expect(chips.first()).toHaveAttribute(
-    "href",
-    /\/wiki\/Category:Genres$/
-  );
+  // The catalogue is here: Browse pieces is the primary action, the counts
+  // sit under the search, and every chip is an internal link.
+  await expect(
+    main.getByRole("link", { name: "Browse pieces", exact: true })
+  ).toHaveAttribute("href", "/pieces");
+  await expect(
+    main.getByText(/^\d[\d,]* pieces and \d[\d,]* people and groups so far$/)
+  ).toBeVisible();
+  const explore = main.getByRole("region", { name: "Start exploring" });
+  const chips = explore.getByRole("link");
+  await expect(chips.first()).toHaveText(/^Song \(\d+\)$/);
+  await expect(chips.first()).toHaveAttribute("href", "/pieces?kind=song");
+  await expect(
+    explore.getByRole("link", { name: "All categories" })
+  ).toHaveAttribute("href", "/categories");
+  await expect(
+    explore.getByRole("link", { name: "Collections" })
+  ).toHaveAttribute("href", "/collections");
+  await expect(
+    explore.getByRole("link", { name: "Events and venues" })
+  ).toHaveAttribute("href", "/events");
+  for (const href of await chips.evaluateAll(links =>
+    links.map(link => link.getAttribute("href"))
+  )) {
+    expect(href).toMatch(/^\//);
+  }
   await expect(
     main.getByRole("search").getByRole("searchbox", {
-      name: "Search the original wiki",
+      name: "Search the catalogue",
     })
   ).toBeVisible();
 
@@ -137,7 +150,7 @@ test("the shell has one of each landmark and a skip link to the content", async 
   expect(next.firstInMain, `focused "${next.label}"`).toBe(true);
 });
 
-test("the header links home, searches the wiki and has the theme and Log in from md", async ({
+test("the header links home, searches the catalogue and has the theme and Log in from md", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -148,9 +161,10 @@ test("the header links home, searches the wiki and has the theme and Log in from
   ).toHaveAttribute("href", "/");
   const search = banner.getByRole("search");
   await expect(search).toHaveAttribute("method", "get");
+  await expect(search).toHaveAttribute("action", "/search");
   await expect(
-    search.getByRole("searchbox", { name: "Search the original wiki" })
-  ).toHaveAttribute("name", "search");
+    search.getByRole("searchbox", { name: "Search the catalogue" })
+  ).toHaveAttribute("name", "q");
   await expect(banner.getByRole("group", { name: "Theme" })).toBeVisible();
   await expect(banner.getByRole("link", { name: "Log in" })).toHaveAttribute(
     "href",
@@ -185,14 +199,12 @@ test("at 360 the hero buttons stack full width, primary first", async ({
   const contribute = main
     .getByRole("link", { name: "How to contribute" })
     .first();
-  const browse = main.getByRole("link", {
-    name: "Browse on the original wiki (opens original wiki)",
-  });
+  const browse = main.getByRole("link", { name: "Browse pieces", exact: true });
   const search = main.getByRole("searchbox", {
-    name: "Search the original wiki",
+    name: "Search the catalogue",
   });
   const [first, second, field] = await Promise.all(
-    [contribute, browse, search].map(locator => locator.boundingBox())
+    [browse, contribute, search].map(locator => locator.boundingBox())
   );
   expect(first && second && field).toBeTruthy();
   if (first && second && field) {

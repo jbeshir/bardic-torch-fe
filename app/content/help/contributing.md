@@ -22,7 +22,7 @@ Bardic Torch gathers the bardic community’s scattered songbooks, playlists and
 
 :::note
 
-The catalogue is on its way. Until it opens here, you can browse every piece on the [original Bardic Torch wiki](https://bardictorch.miraheze.org/wiki/Category:Pieces). Editing on this site arrives in a later release; this guide explains the rules it will follow.
+You can browse every [piece](/pieces) and its [categories](/categories) on this site. Editing on this site arrives in a later release; this guide explains the rules it will follow.
 
 :::
 

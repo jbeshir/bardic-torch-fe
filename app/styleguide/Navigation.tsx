@@ -20,7 +20,7 @@ export function PageTabs() {
       title="Tabs"
       summary="Page views on the title rule (DESIGN §6.9): one view is a plain Read label, two or more are a nav of links. The segmented tablist is for in-page panels."
     >
-      <Example label="One view: the Read label (every FE1 page)" wide>
+      <Example label="One view: the Read label" wide>
         <div className="w-full">
           <ViewTabs views={[READ]} current={READ.to} />
         </div>
@@ -76,7 +76,7 @@ export function Crumbs() {
     <Specimen
       id="breadcrumbs"
       title="Breadcrumbs"
-      summary="Where a help page sits (DESIGN §6.19)."
+      summary="Where a page sits (DESIGN §6.19). A trail of more than three collapses its middle below sm."
     >
       <Example label="Two deep">
         <Breadcrumbs
@@ -93,6 +93,17 @@ export function Crumbs() {
           current="How to write a good piece summary"
         />
       </Example>
+      <Example label="Five deep, collapsed below sm (“…” shows the full path)">
+        <Breadcrumbs
+          trail={[
+            { label: "Categories", to: "/styleguide?crumb=categories" },
+            { label: "Topic", to: "/styleguide?crumb=topic" },
+            { label: "Warfare", to: "/styleguide?crumb=warfare" },
+            { label: "Weapons", to: "/styleguide?crumb=weapons" },
+          ]}
+          current="Swords"
+        />
+      </Example>
     </Specimen>
   );
 }
@@ -102,7 +113,7 @@ export function Pages() {
     <Specimen
       id="pagination"
       title="Pagination"
-      summary="Styleguide-only in FE1: links to the pages of a long list (DESIGN §6.20). Below sm it shows ‘Page n of m’."
+      summary="Links to the pages of a long list (DESIGN §6.20): every catalogue list and history. Below sm it shows ‘Page n of m’."
     >
       <Example label="First page" wide>
         <Pagination page={1} pageCount={12} href={pageHref} />

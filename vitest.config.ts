@@ -1,6 +1,6 @@
 import mdx from "@mdx-js/rollup";
 import { defineConfig } from "vitest/config";
-import { MARKDOWN_OPTIONS } from "./app/content/markdown/options";
+import { MARKDOWN_OPTIONS } from "./app/content/markdown/options.ts";
 
 // Vitest has its own config, so it never loads the React Router or
 // Cloudflare plugins from vite.config.ts (no dev server, no workerd): only
@@ -9,14 +9,23 @@ export default defineConfig({
   plugins: [{ enforce: "pre", ...mdx(MARKDOWN_OPTIONS) }],
   resolve: {
     tsconfigPaths: true,
-    alias: {
+    alias: [
       // Workers resolve react-dom's `workerd` build, which (unlike the Node
       // build) has the renderToReadableStream that entry.server uses.
-      "react-dom/server": "react-dom/server.edge",
+      { find: "react-dom/server", replacement: "react-dom/server.edge" },
       // The Worker entry imports the build React Router's plugin provides;
       // its tests mock this stub instead (test/worker-entry.test.ts).
-      "virtual:react-router/server-build": "/test/support/server-build-stub.ts",
-    },
+      {
+        find: "virtual:react-router/server-build",
+        replacement: "/test/support/server-build-stub.ts",
+      },
+      // Vitest turns unprocessed CSS into "", and root.tsx would render
+      // <link rel="stylesheet" href="">: this gives it a real URL.
+      {
+        find: /^~\/styles\/app\.css\?url$/,
+        replacement: "/test/support/stylesheet-url.ts",
+      },
+    ],
   },
   test: {
     globals: true,

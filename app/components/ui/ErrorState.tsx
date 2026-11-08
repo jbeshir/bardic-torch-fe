@@ -1,6 +1,6 @@
 import { useLocation, useRevalidator } from "react-router";
 import { IconRefresh } from "@tabler/icons-react";
-import { useEffect, useRef, type ReactNode } from "react";
+import { createContext, use, useEffect, useRef, type ReactNode } from "react";
 import { UnlitMark } from "~/components/LogoMark";
 import { useHydrated } from "~/hooks/useHydrated";
 import { Alert } from "./Alert";
@@ -68,6 +68,19 @@ export function SectionError({
   );
 }
 
+/** Whether an error state is under a page head that already has the h1. */
+const UnderHeadContext = createContext(false);
+UnderHeadContext.displayName = "UnderHeadContext";
+
+/**
+ * Wraps the error a child route shows under its layout's head (a category's
+ * members, a history): its heading is an h2, so the page keeps its one h1.
+ * An error that replaces the whole page keeps the h1.
+ */
+export function UnderPageHead({ children }: { readonly children: ReactNode }) {
+  return <UnderHeadContext value={true}>{children}</UnderHeadContext>;
+}
+
 /**
  * The body of an error page (DESIGN §6.16, §10.4, §10.5): the unlit torch,
  * an h1, what happened and what to do, an optional reference and the
@@ -91,6 +104,8 @@ export function ErrorState({
   /** `missing` (404): the plain unlit torch; `broken`: its flame dashed. */
   readonly art?: "missing" | "broken";
 }) {
+  const underHead = use(UnderHeadContext);
+  const Heading = underHead ? "h2" : "h1";
   const headingRef = useRef<HTMLHeadingElement>(null);
   // True on the first render only when mounted after hydration, i.e. the
   // error happened during a client-side navigation.
@@ -103,20 +118,22 @@ export function ErrorState({
   return (
     <div className="flex max-w-prose flex-col items-start py-8 md:py-12">
       <UnlitMark size={64} dashed={art === "broken"} />
-      <h1
+      <Heading
         ref={headingRef}
         tabIndex={-1}
-        className="mt-6 text-h1 text-fg focus-visible:outline-hidden"
+        className={`mt-6 ${underHead ? "text-h2" : "text-h1"} text-fg focus-visible:outline-hidden`}
       >
         {title}
-      </h1>
+      </Heading>
       <div className="mt-3 text-body-lg text-fg-muted">{children}</div>
       {reference ? (
         <p className="mt-4 font-mono text-caption text-fg-subtle">
           Reference: {reference}
         </p>
       ) : null}
-      <div className="mt-8 flex flex-wrap items-center gap-3">{actions}</div>
+      <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+        {actions}
+      </div>
     </div>
   );
 }

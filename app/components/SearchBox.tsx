@@ -1,6 +1,9 @@
-import { IconArrowUpRight, IconSearch } from "@tabler/icons-react";
+import { IconSearch } from "@tabler/icons-react";
 import { useId, type Ref } from "react";
-import { WIKI_SEARCH } from "~/constants/navigation";
+import { Form } from "react-router";
+import { useCanonicalSubmit } from "~/components/catalogue/canonical-form";
+import { searchQuery } from "~/catalogue/query-state";
+import { SEARCH } from "~/constants/navigation";
 
 const SIZES = {
   // 40 px: the header from md. The field is narrow until lg, so the
@@ -10,37 +13,52 @@ const SIZES = {
     input: "h-10 pr-11 lg:placeholder:text-transparent",
     button:
       "right-1 h-8 w-8 before:absolute before:-inset-1.5 lg:before:hidden",
-    placeholder: "Search the wiki…",
+    placeholder: "Search…",
   },
-  // 44 px: the drawer, the search sheet and the home hero; a 44 px submit.
+  // 44 px: the drawer, the search sheet, the home hero and the search page;
+  // a 44 px submit.
   lg: {
     input: "h-11 pr-12",
     button: "right-0 h-11 w-11",
-    placeholder: "Search the original wiki…",
+    placeholder: "Search pieces and bards…",
   },
 } as const;
 
 /**
- * Search (DESIGN §6.26). In FE1 the catalogue isn't here yet, so it is a
- * plain GET form to the original wiki's search, marked as external like any
- * wiki link: its submit button carries the wiki mark (↗) and says where it
- * goes. It works without JS; the submit button means it works without
- * Enter too. No suggestions, no shortcut.
+ * Search (DESIGN §6.26): a GET form to the catalogue's search page,
+ * `/search?q=`. With JS it goes straight to the canonical URL (the search
+ * trimmed, one request); without JS the browser sends `q`, which the page
+ * answers the same. The submit button means it works without Enter too.
+ * No suggestions, no shortcut. `defaultValue` prefills it (the search
+ * page's own box). Its search landmark is named by `label`, so the site's
+ * box and a page's own read differently in a landmark list.
  */
 export function SearchBox({
   size,
+  defaultValue,
+  label = "Site search",
   ref,
 }: {
   readonly size: keyof typeof SIZES;
+  readonly defaultValue?: string | undefined;
+  /** The search landmark's name: the site's box unless a page names its own. */
+  readonly label?: string;
   readonly ref?: Ref<HTMLInputElement>;
 }) {
   const inputId = useId();
+  const onSubmit = useCanonicalSubmit(searchQuery);
   const { input, button, placeholder } = SIZES[size];
   const longPlaceholder = SIZES.lg.placeholder;
   return (
-    <form role="search" method="get" action={WIKI_SEARCH.action}>
+    <Form
+      role="search"
+      aria-label={label}
+      method="get"
+      action={SEARCH.action}
+      onSubmit={onSubmit}
+    >
       <label htmlFor={inputId} className="sr-only">
-        Search the original wiki
+        Search the catalogue
       </label>
       <div className="relative">
         <IconSearch
@@ -53,7 +71,8 @@ export function SearchBox({
           ref={ref}
           id={inputId}
           type="search"
-          name={WIKI_SEARCH.param}
+          name={SEARCH.param}
+          defaultValue={defaultValue}
           autoComplete="off"
           enterKeyHint="search"
           placeholder={placeholder}
@@ -76,12 +95,10 @@ export function SearchBox({
           type="submit"
           className={`${button} absolute top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-fg-10 hover:text-fg`}
         >
-          <IconArrowUpRight size={18} stroke={1.75} aria-hidden="true" />
-          <span className="sr-only">
-            Search the original wiki (opens original wiki)
-          </span>
+          <IconSearch size={18} stroke={1.75} aria-hidden="true" />
+          <span className="sr-only">Search</span>
         </button>
       </div>
-    </form>
+    </Form>
   );
 }

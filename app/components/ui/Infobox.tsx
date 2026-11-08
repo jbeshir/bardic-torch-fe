@@ -3,6 +3,8 @@ import { useId, type ReactNode } from "react";
 import { Skeleton, SkeletonRegion } from "./Skeleton";
 
 type InfoboxRow = {
+  /** Keys the row when its label may repeat (two "Words" credits). */
+  readonly id?: string;
   readonly label: string;
   /** null when nothing is recorded: shown as a dash, read as "Not recorded". */
   readonly value: ReactNode | null;
@@ -44,14 +46,14 @@ export function InfoboxFactValue({
 }: {
   readonly children: ReactNode;
 }) {
-  return <dd className="text-fg">{children}</dd>;
+  return <dd className="min-w-0 wrap-anywhere text-fg">{children}</dd>;
 }
 
 function Rows({ rows }: { readonly rows: readonly InfoboxRow[] }) {
   return (
     <InfoboxFacts>
-      {rows.map(({ label, value }) => (
-        <InfoboxFact key={label}>
+      {rows.map(({ id, label, value }) => (
+        <InfoboxFact key={id ?? label}>
           <InfoboxFactLabel>{label}</InfoboxFactLabel>
           <InfoboxFactValue>
             {value ?? (

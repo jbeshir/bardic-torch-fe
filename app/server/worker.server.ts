@@ -47,6 +47,9 @@ const RESOURCE_ROUTE_PATHS: readonly string[] = [
   "/auth/login",
   "/auth/logout",
   "/resources/theme",
+  "/robots.txt",
+  "/sitemap.xml",
+  "/sitemap/:type",
 ];
 
 /**

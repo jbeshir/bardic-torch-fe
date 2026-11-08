@@ -13,9 +13,11 @@ type RouteModule = NonNullable<ServerBuild["routes"][string]>["module"];
 type TestRouteModule = Omit<RouteModule, "default"> &
   Partial<Pick<RouteModule, "default">>;
 
-/** A route of the test build, under root. */
+/** A route of the test build, under root or under `parentId`'s route. */
 type TestRoute = {
   readonly id: string;
+  /** A layout route of the build, for a nested route; root by default. */
+  readonly parentId?: string;
   readonly module: TestRouteModule;
   readonly hasLoader: boolean;
   /** The route renders its own ErrorBoundary (the root always does). */
@@ -58,7 +60,7 @@ export function testBuild(routes: readonly TestRoute[]): ServerBuild {
           route.id,
           {
             id: route.id,
-            parentId: "root",
+            parentId: route.parentId ?? "root",
             module: route.module as RouteModule,
             ...("index" in route ? { index: true } : { path: route.path }),
           },
@@ -74,7 +76,7 @@ export function testBuild(routes: readonly TestRoute[]): ServerBuild {
             route.id,
             manifestEntry({
               id: route.id,
-              parentId: "root",
+              parentId: route.parentId ?? "root",
               hasLoader: route.hasLoader,
               hasErrorBoundary: route.hasErrorBoundary ?? false,
               ...("index" in route

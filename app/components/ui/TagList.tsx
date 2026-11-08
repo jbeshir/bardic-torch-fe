@@ -1,4 +1,8 @@
+import { useId, useState } from "react";
 import { Link as RouterLink } from "react-router";
+import { formatNumber } from "~/catalogue/format";
+import { useHydrated } from "~/hooks/useHydrated";
+import { Button } from "./Button";
 import { ExternalMark, externalKind } from "./Link";
 
 type Tag = {
@@ -60,10 +64,17 @@ function Chip({
   );
 }
 
+/** More chips than this collapse behind "Show all {n}" (DESIGN §6.12). */
+const VISIBLE_CHIPS = 12;
+
 /**
  * Category and facet chips (DESIGN §6.12): a wrapping list of link chips.
- * External chips point at the original wiki unless told otherwise. With no
+ * A chip to another site is marked as external. With no
  * tags it says so in a caption instead of leaving a gap.
+ *
+ * More than 12 chips show the first 12 and a "Show all {n}" disclosure
+ * button, which keeps focus while it shows or hides the rest. Without JS
+ * (and before hydration) every chip is shown and there is no button.
  */
 export function TagList({
   tags,
@@ -75,16 +86,49 @@ export function TagList({
   readonly size?: keyof typeof SIZES;
   readonly emptyText?: string;
 }) {
+  const listId = useId();
+  const hydrated = useHydrated();
+  const [expanded, setExpanded] = useState(false);
   if (tags.length === 0) {
     return <p className="text-caption text-fg-subtle">{emptyText}</p>;
   }
-  return (
-    <ul role="list" className="flex flex-wrap items-center gap-2">
-      {tags.map(tag => (
-        <li key={tag.to} className="flex">
+  const overflows = hydrated && tags.length > VISIBLE_CHIPS;
+  const list = (
+    <ul id={listId} role="list" className="flex flex-wrap items-center gap-2">
+      {tags.map((tag, index) => (
+        <li
+          key={tag.to}
+          hidden={overflows && !expanded && index >= VISIBLE_CHIPS}
+          className="flex"
+        >
           <Chip tag={tag} size={size} />
         </li>
       ))}
     </ul>
+  );
+  if (!overflows) {
+    return list;
+  }
+  return (
+    <div className="grid justify-items-start gap-2">
+      {list}
+      <Button
+        variant="ghost"
+        size="sm"
+        aria-expanded={expanded}
+        aria-controls={listId}
+        onClick={() => setExpanded(!expanded)}
+      >
+        {expanded ? (
+          "Show fewer"
+        ) : (
+          <>
+            Show all {formatNumber(tags.length)}
+            {/* Named for what it shows, out of context too (a list of buttons). */}
+            <span className="sr-only"> categories</span>
+          </>
+        )}
+      </Button>
+    </div>
   );
 }

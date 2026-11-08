@@ -226,6 +226,7 @@ describe("data responses", () => {
     expect(await routeData(response, "root")).toEqual({
       theme: null,
       account: { state: "signed-out" },
+      siteOrigin: "https://app.test",
     });
   });
 
@@ -257,6 +258,12 @@ describe("document theme", () => {
     expect(themeColours).toHaveLength(2);
     expect(themeColours[0]).toContain('media="(prefers-color-scheme: light)"');
     expect(themeColours[1]).toContain('media="(prefers-color-scheme: dark)"');
+  });
+
+  it("names British English as the page's language, matching og:locale", async () => {
+    const { html, metas } = await head(await get("/"));
+    expect(html).toContain('lang="en-GB"');
+    expect(metas).toContain('<meta property="og:locale" content="en_GB"/>');
   });
 
   it("ignores an unknown theme cookie", async () => {

@@ -3,9 +3,9 @@ import remarkDirective from "remark-directive";
 import remarkFrontmatter from "remark-frontmatter";
 import remarkGfm from "remark-gfm";
 import remarkMdxFrontmatter from "remark-mdx-frontmatter";
-import { rehypeHelpPage } from "./rehype-help-page";
-import { remarkCheckFrontmatter } from "./remark-check-frontmatter";
-import { remarkDirectives } from "./remark-directives";
+import { rehypeHelpPage } from "./rehype-help-page.ts";
+import { remarkCheckFrontmatter } from "./remark-check-frontmatter.ts";
+import { remarkDirectives } from "./remark-directives.ts";
 
 /**
  * How help pages compile (plan §0.10): plain Markdown (`format: "md"`, so

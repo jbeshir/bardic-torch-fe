@@ -89,7 +89,7 @@ export function SearchBoxes() {
     <Specimen
       id="search-box"
       title="SearchBox"
-      summary="Searches the original wiki with a plain GET form (DESIGN §6.26)."
+      summary="Searches the catalogue with a plain GET form to /search (DESIGN §6.26)."
     >
       <Example label="Header (40 px)" stack>
         <SearchBox size="md" />
@@ -147,10 +147,7 @@ export function PageTemplate() {
               current: "Conservation status",
             }}
             meta={
-              <Link
-                to={wikiPageUrl("Category:Conservation Status")}
-                appearance="muted"
-              >
+              <Link to={wikiPageUrl("Conservation Status")} appearance="muted">
                 Adapted from the original wiki
               </Link>
             }
@@ -179,7 +176,7 @@ export function PageTemplate() {
               { label: "Help", to: "/help" },
               {
                 label: "Conservation",
-                to: wikiPageUrl("Category:Conservation Status"),
+                to: "/categories?facet=conservation",
               },
             ]}
             licence="This page is available under CC BY-SA 4.0. Adapted from ‘Conservation Status’ on the original Bardic Torch wiki by its contributors."

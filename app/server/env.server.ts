@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { withStaticPageHeaders } from "./security-headers.server";
+import { withStaticPageHeaders } from "./security-headers.server.ts";
 
 /**
  * The Worker's environment, validated on every request. Bindings arrive as
@@ -88,7 +88,7 @@ export function configurationErrorResponse(
 ): Response {
   console.error(`Invalid environment:\n${problems.join("\n")}`);
   return new Response(
-    '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">' +
+    '<!DOCTYPE html><html lang="en-GB"><head><meta charset="utf-8">' +
       "<title>Site configuration error · Bardic Torch</title></head><body>" +
       "<main><h1>Site configuration error</h1>" +
       "<p>Bardic Torch is misconfigured and cannot serve pages right now. " +

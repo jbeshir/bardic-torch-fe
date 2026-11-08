@@ -1,11 +1,10 @@
 /**
  * Every link out of the site, and the site navigation (DESIGN §5.3). The
- * catalogue arrives in FE2; until then Browse, the facets and the search
- * go to the original wiki, marked as external. This is the only app module
- * that names the wiki's host (test/repo-hygiene.test.ts), so the catalogue
- * launch only changes this file: an entry gets an internal `href`. Links
- * are marked as external from their address (`externalKind` in
- * components/ui/Link.tsx).
+ * catalogue is on this site: the navigation's entries are internal paths.
+ * The original wiki is named only here, for the help pages' attribution
+ * (CC BY-SA), the footer's link and the 404 page's secondary link
+ * (test/repo-hygiene.test.ts). Links are marked as external from their
+ * address (`externalKind` in components/ui/Link.tsx).
  */
 
 const WIKI_ORIGIN = "https://bardictorch.miraheze.org";
@@ -20,16 +19,16 @@ export function isWikiUrl(url: string): boolean {
   return url === WIKI_ORIGIN || url.startsWith(`${WIKI_ORIGIN}/`);
 }
 
-/** The original wiki's own search (DESIGN §6.26): a GET form. */
-export const WIKI_SEARCH = {
-  action: `${WIKI_ORIGIN}/w/index.php`,
-  param: "search",
-} as const;
+/** The original wiki's own search page. */
+const WIKI_SEARCH_ACTION = `${WIKI_ORIGIN}/w/index.php`;
 
 /** The wiki's results for `query` (the 404 page's "Look on the original wiki"). */
 export function wikiSearchUrl(query: string): string {
-  return `${WIKI_SEARCH.action}?${new URLSearchParams({ [WIKI_SEARCH.param]: query })}`;
+  return `${WIKI_SEARCH_ACTION}?${new URLSearchParams({ search: query })}`;
 }
+
+/** The catalogue's search (DESIGN §6.26): a GET form to `/search?q=`. */
+export const SEARCH = { action: "/search", param: "q" } as const;
 
 /** The original wiki's front page. */
 export const WIKI_HOME_URL = wikiPageUrl("Main Page");
@@ -65,45 +64,39 @@ export function helpHref(slug: HelpSlug): string {
 
 type NavItem = {
   readonly label: string;
-  /** An internal path, or an absolute URL (the original wiki, for now). */
+  /** An internal path, with the query that picks a section if it has one. */
   readonly href: string;
 };
 
 type NavGroup = {
   readonly heading: string;
   readonly items: readonly NavItem[];
-  /** Explains the external links, under the heading (the SidebarNote). */
-  readonly note?: string;
 };
-
-const wiki = (label: string, title: string): NavItem => ({
-  label,
-  href: wikiPageUrl(title),
-});
 
 const page = (label: string, href: string): NavItem => ({ label, href });
 
-/** The ways to browse pieces: the sidebar's Facets, the home page's chips. */
-export const FACETS: readonly NavItem[] = [
-  wiki("Genre / kind", "Category:Genres"),
-  wiki("Mood", "Category:Moods"),
-  wiki("Topic", "Category:Topics"),
-  wiki("Culture", "Category:Cultures"),
-  wiki("Language", "Category:Languages"),
-  wiki("Legendaria", "Category:Legendaria"),
-  wiki("Origin", "Category:Source_Category"),
-  wiki("Conservation", "Category:Conservation_Status"),
+/** The ways to browse pieces: the sidebar's Facets. */
+const FACETS: readonly NavItem[] = [
+  page("Genre / kind", "/categories?facet=kind"),
+  page("Mood", "/categories?facet=mood"),
+  page("Topic", "/categories?facet=topic"),
+  page("Culture", "/categories?facet=culture"),
+  page("Language", "/categories?facet=language"),
+  page("Legendaria", "/categories?facet=legendaria"),
+  page("Origin", "/categories?facet=origin"),
+  page("Conservation", "/categories?facet=conservation"),
 ];
 
 /** The sidebar and drawer navigation, in order. */
 export const NAV_GROUPS: readonly NavGroup[] = [
   {
     heading: "Browse",
-    note: "The catalogue is on its way. Until it opens, these links go to the original Bardic Torch wiki.",
     items: [
-      wiki("Pieces", "Category:Pieces"),
-      wiki("Bards", "Category:Bards"),
-      wiki("Collections", "Collections"),
+      page("Pieces", "/pieces"),
+      page("Bards", "/bards"),
+      page("Collections", "/collections"),
+      page("Events and venues", "/events"),
+      page("Categories", "/categories"),
     ],
   },
   { heading: "Facets", items: FACETS },

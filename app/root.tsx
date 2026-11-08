@@ -22,8 +22,11 @@ import {
   useThemeChoice,
 } from "~/contexts/ThemeChoiceContext";
 import {
+  isResting,
   NOT_FOUND_META,
   NotFound,
+  RESTING_META,
+  Resting,
   ServerError,
   SERVER_ERROR_META,
 } from "~/components/ErrorPages";
@@ -67,6 +70,7 @@ export const links: Route.LinksFunction = () => [
  */
 export const meta: MetaFunction = ({ error }) => {
   if (!error) return [];
+  if (isResting(error)) return [...RESTING_META];
   return isRouteErrorResponse(error) && error.status === 404
     ? [...NOT_FOUND_META]
     : [...SERVER_ERROR_META];
@@ -119,7 +123,7 @@ function Document({ children }: { readonly children: ReactNode }) {
   const { choice } = useThemeChoice();
   const theme = choice === "system" ? null : choice;
   return (
-    <html lang="en" data-theme={theme ?? undefined}>
+    <html lang="en-GB" data-theme={theme ?? undefined}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -142,6 +146,8 @@ type LoaderData = {
   readonly theme: Theme | null;
   /** Who is reading, for the account control on every page. */
   readonly account: Account;
+  /** The site's origin (the request URL's), for canonical links (pageMeta). */
+  readonly siteOrigin: string;
 };
 
 export const loader = async ({ request, context }: Route.LoaderArgs) => {
@@ -156,6 +162,7 @@ export const loader = async ({ request, context }: Route.LoaderArgs) => {
     sentryDsn: context.get(appEnvContext).SENTRY_DSN,
     theme: readTheme(request),
     account,
+    siteOrigin: new URL(request.url).origin,
   };
   return data(loaded, { headers });
 };
@@ -224,14 +231,17 @@ export default function App() {
  * §10.5): the page the shell itself would have failed on. A minimal
  * standalone page with the same stylesheet, the Wordmark home link, the
  * error body and the same HelpLinks as every page. A 404 thrown by a
- * loader gets the 404 body; anything else is reported to Sentry (when it
- * is set up) and shows its event id as the reference.
+ * loader gets the 404 body, and the resting answer (`kind: "resting"`, an
+ * API outage) the resting body; neither is reported. Anything else is
+ * reported to Sentry (when it is set up) and shows its event id as the
+ * reference.
  */
 export function ErrorBoundary() {
   const error = useRouteError();
   const { pathname } = useLocation();
   const notFound = isRouteErrorResponse(error) && error.status === 404;
-  const reference = useErrorReference(error, !notFound);
+  const resting = isResting(error);
+  const reference = useErrorReference(error, !notFound && !resting);
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -253,6 +263,8 @@ export function ErrorBoundary() {
         <div className="mx-auto max-w-shell lg:max-w-form lg:rounded-xl lg:border lg:border-border lg:bg-surface lg:px-10 lg:shadow-1">
           {notFound ? (
             <NotFound pathname={pathname} />
+          ) : resting ? (
+            <Resting />
           ) : (
             <ServerError reference={reference} />
           )}

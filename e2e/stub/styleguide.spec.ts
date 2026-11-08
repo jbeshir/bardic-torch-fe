@@ -652,6 +652,21 @@ test.describe("forced colours", () => {
     const input = block(page, "input").getByRole("textbox").first();
     expect((await styleOf(input)).border).toMatch(/^solid /);
 
+    // A badge's border, and the extremes' weight and dash, survive the
+    // system palette (DESIGN §6.13): status never rests on colour.
+    const badge = (label: string) =>
+      block(page, "conservation-badge")
+        .locator(".rounded-full")
+        .filter({ hasText: new RegExp(`^Conservation status: ${label}$`) })
+        .first();
+    expect((await styleOf(badge("Endangered"))).border).toBe("solid 1px");
+    expect((await styleOf(badge("Critically endangered"))).border).toBe(
+      "solid 2px"
+    );
+    expect((await styleOf(badge("Not yet assessed"))).border).toBe(
+      "dashed 1px"
+    );
+
     // Focus on a pressed or selected control draws something other than
     // its state mark (WCAG 2.4.7): the mark gives way to the focus outline.
     const outlineOf = (locator: Locator) =>

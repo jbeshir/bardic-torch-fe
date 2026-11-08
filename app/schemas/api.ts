@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { components } from "~/api/schema.gen";
+import { type Assert, type Matches } from "./contract";
 import {
   characterCount,
   DISPLAY_NAME_MAX,
@@ -37,6 +38,7 @@ const errorCodeSchema = z.enum([
   "api_token_not_allowed",
   "moderator_required",
   "not_found",
+  "method_not_allowed",
   "conflict",
   "token_limit_reached",
   "internal",
@@ -106,22 +108,7 @@ export type User = z.output<typeof userSchema>;
 export type UpstreamErrorCode = z.output<typeof errorCodeSchema>;
 
 // Compile-time contract checks: each schema's output must equal the generated
-// type in both directions. zod types optional keys as `?: T | undefined`,
-// which `exactOptionalPropertyTypes` tells apart from the generated `?: T`;
-// the spec never sends `undefined`, so that difference is removed first.
-type WithoutUndefined<T> = T extends object
-  ? { [K in keyof T]: WithoutUndefined<Exclude<T[K], undefined>> }
-  : T;
-type Equals<A, B> =
-  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
-    ? true
-    : false;
-type Matches<S extends z.ZodType, Generated> = Equals<
-  WithoutUndefined<z.output<S>>,
-  WithoutUndefined<Generated>
->;
-type Assert<T extends true> = T;
-
+// type in both directions (see `Matches`).
 type _ContractChecks = [
   Assert<Matches<typeof roleSchema, Schemas["User"]["role"]>>,
   Assert<Matches<typeof errorCodeSchema, Schemas["Error"]["code"]>>,

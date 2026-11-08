@@ -1,6 +1,7 @@
 import type { RouterContextProvider } from "react-router";
 import { z } from "zod";
-import type { operations, paths } from "~/api/schema.gen";
+import type { operations } from "~/api/schema.gen";
+import { isUnavailable } from "~/catalogue/read-failure";
 import {
   apiTokenListSchema,
   createdApiTokenSchema,
@@ -27,6 +28,15 @@ import {
 } from "./auth.server";
 import { appEnvContext } from "./context.server";
 import { jsonResponse } from "./json.server";
+import {
+  aborted,
+  type EndpointOf,
+  isTimeout,
+  parseJson,
+  type Method,
+  UPSTREAM_TIMEOUT_MS,
+  upstreamUrl,
+} from "./upstream.server";
 
 /**
  * Server-side client for the Bardic Torch API. Every call is authenticated
@@ -59,24 +69,10 @@ type ApiResult<T> = (
 /** Largest form body the proxy routes accept. */
 const MAX_BODY_BYTES = 8 * 1024;
 
-type Method = "GET" | "PATCH" | "POST" | "DELETE";
-
 /**
- * The (path, method) pair at which `paths` declares `operation`. Methods a
- * path doesn't have are typed `never` there, which would match anything,
- * so they are excluded first.
+ * Where each authenticated operation lives; the compiler checks it against
+ * the spec.
  */
-type EndpointOf<Operation> = {
-  [Path in keyof paths]: {
-    [M in Method]: [paths[Path][Lowercase<M>]] extends [never]
-      ? never
-      : [paths[Path][Lowercase<M>]] extends [Operation]
-        ? { readonly path: Path; readonly method: M }
-        : never;
-  }[Method];
-}[keyof paths];
-
-/** Where each FE1 operation lives; the compiler checks it against the spec. */
 const ENDPOINTS = {
   getMe: { method: "GET", path: "/v1/me" },
   updateMe: { method: "PATCH", path: "/v1/me" },
@@ -96,14 +92,12 @@ type ApiRequest<T> = {
   readonly schema: z.ZodType<T>;
 };
 
-/**
- * How long the proxy waits for the API (its answer and the whole body)
- * before giving up with a 504, so a hung upstream still ends every form's
- * request with a visible Alert instead of a button that stays busy.
- */
-const UPSTREAM_TIMEOUT_MS = 10_000;
-
 const TRY_AGAIN = "We couldn’t do that just now. Try again shortly.";
+
+const UNREACHABLE: ApiError = {
+  code: "upstream_unavailable",
+  message: "We couldn’t reach our servers. Try again shortly.",
+};
 
 const SIGNED_OUT: ApiError = {
   code: "unauthenticated",
@@ -173,10 +167,12 @@ function upstreamError(
         };
       }
       return { code, message: TRY_AGAIN };
+    case "method_not_allowed":
     case "unsupported_media_type":
     case "internal":
-    case "unavailable":
       return { code, message: TRY_AGAIN };
+    case "unavailable":
+      return UNREACHABLE;
   }
 }
 
@@ -186,43 +182,6 @@ function failure(
   headers = new Headers()
 ): ApiResult<never> {
   return { ok: false, status, error, headers };
-}
-
-function upstreamUrl(base: string, request: ApiRequest<unknown>): string {
-  const path = ENDPOINTS[request.operationId].path.replace(
-    /\{(\w+)\}/g,
-    (_match, name: string) => encodeURIComponent(request.params?.[name] ?? "")
-  );
-  return `${base}${path}`;
-}
-
-/** `text` as JSON: null when empty, undefined when it isn't JSON. */
-function parseJson(text: string): unknown {
-  if (text === "") return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return undefined;
-  }
-}
-
-/** Rejects with the signal's reason once it aborts. */
-function aborted(signal: AbortSignal): Promise<never> {
-  return new Promise((_resolve, reject) => {
-    if (signal.aborted) reject(signal.reason);
-    signal.addEventListener("abort", () => reject(signal.reason), {
-      once: true,
-    });
-  });
-}
-
-/** `AbortSignal.timeout` rejects with a DOMException named TimeoutError. */
-function isTimeout(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    (error as { name?: unknown }).name === "TimeoutError"
-  );
 }
 
 async function callApi<T>(
@@ -243,7 +202,11 @@ async function callApi<T>(
   let text: string;
   try {
     response = await auth.authFetch(
-      upstreamUrl(env.BARDIC_TORCH_API_BASE_URL, apiRequest),
+      upstreamUrl(
+        env.BARDIC_TORCH_API_BASE_URL,
+        ENDPOINTS[apiRequest.operationId].path,
+        apiRequest.params
+      ),
       {
         method: ENDPOINTS[apiRequest.operationId].method,
         headers:
@@ -273,14 +236,7 @@ async function callApi<T>(
         headers
       );
     }
-    return failure(
-      502,
-      {
-        code: "upstream_unavailable",
-        message: "We couldn’t reach our servers. Try again shortly.",
-      },
-      headers
-    );
+    return failure(502, UNREACHABLE, headers);
   }
 
   if (response.status === 401) {
@@ -304,6 +260,9 @@ async function callApi<T>(
     }
   } else if (response.status >= 400) {
     const parsed = upstreamErrorSchema.safeParse(payload);
+    if (isUnavailable(response.status, parsed.data?.code)) {
+      return failure(response.status, UNREACHABLE, headers);
+    }
     if (parsed.success) {
       return failure(
         response.status,

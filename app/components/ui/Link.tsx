@@ -7,7 +7,7 @@ import { isWikiUrl } from "~/constants/navigation";
 type ExternalKind = "web" | "wiki";
 
 /** Each kind's icon and the hidden text that says where the link goes. */
-export const EXTERNAL_MARKS = {
+const EXTERNAL_MARKS = {
   web: { icon: IconExternalLink, suffix: " (external link)" },
   wiki: { icon: IconArrowUpRight, suffix: " (opens original wiki)" },
 } as const;
@@ -100,19 +100,34 @@ function withMark(children: ReactNode, mark: ReactNode) {
 }
 
 /**
+ * Where a link goes. A URL that came from the API (a reader added it) is
+ * `userContent`: an absolute URL only, which search engines are told not
+ * to follow or credit to us (`rel="nofollow ugc"`, DESIGN §6.3).
+ */
+type Target =
+  | {
+      /** An internal path, or an absolute URL. */
+      readonly to: string;
+      readonly userContent?: false;
+    }
+  | {
+      readonly to: `http${string}`;
+      readonly userContent: true;
+    };
+
+/**
  * A text link (DESIGN §6.3). Internal paths go through React Router with intent
  * prefetch; absolute URLs are plain anchors marked as external, in the same
  * tab. There is no disabled link: render plain text instead.
  */
 export function Link({
   to,
+  userContent = false,
   children,
   appearance = "standalone",
   current = false,
   compact = false,
-}: {
-  /** An internal path, or an absolute URL. */
-  readonly to: string;
+}: Target & {
   readonly children: ReactNode;
   readonly appearance?: Appearance;
   /** This link is the page being shown (`aria-current="page"`). */
@@ -121,11 +136,16 @@ export function Link({
   readonly compact?: boolean;
 }) {
   const className = `${current ? `rounded-sm ${CURRENT}` : linkClasses(appearance)}${compact ? ` ${COMPACT}` : ""}`;
-  const kind = externalKind(to);
+  // A user's URL is never routed, even one the pattern doesn't call absolute.
+  const kind = externalKind(to) ?? (userContent ? "web" : null);
   if (kind) {
     const content = withMark(children, <ExternalMark kind={kind} />);
     return (
-      <a href={to} rel="noopener" className={className}>
+      <a
+        href={to}
+        rel={userContent ? "nofollow ugc noopener" : "noopener"}
+        className={className}
+      >
         {/* One flex item, so the words keep their spaces. */}
         {compact ? <span>{content}</span> : content}
       </a>

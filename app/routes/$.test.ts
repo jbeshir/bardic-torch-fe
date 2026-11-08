@@ -24,9 +24,14 @@ describe("$ (any other address)", () => {
     expect(html).toContain('<meta name="robots" content="noindex"/>');
   });
 
-  it("searches the original wiki for the last part of the address", async () => {
+  it("searches the catalogue and the original wiki for the last part of the address", async () => {
     const html = await (await get("/wiki/Ballad_of_Bell")).text();
+    expect(html).toContain('href="/search?q=Ballad+of+Bell"');
+    expect(html).toContain("Search for ‘Ballad of Bell’");
     expect(html).toContain("index.php?search=Ballad+of+Bell");
+    expect(html).toContain(
+      "Pages from the old wiki don’t redirect here yet, so try searching for it."
+    );
   });
 
   it("answers data requests with 404 too", async () => {

@@ -48,6 +48,27 @@ const FE1_OPERATIONS = [
   },
 ] as const;
 
+/** The catalogue reads FE2 makes: anonymous, `security: []`. */
+const PUBLIC_CATALOGUE_OPERATIONS = [
+  "listPieces",
+  "getPiece",
+  "listPersons",
+  "getPerson",
+  "listTerms",
+  "getTerm",
+  "listCollections",
+  "getCollection",
+  "listEvents",
+  "getEvent",
+  "listPieceRevisions",
+  "listPersonRevisions",
+  "listTermRevisions",
+  "listCollectionRevisions",
+  "listEventRevisions",
+  "getRevision",
+  "listNeedsWork",
+] as const;
+
 function operationById(operationId: string) {
   return specOperations().find(
     ({ operation }) => operation.operationId === operationId
@@ -69,6 +90,16 @@ describe("api/openapi.yaml", () => {
     >;
     const result = await new Validator().validate(withoutInfo);
     expect(result.valid).toBe(false);
+  });
+
+  it("declares the 17 anonymous catalogue reads, and no others, without credentials", () => {
+    const anonymous = specOperations()
+      .filter(({ operation }) => operation.security?.length === 0)
+      .map(({ operation }) => operation.operationId)
+      .filter(id => id !== "getHealthz" && id !== "getReadyz");
+    expect([...anonymous].sort()).toEqual(
+      [...PUBLIC_CATALOGUE_OPERATIONS].sort()
+    );
   });
 
   it("gives every operation a unique operationId", () => {

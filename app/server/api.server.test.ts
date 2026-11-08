@@ -341,7 +341,13 @@ describe("responses", () => {
       "declared",
     ],
     ["getMe", 500, "internal", { message: TRY_AGAIN }, "declared"],
-    ["listAPITokens", 503, "unavailable", { message: TRY_AGAIN }, "undeclared"],
+    [
+      "updateMe",
+      405,
+      "method_not_allowed",
+      { message: TRY_AGAIN },
+      "undeclared",
+    ],
   ] as const)(
     "%s: an upstream %i %s gets the app's own copy and keeps its status",
     async (operationId, status, code, expected, contract) => {
@@ -406,7 +412,7 @@ describe("responses", () => {
     captureUpstream(
       "get",
       "/v1/tokens",
-      () => new HttpResponse("Bad gateway", { status: 503 })
+      () => new HttpResponse("Bad gateway", { status: 500 })
     );
     const result = await listApiTokens(await signedInRequest(), loadContext());
     expect(result).toMatchObject({
@@ -415,6 +421,41 @@ describe("responses", () => {
       error: { code: "bad_gateway" },
     });
   });
+
+  it.each([
+    ["a platform 503 that isn't JSON", 503, "Service Unavailable"],
+    [
+      "a 503 Error body",
+      503,
+      JSON.stringify({ code: "unavailable", message: "database unavailable" }),
+    ],
+    [
+      "the code unavailable at another status",
+      500,
+      JSON.stringify({ code: "unavailable", message: "database unavailable" }),
+    ],
+  ])(
+    "maps %s to upstream_unavailable with the unreachable copy",
+    async (_name, status, body) => {
+      captureUpstream(
+        "get",
+        "/v1/tokens",
+        () => new HttpResponse(body, { status })
+      );
+      const result = await listApiTokens(
+        await signedInRequest(),
+        loadContext()
+      );
+      expect(result).toMatchObject({
+        ok: false,
+        status,
+        error: {
+          code: "upstream_unavailable",
+          message: "We couldn’t reach our servers. Try again shortly.",
+        },
+      });
+    }
+  );
 
   it("maps a network failure to 502", async () => {
     server.use(http.get(`${API_BASE_URL}/v1/me`, () => HttpResponse.error()));

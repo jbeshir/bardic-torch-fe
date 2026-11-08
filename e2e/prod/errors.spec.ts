@@ -1,4 +1,6 @@
 import { expect } from "@playwright/test";
+import { outageNext } from "../support/fixture-api";
+import { waitForHydration } from "../support/hydration";
 import { checkpoint } from "../support/journey";
 import { openServerError } from "../support/journey-pages";
 import { HOME_HEADLINE } from "../support/pages";
@@ -23,6 +25,12 @@ test("an unknown URL is a 404 page inside the shell", async ({ page }) => {
   await expect(
     main.getByRole("link", { name: /Look on the original wiki/ })
   ).toHaveAttribute("href", /index\.php\?search=Ballad\+of\+the\+Bell$/);
+  // The catalogue's own search for the address's last part (C3.2).
+  await expect(
+    main.getByRole("link", {
+      name: "Search for ‘Ballad of the Bell’",
+    })
+  ).toHaveAttribute("href", "/search?q=Ballad+of+the+Bell");
 
   // The shell is all there: header, site nav and footer with its help links.
   await expect(page.getByRole("banner")).toBeVisible();
@@ -89,5 +97,61 @@ test("the styleguide is not part of the production build", async ({ page }) => {
   expect(response?.status()).toBe(404);
   await expect(
     page.getByRole("heading", { level: 1, name: "We couldn’t find that page" })
+  ).toBeVisible();
+});
+
+test("checkpoint: resting, the catalogue out of reach is a 503 with Retry-After", async ({
+  page,
+  request,
+}) => {
+  const q = `resting-${test.info().workerIndex}-${Date.now()}`;
+  await outageNext(request, {
+    operationId: "listPieces",
+    match: { q },
+    mode: "503",
+  });
+  const response = await page.goto(`/pieces?q=${q}`);
+  expect(response?.status()).toBe(503);
+  await waitForHydration(page);
+  expect(await response?.headerValue("retry-after")).toBe("60");
+  expect(await response?.headerValue("cache-control")).toBe(
+    "private, no-cache"
+  );
+  await expect(page).toHaveTitle("Bardic Torch is resting · Bardic Torch");
+  const main = page.getByRole("main");
+  await expect(
+    main.getByRole("heading", { level: 1, name: "Bardic Torch is resting" })
+  ).toBeVisible();
+  await expect(main).toContainText("briefly unreachable");
+  // Inside the shell: the site nav still works while the catalogue rests.
+  await expect(page.getByRole("navigation", { name: "Site" })).toBeVisible();
+  await expect(main).not.toContainText("Reference");
+  await checkpoint(page, "resting");
+
+  // The outage was for one request: Try again brings the page back.
+  await main.getByRole("button", { name: "Try again" }).click();
+  await expect(
+    main.getByRole("heading", { name: `Nothing matches ‘${q}’` })
+  ).toBeVisible();
+});
+
+// ---------------------------------------------------------------------------
+// C3.2: the 404 page's search
+
+test("an old wiki address searches the catalogue for its page", async ({
+  page,
+}) => {
+  const response = await page.goto("/wiki/Northmarch_Rising");
+  expect(response?.status()).toBe(404);
+  await waitForHydration(page);
+  const main = page.getByRole("main");
+  await main
+    .getByRole("link", { name: "Search for ‘Northmarch Rising’" })
+    .click();
+  await expect(page).toHaveURL(/\/search\?q=Northmarch\+Rising$/);
+  await expect(
+    main.getByRole("region", { name: "Pieces" }).getByRole("link", {
+      name: "Northmarch Rising",
+    })
   ).toBeVisible();
 });

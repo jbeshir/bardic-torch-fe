@@ -144,6 +144,417 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/pieces": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Search pieces
+     * @description Searches the public pieces, returning one page of them with how many match in all and the facet counts.
+     *     Every filter given must match. `term`s are grouped by their facet: a piece matches a facet if it is
+     *     tagged with any of its terms or any of their descendants, and must match every facet given. `kind`,
+     *     `conservation_status` and their values work the same way, as two more facets.
+     *
+     *     Facet counts are disjunctive: a value's count is how many pieces match every filter except the values
+     *     selected in its own facet, and match the value (a term with its descendants, each piece counted once).
+     *     Only values with a count above zero are listed. Letter counts ignore the `letter` filter. Unapproved
+     *     pieces, and terms that are unapproved or under an unapproved ancestor, are never matched or counted.
+     *     Credentials are ignored.
+     */
+    get: operations["listPieces"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/pieces/{slug}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a piece
+     * @description Returns a public piece with everything its page shows: classification, credits, relations, links with
+     *     their recorded performances, and conservation history. References to entities that are not public are
+     *     left out: unapproved terms, collections and events, and credits to and performers who are unapproved or
+     *     prefer not to have a page. Hidden links never appear. An unapproved piece is not found, exactly like an
+     *     unknown one. Credentials are ignored.
+     */
+    get: operations["getPiece"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/persons": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Search persons
+     * @description Searches the public persons, returning one page of them with how many match in all and how many sort
+     *     under each letter, ignoring the `letter` filter. Every filter given must match. Persons who prefer not to
+     *     have a page are listed as stubs: `q` matches them by name only, and they match no `role` or
+     *     `affiliation` filter. Hidden aliases never match. Unapproved persons are never listed or counted.
+     *     Credentials are ignored.
+     */
+    get: operations["listPersons"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/persons/{slug}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a person
+     * @description Returns a public person. A person who prefers not to have a page is shown by identity only: name, kind,
+     *     status and its source, with `is_stub` true and `profile` null. Otherwise the profile has their public
+     *     aliases (hidden aliases never appear), roles, affiliations, relations to other public persons, links,
+     *     works and performances. Works and performances are capped at 200 each, with totals. An unapproved person
+     *     is not found, exactly like an unknown one. Credentials are ignored.
+     */
+    get: operations["getPerson"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/terms": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List terms
+     * @description Lists the public terms of one facet, or of every facet, in tree order: by facet in the order of the
+     *     `Facet` enum, each parent before its children, and siblings by position, then display name. A term
+     *     that is unapproved, or under an unapproved ancestor, is not listed, nor is its subtree. Each term's counts
+     *     are of the distinct public pieces, and public persons with a page, that it or any public descendant
+     *     classifies. Credentials are ignored.
+     */
+    get: operations["listTerms"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/terms/{slug}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a term
+     * @description Returns a public term with its aliases, ancestors, public children and related affiliation, and one page
+     *     of its members: the public pieces it or any public descendant classifies, or for an `affiliation` term,
+     *     the public persons with a page affiliated with it or any public descendant. The other member list is
+     *     empty. Members are ordered by sort title or sort name; `piece_count` and `person_count` are their totals.
+     *     A term that is unapproved, or under an unapproved ancestor, is not found, exactly like an unknown one.
+     *     Credentials are ignored.
+     */
+    get: operations["getTerm"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/collections": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List collections
+     * @description Lists one page of the public collections, by sort name, with how many match in all and how many sort
+     *     under each letter, ignoring the `letter` filter. Unapproved collections are not listed or counted.
+     *     Credentials are ignored.
+     */
+    get: operations["listCollections"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/collections/{collection_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a collection
+     * @description Returns a public collection with its public region, parent and children, and its citations: each
+     *     visible link in the collection, once for each public piece, or public person with a page, it is attached
+     *     to, with the roles it is attached with. Citations are ordered by the piece's sort title or the person's
+     *     sort name and capped at 200, with a total. Hidden links never appear. An unapproved collection is not
+     *     found, exactly like an unknown one. Credentials are ignored.
+     */
+    get: operations["getCollection"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/events": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List events
+     * @description Lists one page of the public events and venues, by name, with how many there are in all. Unapproved
+     *     events are not listed. Credentials are ignored.
+     */
+    get: operations["listEvents"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/events/{slug}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get an event
+     * @description Returns a public event or venue with the performances recorded at it, newest year first (unknown years
+     *     last), capped at 200, with a total. Performances on hidden links, of unapproved pieces, or recorded only
+     *     by links of entities that are unapproved or prefer not to have a page are left out, as are performers who
+     *     are unapproved or prefer not to have a page. An unapproved event is not found, exactly like an unknown
+     *     one. Credentials are ignored.
+     */
+    get: operations["getEvent"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/pieces/{slug}/history": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List the history of a piece
+     * @description Lists one page of the approved revisions of a public piece, newest first, with how many there are in all.
+     *     Revisions that are not approved are never listed. An author is shown by display name only, and an
+     *     imported revision has no author but lists the wiki users who wrote it. A piece that is not public is not
+     *     found, exactly like an unknown one. Credentials are ignored.
+     */
+    get: operations["listPieceRevisions"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/persons/{slug}/history": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List the history of a person
+     * @description Lists one page of the approved revisions of a public person, newest first, with how many there are in all.
+     *     Revisions that are not approved are never listed. An author is shown by display name only, and an
+     *     imported revision has no author but lists the wiki users who wrote it. A person that is not public is not
+     *     found, exactly like an unknown one. Credentials are ignored.
+     */
+    get: operations["listPersonRevisions"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/terms/{slug}/history": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List the history of a term
+     * @description Lists one page of the approved revisions of a public term, newest first, with how many there are in all.
+     *     Revisions that are not approved are never listed. An author is shown by display name only, and an
+     *     imported revision has no author but lists the wiki users who wrote it. A term that is not public is not
+     *     found, exactly like an unknown one. Credentials are ignored.
+     */
+    get: operations["listTermRevisions"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/collections/{collection_id}/history": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List the history of a collection
+     * @description Lists one page of the approved revisions of a public collection, newest first, with how many there are in all.
+     *     Revisions that are not approved are never listed. An author is shown by display name only, and an
+     *     imported revision has no author but lists the wiki users who wrote it. A collection that is not public is not
+     *     found, exactly like an unknown one. Credentials are ignored.
+     */
+    get: operations["listCollectionRevisions"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/events/{slug}/history": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List the history of an event
+     * @description Lists one page of the approved revisions of a public event, newest first, with how many there are in all.
+     *     Revisions that are not approved are never listed. An author is shown by display name only, and an
+     *     imported revision has no author but lists the wiki users who wrote it. An event that is not public is not
+     *     found, exactly like an unknown one. Credentials are ignored.
+     */
+    get: operations["listEventRevisions"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revisions/{revision_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a revision
+     * @description Returns a public revision: an approved revision of a public entity, with views of its snapshot and of
+     *     its base's (the revision it was based on, if that is an approved revision of the same entity), and the
+     *     names of the snapshot's top-level fields that differ from the base's, or that are not empty if there is
+     *     no base. A view never shows the stored document as such: each reference to another entity is shown as
+     *     that entity is now, and left out if it is not public now; links are shown by URL, and left out if they
+     *     are hidden now; a person's alias appears only if it is public in the snapshot and is a public alias of
+     *     the person now; credits to, performers and relations of persons who are not public or prefer not to have
+     *     a page now are left out; and of a person who prefers not to have a page, now or in the snapshot, only the
+     *     identity is shown. System fields and preference profiles are never shown. `entity_type` says which of
+     *     the five shapes the revision has. A revision that is not approved, or whose entity is not public, is not
+     *     found, exactly like an unknown one. Credentials are ignored.
+     */
+    get: operations["getRevision"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/needs-work": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List entries needing work
+     * @description Lists one page of the public pieces and persons that need work, pieces first, each by sort key, with how
+     *     many there are in all and how many need work for each reason. A piece needs work if it is a stub, its
+     *     conservation status is unassessed, its licensing is unknown, or a visible link attached to it is dead; a
+     *     restricted piece is listed only if it is a stub. A person needs work if they are a stub, a community bard
+     *     whose licensing is unknown, or a visible link attached to them is dead. Persons who prefer not to have a
+     *     page and hidden links are never considered. Credentials are ignored.
+     */
+    get: operations["listNeedsWork"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export interface components {
   schemas: {
@@ -169,6 +580,7 @@ export interface components {
         | "api_token_not_allowed"
         | "moderator_required"
         | "not_found"
+        | "method_not_allowed"
         | "conflict"
         | "token_limit_reached"
         | "internal"
@@ -228,9 +640,11 @@ export interface components {
      */
     UpdateMeRequest: {
       /**
-       * @description The new display name. It is normalised to Unicode NFC and surrounding whitespace is trimmed; the result
-       *     must have 1 to 64 characters and no control or format characters (such as U+202E). Up to 256
-       *     characters are accepted before normalisation.
+       * @description The new display name, at most 256 characters as sent. It is normalised to Unicode NFC and surrounding
+       *     whitespace is trimmed; the result must have 1 to 64 characters, each a letter, mark, number,
+       *     punctuation, symbol or space separator. So control and format characters (such as U+202E), line and
+       *     paragraph separators, and private-use and unassigned code points are rejected, as are more than 4
+       *     combining marks in a row.
        * @example Morwen
        */
       display_name: string;
@@ -257,7 +671,8 @@ export interface components {
     CreateAPITokenRequest: {
       /**
        * @description A label to tell the token apart from others. Surrounding whitespace is trimmed, and at most 128
-       *     characters may remain; an empty, whitespace-only, null or missing name means the token has none.
+       *     characters may remain; an empty, whitespace-only, null or missing name means the token has none. The
+       *     characters allowed are those allowed in a display name.
        * @example CI runner
        */
       name?: string | null;
@@ -342,8 +757,2490 @@ export interface components {
     APITokenList: {
       data: components["schemas"]["APIToken"][];
     };
+    /**
+     * @description A letter of the A–Z index: the upper-case letter a sort key starts with, ignoring accents and leading
+     *     articles, or `0` for keys that start with anything else (digits, punctuation, other scripts).
+     * @example W
+     * @enum {string}
+     */
+    Letter:
+      | "0"
+      | "A"
+      | "B"
+      | "C"
+      | "D"
+      | "E"
+      | "F"
+      | "G"
+      | "H"
+      | "I"
+      | "J"
+      | "K"
+      | "L"
+      | "M"
+      | "N"
+      | "O"
+      | "P"
+      | "Q"
+      | "R"
+      | "S"
+      | "T"
+      | "U"
+      | "V"
+      | "W"
+      | "X"
+      | "Y"
+      | "Z";
+    /**
+     * @description How many entries of a list sort under a letter.
+     * @example {
+     *       "letter": "W",
+     *       "count": 12
+     *     }
+     */
+    LetterCount: {
+      letter: components["schemas"]["Letter"];
+      /**
+       * Format: int64
+       * @description How many entries match, ignoring the list's letter filter.
+       * @example 12
+       */
+      count: number;
+    };
+    /**
+     * @description The order of a piece search.
+     * @example title
+     * @enum {string}
+     */
+    PieceSort: "title" | "relevance";
+    /**
+     * @description The order of a person search.
+     * @example name
+     * @enum {string}
+     */
+    PersonSort: "name" | "relevance";
+    /**
+     * @description One page of a piece search, with how many pieces match in all and the facet counts.
+     * @example {
+     *       "data": [
+     *         {
+     *           "slug": "the-copper-kettle",
+     *           "title": "The Copper Kettle",
+     *           "kind": "song",
+     *           "secondary_kinds": [
+     *             "dance_music"
+     *           ],
+     *           "conservation_status": "endangered",
+     *           "is_stub": false
+     *         }
+     *       ],
+     *       "total": 1,
+     *       "facets": {
+     *         "terms": [
+     *           {
+     *             "slug": "war",
+     *             "count": 1
+     *           }
+     *         ],
+     *         "kinds": [
+     *           {
+     *             "kind": "song",
+     *             "count": 1
+     *           }
+     *         ],
+     *         "conservation_statuses": [
+     *           {
+     *             "conservation_status": "endangered",
+     *             "count": 1
+     *           }
+     *         ],
+     *         "letters": [
+     *           {
+     *             "letter": "C",
+     *             "count": 1
+     *           }
+     *         ]
+     *       }
+     *     }
+     */
+    PieceList: {
+      data: components["schemas"]["PieceSummary"][];
+      /**
+       * Format: int64
+       * @description How many pieces match, over every page.
+       * @example 1
+       */
+      total: number;
+      facets: components["schemas"]["PieceFacets"];
+    };
+    /**
+     * @description A piece search's facet counts. Each value's count is how many public pieces match every filter except
+     *     the values selected in its own facet, and match the value; only counts above zero are listed.
+     * @example {
+     *       "terms": [
+     *         {
+     *           "slug": "war",
+     *           "count": 3
+     *         }
+     *       ],
+     *       "kinds": [
+     *         {
+     *           "kind": "song",
+     *           "count": 2
+     *         }
+     *       ],
+     *       "conservation_statuses": [
+     *         {
+     *           "conservation_status": "endangered",
+     *           "count": 3
+     *         }
+     *       ],
+     *       "letters": [
+     *         {
+     *           "letter": "W",
+     *           "count": 3
+     *         }
+     *       ]
+     *     }
+     */
+    PieceFacets: {
+      /**
+       * @description Public piece terms, ordered by slug (not grouped by facet), counting each piece tagged with the term or any of
+       *     its descendants once. Join with `GET /v1/terms` on `slug` for each term's facet, display name and place in
+       *     the tree.
+       */
+      terms: components["schemas"]["TermCount"][];
+      /** @description Kinds, in the enum's order, counting pieces of the kind as primary or secondary kind. */
+      kinds: components["schemas"]["PieceKindCount"][];
+      /** @description Conservation statuses, in the enum's order. */
+      conservation_statuses: components["schemas"]["ConservationStatusCount"][];
+      /** @description Letters of the pieces' sort titles, `0` first, ignoring the `letter` filter. */
+      letters: components["schemas"]["LetterCount"][];
+    };
+    /**
+     * @description How many pieces of a search a term classifies.
+     * @example {
+     *       "slug": "war",
+     *       "count": 3
+     *     }
+     */
+    TermCount: {
+      slug: components["schemas"]["TermSummary"]["slug"];
+      count: components["schemas"]["PieceKindCount"]["count"];
+    };
+    /**
+     * @description How many pieces of a search are of a kind.
+     * @example {
+     *       "kind": "song",
+     *       "count": 3
+     *     }
+     */
+    PieceKindCount: {
+      kind: components["schemas"]["PieceKind"];
+      /**
+       * Format: int64
+       * @description How many pieces match, ignoring the selection in this facet.
+       * @example 3
+       */
+      count: number;
+    };
+    /**
+     * @description How many pieces of a search have a conservation status.
+     * @example {
+     *       "conservation_status": "endangered",
+     *       "count": 3
+     *     }
+     */
+    ConservationStatusCount: {
+      conservation_status: components["schemas"]["ConservationStatus"];
+      count: components["schemas"]["PieceKindCount"]["count"];
+    };
+    /**
+     * @description One page of a person search, with how many persons match in all and how many of those sort under each
+     *     letter.
+     * @example {
+     *       "data": [
+     *         {
+     *           "slug": "wren-of-the-vale",
+     *           "name": "Wren of the Vale",
+     *           "kind": "community_bard",
+     *           "is_stub": false
+     *         }
+     *       ],
+     *       "total": 1,
+     *       "letters": [
+     *         {
+     *           "letter": "W",
+     *           "count": 1
+     *         }
+     *       ]
+     *     }
+     */
+    PersonList: {
+      data: components["schemas"]["PersonSummary"][];
+      /**
+       * Format: int64
+       * @description How many persons match, over every page.
+       * @example 1
+       */
+      total: number;
+      /** @description Letters of the persons' sort names, `0` first, ignoring the `letter` filter. */
+      letters: components["schemas"]["LetterCount"][];
+    };
+    /**
+     * @description One page of the public collections, by sort name, with how many match in all and how many of those sort
+     *     under each letter.
+     * @example {
+     *       "data": [
+     *         {
+     *           "id": 12,
+     *           "name": "The Northmarch Songbook",
+     *           "kind": "songbook_pdf",
+     *           "url": "https://example.org/songbook.pdf",
+     *           "is_bardic_resource": true
+     *         }
+     *       ],
+     *       "total": 1,
+     *       "letters": [
+     *         {
+     *           "letter": "N",
+     *           "count": 1
+     *         }
+     *       ]
+     *     }
+     */
+    CollectionList: {
+      data: components["schemas"]["CollectionSummary"][];
+      /**
+       * Format: int64
+       * @description How many collections match, over every page.
+       * @example 1
+       */
+      total: number;
+      /** @description Letters of the collections' sort names, `0` first, ignoring the `letter` filter. */
+      letters: components["schemas"]["LetterCount"][];
+    };
+    /**
+     * @description A public piece, as other entities refer to it.
+     * @example {
+     *       "slug": "the-copper-kettle",
+     *       "title": "The Copper Kettle",
+     *       "kind": "song",
+     *       "secondary_kinds": [
+     *         "dance_music"
+     *       ],
+     *       "conservation_status": "endangered",
+     *       "is_stub": false
+     *     }
+     */
+    PieceSummary: {
+      /**
+       * @description The piece's address.
+       * @example the-copper-kettle
+       */
+      slug: string;
+      /** @example The Copper Kettle */
+      title: string;
+      kind: components["schemas"]["PieceKind"];
+      /** @description Further kinds the piece also is, in the enum's order. */
+      secondary_kinds: components["schemas"]["PieceKind"][];
+      conservation_status: components["schemas"]["ConservationStatus"];
+      /**
+       * @description Whether the piece's page is only a stub that needs filling in.
+       * @example false
+       */
+      is_stub: boolean;
+    };
+    /**
+     * @description A public person, as other entities refer to them. Persons who prefer not to have a page are never
+     *     referred to; where they are listed, `is_stub` is true.
+     * @example {
+     *       "slug": "wren-of-the-vale",
+     *       "name": "Wren of the Vale",
+     *       "kind": "community_bard",
+     *       "is_stub": false
+     *     }
+     */
+    PersonSummary: {
+      /**
+       * @description The person's address.
+       * @example wren-of-the-vale
+       */
+      slug: string;
+      /** @example Wren of the Vale */
+      name: string;
+      kind: components["schemas"]["PersonKind"];
+      /**
+       * @description Whether the person's page is only a stub.
+       * @example false
+       */
+      is_stub: boolean;
+    };
+    /**
+     * @description A public term, as other entities refer to it.
+     * @example {
+     *       "slug": "war",
+     *       "facet": "topic",
+     *       "display_name": "War"
+     *     }
+     */
+    TermSummary: {
+      /**
+       * @description The term's address.
+       * @example war
+       */
+      slug: string;
+      facet: components["schemas"]["Facet"];
+      /**
+       * @description The term's name, without any disambiguation suffix.
+       * @example War
+       */
+      display_name: string;
+    };
+    /**
+     * @description A public collection, as other entities refer to it. Collections are addressed by ID.
+     * @example {
+     *       "id": 12,
+     *       "name": "The Northmarch Songbook"
+     *     }
+     */
+    CollectionRef: {
+      /**
+       * Format: int64
+       * @example 12
+       */
+      id: number;
+      /** @example The Northmarch Songbook */
+      name: string;
+    };
+    /**
+     * @description A public event or venue, as other entities refer to it.
+     * @example {
+     *       "slug": "midwinter-revel",
+     *       "name": "Midwinter Revel",
+     *       "kind": "event"
+     *     }
+     */
+    EventSummary: {
+      /**
+       * @description The event's address.
+       * @example midwinter-revel
+       */
+      slug: string;
+      /** @example Midwinter Revel */
+      name: string;
+      kind: components["schemas"]["EventKind"];
+    };
+    /**
+     * @description A public piece's page.
+     * @example {
+     *       "slug": "the-copper-kettle",
+     *       "title": "The Copper Kettle",
+     *       "kind": "song",
+     *       "secondary_kinds": [],
+     *       "conservation_status": "endangered",
+     *       "is_stub": false,
+     *       "notes_md": "A drinking song from the northern marches.",
+     *       "version_notes_md": null,
+     *       "licensing_status": "known",
+     *       "licensing_notes_md": "Free to perform with credit.",
+     *       "licence": "cc_by_sa",
+     *       "historical_source_md": null,
+     *       "period_start": null,
+     *       "period_end": null,
+     *       "aliases": [
+     *         {
+     *           "text": "Kettle Song",
+     *           "kind": "nickname"
+     *         }
+     *       ],
+     *       "terms": [
+     *         {
+     *           "term": {
+     *             "slug": "drinking",
+     *             "facet": "topic",
+     *             "display_name": "Drinking"
+     *           },
+     *           "is_primary": true,
+     *           "part": null
+     *         }
+     *       ],
+     *       "credits": [
+     *         {
+     *           "role": "lyrics",
+     *           "attribution": "named",
+     *           "certainty": "certain",
+     *           "part": null,
+     *           "note": null,
+     *           "person": {
+     *             "slug": "wren-of-the-vale",
+     *             "name": "Wren of the Vale",
+     *             "kind": "community_bard",
+     *             "is_stub": false
+     *           }
+     *         },
+     *         {
+     *           "role": "tune",
+     *           "attribution": "traditional",
+     *           "certainty": "probable",
+     *           "part": null,
+     *           "note": "An old reel.",
+     *           "person": null
+     *         }
+     *       ],
+     *       "relations": [],
+     *       "links": [
+     *         {
+     *           "url": "https://video.example.org/watch/kettle",
+     *           "title": "The Copper Kettle at Midwinter Revel",
+     *           "description": null,
+     *           "platform": "video.example.org",
+     *           "place_type": "recording_platform",
+     *           "collection": null,
+     *           "locator": null,
+     *           "liveness": "ok",
+     *           "last_checked_at": "2026-10-01T09:00:00Z",
+     *           "archived_url": null,
+     *           "roles": [
+     *             "performance"
+     *           ],
+     *           "performances": [
+     *             {
+     *               "year": 2025,
+     *               "uploader": "Northmarch Bards",
+     *               "description_verbatim": "Sung by Wren at Midwinter Revel 2025",
+     *               "event": {
+     *                 "slug": "midwinter-revel",
+     *                 "name": "Midwinter Revel",
+     *                 "kind": "event"
+     *               },
+     *               "performers": [
+     *                 {
+     *                   "slug": "wren-of-the-vale",
+     *                   "name": "Wren of the Vale",
+     *                   "kind": "community_bard",
+     *                   "is_stub": false
+     *                 }
+     *               ]
+     *             }
+     *           ]
+     *         }
+     *       ],
+     *       "conservation_history": [
+     *         {
+     *           "conservation_status": "endangered",
+     *           "reason": "Known to only a few singers.",
+     *           "source_url": null,
+     *           "at": "2026-01-01T00:00:00Z"
+     *         }
+     *       ]
+     *     }
+     */
+    Piece: {
+      slug: components["schemas"]["PieceSummary"]["slug"];
+      title: components["schemas"]["PieceSummary"]["title"];
+      kind: components["schemas"]["PieceKind"];
+      secondary_kinds: components["schemas"]["PieceSummary"]["secondary_kinds"];
+      conservation_status: components["schemas"]["ConservationStatus"];
+      is_stub: components["schemas"]["PieceSummary"]["is_stub"];
+      /**
+       * @description Notes about the piece, in Markdown.
+       * @example A drinking song from the northern marches.
+       */
+      notes_md: string | null;
+      /**
+       * @description Notes on the piece's versions, in Markdown.
+       * @example The second verse is often left out.
+       */
+      version_notes_md: string | null;
+      licensing_status: components["schemas"]["LicensingStatus"];
+      /**
+       * @description Notes on the piece's licensing, in Markdown.
+       * @example Free to perform with credit.
+       */
+      licensing_notes_md: string | null;
+      licence: components["schemas"]["Licence"] | null;
+      /**
+       * @description The historical source of the piece, in Markdown.
+       * @example A broadside of about 1590.
+       */
+      historical_source_md: string | null;
+      /**
+       * @description The first year of the period the piece dates from.
+       * @example 1580
+       */
+      period_start: number | null;
+      /**
+       * @description The last year of the period the piece dates from.
+       * @example 1600
+       */
+      period_end: number | null;
+      /** @description Other titles of the piece. */
+      aliases: components["schemas"]["PieceAlias"][];
+      /** @description The public terms the piece is classified with, by facet in the enum's order, then position. */
+      terms: components["schemas"]["PieceTerm"][];
+      /**
+       * @description The piece's credits, in order. A credit to a person who is not public or prefers not to have a page is
+       *     left out entirely.
+       */
+      credits: components["schemas"]["PieceCredit"][];
+      /** @description Relations to other public pieces: the outgoing ones, then the incoming ones, each by type and title. */
+      relations: components["schemas"]["PieceRelation"][];
+      /**
+       * @description The piece's visible links, each once with all its roles, in order. The list is not capped: links are
+       *     curated per piece.
+       */
+      links: components["schemas"]["PieceLink"][];
+      /** @description The piece's conservation status changes, oldest first. */
+      conservation_history: components["schemas"]["ConservationChange"][];
+    };
+    /**
+     * @description Another title of a piece.
+     * @example {
+     *       "text": "Kettle Song",
+     *       "kind": "nickname"
+     *     }
+     */
+    PieceAlias: {
+      /** @example Kettle Song */
+      text: string;
+      kind: components["schemas"]["PieceAliasKind"];
+    };
+    /**
+     * @description A term a piece is classified with.
+     * @example {
+     *       "term": {
+     *         "slug": "drinking",
+     *         "facet": "topic",
+     *         "display_name": "Drinking"
+     *       },
+     *       "is_primary": true,
+     *       "part": null
+     *     }
+     */
+    PieceTerm: {
+      term: components["schemas"]["TermSummary"];
+      /**
+       * @description Whether this is the piece's primary term in its facet.
+       * @example true
+       */
+      is_primary: boolean;
+      /** @description The part of the piece the term applies to, or null for the whole piece. */
+      part: components["schemas"]["PiecePart"] | null;
+    };
+    /**
+     * @description A credit of a piece. `person` is set exactly when `attribution` is `named`.
+     * @example {
+     *       "role": "lyrics",
+     *       "attribution": "named",
+     *       "certainty": "certain",
+     *       "part": null,
+     *       "note": null,
+     *       "person": {
+     *         "slug": "wren-of-the-vale",
+     *         "name": "Wren of the Vale",
+     *         "kind": "community_bard",
+     *         "is_stub": false
+     *       }
+     *     }
+     */
+    PieceCredit: {
+      role: components["schemas"]["CreditRole"];
+      attribution: components["schemas"]["Attribution"];
+      certainty: components["schemas"]["Certainty"];
+      /** @description The part of the piece credited, or null for the whole of the role. */
+      part: components["schemas"]["PiecePart"] | null;
+      /**
+       * @description A note on the credit.
+       * @example Words adapted from an older ballad.
+       */
+      note: string | null;
+      /** @description The person credited, for a named credit. */
+      person: components["schemas"]["PersonSummary"] | null;
+    };
+    /**
+     * @description A relation between the piece shown and another public piece.
+     * @example {
+     *       "type": "variant_of",
+     *       "direction": "outgoing",
+     *       "piece": {
+     *         "slug": "the-brass-kettle",
+     *         "title": "The Brass Kettle",
+     *         "kind": "song",
+     *         "secondary_kinds": [],
+     *         "conservation_status": "low_risk",
+     *         "is_stub": false
+     *       }
+     *     }
+     */
+    PieceRelation: {
+      type: components["schemas"]["PieceRelationType"];
+      direction: components["schemas"]["RelationDirection"];
+      piece: components["schemas"]["PieceSummary"];
+    };
+    /**
+     * @description A visible link attached to a person, once with all its roles.
+     * @example {
+     *       "url": "https://example.org/wren",
+     *       "title": "Wren's songs",
+     *       "description": null,
+     *       "platform": "example.org",
+     *       "place_type": "author_site",
+     *       "collection": null,
+     *       "locator": null,
+     *       "liveness": "ok",
+     *       "last_checked_at": "2026-10-01T09:00:00Z",
+     *       "archived_url": null,
+     *       "roles": [
+     *         "website"
+     *       ]
+     *     }
+     */
+    PersonLink: {
+      /**
+       * @description The link's URL, as entered.
+       * @example https://example.org/wren
+       */
+      url: string;
+      /** @example Wren's songs */
+      title: string | null;
+      /** @example Recordings and lyrics. */
+      description: string | null;
+      /**
+       * @description The site the link is on.
+       * @example example.org
+       */
+      platform: string | null;
+      place_type: components["schemas"]["LinkPlaceType"] | null;
+      /** @description The public collection the link belongs to. */
+      collection: components["schemas"]["CollectionRef"] | null;
+      /**
+       * @description Where in the collection the linked item is, such as a page number.
+       * @example p. 12
+       */
+      locator: string | null;
+      liveness: components["schemas"]["Liveness"];
+      /**
+       * Format: date-time
+       * @description When the link was last checked, or null if it never has been.
+       * @example 2026-10-01T09:00:00Z
+       */
+      last_checked_at: string | null;
+      /**
+       * @description An archived copy of the linked page.
+       * @example https://archive.example.org/2026/https://example.org/wren
+       */
+      archived_url: string | null;
+      /** @description What the link offers, in attachment order. */
+      roles: components["schemas"]["LinkRole"][];
+    };
+    /**
+     * @description A visible link attached to a piece, once with all its roles, with the performances it records.
+     * @example {
+     *       "url": "https://example.org/kettle/lyrics",
+     *       "title": "The Copper Kettle",
+     *       "description": null,
+     *       "platform": "example.org",
+     *       "place_type": "community_archive",
+     *       "collection": {
+     *         "id": 12,
+     *         "name": "The Northmarch Songbook"
+     *       },
+     *       "locator": "p. 12",
+     *       "liveness": "ok",
+     *       "last_checked_at": null,
+     *       "archived_url": null,
+     *       "roles": [
+     *         "lyrics",
+     *         "sheet_music"
+     *       ],
+     *       "performances": []
+     *     }
+     */
+    PieceLink: {
+      url: components["schemas"]["PersonLink"]["url"];
+      title: components["schemas"]["PersonLink"]["title"];
+      description: components["schemas"]["PersonLink"]["description"];
+      platform: components["schemas"]["PersonLink"]["platform"];
+      place_type: components["schemas"]["PersonLink"]["place_type"];
+      collection: components["schemas"]["PersonLink"]["collection"];
+      locator: components["schemas"]["PersonLink"]["locator"];
+      liveness: components["schemas"]["Liveness"];
+      last_checked_at: components["schemas"]["PersonLink"]["last_checked_at"];
+      archived_url: components["schemas"]["PersonLink"]["archived_url"];
+      roles: components["schemas"]["PersonLink"]["roles"];
+      /** @description The performances of the piece the link records. */
+      performances: components["schemas"]["PiecePerformance"][];
+    };
+    /**
+     * @description A recorded performance of a piece. Performers who are not public or prefer not to have a page are left
+     *     out.
+     * @example {
+     *       "year": 2025,
+     *       "uploader": null,
+     *       "description_verbatim": "Sung by Wren at Midwinter Revel 2025",
+     *       "event": null,
+     *       "performers": []
+     *     }
+     */
+    PiecePerformance: {
+      /**
+       * @description The year of the performance.
+       * @example 2025
+       */
+      year: number | null;
+      /**
+       * @description Who uploaded the recording.
+       * @example Northmarch Bards
+       */
+      uploader: string | null;
+      /**
+       * @description The performance's description as originally recorded.
+       * @example Sung by Wren at Midwinter Revel 2025
+       */
+      description_verbatim: string;
+      /** @description The public event the performance was at. */
+      event: components["schemas"]["EventSummary"] | null;
+      /** @description The performers, in order. */
+      performers: components["schemas"]["PersonSummary"][];
+    };
+    /**
+     * @description A change of a piece's conservation status.
+     * @example {
+     *       "conservation_status": "endangered",
+     *       "reason": "Known to only a few singers.",
+     *       "source_url": null,
+     *       "at": "2026-01-01T00:00:00Z"
+     *     }
+     */
+    ConservationChange: {
+      conservation_status: components["schemas"]["ConservationStatus"];
+      /**
+       * @description Why the status changed.
+       * @example Known to only a few singers.
+       */
+      reason: string;
+      /**
+       * @description The source of the assessment.
+       * @example https://example.org/assessments/kettle
+       */
+      source_url: string | null;
+      /**
+       * Format: date-time
+       * @description When the status changed.
+       * @example 2026-01-01T00:00:00Z
+       */
+      at: string;
+    };
+    /**
+     * @description A public person. `profile` is null exactly when the person prefers not to have a page; `is_stub` is then
+     *     true.
+     * @example {
+     *       "slug": "hollis-fenn",
+     *       "name": "Hollis Fenn",
+     *       "kind": "community_bard",
+     *       "is_stub": true,
+     *       "status": "prefers_no_page",
+     *       "status_date": "2026-03-01",
+     *       "status_source_url": "https://example.org/requests/12",
+     *       "profile": null
+     *     }
+     */
+    Person: {
+      slug: components["schemas"]["PersonSummary"]["slug"];
+      name: components["schemas"]["PersonSummary"]["name"];
+      kind: components["schemas"]["PersonKind"];
+      is_stub: components["schemas"]["PersonSummary"]["is_stub"];
+      status: components["schemas"]["PersonStatus"];
+      /**
+       * Format: date
+       * @description When the status took effect.
+       * @example 2026-03-01
+       */
+      status_date: string | null;
+      /**
+       * @description The source of the status.
+       * @example https://example.org/requests/12
+       */
+      status_source_url: string | null;
+      /** @description Everything the person's page shows beyond their identity. */
+      profile: components["schemas"]["PersonProfile"] | null;
+    };
+    /**
+     * @description Everything a person's page shows beyond their identity.
+     * @example {
+     *       "pronouns": null,
+     *       "notes_md": null,
+     *       "licensing_status": "unknown",
+     *       "licensing_notes_md": null,
+     *       "aliases": [],
+     *       "roles": [
+     *         "singer"
+     *       ],
+     *       "affiliations": [],
+     *       "relations": [],
+     *       "links": [],
+     *       "works": [],
+     *       "works_total": 0,
+     *       "performances": [],
+     *       "performances_total": 0
+     *     }
+     */
+    PersonProfile: {
+      /** @example she/her */
+      pronouns: string | null;
+      /**
+       * @description Notes about the person, in Markdown.
+       * @example A bard of the northern marches.
+       */
+      notes_md: string | null;
+      licensing_status: components["schemas"]["LicensingStatus"];
+      /**
+       * @description How the person's works are licensed, in Markdown.
+       * @example Happy for her songs to be sung anywhere.
+       */
+      licensing_notes_md: string | null;
+      /** @description The person's public aliases. Hidden aliases never appear. */
+      aliases: components["schemas"]["PersonAlias"][];
+      /** @description What the person does, in the enum's order. */
+      roles: components["schemas"]["PersonRole"][];
+      /** @description The public affiliation terms of the person, by position, then name. */
+      affiliations: components["schemas"]["TermSummary"][];
+      /**
+       * @description Relations to other public persons who do not prefer no page: the outgoing ones, then the incoming
+       *     ones, each by type and name.
+       */
+      relations: components["schemas"]["PersonRelation"][];
+      /** @description The person's visible links, each once with all its roles, in order. */
+      links: components["schemas"]["PersonLink"][];
+      /** @description The person's credits on public pieces, by piece title; at most 200. */
+      works: components["schemas"]["PersonWork"][];
+      /**
+       * Format: int64
+       * @description How many credits the person has on public pieces.
+       * @example 1
+       */
+      works_total: number;
+      /**
+       * @description Performances the person performs in, or that links attached to them record, newest year first and
+       *     unknown years last; at most 200. A performance of a piece that is not public is left out.
+       */
+      performances: components["schemas"]["PersonPerformance"][];
+      /**
+       * Format: int64
+       * @description How many performances there are in all.
+       * @example 0
+       */
+      performances_total: number;
+    };
+    /**
+     * @description Another public name of a person.
+     * @example {
+     *       "name": "Wren",
+     *       "kind": "nickname"
+     *     }
+     */
+    PersonAlias: {
+      /** @example Wren */
+      name: string;
+      kind: components["schemas"]["PersonAliasKind"];
+    };
+    /**
+     * @description A relation between the person shown and another public person.
+     * @example {
+     *       "type": "member_of",
+     *       "direction": "outgoing",
+     *       "person": {
+     *         "slug": "northmarch-bards",
+     *         "name": "Northmarch Bards",
+     *         "kind": "group",
+     *         "is_stub": false
+     *       }
+     *     }
+     */
+    PersonRelation: {
+      type: components["schemas"]["PersonRelationType"];
+      direction: components["schemas"]["RelationDirection"];
+      person: components["schemas"]["PersonSummary"];
+    };
+    /**
+     * @description A person's credit on a public piece. Its attribution is always named.
+     * @example {
+     *       "piece": {
+     *         "slug": "the-copper-kettle",
+     *         "title": "The Copper Kettle",
+     *         "kind": "song",
+     *         "secondary_kinds": [],
+     *         "conservation_status": "endangered",
+     *         "is_stub": false
+     *       },
+     *       "role": "lyrics",
+     *       "certainty": "certain",
+     *       "part": null
+     *     }
+     */
+    PersonWork: {
+      piece: components["schemas"]["PieceSummary"];
+      role: components["schemas"]["CreditRole"];
+      certainty: components["schemas"]["Certainty"];
+      part: components["schemas"]["PieceCredit"]["part"];
+    };
+    /**
+     * @description A performance on a person's page.
+     * @example {
+     *       "piece": null,
+     *       "link": {
+     *         "url": "https://video.example.org/watch/revel",
+     *         "title": "Midwinter Revel 2025",
+     *         "platform": "video.example.org"
+     *       },
+     *       "year": 2025,
+     *       "event": null,
+     *       "description_verbatim": "Wren opens the evening"
+     *     }
+     */
+    PersonPerformance: {
+      /** @description The public piece performed, or null for a performance of no particular piece. */
+      piece: components["schemas"]["PieceSummary"] | null;
+      link: components["schemas"]["PerformanceLink"];
+      year: components["schemas"]["PiecePerformance"]["year"];
+      event: components["schemas"]["PiecePerformance"]["event"];
+      description_verbatim: components["schemas"]["PiecePerformance"]["description_verbatim"];
+    };
+    /**
+     * @description The link recording a performance.
+     * @example {
+     *       "url": "https://video.example.org/watch/revel",
+     *       "title": "Midwinter Revel 2025",
+     *       "platform": "video.example.org"
+     *     }
+     */
+    PerformanceLink: {
+      url: components["schemas"]["PersonLink"]["url"];
+      title: components["schemas"]["PersonLink"]["title"];
+      platform: components["schemas"]["PersonLink"]["platform"];
+    };
+    /**
+     * @description The public terms, in tree order.
+     * @example {
+     *       "data": [
+     *         {
+     *           "slug": "war",
+     *           "facet": "topic",
+     *           "name": "War",
+     *           "display_name": "War",
+     *           "parent_slug": null,
+     *           "piece_count": 12,
+     *           "person_count": 0
+     *         },
+     *         {
+     *           "slug": "swords",
+     *           "facet": "topic",
+     *           "name": "Swords",
+     *           "display_name": "Swords",
+     *           "parent_slug": "war",
+     *           "piece_count": 4,
+     *           "person_count": 0
+     *         }
+     *       ]
+     *     }
+     */
+    TermList: {
+      data: components["schemas"]["TermListItem"][];
+    };
+    /**
+     * @description A public term in the list of terms, with its counts.
+     * @example {
+     *       "slug": "swords",
+     *       "facet": "topic",
+     *       "name": "Swords",
+     *       "display_name": "Swords",
+     *       "parent_slug": "war",
+     *       "piece_count": 4,
+     *       "person_count": 0
+     *     }
+     */
+    TermListItem: {
+      slug: components["schemas"]["TermSummary"]["slug"];
+      facet: components["schemas"]["Facet"];
+      /**
+       * @description The term's full name, including any disambiguation suffix.
+       * @example 16th Century (Origin)
+       */
+      name: string;
+      display_name: components["schemas"]["TermSummary"]["display_name"];
+      /**
+       * @description The slug of the term's parent, or null for a root term.
+       * @example war
+       */
+      parent_slug: string | null;
+      /**
+       * Format: int64
+       * @description How many distinct public pieces the term or any public descendant classifies.
+       * @example 4
+       */
+      piece_count: number;
+      /**
+       * Format: int64
+       * @description How many distinct public persons with a page are affiliated with the term or any public descendant.
+       * @example 0
+       */
+      person_count: number;
+    };
+    /**
+     * @description A public term's page, with one page of its members.
+     * @example {
+     *       "slug": "war",
+     *       "facet": "topic",
+     *       "name": "War",
+     *       "display_name": "War",
+     *       "description_md": null,
+     *       "aliases": [
+     *         "Battle"
+     *       ],
+     *       "ancestors": [],
+     *       "children": [
+     *         {
+     *           "term": {
+     *             "slug": "swords",
+     *             "facet": "topic",
+     *             "display_name": "Swords"
+     *           },
+     *           "piece_count": 4,
+     *           "person_count": 0
+     *         }
+     *       ],
+     *       "related_affiliation": null,
+     *       "piece_count": 1,
+     *       "person_count": 0,
+     *       "pieces": [
+     *         {
+     *           "slug": "the-copper-kettle",
+     *           "title": "The Copper Kettle",
+     *           "kind": "song",
+     *           "secondary_kinds": [],
+     *           "conservation_status": "endangered",
+     *           "is_stub": false
+     *         }
+     *       ],
+     *       "persons": []
+     *     }
+     */
+    Term: {
+      slug: components["schemas"]["TermSummary"]["slug"];
+      facet: components["schemas"]["Facet"];
+      name: components["schemas"]["TermListItem"]["name"];
+      display_name: components["schemas"]["TermSummary"]["display_name"];
+      /**
+       * @description What the term covers, in Markdown.
+       * @example Songs about war and warriors.
+       */
+      description_md: string | null;
+      /** @description Other names of the term. */
+      aliases: string[];
+      /** @description The term's ancestors, root first. */
+      ancestors: components["schemas"]["TermSummary"][];
+      /** @description The term's public children, by position, then display name. */
+      children: components["schemas"]["TermChild"][];
+      /** @description The public affiliation term this term implies, if any. */
+      related_affiliation: components["schemas"]["TermSummary"] | null;
+      piece_count: components["schemas"]["TermListItem"]["piece_count"];
+      person_count: components["schemas"]["TermListItem"]["person_count"];
+      /**
+       * @description One page of the public pieces the term or any public descendant classifies, by sort title. Empty for
+       *     an `affiliation` term.
+       */
+      pieces: components["schemas"]["PieceSummary"][];
+      /**
+       * @description One page of the public persons with a page affiliated with the term or any public descendant, by sort
+       *     name. Empty unless the term is an `affiliation` term.
+       */
+      persons: components["schemas"]["PersonSummary"][];
+    };
+    /**
+     * @description A public child of a term, with its counts.
+     * @example {
+     *       "term": {
+     *         "slug": "swords",
+     *         "facet": "topic",
+     *         "display_name": "Swords"
+     *       },
+     *       "piece_count": 4,
+     *       "person_count": 0
+     *     }
+     */
+    TermChild: {
+      term: components["schemas"]["TermSummary"];
+      piece_count: components["schemas"]["TermListItem"]["piece_count"];
+      person_count: components["schemas"]["TermListItem"]["person_count"];
+    };
+    /**
+     * @description A public collection, as lists of collections show it.
+     * @example {
+     *       "id": 12,
+     *       "name": "The Northmarch Songbook",
+     *       "kind": "songbook_pdf",
+     *       "url": "https://example.org/songbook.pdf",
+     *       "is_bardic_resource": true
+     *     }
+     */
+    CollectionSummary: {
+      id: components["schemas"]["CollectionRef"]["id"];
+      name: components["schemas"]["CollectionRef"]["name"];
+      kind: components["schemas"]["CollectionKind"];
+      /**
+       * @description Where the collection is.
+       * @example https://example.org/songbook.pdf
+       */
+      url: string | null;
+      /**
+       * @description Whether the collection is a resource made for or by bards.
+       * @example true
+       */
+      is_bardic_resource: boolean;
+    };
+    /**
+     * @description A public collection's page.
+     * @example {
+     *       "id": 12,
+     *       "name": "The Northmarch Songbook",
+     *       "kind": "songbook_pdf",
+     *       "url": "https://example.org/songbook.pdf",
+     *       "is_bardic_resource": true,
+     *       "description_md": null,
+     *       "enumerable": "pdf",
+     *       "region": null,
+     *       "parent": null,
+     *       "children": [],
+     *       "citations": [
+     *         {
+     *           "piece": {
+     *             "slug": "the-copper-kettle",
+     *             "title": "The Copper Kettle",
+     *             "kind": "song",
+     *             "secondary_kinds": [],
+     *             "conservation_status": "endangered",
+     *             "is_stub": false
+     *           },
+     *           "person": null,
+     *           "url": "https://example.org/songbook.pdf",
+     *           "title": "The Northmarch Songbook",
+     *           "locator": "p. 12",
+     *           "roles": [
+     *             "lyrics"
+     *           ]
+     *         }
+     *       ],
+     *       "citations_total": 1
+     *     }
+     */
+    Collection: {
+      id: components["schemas"]["CollectionRef"]["id"];
+      name: components["schemas"]["CollectionRef"]["name"];
+      kind: components["schemas"]["CollectionKind"];
+      url: components["schemas"]["CollectionSummary"]["url"];
+      is_bardic_resource: components["schemas"]["CollectionSummary"]["is_bardic_resource"];
+      /**
+       * @description What the collection holds, in Markdown.
+       * @example Songs of the northern marches.
+       */
+      description_md: string | null;
+      enumerable: components["schemas"]["CollectionEnumerable"];
+      /** @description The public term for the region the collection is from, if any. */
+      region: components["schemas"]["TermSummary"] | null;
+      /** @description The public collection this one is part of, if any. */
+      parent: components["schemas"]["CollectionSummary"] | null;
+      /** @description The public collections that are part of this one, by sort name. */
+      children: components["schemas"]["CollectionSummary"][];
+      /**
+       * @description The collection's visible links, once for each public piece, or public person with a page, each is
+       *     attached to, by the piece's sort title or the person's sort name. At most 200.
+       */
+      citations: components["schemas"]["CollectionCitation"][];
+      /**
+       * Format: int64
+       * @description How many citations the collection has in all.
+       * @example 1
+       */
+      citations_total: number;
+    };
+    /**
+     * @description A link in a collection, attached to a piece or a person: exactly one of `piece` and `person` is set.
+     * @example {
+     *       "piece": null,
+     *       "person": {
+     *         "slug": "wren-of-the-vale",
+     *         "name": "Wren of the Vale",
+     *         "kind": "community_bard",
+     *         "is_stub": false
+     *       },
+     *       "url": "https://example.org/songbook.pdf",
+     *       "title": null,
+     *       "locator": "p. 3",
+     *       "roles": [
+     *         "external_profile"
+     *       ]
+     *     }
+     */
+    CollectionCitation: {
+      /** @description The public piece the link is attached to, or null if it is attached to a person. */
+      piece: components["schemas"]["PieceSummary"] | null;
+      /** @description The public person the link is attached to, or null if it is attached to a piece. */
+      person: components["schemas"]["PersonSummary"] | null;
+      url: components["schemas"]["PersonLink"]["url"];
+      title: components["schemas"]["PersonLink"]["title"];
+      locator: components["schemas"]["PersonLink"]["locator"];
+      /** @description The roles the link is attached to the piece or person with, in attachment order. */
+      roles: components["schemas"]["LinkRole"][];
+    };
+    /**
+     * @description One page of the public events and venues, by name.
+     * @example {
+     *       "data": [
+     *         {
+     *           "slug": "midwinter-revel",
+     *           "name": "Midwinter Revel",
+     *           "kind": "event"
+     *         }
+     *       ],
+     *       "total": 1
+     *     }
+     */
+    EventList: {
+      data: components["schemas"]["EventSummary"][];
+      /**
+       * Format: int64
+       * @description How many events match, over every page.
+       * @example 1
+       */
+      total: number;
+    };
+    /**
+     * @description A public event's or venue's page.
+     * @example {
+     *       "slug": "midwinter-revel",
+     *       "name": "Midwinter Revel",
+     *       "kind": "event",
+     *       "description_md": null,
+     *       "performances": [
+     *         {
+     *           "piece": null,
+     *           "link": {
+     *             "url": "https://video.example.org/watch/revel",
+     *             "title": "Midwinter Revel 2025",
+     *             "platform": "video.example.org"
+     *           },
+     *           "year": 2025,
+     *           "performers": [],
+     *           "description_verbatim": "Wren opens the evening"
+     *         }
+     *       ],
+     *       "performances_total": 1
+     *     }
+     */
+    Event: {
+      slug: components["schemas"]["EventSummary"]["slug"];
+      name: components["schemas"]["EventSummary"]["name"];
+      kind: components["schemas"]["EventKind"];
+      /**
+       * @description About the event or venue, in Markdown.
+       * @example A winter gathering of the northern marches.
+       */
+      description_md: string | null;
+      /** @description The performances recorded at the event, newest year first, unknown years last. At most 200. */
+      performances: components["schemas"]["EventPerformance"][];
+      /**
+       * Format: int64
+       * @description How many performances the event has in all.
+       * @example 1
+       */
+      performances_total: number;
+    };
+    /**
+     * @description A performance on an event's page. Performers who are not public or prefer not to have a page are left
+     *     out.
+     * @example {
+     *       "piece": null,
+     *       "link": {
+     *         "url": "https://video.example.org/watch/revel",
+     *         "title": "Midwinter Revel 2025",
+     *         "platform": "video.example.org"
+     *       },
+     *       "year": 2025,
+     *       "performers": [
+     *         {
+     *           "slug": "wren-of-the-vale",
+     *           "name": "Wren of the Vale",
+     *           "kind": "community_bard",
+     *           "is_stub": false
+     *         }
+     *       ],
+     *       "description_verbatim": "Wren opens the evening"
+     *     }
+     */
+    EventPerformance: {
+      piece: components["schemas"]["PersonPerformance"]["piece"];
+      link: components["schemas"]["PerformanceLink"];
+      year: components["schemas"]["PiecePerformance"]["year"];
+      performers: components["schemas"]["PiecePerformance"]["performers"];
+      description_verbatim: components["schemas"]["PiecePerformance"]["description_verbatim"];
+    };
+    /**
+     * @description What sort of piece a piece is.
+     * @example song
+     * @enum {string}
+     */
+    PieceKind:
+      "song" | "poem" | "story" | "dance_music" | "instrumental" | "comedy";
+    /**
+     * @description How at risk a piece is of being lost. `restricted` overrides every other status and means the piece
+     *     should not be spread further.
+     * @example endangered
+     * @enum {string}
+     */
+    ConservationStatus:
+      | "unassessed"
+      | "low_risk"
+      | "endangered"
+      | "critically_endangered"
+      | "restricted";
+    /**
+     * @description What sort of person a person is.
+     * @example community_bard
+     * @enum {string}
+     */
+    PersonKind: "community_bard" | "historical" | "group";
+    /**
+     * @description A person's status. A person who `prefers_no_page` is shown by identity only.
+     * @example active
+     * @enum {string}
+     */
+    PersonStatus: "active" | "deceased" | "prefers_no_page";
+    /**
+     * @description The dimension a term classifies along. `affiliation` terms classify persons; the others classify pieces.
+     * @example topic
+     * @enum {string}
+     */
+    Facet:
+      | "mood"
+      | "topic"
+      | "culture"
+      | "language"
+      | "legendaria"
+      | "form"
+      | "origin"
+      | "other"
+      | "affiliation";
+    /**
+     * @description Whether an event is a venue or a one-off event.
+     * @example event
+     * @enum {string}
+     */
+    EventKind: "venue" | "event";
+    /**
+     * @description Whether the licensing is known.
+     * @example known
+     * @enum {string}
+     */
+    LicensingStatus: "known" | "unknown";
+    /**
+     * @description The licence a piece is published under: public domain, a Creative Commons licence, all rights reserved
+     *     or another licence.
+     * @example cc_by_sa
+     * @enum {string}
+     */
+    Licence:
+      | "pd"
+      | "cc_by"
+      | "cc_by_sa"
+      | "cc_by_nc"
+      | "cc_by_nc_sa"
+      | "cc_by_nd"
+      | "cc_by_nc_nd"
+      | "arr"
+      | "other";
+    /**
+     * @description What sort of alternative title an alias is.
+     * @example alt_title
+     * @enum {string}
+     */
+    PieceAliasKind: "alt_title" | "nickname" | "subtitle" | "redirect";
+    /**
+     * @description What sort of name an alias is.
+     * @example stage
+     * @enum {string}
+     */
+    PersonAliasKind:
+      "legal" | "sca" | "stage" | "nickname" | "former" | "redirect";
+    /**
+     * @description The part of a piece a term or credit applies to.
+     * @example tune
+     * @enum {string}
+     */
+    PiecePart: "words" | "tune" | "verses" | "chorus";
+    /**
+     * @description What a credit credits.
+     * @example lyrics
+     * @enum {string}
+     */
+    CreditRole:
+      | "lyrics"
+      | "tune"
+      | "author"
+      | "choreography"
+      | "music"
+      | "arrangement"
+      | "translation";
+    /**
+     * @description Who a credit is attributed to. Only a `named` credit has a person.
+     * @example named
+     * @enum {string}
+     */
+    Attribution: "named" | "traditional" | "unknown" | "anonymous" | "various";
+    /**
+     * @description How certain a credit is.
+     * @example certain
+     * @enum {string}
+     */
+    Certainty: "certain" | "probable" | "possible" | "disputed";
+    /**
+     * @description How one piece relates to another, read from the relation's source to its target.
+     * @example variant_of
+     * @enum {string}
+     */
+    PieceRelationType:
+      "variant_of" | "contrafactum_of" | "setting_of" | "same_text_other_form";
+    /**
+     * @description How one person relates to another, read from the relation's source to its target.
+     * @example member_of
+     * @enum {string}
+     */
+    PersonRelationType: "heir_of" | "member_of" | "same_as";
+    /**
+     * @description Which way a relation points: `outgoing` reads "this entity <type> the other", `incoming` reads "the other
+     *     <type> this entity".
+     * @example outgoing
+     * @enum {string}
+     */
+    RelationDirection: "outgoing" | "incoming";
+    /**
+     * @description Something a person does.
+     * @example singer
+     * @enum {string}
+     */
+    PersonRole:
+      | "singer"
+      | "songwriter"
+      | "musician"
+      | "instrumentalist"
+      | "storyteller"
+      | "poet"
+      | "jester"
+      | "dancer";
+    /**
+     * @description What sort of place a link points to.
+     * @example recording_platform
+     * @enum {string}
+     */
+    LinkPlaceType:
+      | "recording_platform"
+      | "streaming"
+      | "author_site"
+      | "community_archive"
+      | "physical_archive"
+      | "book"
+      | "vendor"
+      | "author_contact"
+      | "oral_tradition"
+      | "other";
+    /**
+     * @description Whether a link worked when last checked: `unknown` if never checked, `blocked` if the site refused the
+     *     checker.
+     * @example ok
+     * @enum {string}
+     */
+    Liveness: "unknown" | "ok" | "dead" | "blocked";
+    /**
+     * @description What a link offers about the piece or person it is attached to.
+     * @example lyrics
+     * @enum {string}
+     */
+    LinkRole:
+      | "official"
+      | "lyrics"
+      | "text"
+      | "sheet_music"
+      | "dance_instructions"
+      | "text_source"
+      | "translation"
+      | "performance"
+      | "licensing_source"
+      | "website"
+      | "external_profile"
+      | "other";
+    /**
+     * @description What sort of resource a collection is.
+     * @example songbook_pdf
+     * @enum {string}
+     */
+    CollectionKind:
+      | "index_or_link_list"
+      | "songbook_pdf"
+      | "songbook_website"
+      | "website"
+      | "wiki_category"
+      | "wiki"
+      | "youtube_channel"
+      | "youtube_playlist"
+      | "google_doc_songbook"
+      | "blog"
+      | "archived_songbook"
+      | "hosted_document"
+      | "other";
+    /**
+     * @description Whether, and how, a collection's contents can be listed: `yes`, from a `pdf`, with a `browser`, through
+     *     an `api`, `no`, or `unknown` if not yet assessed.
+     * @example pdf
+     * @enum {string}
+     */
+    CollectionEnumerable: "unknown" | "yes" | "pdf" | "browser" | "api" | "no";
+    /**
+     * @description Where a revision came from: submitted by a `user` through the API or through the `mcp` server, or an
+     *     `import` from the old wiki.
+     * @example import
+     * @enum {string}
+     */
+    RevisionSource: "user" | "import" | "mcp";
+    /**
+     * @description The author of a revision, by display name; user IDs are never shown.
+     * @example {
+     *       "display_name": "Morwen"
+     *     }
+     */
+    RevisionAuthor: {
+      /** @example Morwen */
+      display_name: string;
+    };
+    /**
+     * @description A public revision, as an entity's history lists it.
+     * @example {
+     *       "id": 42,
+     *       "source": "import",
+     *       "summary": "",
+     *       "author": null,
+     *       "contributors": [
+     *         "Archivist",
+     *         "Lorekeeper"
+     *       ],
+     *       "created_at": "2026-01-01T00:00:00Z"
+     *     }
+     */
+    RevisionSummary: {
+      /**
+       * Format: int64
+       * @description The revision's ID, its address.
+       * @example 42
+       */
+      id: number;
+      source: components["schemas"]["RevisionSource"];
+      /**
+       * @description What the revision changed, in its author's words; may be empty.
+       * @example Credit the tune.
+       */
+      summary: string;
+      /** @description Who wrote the revision, or null for one with no author, such as an import. */
+      author: components["schemas"]["RevisionAuthor"] | null;
+      /** @description The wiki users who wrote an imported revision, in order; empty for other revisions. */
+      contributors: string[];
+      /**
+       * Format: date-time
+       * @description When the revision was created.
+       * @example 2026-10-01T09:00:00Z
+       */
+      created_at: string;
+    };
+    /**
+     * @description One page of a public entity's approved revisions, newest first.
+     * @example {
+     *       "data": [
+     *         {
+     *           "id": 42,
+     *           "source": "user",
+     *           "summary": "Credit the tune.",
+     *           "author": {
+     *             "display_name": "Morwen"
+     *           },
+     *           "contributors": [],
+     *           "created_at": "2026-10-01T09:00:00Z"
+     *         }
+     *       ],
+     *       "total": 1
+     *     }
+     */
+    RevisionHistory: {
+      data: components["schemas"]["RevisionSummary"][];
+      /**
+       * Format: int64
+       * @description How many approved revisions the entity has in all.
+       * @example 1
+       */
+      total: number;
+    };
+    /**
+     * @description A public revision with its snapshot views, in the shape of its `entity_type`: the entity as it is now,
+     *     the snapshot, the base revision's snapshot and the fields that changed.
+     * @example {
+     *       "entity_type": "event",
+     *       "id": 46,
+     *       "entity": {
+     *         "slug": "midwinter-revel",
+     *         "name": "Midwinter Revel",
+     *         "kind": "event"
+     *       },
+     *       "base_revision_id": null,
+     *       "source": "import",
+     *       "summary": "",
+     *       "author": null,
+     *       "contributors": [],
+     *       "created_at": "2026-01-01T00:00:00Z",
+     *       "snapshot": {
+     *         "name": "Midwinter Revel",
+     *         "kind": "event",
+     *         "description_md": null
+     *       },
+     *       "base_snapshot": null,
+     *       "changed_fields": [
+     *         "kind",
+     *         "name"
+     *       ]
+     *     }
+     */
+    Revision:
+      | components["schemas"]["PieceRevision"]
+      | components["schemas"]["PersonRevision"]
+      | components["schemas"]["TermRevision"]
+      | components["schemas"]["CollectionRevision"]
+      | components["schemas"]["EventRevision"];
+    /**
+     * @description A public revision of a piece, with its snapshot views.
+     * @example {
+     *       "entity_type": "piece",
+     *       "id": 42,
+     *       "entity": {
+     *         "slug": "the-copper-kettle",
+     *         "title": "The Copper Kettle",
+     *         "kind": "song",
+     *         "secondary_kinds": [],
+     *         "conservation_status": "endangered",
+     *         "is_stub": false
+     *       },
+     *       "base_revision_id": 41,
+     *       "source": "user",
+     *       "summary": "Credit the tune.",
+     *       "author": {
+     *         "display_name": "Morwen"
+     *       },
+     *       "contributors": [],
+     *       "created_at": "2026-10-01T09:00:00Z",
+     *       "snapshot": {
+     *         "title": "The Copper Kettle",
+     *         "kind": "song",
+     *         "secondary_kinds": [],
+     *         "conservation_status": "endangered",
+     *         "conservation_source_url": null,
+     *         "is_stub": false,
+     *         "notes_md": "A drinking song from the northern marches.",
+     *         "version_notes_md": null,
+     *         "licensing_status": "unknown",
+     *         "licensing_notes_md": null,
+     *         "licence": null,
+     *         "historical_source_md": null,
+     *         "period_start": null,
+     *         "period_end": null,
+     *         "aliases": [],
+     *         "terms": [],
+     *         "credits": [
+     *           {
+     *             "role": "tune",
+     *             "attribution": "traditional",
+     *             "certainty": "probable",
+     *             "part": null,
+     *             "note": "An old reel.",
+     *             "person": null
+     *           }
+     *         ],
+     *         "relations": [],
+     *         "links": []
+     *       },
+     *       "base_snapshot": {
+     *         "title": "The Copper Kettle",
+     *         "kind": "song",
+     *         "secondary_kinds": [],
+     *         "conservation_status": "endangered",
+     *         "conservation_source_url": null,
+     *         "is_stub": false,
+     *         "notes_md": "A drinking song from the northern marches.",
+     *         "version_notes_md": null,
+     *         "licensing_status": "unknown",
+     *         "licensing_notes_md": null,
+     *         "licence": null,
+     *         "historical_source_md": null,
+     *         "period_start": null,
+     *         "period_end": null,
+     *         "aliases": [],
+     *         "terms": [],
+     *         "credits": [],
+     *         "relations": [],
+     *         "links": []
+     *       },
+     *       "changed_fields": [
+     *         "credits"
+     *       ]
+     *     }
+     */
+    PieceRevision: {
+      /**
+       * @description The type of entity the revision is of, always `piece` in this shape. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      entity_type: "piece";
+      id: components["schemas"]["RevisionSummary"]["id"];
+      entity: components["schemas"]["PieceSummary"];
+      /**
+       * Format: int64
+       * @description The revision this one was based on, if that is an approved revision of the same entity; otherwise
+       *     null, as is `base_snapshot`.
+       * @example 41
+       */
+      base_revision_id: number | null;
+      source: components["schemas"]["RevisionSource"];
+      summary: components["schemas"]["RevisionSummary"]["summary"];
+      author: components["schemas"]["RevisionSummary"]["author"];
+      contributors: components["schemas"]["RevisionSummary"]["contributors"];
+      created_at: components["schemas"]["RevisionSummary"]["created_at"];
+      snapshot: components["schemas"]["PieceSnapshot"];
+      /** @description The view of the base revision's piece snapshot, or null if there is none. */
+      base_snapshot: components["schemas"]["PieceSnapshot"] | null;
+      /**
+       * @description The piece snapshot's top-level fields that differ from the base snapshot's or, with no base, that are
+       *     not empty (null, an empty list or string, false or 0), in alphabetical order.
+       */
+      changed_fields: (
+        | "aliases"
+        | "conservation_source_url"
+        | "conservation_status"
+        | "credits"
+        | "historical_source_md"
+        | "is_stub"
+        | "kind"
+        | "licence"
+        | "licensing_notes_md"
+        | "licensing_status"
+        | "links"
+        | "notes_md"
+        | "period_end"
+        | "period_start"
+        | "relations"
+        | "secondary_kinds"
+        | "terms"
+        | "title"
+        | "version_notes_md"
+      )[];
+    };
+    /**
+     * @description A public revision of a person, with its snapshot views.
+     * @example {
+     *       "entity_type": "person",
+     *       "id": 43,
+     *       "entity": {
+     *         "slug": "hollis-fenn",
+     *         "name": "Hollis Fenn",
+     *         "kind": "community_bard",
+     *         "is_stub": true
+     *       },
+     *       "base_revision_id": null,
+     *       "source": "import",
+     *       "summary": "",
+     *       "author": null,
+     *       "contributors": [
+     *         "Archivist",
+     *         "Lorekeeper"
+     *       ],
+     *       "created_at": "2026-01-01T00:00:00Z",
+     *       "snapshot": {
+     *         "name": "Hollis Fenn",
+     *         "kind": "community_bard",
+     *         "status": "prefers_no_page",
+     *         "status_date": "2026-03-01",
+     *         "status_source_url": "https://example.org/requests/12",
+     *         "is_stub": true,
+     *         "profile": null
+     *       },
+     *       "base_snapshot": null,
+     *       "changed_fields": [
+     *         "is_stub",
+     *         "kind",
+     *         "name",
+     *         "status",
+     *         "status_date",
+     *         "status_source_url"
+     *       ]
+     *     }
+     */
+    PersonRevision: {
+      /**
+       * @description The type of entity the revision is of, always `person` in this shape. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      entity_type: "person";
+      id: components["schemas"]["RevisionSummary"]["id"];
+      entity: components["schemas"]["PersonSummary"];
+      base_revision_id: components["schemas"]["PieceRevision"]["base_revision_id"];
+      source: components["schemas"]["RevisionSource"];
+      summary: components["schemas"]["RevisionSummary"]["summary"];
+      author: components["schemas"]["RevisionSummary"]["author"];
+      contributors: components["schemas"]["RevisionSummary"]["contributors"];
+      created_at: components["schemas"]["RevisionSummary"]["created_at"];
+      snapshot: components["schemas"]["PersonSnapshot"];
+      /** @description The view of the base revision's person snapshot, or null if there is none. */
+      base_snapshot: components["schemas"]["PersonSnapshot"] | null;
+      /**
+       * @description The person snapshot's top-level fields that differ from the base snapshot's or, with no base, that are
+       *     not empty (null, an empty list or string, false or 0), in alphabetical order.
+       */
+      changed_fields: (
+        | "is_stub"
+        | "kind"
+        | "name"
+        | "profile"
+        | "status"
+        | "status_date"
+        | "status_source_url"
+      )[];
+    };
+    /**
+     * @description A public revision of a term, with its snapshot views.
+     * @example {
+     *       "entity_type": "term",
+     *       "id": 44,
+     *       "entity": {
+     *         "slug": "swords",
+     *         "facet": "topic",
+     *         "display_name": "Swords"
+     *       },
+     *       "base_revision_id": null,
+     *       "source": "import",
+     *       "summary": "",
+     *       "author": null,
+     *       "contributors": [
+     *         "Archivist"
+     *       ],
+     *       "created_at": "2026-01-01T00:00:00Z",
+     *       "snapshot": {
+     *         "facet": "topic",
+     *         "name": "Swords",
+     *         "display_name": "Swords",
+     *         "parent": {
+     *           "slug": "war",
+     *           "facet": "topic",
+     *           "display_name": "War"
+     *         },
+     *         "related_affiliation": null,
+     *         "description_md": null,
+     *         "position": 0,
+     *         "aliases": []
+     *       },
+     *       "base_snapshot": null,
+     *       "changed_fields": [
+     *         "display_name",
+     *         "facet",
+     *         "name",
+     *         "parent"
+     *       ]
+     *     }
+     */
+    TermRevision: {
+      /**
+       * @description The type of entity the revision is of, always `term` in this shape. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      entity_type: "term";
+      id: components["schemas"]["RevisionSummary"]["id"];
+      entity: components["schemas"]["TermSummary"];
+      base_revision_id: components["schemas"]["PieceRevision"]["base_revision_id"];
+      source: components["schemas"]["RevisionSource"];
+      summary: components["schemas"]["RevisionSummary"]["summary"];
+      author: components["schemas"]["RevisionSummary"]["author"];
+      contributors: components["schemas"]["RevisionSummary"]["contributors"];
+      created_at: components["schemas"]["RevisionSummary"]["created_at"];
+      snapshot: components["schemas"]["TermSnapshot"];
+      /** @description The view of the base revision's term snapshot, or null if there is none. */
+      base_snapshot: components["schemas"]["TermSnapshot"] | null;
+      /**
+       * @description The term snapshot's top-level fields that differ from the base snapshot's or, with no base, that are
+       *     not empty (null, an empty list or string, false or 0), in alphabetical order.
+       */
+      changed_fields: (
+        | "aliases"
+        | "description_md"
+        | "display_name"
+        | "facet"
+        | "name"
+        | "parent"
+        | "position"
+        | "related_affiliation"
+      )[];
+    };
+    /**
+     * @description A public revision of a collection, with its snapshot views.
+     * @example {
+     *       "entity_type": "collection",
+     *       "id": 45,
+     *       "entity": {
+     *         "id": 12,
+     *         "name": "The Northmarch Songbook"
+     *       },
+     *       "base_revision_id": null,
+     *       "source": "import",
+     *       "summary": "",
+     *       "author": null,
+     *       "contributors": [],
+     *       "created_at": "2026-01-01T00:00:00Z",
+     *       "snapshot": {
+     *         "name": "The Northmarch Songbook",
+     *         "url": "https://example.org/songbook.pdf",
+     *         "kind": "songbook_pdf",
+     *         "description_md": null,
+     *         "region": null,
+     *         "parent": null,
+     *         "is_bardic_resource": true,
+     *         "enumerable": "pdf"
+     *       },
+     *       "base_snapshot": null,
+     *       "changed_fields": [
+     *         "enumerable",
+     *         "is_bardic_resource",
+     *         "kind",
+     *         "name",
+     *         "url"
+     *       ]
+     *     }
+     */
+    CollectionRevision: {
+      /**
+       * @description The type of entity the revision is of, always `collection` in this shape. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      entity_type: "collection";
+      id: components["schemas"]["RevisionSummary"]["id"];
+      entity: components["schemas"]["CollectionRef"];
+      base_revision_id: components["schemas"]["PieceRevision"]["base_revision_id"];
+      source: components["schemas"]["RevisionSource"];
+      summary: components["schemas"]["RevisionSummary"]["summary"];
+      author: components["schemas"]["RevisionSummary"]["author"];
+      contributors: components["schemas"]["RevisionSummary"]["contributors"];
+      created_at: components["schemas"]["RevisionSummary"]["created_at"];
+      snapshot: components["schemas"]["CollectionSnapshot"];
+      /** @description The view of the base revision's collection snapshot, or null if there is none. */
+      base_snapshot: components["schemas"]["CollectionSnapshot"] | null;
+      /**
+       * @description The collection snapshot's top-level fields that differ from the base snapshot's or, with no base, that are
+       *     not empty (null, an empty list or string, false or 0), in alphabetical order.
+       */
+      changed_fields: (
+        | "description_md"
+        | "enumerable"
+        | "is_bardic_resource"
+        | "kind"
+        | "name"
+        | "parent"
+        | "region"
+        | "url"
+      )[];
+    };
+    /**
+     * @description A public revision of an event or venue, with its snapshot views.
+     * @example {
+     *       "entity_type": "event",
+     *       "id": 46,
+     *       "entity": {
+     *         "slug": "midwinter-revel",
+     *         "name": "Midwinter Revel",
+     *         "kind": "event"
+     *       },
+     *       "base_revision_id": null,
+     *       "source": "import",
+     *       "summary": "",
+     *       "author": null,
+     *       "contributors": [],
+     *       "created_at": "2026-01-01T00:00:00Z",
+     *       "snapshot": {
+     *         "name": "Midwinter Revel",
+     *         "kind": "event",
+     *         "description_md": "A winter gathering of the northern marches."
+     *       },
+     *       "base_snapshot": null,
+     *       "changed_fields": [
+     *         "description_md",
+     *         "kind",
+     *         "name"
+     *       ]
+     *     }
+     */
+    EventRevision: {
+      /**
+       * @description The type of entity the revision is of, always `event` in this shape. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      entity_type: "event";
+      id: components["schemas"]["RevisionSummary"]["id"];
+      entity: components["schemas"]["EventSummary"];
+      base_revision_id: components["schemas"]["PieceRevision"]["base_revision_id"];
+      source: components["schemas"]["RevisionSource"];
+      summary: components["schemas"]["RevisionSummary"]["summary"];
+      author: components["schemas"]["RevisionSummary"]["author"];
+      contributors: components["schemas"]["RevisionSummary"]["contributors"];
+      created_at: components["schemas"]["RevisionSummary"]["created_at"];
+      snapshot: components["schemas"]["EventSnapshot"];
+      /** @description The view of the base revision's event snapshot, or null if there is none. */
+      base_snapshot: components["schemas"]["EventSnapshot"] | null;
+      /**
+       * @description The event snapshot's top-level fields that differ from the base snapshot's or, with no base, that are
+       *     not empty (null, an empty list or string, false or 0), in alphabetical order.
+       */
+      changed_fields: ("description_md" | "kind" | "name")[];
+    };
+    /**
+     * @description The view of a piece snapshot: the piece's editor-owned fields as the revision set them, with references
+     *     to entities that are public now, and visible links.
+     * @example {
+     *       "title": "The Copper Kettle",
+     *       "kind": "song",
+     *       "secondary_kinds": [],
+     *       "conservation_status": "endangered",
+     *       "conservation_source_url": null,
+     *       "is_stub": false,
+     *       "notes_md": null,
+     *       "version_notes_md": null,
+     *       "licensing_status": "unknown",
+     *       "licensing_notes_md": null,
+     *       "licence": null,
+     *       "historical_source_md": null,
+     *       "period_start": null,
+     *       "period_end": null,
+     *       "aliases": [],
+     *       "terms": [],
+     *       "credits": [],
+     *       "relations": [],
+     *       "links": []
+     *     }
+     */
+    PieceSnapshot: {
+      title: components["schemas"]["PieceSummary"]["title"];
+      kind: components["schemas"]["PieceKind"];
+      secondary_kinds: components["schemas"]["PieceSummary"]["secondary_kinds"];
+      conservation_status: components["schemas"]["ConservationStatus"];
+      /**
+       * @description The source supporting the conservation status.
+       * @example https://example.org/assessments/kettle
+       */
+      conservation_source_url: string | null;
+      is_stub: components["schemas"]["PieceSummary"]["is_stub"];
+      notes_md: components["schemas"]["Piece"]["notes_md"];
+      version_notes_md: components["schemas"]["Piece"]["version_notes_md"];
+      licensing_status: components["schemas"]["LicensingStatus"];
+      licensing_notes_md: components["schemas"]["Piece"]["licensing_notes_md"];
+      licence: components["schemas"]["Piece"]["licence"];
+      historical_source_md: components["schemas"]["Piece"]["historical_source_md"];
+      period_start: components["schemas"]["Piece"]["period_start"];
+      period_end: components["schemas"]["Piece"]["period_end"];
+      aliases: components["schemas"]["Piece"]["aliases"];
+      /** @description The public terms the piece was classified with, in the snapshot's order. */
+      terms: components["schemas"]["PieceTerm"][];
+      /**
+       * @description The snapshot's credits, in order. A credit to a person who is not public or prefers not to have a page
+       *     now is left out entirely.
+       */
+      credits: components["schemas"]["PieceCredit"][];
+      /** @description The piece's relations to other pieces that are public now; a snapshot holds outgoing ones only. */
+      relations: components["schemas"]["SnapshotPieceRelation"][];
+      /** @description The snapshot's links that are not hidden now, in order, with no system state such as liveness. */
+      links: components["schemas"]["SnapshotPieceLink"][];
+    };
+    /**
+     * @description A relation of a piece snapshot's piece to another public piece.
+     * @example {
+     *       "type": "variant_of",
+     *       "piece": {
+     *         "slug": "the-brass-kettle",
+     *         "title": "The Brass Kettle",
+     *         "kind": "song",
+     *         "secondary_kinds": [],
+     *         "conservation_status": "low_risk",
+     *         "is_stub": false
+     *       }
+     *     }
+     */
+    SnapshotPieceRelation: {
+      type: components["schemas"]["PieceRelationType"];
+      piece: components["schemas"]["PieceSummary"];
+    };
+    /**
+     * @description A link of a piece snapshot, with the performances of the piece it records.
+     * @example {
+     *       "url": "https://example.org/kettle/lyrics",
+     *       "title": "The Copper Kettle",
+     *       "description": null,
+     *       "platform": "example.org",
+     *       "place_type": "community_archive",
+     *       "collection": null,
+     *       "locator": null,
+     *       "roles": [
+     *         "lyrics"
+     *       ],
+     *       "performances": []
+     *     }
+     */
+    SnapshotPieceLink: {
+      url: components["schemas"]["PersonLink"]["url"];
+      title: components["schemas"]["PersonLink"]["title"];
+      description: components["schemas"]["PersonLink"]["description"];
+      platform: components["schemas"]["PersonLink"]["platform"];
+      place_type: components["schemas"]["PersonLink"]["place_type"];
+      collection: components["schemas"]["PersonLink"]["collection"];
+      locator: components["schemas"]["PersonLink"]["locator"];
+      roles: components["schemas"]["PersonLink"]["roles"];
+      performances: components["schemas"]["PieceLink"]["performances"];
+    };
+    /**
+     * @description A link of a person snapshot, with the performances it records.
+     * @example {
+     *       "url": "https://example.org/wren",
+     *       "title": "Wren's songs",
+     *       "description": null,
+     *       "platform": "example.org",
+     *       "place_type": "author_site",
+     *       "collection": null,
+     *       "locator": null,
+     *       "roles": [
+     *         "website"
+     *       ],
+     *       "performances": []
+     *     }
+     */
+    SnapshotPersonLink: {
+      url: components["schemas"]["PersonLink"]["url"];
+      title: components["schemas"]["PersonLink"]["title"];
+      description: components["schemas"]["PersonLink"]["description"];
+      platform: components["schemas"]["PersonLink"]["platform"];
+      place_type: components["schemas"]["PersonLink"]["place_type"];
+      collection: components["schemas"]["PersonLink"]["collection"];
+      locator: components["schemas"]["PersonLink"]["locator"];
+      roles: components["schemas"]["PersonLink"]["roles"];
+      /** @description The performances the link records. A performance of a piece that is not public now is left out. */
+      performances: components["schemas"]["SnapshotPersonPerformance"][];
+    };
+    /**
+     * @description A performance a person snapshot's link records, of a public piece or of none in particular. Performers
+     *     who are not public or prefer not to have a page now are left out.
+     * @example {
+     *       "piece": null,
+     *       "year": 2025,
+     *       "uploader": null,
+     *       "description_verbatim": "Wren tells a winter tale",
+     *       "event": null,
+     *       "performers": []
+     *     }
+     */
+    SnapshotPersonPerformance: {
+      /** @description The piece performed, or null for a performance of no particular piece. */
+      piece: components["schemas"]["PieceSummary"] | null;
+      year: components["schemas"]["PiecePerformance"]["year"];
+      uploader: components["schemas"]["PiecePerformance"]["uploader"];
+      description_verbatim: components["schemas"]["PiecePerformance"]["description_verbatim"];
+      event: components["schemas"]["PiecePerformance"]["event"];
+      performers: components["schemas"]["PiecePerformance"]["performers"];
+    };
+    /**
+     * @description The view of a person snapshot. `profile` is null, and `is_stub` true, for a person who prefers not to
+     *     have a page, now or in the snapshot: only their identity is shown.
+     * @example {
+     *       "name": "Hollis Fenn",
+     *       "kind": "community_bard",
+     *       "status": "prefers_no_page",
+     *       "status_date": "2026-03-01",
+     *       "status_source_url": "https://example.org/requests/12",
+     *       "is_stub": true,
+     *       "profile": null
+     *     }
+     */
+    PersonSnapshot: {
+      name: components["schemas"]["PersonSummary"]["name"];
+      kind: components["schemas"]["PersonKind"];
+      status: components["schemas"]["PersonStatus"];
+      status_date: components["schemas"]["Person"]["status_date"];
+      status_source_url: components["schemas"]["Person"]["status_source_url"];
+      is_stub: components["schemas"]["PersonSummary"]["is_stub"];
+      /** @description Everything the snapshot shows beyond the person's identity. */
+      profile: components["schemas"]["PersonSnapshotProfile"] | null;
+    };
+    /**
+     * @description Everything a person snapshot shows beyond the person's identity.
+     * @example {
+     *       "pronouns": null,
+     *       "notes_md": null,
+     *       "licensing_status": "unknown",
+     *       "licensing_notes_md": null,
+     *       "aliases": [],
+     *       "roles": [
+     *         "singer"
+     *       ],
+     *       "affiliations": [],
+     *       "relations": [],
+     *       "links": []
+     *     }
+     */
+    PersonSnapshotProfile: {
+      pronouns: components["schemas"]["PersonProfile"]["pronouns"];
+      notes_md: components["schemas"]["PersonProfile"]["notes_md"];
+      licensing_status: components["schemas"]["LicensingStatus"];
+      licensing_notes_md: components["schemas"]["PersonProfile"]["licensing_notes_md"];
+      /** @description The snapshot's public aliases that are public aliases of the person now. */
+      aliases: components["schemas"]["PersonAlias"][];
+      /** @description What the person does, in the snapshot's order. */
+      roles: components["schemas"]["PersonRole"][];
+      /** @description The person's affiliation terms that are public now, in the snapshot's order. */
+      affiliations: components["schemas"]["TermSummary"][];
+      /**
+       * @description The person's relations to other persons who are public and do not prefer no page now; a snapshot holds
+       *     outgoing ones only.
+       */
+      relations: components["schemas"]["SnapshotPersonRelation"][];
+      /** @description The snapshot's links that are not hidden now, in order. */
+      links: components["schemas"]["SnapshotPersonLink"][];
+    };
+    /**
+     * @description A relation of a person snapshot's person to another public person with a page.
+     * @example {
+     *       "type": "member_of",
+     *       "person": {
+     *         "slug": "the-northmarch-bards",
+     *         "name": "The Northmarch Bards",
+     *         "kind": "group",
+     *         "is_stub": false
+     *       }
+     *     }
+     */
+    SnapshotPersonRelation: {
+      type: components["schemas"]["PersonRelationType"];
+      person: components["schemas"]["PersonSummary"];
+    };
+    /**
+     * @description The view of a term snapshot.
+     * @example {
+     *       "facet": "topic",
+     *       "name": "Swords",
+     *       "display_name": "Swords",
+     *       "parent": null,
+     *       "related_affiliation": null,
+     *       "description_md": null,
+     *       "position": 0,
+     *       "aliases": []
+     *     }
+     */
+    TermSnapshot: {
+      facet: components["schemas"]["Facet"];
+      name: components["schemas"]["TermListItem"]["name"];
+      display_name: components["schemas"]["TermSummary"]["display_name"];
+      /** @description The term's parent, if it is public now. */
+      parent: components["schemas"]["TermSummary"] | null;
+      /** @description The affiliation term the term implies, if it is public now. */
+      related_affiliation: components["schemas"]["TermSummary"] | null;
+      description_md: components["schemas"]["Term"]["description_md"];
+      /**
+       * Format: int32
+       * @description Where the term sorts among its siblings.
+       * @example 0
+       */
+      position: number;
+      aliases: components["schemas"]["Term"]["aliases"];
+    };
+    /**
+     * @description The view of a collection snapshot.
+     * @example {
+     *       "name": "The Northmarch Songbook",
+     *       "url": "https://example.org/songbook.pdf",
+     *       "kind": "songbook_pdf",
+     *       "description_md": null,
+     *       "region": null,
+     *       "parent": null,
+     *       "is_bardic_resource": true,
+     *       "enumerable": "pdf"
+     *     }
+     */
+    CollectionSnapshot: {
+      name: components["schemas"]["CollectionRef"]["name"];
+      url: components["schemas"]["CollectionSummary"]["url"];
+      kind: components["schemas"]["CollectionKind"];
+      description_md: components["schemas"]["Collection"]["description_md"];
+      /** @description The term for the region the collection is from, if it is public now. */
+      region: components["schemas"]["TermSummary"] | null;
+      /** @description The collection this one is part of, if it is public now. */
+      parent: components["schemas"]["CollectionSummary"] | null;
+      is_bardic_resource: components["schemas"]["CollectionSummary"]["is_bardic_resource"];
+      enumerable: components["schemas"]["CollectionEnumerable"];
+    };
+    /**
+     * @description The view of an event snapshot.
+     * @example {
+     *       "name": "Midwinter Revel",
+     *       "kind": "event",
+     *       "description_md": null
+     *     }
+     */
+    EventSnapshot: {
+      name: components["schemas"]["EventSummary"]["name"];
+      kind: components["schemas"]["EventKind"];
+      description_md: components["schemas"]["Event"]["description_md"];
+    };
+    /**
+     * @description Why an entry needs work: it is a `stub`; its conservation status is `unassessed`; its licensing is
+     *     unknown (`missing_licensing`); or a visible link attached to it is dead (`dead_links`).
+     * @example stub
+     * @enum {string}
+     */
+    NeedsWorkReason: "stub" | "unassessed" | "missing_licensing" | "dead_links";
+    /**
+     * @description One page of the public pieces and persons needing work, pieces first, each by sort key.
+     * @example {
+     *       "data": [
+     *         {
+     *           "entity_type": "piece",
+     *           "slug": "the-copper-kettle",
+     *           "title": "The Copper Kettle",
+     *           "reasons": [
+     *             "stub",
+     *             "missing_licensing"
+     *           ]
+     *         }
+     *       ],
+     *       "total": 1,
+     *       "counts": [
+     *         {
+     *           "reason": "stub",
+     *           "count": 1
+     *         },
+     *         {
+     *           "reason": "unassessed",
+     *           "count": 0
+     *         },
+     *         {
+     *           "reason": "missing_licensing",
+     *           "count": 1
+     *         },
+     *         {
+     *           "reason": "dead_links",
+     *           "count": 0
+     *         }
+     *       ]
+     *     }
+     */
+    NeedsWorkList: {
+      data: components["schemas"]["NeedsWorkEntry"][];
+      /**
+       * Format: int64
+       * @description How many entries need work for the requested reason, or any reason, in all.
+       * @example 1
+       */
+      total: number;
+      /** @description How many entries need work for each reason, whatever the requested reason, in the enum's order. */
+      counts: components["schemas"]["NeedsWorkCount"][];
+    };
+    /**
+     * @description A public piece or person needing work.
+     * @example {
+     *       "entity_type": "person",
+     *       "slug": "wren-of-the-vale",
+     *       "title": "Wren of the Vale",
+     *       "reasons": [
+     *         "dead_links"
+     *       ]
+     *     }
+     */
+    NeedsWorkEntry: {
+      /**
+       * @description Whether the entry is a piece or a person.
+       * @example piece
+       * @enum {string}
+       */
+      entity_type: "piece" | "person";
+      /**
+       * @description The piece's or person's address.
+       * @example the-copper-kettle
+       */
+      slug: string;
+      /**
+       * @description The piece's title or the person's name.
+       * @example The Copper Kettle
+       */
+      title: string;
+      /** @description Every reason the entry needs work, in the enum's order. */
+      reasons: components["schemas"]["NeedsWorkReason"][];
+    };
+    /**
+     * @description How many entries need work for a reason.
+     * @example {
+     *       "reason": "stub",
+     *       "count": 3
+     *     }
+     */
+    NeedsWorkCount: {
+      reason: components["schemas"]["NeedsWorkReason"];
+      /**
+       * Format: int64
+       * @example 3
+       */
+      count: number;
+    };
   };
   responses: {
+    /**
+     * @description The slug is not a valid slug, `limit` or `offset` is out of range, a parameter is given more than once,
+     *     or the query string is not validly percent-encoded; the error code is `invalid_request`.
+     */
+    InvalidHistoryRequest: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        /**
+         * @example {
+         *       "code": "invalid_request",
+         *       "message": "invalid limit: must be an integer from 1 to 100"
+         *     }
+         */
+        "application/json": components["schemas"]["Error"];
+      };
+    };
+    /**
+     * @description The `collection_id` is not a positive integer in decimal digits, `limit` or `offset` is out of range, a
+     *     parameter is given more than once, or the query string is not validly percent-encoded; the error code is
+     *     `invalid_request`.
+     */
+    InvalidCollectionHistoryRequest: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        /**
+         * @example {
+         *       "code": "invalid_request",
+         *       "message": "invalid collection_id: must be an integer from 1 to 9223372036854775807"
+         *     }
+         */
+        "application/json": components["schemas"]["Error"];
+      };
+    };
     /** @description The request body is malformed or invalid; the error code is `invalid_request`. */
     InvalidRequest: {
       headers: {
@@ -353,7 +3250,22 @@ export interface components {
         /**
          * @example {
          *       "code": "invalid_request",
-         *       "message": "invalid request body: json: unknown field \"label\""
+         *       "message": "request body has an unknown field"
+         *     }
+         */
+        "application/json": components["schemas"]["Error"];
+      };
+    };
+    /** @description The slug is not a valid slug; the error code is `invalid_request`. */
+    InvalidSlug: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        /**
+         * @example {
+         *       "code": "invalid_request",
+         *       "message": "invalid slug: must be lowercase ASCII letters and digits, in runs joined by single hyphens, at most 191 characters"
          *     }
          */
         "application/json": components["schemas"]["Error"];
@@ -461,8 +3373,51 @@ export interface components {
         "application/json": components["schemas"]["Error"];
       };
     };
+    /**
+     * @description The server failed to handle the request, or the search took longer than the server allows (2 seconds); a
+     *     narrower search may succeed. The error code is `internal` either way.
+     */
+    InternalSearch: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        /**
+         * @example {
+         *       "code": "internal",
+         *       "message": "internal error"
+         *     }
+         */
+        "application/json": components["schemas"]["Error"];
+      };
+    };
   };
-  parameters: never;
+  parameters: {
+    /** @description The collection's `id`. */
+    CollectionID: number;
+    /** @description The revision's `id`. */
+    RevisionID: number;
+    /**
+     * @description The entity's slug: runs of lowercase ASCII letters and digits joined by single hyphens, at most 191
+     *     characters.
+     */
+    Slug: string;
+    /** @description The most items to return, from 1 to 100. */
+    Limit: number;
+    /** @description How many items to skip, from 0 to 10000. Every list order ends with an internal ID, so pages of an unchanged catalogue concatenate without gaps or duplicates. */
+    Offset: number;
+    /**
+     * @description Words to search for, at most 200 characters, not only spaces, tabs or line breaks (other spaces, such as
+     *     no-break spaces, are characters like any other). A word is a run of letters, digits and underscores, so
+     *     other punctuation separates words and has no other meaning; combining marks are ignored. Each word of 3 to
+     *     84 characters with a letter or digit that is not a stopword must start a word of the match. A query with no
+     *     such word (such as `the` or `Oi`) matches the start of titles and names instead. Matching ignores case and
+     *     accents.
+     */
+    Search: string;
+    /** @description Only list entries under this letter of the A–Z index. */
+    Letter: components["schemas"]["Letter"];
+  };
   requestBodies: never;
   headers: never;
   pathItems: never;
@@ -726,7 +3681,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description The token's `id`. */
+        /** @description The token's `id`: a UUID in canonical form, lowercase and hyphenated. Any other value names no token. */
         token_id: string;
       };
       cookie?: never;
@@ -742,7 +3697,7 @@ export interface operations {
       };
       401: components["responses"]["Unauthenticated"];
       403: components["responses"]["APITokenForbidden"];
-      /** @description The caller has no token with this ID; the error code is `not_found`. */
+      /** @description The caller has no token with this ID, or the ID is not a canonical UUID; the error code is `not_found`. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -758,6 +3713,867 @@ export interface operations {
         };
       };
       500: components["responses"]["Internal"];
+    };
+  };
+  listPieces: {
+    parameters: {
+      query?: {
+        /**
+         * @description Slugs of public piece terms (any facet but `affiliation`) to filter on; repeat the parameter for
+         *     several. A slug given more than once counts once.
+         */
+        term?: string[];
+        /** @description Kinds to filter on, matching a piece's primary or secondary kinds; repeat for several. */
+        kind?: components["schemas"]["PieceKind"][];
+        /** @description Conservation statuses to filter on; repeat for several. */
+        conservation_status?: components["schemas"]["ConservationStatus"][];
+        /** @description Only list pieces that are (`true`) or are not (`false`) stubs. */
+        stub?: boolean;
+        /**
+         * @description Words to search for, at most 200 characters, not only spaces, tabs or line breaks (other spaces, such as
+         *     no-break spaces, are characters like any other). A word is a run of letters, digits and underscores, so
+         *     other punctuation separates words and has no other meaning; combining marks are ignored. Each word of 3 to
+         *     84 characters with a letter or digit that is not a stopword must start a word of the match. A query with no
+         *     such word (such as `the` or `Oi`) matches the start of titles and names instead. Matching ignores case and
+         *     accents.
+         */
+        q?: components["parameters"]["Search"];
+        /** @description Only list entries under this letter of the A–Z index. */
+        letter?: components["parameters"]["Letter"];
+        /**
+         * @description The order: by sort title, or by `relevance` to `q` (best first, then by sort title). Defaults to
+         *     `relevance` with `q` and `title` without; `relevance` needs `q`. Ties are broken by an internal ID, so
+         *     pages are stable.
+         */
+        sort?: components["schemas"]["PieceSort"];
+        /** @description The most items to return, from 1 to 100. */
+        limit?: components["parameters"]["Limit"];
+        /** @description How many items to skip, from 0 to 10000. Every list order ends with an internal ID, so pages of an unchanged catalogue concatenate without gaps or duplicates. */
+        offset?: components["parameters"]["Offset"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The page of pieces, with the counts. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PieceList"];
+        };
+      };
+      /**
+       * @description A parameter is invalid: a `term` that is not a slug, more than 20 `term`s, or a slug that no public
+       *     piece term has (the same `unknown term` error whether the term does not exist, is not approved, or is
+       *     an affiliation); a `kind` or `conservation_status` that is not one of its values or is repeated; a
+       *     `stub` that is not `true` or `false`; a `q` that is blank, longer than 200 characters or not valid
+       *     UTF-8; a `letter` that is not A to Z or 0; `sort=relevance` without `q`; `limit` or `offset` out of
+       *     range; a scalar parameter given more than once; or a query string that is not validly
+       *     percent-encoded. The error code is `invalid_request`.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      500: components["responses"]["InternalSearch"];
+    };
+  };
+  getPiece: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description The entity's slug: runs of lowercase ASCII letters and digits joined by single hyphens, at most 191
+         *     characters.
+         */
+        slug: components["parameters"]["Slug"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The piece. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Piece"];
+        };
+      };
+      400: components["responses"]["InvalidSlug"];
+      /** @description No public piece has this slug; the error code is `not_found`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "not_found",
+           *       "message": "piece not found"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      500: components["responses"]["Internal"];
+    };
+  };
+  listPersons: {
+    parameters: {
+      query?: {
+        /** @description Kinds to filter on; repeat for several. */
+        kind?: components["schemas"]["PersonKind"][];
+        /** @description Roles to filter on, matching a person with any of them; repeat for several. */
+        role?: components["schemas"]["PersonRole"][];
+        /**
+         * @description The slug of a public affiliation term, matching persons affiliated with it or any of its
+         *     descendants.
+         */
+        affiliation?: string;
+        /**
+         * @description Words to search for, at most 200 characters, not only spaces, tabs or line breaks (other spaces, such as
+         *     no-break spaces, are characters like any other). A word is a run of letters, digits and underscores, so
+         *     other punctuation separates words and has no other meaning; combining marks are ignored. Each word of 3 to
+         *     84 characters with a letter or digit that is not a stopword must start a word of the match. A query with no
+         *     such word (such as `the` or `Oi`) matches the start of titles and names instead. Matching ignores case and
+         *     accents.
+         */
+        q?: components["parameters"]["Search"];
+        /** @description Only list entries under this letter of the A–Z index. */
+        letter?: components["parameters"]["Letter"];
+        /**
+         * @description The order: by sort name, or by `relevance` to `q` (best first, then by sort name). Defaults to
+         *     `relevance` with `q` and `name` without; `relevance` needs `q`. Ties are broken by an internal ID, so
+         *     pages are stable.
+         */
+        sort?: components["schemas"]["PersonSort"];
+        /** @description The most items to return, from 1 to 100. */
+        limit?: components["parameters"]["Limit"];
+        /** @description How many items to skip, from 0 to 10000. Every list order ends with an internal ID, so pages of an unchanged catalogue concatenate without gaps or duplicates. */
+        offset?: components["parameters"]["Offset"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The page of persons, with the counts. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PersonList"];
+        };
+      };
+      /**
+       * @description A parameter is invalid: a `kind` or `role` that is not one of its values or is repeated; an
+       *     `affiliation` that is not a slug, or that no public affiliation term has (the same `unknown
+       *     affiliation` error whether the term does not exist, is not approved, or is not an affiliation); a `q`
+       *     that is blank, longer than 200 characters or not valid UTF-8; a `letter` that is not A to Z or 0;
+       *     `sort=relevance` without `q`; `limit` or `offset` out of range; a scalar parameter given more than
+       *     once; or a query string that is not validly percent-encoded. The error code is `invalid_request`.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "invalid_request",
+           *       "message": "unknown affiliation: northmarch"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      500: components["responses"]["InternalSearch"];
+    };
+  };
+  getPerson: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description The entity's slug: runs of lowercase ASCII letters and digits joined by single hyphens, at most 191
+         *     characters.
+         */
+        slug: components["parameters"]["Slug"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The person. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Person"];
+        };
+      };
+      400: components["responses"]["InvalidSlug"];
+      /** @description No public person has this slug; the error code is `not_found`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "not_found",
+           *       "message": "person not found"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      500: components["responses"]["Internal"];
+    };
+  };
+  listTerms: {
+    parameters: {
+      query?: {
+        /** @description Only list terms of this facet. Omitted, terms of every facet are listed. */
+        facet?: components["schemas"]["Facet"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The terms. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TermList"];
+        };
+      };
+      /**
+       * @description The `facet` is not a facet or is given more than once, or the query string is not validly
+       *     percent-encoded; the error code is `invalid_request`.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "invalid_request",
+           *       "message": "invalid facet: not one of its allowed values"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      500: components["responses"]["Internal"];
+    };
+  };
+  getTerm: {
+    parameters: {
+      query?: {
+        /** @description The most items to return, from 1 to 100. */
+        limit?: components["parameters"]["Limit"];
+        /** @description How many items to skip, from 0 to 10000. Every list order ends with an internal ID, so pages of an unchanged catalogue concatenate without gaps or duplicates. */
+        offset?: components["parameters"]["Offset"];
+      };
+      header?: never;
+      path: {
+        /**
+         * @description The entity's slug: runs of lowercase ASCII letters and digits joined by single hyphens, at most 191
+         *     characters.
+         */
+        slug: components["parameters"]["Slug"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The term. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Term"];
+        };
+      };
+      /**
+       * @description The slug is not a valid slug, `limit` or `offset` is out of range or given more than once, or the
+       *     query string is not validly percent-encoded; the error code is `invalid_request`.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description No public term has this slug; the error code is `not_found`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "not_found",
+           *       "message": "term not found"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      500: components["responses"]["Internal"];
+    };
+  };
+  listCollections: {
+    parameters: {
+      query?: {
+        /** @description Collection kinds to filter on; repeat for several. */
+        kind?: components["schemas"]["CollectionKind"][];
+        /** @description Only list entries under this letter of the A–Z index. */
+        letter?: components["parameters"]["Letter"];
+        /** @description The most items to return, from 1 to 100. */
+        limit?: components["parameters"]["Limit"];
+        /** @description How many items to skip, from 0 to 10000. Every list order ends with an internal ID, so pages of an unchanged catalogue concatenate without gaps or duplicates. */
+        offset?: components["parameters"]["Offset"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The page of collections, with the counts. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CollectionList"];
+        };
+      };
+      /**
+       * @description A `kind` is not a collection kind or is repeated, the `letter` is not A to Z or 0, `limit` or
+       *     `offset` is out of range, a scalar parameter is given more than once, or the query string is not
+       *     validly percent-encoded; the error code is `invalid_request`.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "invalid_request",
+           *       "message": "invalid kind: not one of its allowed values"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      500: components["responses"]["InternalSearch"];
+    };
+  };
+  getCollection: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The collection's `id`. */
+        collection_id: components["parameters"]["CollectionID"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The collection. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Collection"];
+        };
+      };
+      /** @description The `collection_id` is not a positive integer in decimal digits; the error code is `invalid_request`. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "invalid_request",
+           *       "message": "invalid collection_id: must be an integer from 1 to 9223372036854775807"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description No public collection has this ID; the error code is `not_found`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "not_found",
+           *       "message": "collection not found"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      500: components["responses"]["Internal"];
+    };
+  };
+  listEvents: {
+    parameters: {
+      query?: {
+        /** @description Only list events of this kind. Omitted, both kinds are listed. */
+        kind?: components["schemas"]["EventKind"];
+        /** @description The most items to return, from 1 to 100. */
+        limit?: components["parameters"]["Limit"];
+        /** @description How many items to skip, from 0 to 10000. Every list order ends with an internal ID, so pages of an unchanged catalogue concatenate without gaps or duplicates. */
+        offset?: components["parameters"]["Offset"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The page of events. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EventList"];
+        };
+      };
+      /**
+       * @description The `kind` is not an event kind, `limit` or `offset` is out of range, a parameter is given more than
+       *     once, or the query string is not validly percent-encoded; the error code is `invalid_request`.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "invalid_request",
+           *       "message": "invalid offset: must be an integer from 0 to 10000"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      500: components["responses"]["Internal"];
+    };
+  };
+  getEvent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description The entity's slug: runs of lowercase ASCII letters and digits joined by single hyphens, at most 191
+         *     characters.
+         */
+        slug: components["parameters"]["Slug"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The event. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Event"];
+        };
+      };
+      400: components["responses"]["InvalidSlug"];
+      /** @description No public event has this slug; the error code is `not_found`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "not_found",
+           *       "message": "event not found"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      500: components["responses"]["Internal"];
+    };
+  };
+  listPieceRevisions: {
+    parameters: {
+      query?: {
+        /** @description The most items to return, from 1 to 100. */
+        limit?: components["parameters"]["Limit"];
+        /** @description How many items to skip, from 0 to 10000. Every list order ends with an internal ID, so pages of an unchanged catalogue concatenate without gaps or duplicates. */
+        offset?: components["parameters"]["Offset"];
+      };
+      header?: never;
+      path: {
+        /**
+         * @description The entity's slug: runs of lowercase ASCII letters and digits joined by single hyphens, at most 191
+         *     characters.
+         */
+        slug: components["parameters"]["Slug"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The page of the piece's revisions. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevisionHistory"];
+        };
+      };
+      400: components["responses"]["InvalidHistoryRequest"];
+      /** @description No public piece has this address, so there is no history to show; the error code is `not_found`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "not_found",
+           *       "message": "piece not found"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      500: components["responses"]["Internal"];
+    };
+  };
+  listPersonRevisions: {
+    parameters: {
+      query?: {
+        /** @description The most items to return, from 1 to 100. */
+        limit?: components["parameters"]["Limit"];
+        /** @description How many items to skip, from 0 to 10000. Every list order ends with an internal ID, so pages of an unchanged catalogue concatenate without gaps or duplicates. */
+        offset?: components["parameters"]["Offset"];
+      };
+      header?: never;
+      path: {
+        /**
+         * @description The entity's slug: runs of lowercase ASCII letters and digits joined by single hyphens, at most 191
+         *     characters.
+         */
+        slug: components["parameters"]["Slug"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The page of the person's revisions. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevisionHistory"];
+        };
+      };
+      400: components["responses"]["InvalidHistoryRequest"];
+      /** @description No public person has this address, so there is no history to show; the error code is `not_found`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "not_found",
+           *       "message": "person not found"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      500: components["responses"]["Internal"];
+    };
+  };
+  listTermRevisions: {
+    parameters: {
+      query?: {
+        /** @description The most items to return, from 1 to 100. */
+        limit?: components["parameters"]["Limit"];
+        /** @description How many items to skip, from 0 to 10000. Every list order ends with an internal ID, so pages of an unchanged catalogue concatenate without gaps or duplicates. */
+        offset?: components["parameters"]["Offset"];
+      };
+      header?: never;
+      path: {
+        /**
+         * @description The entity's slug: runs of lowercase ASCII letters and digits joined by single hyphens, at most 191
+         *     characters.
+         */
+        slug: components["parameters"]["Slug"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The page of the term's revisions. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevisionHistory"];
+        };
+      };
+      400: components["responses"]["InvalidHistoryRequest"];
+      /** @description No public term has this address, so there is no history to show; the error code is `not_found`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "not_found",
+           *       "message": "term not found"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      500: components["responses"]["Internal"];
+    };
+  };
+  listCollectionRevisions: {
+    parameters: {
+      query?: {
+        /** @description The most items to return, from 1 to 100. */
+        limit?: components["parameters"]["Limit"];
+        /** @description How many items to skip, from 0 to 10000. Every list order ends with an internal ID, so pages of an unchanged catalogue concatenate without gaps or duplicates. */
+        offset?: components["parameters"]["Offset"];
+      };
+      header?: never;
+      path: {
+        /** @description The collection's `id`. */
+        collection_id: components["parameters"]["CollectionID"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The page of the collection's revisions. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevisionHistory"];
+        };
+      };
+      400: components["responses"]["InvalidCollectionHistoryRequest"];
+      /** @description No public collection has this address, so there is no history to show; the error code is `not_found`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "not_found",
+           *       "message": "collection not found"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      500: components["responses"]["Internal"];
+    };
+  };
+  listEventRevisions: {
+    parameters: {
+      query?: {
+        /** @description The most items to return, from 1 to 100. */
+        limit?: components["parameters"]["Limit"];
+        /** @description How many items to skip, from 0 to 10000. Every list order ends with an internal ID, so pages of an unchanged catalogue concatenate without gaps or duplicates. */
+        offset?: components["parameters"]["Offset"];
+      };
+      header?: never;
+      path: {
+        /**
+         * @description The entity's slug: runs of lowercase ASCII letters and digits joined by single hyphens, at most 191
+         *     characters.
+         */
+        slug: components["parameters"]["Slug"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The page of the event's revisions. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevisionHistory"];
+        };
+      };
+      400: components["responses"]["InvalidHistoryRequest"];
+      /** @description No public event has this address, so there is no history to show; the error code is `not_found`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "not_found",
+           *       "message": "event not found"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      500: components["responses"]["Internal"];
+    };
+  };
+  getRevision: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The revision's `id`. */
+        revision_id: components["parameters"]["RevisionID"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The revision. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Revision"];
+        };
+      };
+      /** @description The `revision_id` is not a positive integer in decimal digits; the error code is `invalid_request`. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "invalid_request",
+           *       "message": "invalid revision_id: must be an integer from 1 to 9223372036854775807"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description No public revision has this ID; the error code is `not_found`. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "not_found",
+           *       "message": "revision not found"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      500: components["responses"]["Internal"];
+    };
+  };
+  listNeedsWork: {
+    parameters: {
+      query?: {
+        /** @description Only list entries needing work for this reason. Omitted, entries are listed for any reason. */
+        reason?: components["schemas"]["NeedsWorkReason"];
+        /** @description The most items to return, from 1 to 100. */
+        limit?: components["parameters"]["Limit"];
+        /** @description How many items to skip, from 0 to 10000. Every list order ends with an internal ID, so pages of an unchanged catalogue concatenate without gaps or duplicates. */
+        offset?: components["parameters"]["Offset"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The page of entries. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NeedsWorkList"];
+        };
+      };
+      /**
+       * @description The `reason` is not a needs-work reason, `limit` or `offset` is out of range, a parameter is given more
+       *     than once, or the query string is not validly percent-encoded; the error code is `invalid_request`.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "invalid_request",
+           *       "message": "invalid reason: not one of its allowed values"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      500: components["responses"]["InternalSearch"];
     };
   };
 }

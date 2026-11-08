@@ -34,6 +34,7 @@ export function Card({
   meta,
   to,
   headingLevel = 3,
+  headingId,
   children,
 }: {
   readonly title: string;
@@ -44,6 +45,8 @@ export function Card({
   /** An internal path: makes the whole card a link to it. */
   readonly to?: string;
   readonly headingLevel?: 2 | 3;
+  /** The heading's id, for a link to the card: `#licensing`. */
+  readonly headingId?: string;
   readonly children: ReactNode;
 }) {
   const columns = use(CardListColumnsContext);
@@ -61,7 +64,7 @@ export function Card({
           {eyebrow}
         </p>
       ) : null}
-      <Heading className="text-h3 text-fg">
+      <Heading id={headingId} className="text-h3 text-fg">
         {to ? (
           <RouterLink
             to={to}

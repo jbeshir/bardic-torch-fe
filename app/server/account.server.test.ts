@@ -42,10 +42,11 @@ describe("loadAccount", () => {
 
   it("says the profile is unavailable when /v1/me fails, and doesn't throw", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
-    fixtures.state().failures.set("contributor:getMe", {
+    fixtures.fail({
+      userId: "contributor",
+      operationId: "getMe",
       status: 500,
       code: "internal",
-      remaining: 1,
     });
     expect((await load(await contributor())).account).toEqual({
       state: "profile-unavailable",

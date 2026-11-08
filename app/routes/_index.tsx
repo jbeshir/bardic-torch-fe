@@ -1,27 +1,103 @@
-import type { MetaFunction } from "react-router";
 import { useId, type ReactNode } from "react";
+import {
+  useLoaderData,
+  type LoaderFunctionArgs,
+  type MetaFunction,
+} from "react-router";
+import { formatCatalogueSize, formatNumber } from "~/catalogue/format";
+import { NO_PIECE_FILTERS, pieceQuery } from "~/catalogue/query-state";
+import { pageMeta } from "~/catalogue/seo";
 import { LogoMark } from "~/components/LogoMark";
 import { SearchBox } from "~/components/SearchBox";
 import { Alert } from "~/components/ui/Alert";
 import { ButtonLink } from "~/components/ui/Button";
 import { Card, CardList } from "~/components/ui/Card";
+import { ConservationBadge } from "~/components/ui/ConservationBadge";
+import { SectionError } from "~/components/ui/ErrorState";
 import { Link } from "~/components/ui/Link";
 import { TagList } from "~/components/ui/TagList";
+import { CONTRIBUTE_HREF, helpHref } from "~/constants/navigation";
 import {
-  CONTRIBUTE_HREF,
-  FACETS,
-  helpHref,
-  wikiPageUrl,
-} from "~/constants/navigation";
+  BROWSE_STATUS_LABELS,
+  PIECE_KIND_LABELS,
+} from "~/constants/vocabulary";
+import type { PieceKind } from "~/schemas/catalogue";
+import { listPersons, listPieces, listTerms } from "~/server/catalogue.server";
 
-export const meta: MetaFunction = () => [
-  { title: "Bardic Torch" },
-  {
-    name: "description",
-    content:
+export const meta: MetaFunction = args =>
+  pageMeta(args, {
+    description:
       "A community index of SCA bardic songs, stories and poems and the bards who made them, so they can be found, sung and passed on.",
-  },
-];
+    path: "/",
+  });
+
+/** The statuses the "Every version" card shows, with a link to each. */
+const CARD_STATUSES = [
+  "endangered",
+  "critically_endangered",
+  "low_risk",
+] as const;
+
+/** How many moods, and how many topics, the explore chips show. */
+const TOP_TERMS = 3;
+
+type Chip = { readonly label: string; readonly to: string };
+
+type HomeData = {
+  /** The catalogue's size, or null when either count couldn't be read. */
+  readonly totals: {
+    readonly pieces: number;
+    readonly people: number;
+  } | null;
+  /** The kinds with their piece counts; null when the pieces failed. */
+  readonly kinds:
+    | readonly {
+        readonly kind: PieceKind;
+        readonly count: number;
+      }[]
+    | null;
+  /** The most-used moods, then topics; null when the terms failed. */
+  readonly topTerms: readonly Chip[] | null;
+};
+
+/**
+ * The home page reads three things (plan §4.1), each its own region: the
+ * piece count and kinds, the person count, and the terms for the top moods
+ * and topics. A failure never fails the page (it is the front door): the
+ * region says so, with "Try again".
+ */
+export async function loader({
+  context,
+}: LoaderFunctionArgs): Promise<HomeData> {
+  const [pieces, persons, terms] = await Promise.all([
+    listPieces(context, { limit: 1 }),
+    listPersons(context, { limit: 1 }),
+    listTerms(context, {}),
+  ]);
+  const top = (facet: "mood" | "topic") =>
+    terms.ok
+      ? terms.data.data
+          .filter(term => term.facet === facet)
+          .sort(
+            (a, b) =>
+              b.piece_count - a.piece_count ||
+              a.display_name.localeCompare(b.display_name, "en-GB")
+          )
+          .slice(0, TOP_TERMS)
+          .map(term => ({
+            label: `${facet === "mood" ? "Mood" : "Topic"}: ${term.display_name}`,
+            to: `/categories/${term.slug}`,
+          }))
+      : [];
+  return {
+    totals:
+      pieces.ok && persons.ok
+        ? { pieces: pieces.data.total, people: persons.data.total }
+        : null,
+    kinds: pieces.ok ? pieces.data.facets.kinds : null,
+    topTerms: terms.ok ? [...top("mood"), ...top("topic")] : null,
+  };
+}
 
 /** A home page section: an h2 with a rule under it, then its content. */
 function Section({
@@ -48,10 +124,11 @@ function Section({
 /**
  * The home page (DESIGN §10.1), its copy adapted from the original wiki's
  * Main Page: what Bardic Torch is (an index, not an archive; links only;
- * keeping works alive; anyone can contribute), how to contribute here,
- * and, until the catalogue opens, the way to the original wiki.
+ * keeping works alive; anyone can contribute), the ways into the
+ * catalogue and how to contribute.
  */
 export default function Index() {
+  const { totals, kinds, topTerms } = useLoaderData<typeof loader>();
   return (
     <>
       <div className="rounded-xl bg-hero p-6 md:p-10">
@@ -67,24 +144,21 @@ export default function Index() {
           one index, so works can be found, sung and passed on.
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <ButtonLink to={CONTRIBUTE_HREF} variant="primary" size="lg">
+          <ButtonLink to="/pieces" variant="primary" size="lg">
+            Browse pieces
+          </ButtonLink>
+          <ButtonLink to={CONTRIBUTE_HREF} variant="secondary" size="lg">
             How to contribute
           </ButtonLink>
-          <ButtonLink
-            to={wikiPageUrl("Category:Pieces")}
-            variant="secondary"
-            size="lg"
-          >
-            Browse on the original wiki
-          </ButtonLink>
         </div>
-        <p className="mt-4 max-w-prose text-body-sm text-fg-muted">
-          The catalogue is moving here soon. Until it opens, you can browse
-          every piece and bard on the original Bardic Torch wiki.
-        </p>
         <div className="mt-6 max-w-form">
-          <SearchBox size="lg" />
+          <SearchBox size="lg" label="Search the catalogue" />
         </div>
+        {totals ? (
+          <p className="mt-3 text-body-sm text-fg-muted">
+            {formatCatalogueSize(totals.pieces, totals.people)}
+          </p>
+        ) : null}
       </div>
 
       <Section title="Why Bardic Torch">
@@ -108,13 +182,28 @@ export default function Index() {
                 How conservation statuses work
               </Link>
             </p>
+            <ul role="list" className="mt-3 grid gap-2">
+              {CARD_STATUSES.map(status => (
+                <li key={status} className="flex flex-col items-start gap-1">
+                  <ConservationBadge status={status} size="sm" named />
+                  <Link
+                    to={pieceQuery.href(NO_PIECE_FILTERS, { status: [status] })}
+                    compact
+                  >
+                    {BROWSE_STATUS_LABELS[status]}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </Card>
           <Card title="Anyone can contribute">
             <p>
-              You don’t have to be a bard, and no contribution is too small. Log
-              in, add what you know, and a moderator will review it before it
-              goes live. That way the index can keep growing beyond what any one
-              person could maintain.
+              You don’t have to be a bard, and no contribution is too small.
+              Editing is not open yet: it arrives in a later release. Until
+              then, send us the link to where a work lives, and once editing
+              opens a moderator will review every edit before it goes live. That
+              way the index can keep growing beyond what any one person could
+              maintain.
             </p>
             <p className="mt-3">
               <Link to={CONTRIBUTE_HREF}>How to contribute</Link>
@@ -123,10 +212,40 @@ export default function Index() {
         </CardList>
       </Section>
 
-      <Section title="Start exploring on the original wiki">
+      <Section title="Start exploring">
+        {totals && topTerms ? null : (
+          <div className="mb-4">
+            <SectionError
+              title={
+                totals
+                  ? "We couldn’t load the categories"
+                  : "We couldn’t load the catalogue’s counts"
+              }
+            >
+              The links below still work.
+            </SectionError>
+          </div>
+        )}
         <TagList
-          tags={FACETS.map(({ label, href }) => ({ label, to: href }))}
+          tags={[
+            ...(kinds ?? []).map(({ kind, count }) => ({
+              label: `${PIECE_KIND_LABELS[kind]} (${formatNumber(count)})`,
+              to: pieceQuery.href(NO_PIECE_FILTERS, { kind: [kind] }),
+            })),
+            ...(topTerms ?? []),
+          ]}
         />
+        <ul role="list" className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
+          <li>
+            <Link to="/categories">All categories</Link>
+          </li>
+          <li>
+            <Link to="/collections">Collections</Link>
+          </li>
+          <li>
+            <Link to="/events">Events and venues</Link>
+          </li>
+        </ul>
       </Section>
 
       <Section title="For bards">

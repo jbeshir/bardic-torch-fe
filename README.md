@@ -4,21 +4,33 @@ Bardic Torch is a community index of SCA bardic songs, stories and poems, and of
 
 This repository is the web frontend at https://bardictorch.org. It is a React Router 8 app in framework mode (React 19, Vite 8, Tailwind 4, TypeScript 6) on Cloudflare Workers, with the static files served as Workers static assets. The API lives in a separate backend repository and is served at https://api.bardictorch.org.
 
-This is milestone FE1, the foundation:
+This is milestone FE2, the read UI, on top of FE1's foundation. FE1 gave it:
 
 - the wiki-style layout, with a header, sidebar, mobile bottom app bar and footer;
 - the design system, in light and dark;
 - Auth0 sign-in with Google or Facebook;
 - the settings page, for your display name and API tokens;
-- the static help pages and the home page.
+- the static help pages.
 
-Catalogue pages come in FE2. Until then, Browse, the facets and search link to the original wiki.
+FE2 adds the catalogue, read-only and anonymous:
+
+- the home page, with the catalogue's size and its ways in;
+- the piece browse and A–Z (`/pieces`), with facets, text search and paging, and search results (`/search`);
+- a page for each piece, bard (any person or group), category, collection and event or venue, with its Read and History views, and a page for each revision with its changes (`/revisions/:id`);
+- the directories (`/bards`, `/categories`, `/collections`, `/events`);
+- `robots.txt` and sitemaps, and page metadata for search engines (indexed in the production build only).
+
+Editing comes in FE3. The original wiki is linked only for the help pages' attribution, the footer and the 404 page.
 
 ## Key concepts
 
 - **Contract-first API.** `api/openapi.yaml` is the backend's OpenAPI 3.1 spec, vendored byte for byte with `npm run sync:api -- <path|url>`. Nobody edits it here.
   - `app/api/schema.gen.ts` is generated from it (`npm run gen:api`); `check:api` fails if that file is stale.
   - The zod schemas in `app/schemas/api.ts` validate every upstream response, and are type-checked against the generated types in both directions.
+- **Catalogue reads are anonymous.** The catalogue's pages call the API's public `GET /v1/...` operations from loaders in `app/server/catalogue.server.ts`, with no credentials, whether or not you are signed in. Each answer is validated with zod (`app/schemas/catalogue.ts`) and each failure is mapped to our own page (`app/catalogue/read-failure.ts`): an outage is the "resting" page (503 with `Retry-After`), an error is "something went wrong", and a bad answer is a 502. Pages are not cached upstream in FE2.
+- **URLs are the state.** A list's search, filters, letter and page are query parameters, parsed and written canonically by `app/catalogue/query-state.ts`: a non-canonical address gets one 301, and the filter forms are plain GET forms, so they work without JavaScript.
+- **Restricted pieces.** A piece whose creator asks that it isn't shared further never shows its links outside one closed disclosure, and is kept out of the sitemap (`app/server/sitemap.server.ts`) and search engines (`noindex, nofollow` and no JSON-LD, in the piece route's `meta`). The site's own lists and search still show it, with a Restricted badge and no links (`app/catalogue/restricted.ts`).
+- **Indexing.** Only the production build can be indexed: `__INDEXABLE__` is true in it alone, and the preview, e2e and development builds answer `Disallow: /` and send `X-Robots-Tag: noindex` on every response the Worker makes (static assets get the `Disallow` only). `/robots.txt`, `/sitemap.xml` and `/sitemap/{pages,pieces,bards,categories,collections,events}.xml` (six sitemaps) are resource routes; `check:prod-build` proves the flag's value in each build.
 - **The browser never calls the API.** Loaders, and the proxy routes `PATCH /api/me`, `POST /api/tokens` and `DELETE /api/tokens/:tokenId`, call it from the Worker through `app/server/api.server.ts`.
   - The access token lives in the server-side session and is sent as `Authorization: Bearer auth0|<jwt>`.
   - The proxies accept form-encoded bodies, check same-origin (CSRF), validate the input, and map every API error code to the app's own wording.
@@ -37,7 +49,7 @@ Catalogue pages come in FE2. Until then, Browse, the facets and search link to t
 
   Each build command runs `node scripts/build.mjs <mode>`, which sets `BT_BUILD_MODE` (it decides the styleguide; the Vite mode decides stub sign-in). Workers Builds runs `npm run build:ci`, which picks the mode from `WORKERS_CI_BRANCH`: `production` on `main`, and `preview` on the `preview` branch; any other branch fails the build, and an empty branch fails too (docs/DEPLOY.md §2). A `production` build deploys to the `bardic-torch-fe` Worker, a `preview` build to `bardic-torch-fe-preview` (both in `wrangler.jsonc`). `check:prod-build` proves that production and preview builds contain no stub code.
 
-- **Fixture API.** `test/fixture-api/` implements the FE1 operations from one operation table, with state kept per user and failures injected on request. The same table drives the msw handlers in unit tests, the HTTP server in e2e, and `npm run dev:fixtures`. Every fixture response is validated against the spec.
+- **Fixture API.** `test/fixture-api/` implements the FE1 and FE2 operations (the catalogue's reads and the authenticated ones) from one operation table, with state kept per user and failures injected on request. The same table drives the msw handlers in unit tests, the HTTP server in e2e, and `npm run dev:fixtures`. Every fixture response is validated against the spec.
 - **Design tokens.** All colour comes from `app/styles/tokens.ts`.
   - `npm run gen:tokens` generates the CSS variables, the favicon and the manifest colours.
   - Tailwind's palette is replaced by the tokens, so there are no `dark:` classes and no raw colours.
@@ -58,7 +70,7 @@ flowchart TD
     Session["Session cookie"]
     Auth0["Auth0: Google, Facebook"]
     API["Bardic Torch API"]
-    Wiki["Original wiki"]
+    Wiki["Original wiki (help attribution)"]
 
     Browser -- "served as static assets (no Worker)" --> Static
     Browser -- "pages and form posts" --> Worker
@@ -68,7 +80,8 @@ flowchart TD
     Auth -- "writes" --> Session
     Proxy -- "bearer from" --> Session
     Worker -- "loaders and proxies, server side" --> API
-    Browser -- "catalogue links until FE2" --> Wiki
+    Worker -- "public reads (no credentials)" --> API
+    Browser -- "attribution and footer links" --> Wiki
 ```
 
 ## Getting started

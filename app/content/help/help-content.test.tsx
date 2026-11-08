@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { cleanup, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { HelpPage } from "~/components/HelpPage";
 import {
@@ -6,6 +6,10 @@ import {
   NAV_GROUPS,
   wikiPageUrl,
 } from "~/constants/navigation";
+import {
+  CONSERVATION_STATUSES,
+  conservationHelpPath,
+} from "~/constants/vocabulary";
 import { renderWithRouter } from "~/test/router";
 import { findHelpPage, HELP_INDEX, type HelpContent } from "./pages";
 
@@ -18,6 +22,9 @@ import { findHelpPage, HELP_INDEX, type HelpContent } from "./pages";
 const NAV_HELP_PATHS = NAV_GROUPS.flatMap(({ items }) => items)
   .map(({ href }) => href)
   .filter(href => href.startsWith("/help/"));
+
+/** The catalogue pages a help page may link to (the links carry any query). */
+const CATALOGUE_PATHS = ["/pieces", "/collections", "/categories"];
 
 const SLUGS = NAV_HELP_PATHS.map(path => path.replace("/help/", ""));
 
@@ -125,7 +132,7 @@ describe.each(ALL)("help page %s", (slug, content) => {
     expect(Math.max(...levels)).toBeLessThanOrEqual(3);
   });
 
-  it("links only over https, to the help pages, or to its own sections", async () => {
+  it("links only over https, to the help pages, the catalogue, or to its own sections", async () => {
     const main = await renderHelp(content);
     const ids = new Set(
       [...main.querySelectorAll("[id]")].map(node => node.id)
@@ -138,7 +145,9 @@ describe.each(ALL)("help page %s", (slug, content) => {
       } else if (path === "" || path === `/help/${slug}`) {
         expect(ids).toContain(hash);
       } else {
-        expect(["/help", ...NAV_HELP_PATHS]).toContain(path);
+        expect(["/help", ...NAV_HELP_PATHS, ...CATALOGUE_PATHS]).toContain(
+          path?.split("?")[0]
+        );
       }
     }
   });
@@ -264,15 +273,62 @@ describe("contributing guide", () => {
     );
   });
 
-  it("says the catalogue isn't here yet, linking to the original wiki", async () => {
+  it("points at the catalogue on this site, not the original wiki", async () => {
     const main = await renderHelp(page("contributing"));
     const note = within(main).getByText(/^Information:/).parentElement;
-    expect(note).toHaveTextContent("The catalogue is on its way.");
-    expect(
-      within(note as HTMLElement).getByRole("link", {
-        name: "original Bardic Torch wiki (opens original wiki)",
-      })
-    ).toHaveAttribute("href", wikiPageUrl("Category:Pieces"));
+    expect(note).toHaveTextContent(
+      "You can browse every piece and its categories on this site."
+    );
+    const note_ = within(note as HTMLElement);
+    expect(note_.getByRole("link", { name: "piece" })).toHaveAttribute(
+      "href",
+      "/pieces"
+    );
+    expect(note_.getByRole("link", { name: "categories" })).toHaveAttribute(
+      "href",
+      "/categories"
+    );
+    expect(within(note as HTMLElement).queryByText(/original/)).toBeNull();
+  });
+});
+
+describe("links to the catalogue", () => {
+  it("links the conservation page to the pieces with each status", async () => {
+    const main = await renderHelp(page("conservation-status"));
+    for (const [name, href] of [
+      ["endangered pieces", "/pieces?status=endangered"],
+      ["critically endangered pieces", "/pieces?status=critically_endangered"],
+      ["low-risk pieces", "/pieces?status=low_risk"],
+    ] as const) {
+      expect(within(main).getByRole("link", { name })).toHaveAttribute(
+        "href",
+        href
+      );
+    }
+  });
+
+  it("links the collections to this site's collections", async () => {
+    for (const slug of ["faq-for-bards", "conservation-status"]) {
+      const main = await renderHelp(page(slug));
+      expect(
+        within(main).getByRole("link", { name: "collections" })
+      ).toHaveAttribute("href", "/collections");
+      cleanup();
+    }
+  });
+
+  it("holds no link to a wiki Category: page in any help page", async () => {
+    for (const slug of SLUGS) {
+      const main = await renderHelp(page(slug));
+      const hrefs = within(main)
+        .getAllByRole("link")
+        .map(link => link.getAttribute("href") ?? "");
+      expect(
+        hrefs.filter(href => /\/wiki\/Category:/.test(href)),
+        slug
+      ).toEqual([]);
+      cleanup();
+    }
   });
 });
 
@@ -328,11 +384,14 @@ describe("FAQ for bards", () => {
     ).toContain("removing our link doesn’t take the content down");
   });
 
-  it("says bards' edits are moderated like everyone's", async () => {
+  it("says editing isn't available yet, and will be moderated like everyone's", async () => {
     const main = await renderHelp(page("faq-for-bards"));
-    expect(section(main, "Can I edit my own page?")).toContain(
-      "Like everyone’s, your edits are checked by a moderator before they go live."
+    const answer = section(main, "Can I edit my own page?");
+    expect(answer).toContain("Not yet: editing arrives in a later release.");
+    expect(answer).toContain(
+      "like everyone’s, your edits will be checked by a moderator before they go live."
     );
+    expect(answer).not.toContain("Yes, please do");
   });
 });
 
@@ -352,14 +411,14 @@ describe("bard preference checklist", () => {
       )
       .map(heading => heading.textContent);
     expect(sections).toEqual([
-      "1. Licensing and copyright",
-      "2. Performance permission",
-      "3. Adaptations",
-      "4. Attribution",
-      "5. Commercial use",
-      "6. Recording and writing down",
-      "7. Performance etiquette",
-      "8. Objectionable use",
+      "Licensing and copyright",
+      "Performance permission",
+      "Adaptations",
+      "Attribution",
+      "Commercial use",
+      "Recording and writing down",
+      "Performance etiquette",
+      "Objectionable use",
     ]);
   });
 
@@ -378,26 +437,27 @@ describe("bard preference checklist", () => {
     ).toHaveAttribute("href", wikiPageUrl("Bard Preference Checklist"));
   });
 
-  it("says the etiquette card comes with the catalogue, every point sourced", async () => {
+  it("says the etiquette card comes later, every point sourced", async () => {
     const main = await renderHelp(page("bard-preference-checklist"));
     const showing = section(
       main,
       "How Bardic Torch will show your preferences"
     );
-    expect(showing).toContain("Coming with the catalogue.");
+    expect(showing).toContain("Coming later.");
+    expect(showing).toContain("each piece’s licensing card has a short note");
     expect(showing).toContain("Every point links to its source");
     expect(showing).toContain("Piece-level rules win.");
   });
 });
 
 describe("conservation status", () => {
-  it("makes exactly three places Endangered, and four Low Risk", async () => {
+  it("makes exactly three places Endangered, and four Low risk", async () => {
     const main = await renderHelp(page("conservation-status"));
     const rows = within(within(main).getByRole("table")).getAllByRole("row");
     const meaning = (status: string) =>
       rows.find(row => row.firstElementChild?.textContent === status)
         ?.lastElementChild?.textContent;
-    expect(meaning("Low Risk")).toBe(
+    expect(meaning("Low risk")).toBe(
       "The work exists in at least 4 known places."
     );
     expect(meaning("Endangered")).toBe(
@@ -409,9 +469,22 @@ describe("conservation status", () => {
     expect(
       within(main).getByText(/^Information:/).parentElement
     ).toHaveTextContent(
-      "Exactly 3 places now counts as Endangered. The original wiki defined Low Risk as at least 4 places and Endangered as fewer than 3, which left exactly 3 undecided."
+      "Exactly 3 places now counts as Endangered. The original wiki defined Low risk as at least 4 places and Endangered as fewer than 3, which left exactly 3 undecided."
     );
     expect(textOf(main)).not.toMatch(/Endangered: found in fewer than 3/);
+  });
+
+  it("has an entry for each status's hyphenated anchor, the badges' link target", async () => {
+    const main = await renderHelp(page("conservation-status"));
+    const table = within(main).getByRole("table");
+    for (const status of CONSERVATION_STATUSES) {
+      const anchor = conservationHelpPath(status).split("#")[1] ?? "";
+      expect(anchor).toBe(status.replaceAll("_", "-"));
+      const entry = main.querySelector(`[id="${anchor}"]`);
+      expect(entry, status).not.toBeNull();
+      expect(table.contains(entry), status).toBe(true);
+      expect(entry?.tagName, status).toBe("TR");
+    }
   });
 
   it("lists the five statuses at a glance, each linking to its section", async () => {
@@ -421,9 +494,9 @@ describe("conservation status", () => {
     });
     const links = within(glance).getAllByRole("link");
     expect(links.map(link => link.textContent)).toEqual([
-      "Low Risk",
+      "Low risk",
       "Endangered",
-      "Critically Endangered",
+      "Critically endangered",
       "Restricted",
       "Unassessed",
     ]);
@@ -453,7 +526,7 @@ describe("conservation status", () => {
     const main = await renderHelp(page("conservation-status"));
     const restricted = section(main, "How Restricted works");
     expect(restricted).toContain(
-      "A Restricted piece is never marked Endangered or Critically Endangered"
+      "A Restricted piece is never marked Endangered or Critically endangered"
     );
     expect(restricted).toContain("No ‘help preserve’ prompts.");
     expect(restricted).toContain("It needs a source.");

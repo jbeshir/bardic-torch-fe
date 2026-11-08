@@ -1,3 +1,4 @@
+import { MD_QUERY } from "~/constants/breakpoints";
 import { IconChevronDown } from "@tabler/icons-react";
 import { useEffect, useId, useRef } from "react";
 import { linkClasses } from "~/components/ui/Link";
@@ -12,9 +13,6 @@ export type TocEntry = Section & {
   /** The h3s under this h2. */
   readonly children?: readonly Section[];
 };
-
-/** Below md the contents start folded, out of the way of the first prose. */
-const MD_QUERY = "(min-width: 768px)";
 
 // An in-page anchor, so a plain <a> with the Link look (no router).
 const ITEM = `${linkClasses("plain")} inline-flex min-h-6 items-baseline gap-2`;

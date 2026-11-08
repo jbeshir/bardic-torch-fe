@@ -1,4 +1,4 @@
-import { useLocation } from "react-router";
+import { useLocation, useMatches } from "react-router";
 import {
   useCallback,
   useEffect,
@@ -66,6 +66,36 @@ function useSidebarScroll(
 }
 
 /**
+ * A route's `handle` when part of its query makes a URL another page:
+ * `pageKey` picks that part out (`/categories?facet=mood` is the mood
+ * page, with its own h1 and title, not the index changed in place).
+ */
+export interface PageHandle {
+  readonly pageKey: (search: URLSearchParams) => string;
+}
+
+function isPageHandle(handle: unknown): handle is PageHandle {
+  return (
+    typeof handle === "object" &&
+    handle !== null &&
+    "pageKey" in handle &&
+    typeof handle.pageKey === "function"
+  );
+}
+
+/**
+ * Which page the URL is: its path, and the part of its query the deepest
+ * route's `PageHandle` names, if any.
+ */
+function usePageIdentity(): string {
+  const { pathname, search } = useLocation();
+  const handle = useMatches().at(-1)?.handle;
+  return isPageHandle(handle)
+    ? `${pathname}?${handle.pageKey(new URLSearchParams(search))}`
+    : pathname;
+}
+
+/**
  * After a client navigation to another page (not a hash jump, not a reload
  * of the same page's data), focus moves to the main content, as a page load
  * would leave it at the start, and the new page's title is announced. The
@@ -73,11 +103,8 @@ function useSidebarScroll(
  * that put focus inside the main content itself (an error page focuses its
  * heading).
  */
-function useNavigationFocus(
-  main: RefObject<HTMLElement | null>,
-  pathname: string
-) {
-  const previousRef = useRef(pathname);
+function useNavigationFocus(main: RefObject<HTMLElement | null>, page: string) {
+  const previousRef = useRef(page);
   const focusedBeforeRef = useRef<Element | null>(null);
   const [announcement, setAnnouncement] = useState("");
 
@@ -85,11 +112,11 @@ function useNavigationFocus(
   // this is what had focus when the new page was committed.
   useBrowserLayoutEffect(() => {
     focusedBeforeRef.current = document.activeElement;
-  }, [pathname]);
+  }, [page]);
 
   useEffect(() => {
-    if (previousRef.current === pathname) return;
-    previousRef.current = pathname;
+    if (previousRef.current === page) return;
+    previousRef.current = page;
     // After this render's own focus moves (a closing drawer gives focus
     // back to its trigger, an error page focuses its heading) and the new
     // <title>.
@@ -104,7 +131,7 @@ function useNavigationFocus(
       setAnnouncement(document.title);
     });
     return () => cancelAnimationFrame(frame);
-  }, [main, pathname]);
+  }, [main, page]);
 
   return announcement;
 }
@@ -136,7 +163,7 @@ export function AppShell({
   const siteNavRef = useRef<HTMLElement>(null);
   const moreBelow = useSidebarScroll(siteNavRef, pathname);
   const mainRef = useRef<HTMLElement>(null);
-  const announcement = useNavigationFocus(mainRef, pathname);
+  const announcement = useNavigationFocus(mainRef, usePageIdentity());
   const drawerId = useId();
   const [menuOpen, setMenuOpen] = useState(false);
   const openMenu = useCallback(() => setMenuOpen(true), []);

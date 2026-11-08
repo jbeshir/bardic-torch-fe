@@ -27,29 +27,3 @@ export function tokenInSentence(token: Named): string {
   const name = nameOf(token);
   return name ? `‘${name}’` : unnamed("token", token.prefix);
 }
-
-const MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-] as const;
-
-/**
- * An API timestamp as a date, "3 Oct 2026" (DESIGN §11.1), on the UTC day.
- * Spelt out here rather than with Intl, so the server and every browser
- * (whatever its time zone or ICU data) render the same text and hydration
- * never disagrees.
- */
-export function formatDate(timestamp: string): string {
-  const date = new Date(timestamp);
-  return `${date.getUTCDate()} ${MONTHS[date.getUTCMonth()] ?? ""} ${date.getUTCFullYear()}`;
-}

@@ -137,7 +137,8 @@ for (const help of PAGES.filter(({ infobox }) => infobox)) {
     if (wideBox && wideIntro) {
       // Floated right at its own width, starting level with the intro,
       // whose lines wrap beside it.
-      expect(wideBox.width).toBeLessThanOrEqual(289);
+      // At most w-infobox-xl (20rem).
+      expect(wideBox.width).toBeLessThan(320 + SUB_PIXEL);
       expect(wideBox.x).toBeGreaterThan(wideIntro.x + wideIntro.width / 2);
       expect(Math.abs(wideBox.y - wideIntro.y)).toBeLessThanOrEqual(24);
     }
@@ -293,7 +294,7 @@ test("the conservation infobox jumps to its statuses, and the table fits at 320"
   // The other statuses each go to their own row of the table.
   await main
     .getByRole("complementary", { name: "At a glance" })
-    .getByRole("link", { name: "Critically Endangered" })
+    .getByRole("link", { name: "Critically endangered" })
     .click();
   await expect(page).toHaveURL(/#critically-endangered$/);
   await expect(main.locator("tr#critically-endangered")).toBeInViewport();

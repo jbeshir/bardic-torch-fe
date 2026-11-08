@@ -5,7 +5,7 @@ import { HELP_INDEX, type HelpContent } from "~/content/help/pages";
 import { compileMarkdown, FRONTMATTER } from "~/test/markdown";
 import { renderWithRouter } from "~/test/router";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
-import { HelpPage, helpMeta } from "./HelpPage";
+import { HelpPage } from "./HelpPage";
 
 const SOURCE = `${FRONTMATTER.replace(
   "  - Main Page",
@@ -139,16 +139,5 @@ describe("HelpPage", () => {
   it("looks the same in both themes", async () => {
     const content = await testPage();
     await expectSameMarkupInBothThemes(() => renderHelpPage(content));
-  });
-});
-
-describe("helpMeta", () => {
-  it("titles the page, describes it and gives the summary to previews", () => {
-    expect(helpMeta(HELP_INDEX.frontmatter)).toEqual([
-      { title: "Help · Bardic Torch" },
-      { name: "description", content: HELP_INDEX.frontmatter.description },
-      { property: "og:title", content: "Help" },
-      { property: "og:description", content: HELP_INDEX.frontmatter.summary },
-    ]);
   });
 });

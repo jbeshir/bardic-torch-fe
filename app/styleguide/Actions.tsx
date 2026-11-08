@@ -91,7 +91,7 @@ export function Buttons() {
         <ButtonLink to="/" variant="primary" icon={IconArrowRight}>
           Go to the home page
         </ButtonLink>
-        <ButtonLink to={WIKI_HOME_URL}>Browse on the original wiki</ButtonLink>
+        <ButtonLink to={WIKI_HOME_URL}>Original wiki</ButtonLink>
       </Example>
     </Specimen>
   );
@@ -124,6 +124,11 @@ export function Links() {
         </Link>
         <Link to="/" appearance="muted">
           Licence and attribution
+        </Link>
+      </Example>
+      <Example label="A reader’s URL (nofollow ugc)">
+        <Link to="https://example.org/songbook/the-long-road" userContent>
+          The long road, in a community songbook
         </Link>
       </Example>
       <Example label="Current page">

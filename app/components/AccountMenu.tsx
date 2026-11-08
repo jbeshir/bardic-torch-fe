@@ -63,7 +63,7 @@ function Avatar({
 
 /** A bottom-bar cell: a 24 px icon above its visible caption (DESIGN §5.2). */
 export const BAR_CELL =
-  "flex h-full min-h-11 w-full flex-col items-center justify-center gap-0.5 text-caption text-fg-muted transition-colors hover:bg-surface-sunken hover:text-fg focus-visible:-outline-offset-2";
+  "flex h-full min-h-11 w-full flex-col items-center justify-center gap-0.5 text-caption text-fg-muted transition-colors hover:bg-surface-sunken hover:text-fg focus-visible:-outline-offset-2 forced-colors:border-0";
 
 const ROW =
   "flex min-h-11 w-full items-center gap-2 rounded-md px-3 text-left text-body-sm text-fg transition-colors hover:bg-surface-sunken focus-visible:-outline-offset-2 lg:min-h-10";

@@ -1,32 +1,18 @@
 import { act, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ReactElement } from "react";
 import { hydrateRoot } from "react-dom/client";
-import { renderToString } from "react-dom/server";
-import {
-  createMemoryRouter,
-  createStaticHandler,
-  createStaticRouter,
-  StaticRouterProvider,
-} from "react-router";
+import { createMemoryRouter } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { describe, expect, it } from "vitest";
-import { renderRoutes, renderWithRouter } from "~/test/router";
+import { renderOnServer, renderRoutes, renderWithRouter } from "~/test/router";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { ButtonLink } from "./Button";
-import { ErrorState, SectionError, TryAgain } from "./ErrorState";
-
-/** The server render of `element` as the page at `url`. */
-async function renderOnServer(element: ReactElement, url: string) {
-  const routes = [{ path: "*", element }];
-  const handler = createStaticHandler(routes);
-  const context = await handler.query(new Request(`http://localhost${url}`));
-  if (context instanceof Response) throw new Error("unexpected redirect");
-  const router = createStaticRouter(routes, context);
-  return renderToString(
-    <StaticRouterProvider router={router} context={context} hydrate={false} />
-  );
-}
+import {
+  ErrorState,
+  SectionError,
+  TryAgain,
+  UnderPageHead,
+} from "./ErrorState";
 
 function ServerError({ reference }: { reference?: string }) {
   return (
@@ -44,6 +30,42 @@ function ServerError({ reference }: { reference?: string }) {
     </ErrorState>
   );
 }
+
+describe("ErrorState under a page head", () => {
+  it("is an h2, so the page keeps its one h1", async () => {
+    await renderWithRouter(
+      <>
+        <h1>Swords</h1>
+        <UnderPageHead>
+          <ServerError />
+        </UnderPageHead>
+      </>
+    );
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    const heading = screen.getByRole("heading", {
+      level: 2,
+      name: "Something went wrong",
+    });
+    expect(heading).toHaveClass("text-h2", "text-fg");
+    expect(heading).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("is still the h1 when nothing wraps it", async () => {
+    await renderWithRouter(<ServerError />);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveClass("text-h1");
+    expect(screen.queryByRole("heading", { level: 2 })).toBeNull();
+  });
+
+  it("looks the same in both themes", async () => {
+    await expectSameMarkupInBothThemes(() =>
+      renderWithRouter(
+        <UnderPageHead>
+          <ServerError />
+        </UnderPageHead>
+      )
+    );
+  });
+});
 
 describe("ErrorState", () => {
   it("heads the page with an h1 and says what to do", async () => {

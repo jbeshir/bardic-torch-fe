@@ -31,6 +31,7 @@ export const STYLEGUIDE_BLOCKS = [
   "infobox",
   "card",
   "tag-list",
+  "conservation-badge",
   "alert",
   "empty-state",
   "error-state",
@@ -76,8 +77,19 @@ export const CHECKPOINTS: Readonly<
       "licence",
     ],
     theme: ["dark-choice"],
-    errors: ["not-found", "server-error"],
+    errors: ["not-found", "server-error", "resting"],
     settings: ["signed-out"],
+    browse: ["index", "no-results", "filtered", "facet-drawer-open"],
+    search: ["results"],
+    // Track B (C4, C5): the piece and bard pages.
+    piece: ["full", "stub", "restricted"],
+    bard: ["profile", "no-page"],
+    directories: ["bards"],
+    // Track C (C6–C8): categories, collections, events, history.
+    categories: ["index", "term"],
+    collections: ["directory", "collection"],
+    events: ["directory", "event"],
+    history: ["piece-history", "revision"],
   },
   stub: {
     styleguide: [

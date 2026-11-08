@@ -4,6 +4,7 @@ import { connect, type AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createFixtureServer } from "../fixture-api/server";
 import { responseProblems } from "../fixture-api/spec";
+import { INVALID_REQUESTS } from "./requests";
 import { bearer, json, runScenario, SCENARIOS, type Send } from "./scenarios";
 
 let server: Server;
@@ -128,6 +129,89 @@ describe("fixture server", () => {
       consoleError.mockRestore();
     }
   });
+});
+
+describe("fixture server catalogue requests", () => {
+  it.each(INVALID_REQUESTS.map(request => [request.name, request] as const))(
+    "answers 400 over HTTP to %s",
+    async (_name, { path, message }) => {
+      expect(await httpSend({ method: "GET", path })).toEqual({
+        status: 400,
+        body: { code: "invalid_request", message },
+      });
+    }
+  );
+
+  it.each(["/v1/pieces/the-lay%2Fhistory", "/v1/collections/1%2f2/history"])(
+    "answers 404 no such route over HTTP to %s",
+    async path => {
+      expect(await httpSend({ method: "GET", path })).toEqual({
+        status: 404,
+        body: { code: "not_found", message: "no such route" },
+      });
+    }
+  );
+
+  it("requires a match for a public operation's failure, then fails only that request", async () => {
+    const fail = (failure: Record<string, unknown>) =>
+      httpSend({ method: "POST", path: "/__fixtures/fail", ...json(failure) });
+    expect(
+      await fail({ operationId: "listPieces", status: 500, code: "internal" })
+    ).toMatchObject({
+      status: 400,
+      body: { code: "invalid_request" },
+    });
+    expect(
+      (
+        await fail({
+          operationId: "listPieces",
+          status: 500,
+          match: { q: "server-timeout-1" },
+        })
+      ).status
+    ).toBe(204);
+    expect(
+      await httpSend({ method: "GET", path: "/v1/pieces?q=someone+else" })
+    ).not.toMatchObject({ status: 500 });
+    expect(
+      await httpSend({ method: "GET", path: "/v1/pieces?q=server-timeout-1" })
+    ).toEqual({
+      status: 500,
+      body: { code: "internal", message: "injected failure" },
+    });
+  });
+
+  it.each([
+    ["503", 503, "text/plain; charset=utf-8"],
+    ["html-502", 502, "text/html; charset=utf-8"],
+  ] as const)(
+    "sends a %s outage as-is, with its content type",
+    async (mode, status, contentType) => {
+      const match = { slug: `server-outage-${mode}` };
+      expect(
+        (
+          await httpSend({
+            method: "POST",
+            path: "/__fixtures/outage",
+            ...json({ operationId: "getPiece", mode }),
+          })
+        ).status
+      ).toBe(400);
+      expect(
+        (
+          await httpSend({
+            method: "POST",
+            path: "/__fixtures/outage",
+            ...json({ operationId: "getPiece", mode, match }),
+          })
+        ).status
+      ).toBe(204);
+      const response = await fetch(`${baseUrl}/v1/pieces/${match.slug}`);
+      expect(response.status).toBe(status);
+      expect(response.headers.get("Content-Type")).toBe(contentType);
+      expect(await response.text()).toContain(`${status} `);
+    }
+  );
 });
 
 describe("fixture server entry point", () => {

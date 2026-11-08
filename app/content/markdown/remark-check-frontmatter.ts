@@ -1,6 +1,6 @@
 import type { Root } from "mdast";
 import { parse } from "yaml";
-import { helpFrontmatterSchema } from "../help/frontmatter";
+import { helpFrontmatterSchema } from "../help/frontmatter.ts";
 
 /**
  * Fails the build when a page's front matter is missing or doesn't match

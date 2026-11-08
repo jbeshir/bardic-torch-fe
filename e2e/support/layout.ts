@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 import { waitForHydration } from "./hydration";
+import { appBar } from "./shell";
 
 /** Layout and WCAG 2.2 checks for journeys to run on their pages. */
 
@@ -17,6 +18,50 @@ const FOCUS_WIDTH = 360;
  * once hid one: the app bar's top border lay over the page's last pixel.
  */
 export const SUB_PIXEL = 0.5;
+
+/**
+ * Below md, scrolled to the end of the page, the app bar covers none of
+ * it: the footer ends at or above the bar's top. The page's room for the
+ * bar is the bar's whole box (`pb-app-bar` and `h-app-bar` are one
+ * expression), so this holds whatever the fonts make the page's height.
+ *
+ * The one allowance is sub-pixel, and measured rather than assumed: the
+ * scroll extent (`scrollHeight`) is the document's height rounded to a
+ * whole pixel, so when the height ends in a fraction rounded down (CI's
+ * DejaVu Sans: 3192.34375 → 3192) the last fraction of a pixel can't be
+ * scrolled into view, and the footer ends that fraction below the bar's
+ * top. That remainder is computed from the page, and is under half a pixel.
+ */
+export async function expectBarClearOfPageEnd(page: Page): Promise<void> {
+  // Instantly: under no-preference the page scrolls smoothly, and the
+  // boxes would be measured part-way there.
+  const { gap, unscrollable, room } = await page.evaluate(() => {
+    const root = document.documentElement;
+    window.scrollTo({ top: root.scrollHeight, behavior: "instant" });
+    // The shell, whose padding is the room under the page, holds the header.
+    const shell = document.querySelector("header")?.parentElement;
+    return {
+      gap: root.scrollHeight - (window.scrollY + window.innerHeight),
+      unscrollable: Math.max(
+        0,
+        root.getBoundingClientRect().height - root.scrollHeight
+      ),
+      room: shell
+        ? Number.parseFloat(getComputedStyle(shell).paddingBottom)
+        : 0,
+    };
+  });
+  expect(gap, "scrolled to the end of the page").toBeLessThanOrEqual(1);
+  expect(unscrollable, "only rounding is out of reach").toBeLessThan(SUB_PIXEL);
+  const footer = await page.getByRole("contentinfo").boundingBox();
+  const bar = await appBar(page).boundingBox();
+  if (!footer || !bar) throw new Error("not laid out");
+  // The room under the page is the bar's whole box, whatever the fonts.
+  expect(bar.height, "the bar is as tall as the room under the page").toBe(
+    room
+  );
+  expect(footer.y + footer.height).toBeLessThanOrEqual(bar.y + unscrollable);
+}
 
 /** What the sweeps (and the styleguide focus states) count as a control. */
 export const FOCUSABLE =
@@ -139,6 +184,30 @@ function findSmallTargets(selector: string): string[] {
     return `${element.tagName.toLowerCase()}${type} "${label.trim().replace(/\s+/g, " ").slice(0, 40)}"`;
   };
 
+  /**
+   * Whether the centre of `element` is scrolled out of its nearest
+   * scrolling region's visible box (a checkbox under a drawer's footer):
+   * nobody can reach it there until it scrolls into view.
+   */
+  function clippedByScroller(element: HTMLElement, rect: DOMRect): boolean {
+    for (
+      let node = element.parentElement;
+      node && node !== document.body && node !== document.documentElement;
+      node = node.parentElement
+    ) {
+      const { overflowX, overflowY } = getComputedStyle(node);
+      const scrolls = [overflowX, overflowY].some(
+        value => value === "auto" || value === "scroll"
+      );
+      if (!scrolls) continue;
+      const box = node.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      return x < box.left || x > box.right || y < box.top || y > box.bottom;
+    }
+    return false;
+  }
+
   const targets = [...root.querySelectorAll<HTMLElement>(selector)]
     .filter(element => {
       const rect = element.getBoundingClientRect();
@@ -147,8 +216,13 @@ function findSmallTargets(selector: string): string[] {
         rect.width > 0 &&
         rect.height > 0 &&
         style.visibility !== "hidden" &&
+        // Not in a closed <details>: its content is laid out
+        // (content-visibility: hidden keeps the boxes), but nobody can
+        // see or focus it.
+        element.checkVisibility() &&
         !element.closest("[inert]") &&
-        !inSentence(element)
+        !inSentence(element) &&
+        !clippedByScroller(element, rect)
       );
     })
     .map(element => {
@@ -165,9 +239,12 @@ function findSmallTargets(selector: string): string[] {
 
   /**
    * The fixed or sticky box a target rides in (the header, the app bar, a
-   * toast), or null for the page. Spacing is between targets of one layer:
-   * a link that has scrolled under the app bar isn't "next to" its cells
-   * (whether focus is hidden there is expectFocusNotObscured's question).
+   * toast, a drawer), or null for the page. Spacing is between targets of
+   * one layer: a link that has scrolled under the app bar isn't "next to"
+   * its cells (whether focus is hidden there is expectFocusNotObscured's
+   * question). A scrolling region (a drawer's body, the sidebar) is not a
+   * layer of its own: its targets are checked against those beside it,
+   * such as a drawer's Close and footer buttons.
    */
   function layerOf(element: HTMLElement): Element | null {
     for (let node: Element | null = element; node; node = node.parentElement) {

@@ -1,33 +1,11 @@
-import type { MetaDescriptor } from "react-router";
 import { Fragment } from "react";
+import { formatDate } from "~/catalogue/format";
 import { Link } from "~/components/ui/Link";
 import { HELP_HREF, LICENCE_URL, wikiPageUrl } from "~/constants/navigation";
 import { MarkdownPart } from "~/content/markdown/components";
 import type { HelpContent } from "~/content/help/pages";
 import type { HelpFrontmatter } from "~/content/help/frontmatter";
 import { WikiPage } from "./WikiPage";
-
-/** "31 Oct 2026" (DESIGN §11.1). */
-const REVIEWED = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-  timeZone: "UTC",
-});
-
-/** A help page's title, description and social preview. */
-export function helpMeta({
-  title,
-  description,
-  summary,
-}: HelpFrontmatter): MetaDescriptor[] {
-  return [
-    { title: `${title} · Bardic Torch` },
-    { name: "description", content: description },
-    { property: "og:title", content: title },
-    { property: "og:description", content: summary },
-  ];
-}
 
 /** "‘A’", "‘A’ and ‘B’", "‘A’, ‘B’ and ‘C’", each a link to the wiki page. */
 function SourceList({ titles }: { readonly titles: readonly string[] }) {
@@ -68,7 +46,7 @@ function LicenceLine({
       ) : null}{" "}
       Last reviewed{" "}
       <time dateTime={lastReviewed} className="whitespace-nowrap">
-        {REVIEWED.format(new Date(`${lastReviewed}T00:00:00Z`))}
+        {formatDate(lastReviewed)}
       </time>
       .
     </>

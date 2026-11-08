@@ -2,6 +2,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import { waitForHydration } from "../support/hydration";
 import { checkpoint } from "../support/journey";
 import {
+  expectBarClearOfPageEnd,
   expectNoHorizontalOverflow,
   expectPrimaryTargetsAtLeast44,
   expectTargetSizesAtLeast24,
@@ -19,6 +20,7 @@ import {
   applyTextSpacing,
   applyWiderText,
   expectNothingCutOff,
+  textAdvance,
 } from "../support/text-spacing";
 
 /**
@@ -61,50 +63,6 @@ async function showSiteMenu(page: Page): Promise<void> {
   }
   await expect(drawer).toBeVisible();
   await settled(drawer);
-}
-
-/**
- * Below md, scrolled to the end of the page, the app bar covers none of
- * it: the footer ends at or above the bar's top. The page's room for the
- * bar is the bar's whole box (`pb-app-bar` and `h-app-bar` are one
- * expression), so this holds whatever the fonts make the page's height.
- *
- * The one allowance is sub-pixel, and measured rather than assumed: the
- * scroll extent (`scrollHeight`) is the document's height rounded to a
- * whole pixel, so when the height ends in a fraction rounded down (CI's
- * DejaVu Sans: 3192.34375 → 3192) the last fraction of a pixel can't be
- * scrolled into view, and the footer ends that fraction below the bar's
- * top. That remainder is computed from the page, and is under half a pixel.
- */
-async function expectBarClearOfPageEnd(page: Page): Promise<void> {
-  // Instantly: under no-preference the page scrolls smoothly, and the
-  // boxes would be measured part-way there.
-  const { gap, unscrollable, room } = await page.evaluate(() => {
-    const root = document.documentElement;
-    window.scrollTo({ top: root.scrollHeight, behavior: "instant" });
-    // The shell, whose padding is the room under the page, holds the header.
-    const shell = document.querySelector("header")?.parentElement;
-    return {
-      gap: root.scrollHeight - (window.scrollY + window.innerHeight),
-      unscrollable: Math.max(
-        0,
-        root.getBoundingClientRect().height - root.scrollHeight
-      ),
-      room: shell
-        ? Number.parseFloat(getComputedStyle(shell).paddingBottom)
-        : 0,
-    };
-  });
-  expect(gap, "scrolled to the end of the page").toBeLessThanOrEqual(1);
-  expect(unscrollable, "only rounding is out of reach").toBeLessThan(SUB_PIXEL);
-  const footer = await page.getByRole("contentinfo").boundingBox();
-  const bar = await appBar(page).boundingBox();
-  if (!footer || !bar) throw new Error("not laid out");
-  // The room under the page is the bar's whole box, whatever the fonts.
-  expect(bar.height, "the bar is as tall as the room under the page").toBe(
-    room
-  );
-  expect(footer.y + footer.height).toBeLessThanOrEqual(bar.y + unscrollable);
 }
 
 /**
@@ -304,15 +262,14 @@ test.describe("below md", () => {
     page,
   }) => {
     await openHydrated(page);
-    // Exact: the sheet's submit is "Search the original wiki (…)".
-    const search = appBar(page).getByRole("button", {
-      name: "Search",
-      exact: true,
-    });
+    // The one that controls the sheet: its submit is named "Search" too.
+    const search = appBar(page)
+      .getByRole("button", { name: "Search", exact: true })
+      .and(page.locator("[aria-controls]"));
     await search.click();
     await expect(search).toHaveAttribute("aria-expanded", "true");
     const field = appBar(page).getByRole("searchbox", {
-      name: "Search the original wiki",
+      name: "Search the catalogue",
     });
     await expect(field).toBeFocused();
     const sheet = await field.boundingBox();
@@ -324,7 +281,7 @@ test.describe("below md", () => {
     );
     await expect(appBar(page).getByRole("search")).toHaveAttribute(
       "action",
-      /\/w\/index\.php$/
+      "/search"
     );
 
     await page.keyboard.press("Escape");
@@ -416,7 +373,7 @@ test.describe("from md", () => {
     expect(room).toBeGreaterThanOrEqual(0);
   });
 
-  test("from lg the header search says it searches the original wiki, until something is typed", async ({
+  test("from lg the header search says what it searches, until something is typed", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
@@ -424,7 +381,7 @@ test.describe("from md", () => {
     const banner = page.getByRole("banner");
     const hint = banner.getByTestId("search-long-placeholder");
     await expect(hint).toBeVisible();
-    await expect(hint).toHaveText("Search the original wiki…");
+    await expect(hint).toHaveText("Search pieces and bards…");
     // The whole hint fits.
     expect(
       await hint.evaluate(element => element.scrollWidth <= element.clientWidth)
@@ -441,7 +398,9 @@ test.describe("from md", () => {
   }) => {
     for (const viewport of [
       { width: 768, height: 1024 },
-      { width: 1280, height: 800 },
+      // The 404 is about 830 px tall at 1280 (its copy and three actions), so
+      // 800 would make it a long page, not a short one.
+      { width: 1280, height: 900 },
     ]) {
       await page.setViewportSize(viewport);
       await openHydrated(page, "/no-such-page");
@@ -472,7 +431,7 @@ test.describe("from md", () => {
     }
   });
 
-  test("at lg the sidebar is always there, with the catalogue links going to the wiki", async ({
+  test("at lg the sidebar is always there, with the catalogue links on this site", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
@@ -483,8 +442,8 @@ test.describe("from md", () => {
       page.getByRole("banner").getByRole("button", { name: "Menu" })
     ).toBeHidden();
     await expect(
-      nav.getByRole("link", { name: "Pieces (opens original wiki)" })
-    ).toHaveAttribute("href", /\/wiki\/Category:Pieces$/);
+      nav.getByRole("link", { name: "Pieces", exact: true })
+    ).toHaveAttribute("href", "/pieces");
     await expect(
       nav.getByRole("link", { name: "Contributing", exact: true })
     ).toHaveAttribute("aria-current", "page");
@@ -493,6 +452,57 @@ test.describe("from md", () => {
     expect((navBox?.x ?? 0) + (navBox?.width ?? 0)).toBeLessThanOrEqual(
       mainBox?.x ?? 0
     );
+  });
+
+  test("the sidebar's catalogue links are all on this site and mark the section being read", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await openHydrated(page, "/");
+    const nav = page.getByRole("navigation", { name: "Site" });
+    const hrefs = await nav
+      .getByRole("link")
+      .evaluateAll(links => links.map(link => link.getAttribute("href")));
+    for (const href of hrefs) expect(href).toMatch(/^\//);
+    await expect(
+      nav.getByRole("link", { name: "Pieces", exact: true })
+    ).toHaveAttribute("href", "/pieces");
+    await expect(
+      nav.getByRole("link", { name: "Bards", exact: true })
+    ).toHaveAttribute("href", "/bards");
+    await expect(
+      nav.getByRole("link", { name: "Collections", exact: true })
+    ).toHaveAttribute("href", "/collections");
+    await expect(
+      nav.getByRole("link", { name: "Events and venues", exact: true })
+    ).toHaveAttribute("href", "/events");
+    await expect(
+      nav.getByRole("link", { name: "Categories", exact: true })
+    ).toHaveAttribute("href", "/categories");
+    // The home page is in no section.
+    await expect(nav.locator("[aria-current]")).toHaveCount(0);
+
+    // A piece's page, and its history, are in Pieces.
+    await nav.getByRole("link", { name: "Pieces", exact: true }).click();
+    await expect(page).toHaveURL(/\/pieces$/);
+    await expect(
+      nav.getByRole("link", { name: "Pieces", exact: true })
+    ).toHaveAttribute("aria-current", "page");
+    await page.goto("/pieces/the-copper-kettle/history");
+    await waitForHydration(page);
+    await expect(nav.locator("[aria-current]")).toHaveText(["Pieces"]);
+    // The section, not the page being shown.
+    await expect(
+      nav.getByRole("link", { name: "Pieces", exact: true })
+    ).toHaveAttribute("aria-current", "true");
+
+    // A facet entry is current alone; the categories entry is not.
+    await nav.getByRole("link", { name: "Mood", exact: true }).click();
+    await expect(page).toHaveURL(/\/categories\?facet=mood$/);
+    await expect(nav.locator("[aria-current]")).toHaveText(["Mood"]);
+    await nav.getByRole("link", { name: "Categories", exact: true }).click();
+    await expect(page).toHaveURL(/\/categories$/);
+    await expect(nav.locator("[aria-current]")).toHaveText(["Categories"]);
   });
 
   test("following a sidebar link moves focus to the new page's content and announces it", async ({
@@ -593,25 +603,20 @@ test.describe("with wider text (0.1em more letter spacing) the shell's room hold
   test("at 1280 × 800 the sidebar shows the current page and the Help group, and says when there is more below", async ({
     page,
   }) => {
-    const note = page
+    // The longest label: its text's advance is what the font decides.
+    const label = page
       .getByRole("navigation", { name: "Site" })
-      .getByText("The catalogue is on its way.");
-    const noteHeight = async () => {
-      const box = await note.boundingBox();
-      if (!box) throw new Error("not laid out");
-      return box.height;
-    };
+      .getByRole("link", { name: "Bard preference checklist" });
     await page.setViewportSize({ width: 1280, height: 800 });
     await openHydrated(page, "/");
-    const ownHeight = await noteHeight();
-    let widenedHeight = 0;
+    const ownAdvance = await textAdvance(label);
+    let widenedAdvance = 0;
     await expectSidebarFold(page, async () => {
       await applyWiderText(page);
-      widenedHeight = await noteHeight();
+      widenedAdvance = await textAdvance(label);
     });
-    // Not vacuous: the Browse note wraps to more lines than in the
-    // machine's own sans (two more in the Playwright image).
-    expect(widenedHeight).toBeGreaterThan(ownHeight);
+    // Not vacuous: the widening reached the sidebar's labels.
+    expect(widenedAdvance).toBeGreaterThan(ownAdvance);
   });
 });
 

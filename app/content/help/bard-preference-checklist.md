@@ -1,6 +1,6 @@
 ---
 title: Bard preference checklist
-description: What the Bard Preference Checklist is, why it helps, and what it covers, from licensing and performance permission to sing-alongs and recording.
+description: What the bard preference checklist is, why it helps, and what it covers, from licensing and performance permission to sing-alongs and recording.
 summary: A copy-and-delete list that helps you publish your wishes about how people use your work, on your own site, so we can link to it and share it.
 sourcePages:
   - Bard Preference Checklist
@@ -8,7 +8,7 @@ sourcePages:
 lastReviewed: 2026-10-31
 ---
 
-Bardic communities have customs that standard licences don’t cover. You might be happy for anyone to sing your song from memory, but not want it written down. You might love sing-alongs on the chorus but not on the verses. The Bard Preference Checklist helps you say all of that in one place.
+Bardic communities have customs that standard licences don’t cover. You might be happy for anyone to sing your song from memory, but not want it written down. You might love sing-alongs on the chorus but not on the verses. The bard preference checklist helps you say all of that in one place.
 
 :::infobox{title="At a glance"}
 
@@ -50,7 +50,7 @@ If all this is more detail than you need, you can simply name a [Creative Common
 
 The checklist has 8 sections. Here are some of the options in each.
 
-### 1. Licensing and copyright
+### Licensing and copyright
 
 How your work is legally released:
 
@@ -62,7 +62,7 @@ How your work is legally released:
 
 If you use a Creative Commons licence, don’t add rules that contradict it.
 
-### 2. Performance permission
+### Performance permission
 
 Whether others may perform your work:
 
@@ -74,7 +74,7 @@ Whether others may perform your work:
 
 You can also say whether you want to **hear about performances**. That could mean you must be told, you’d love to know, it doesn’t matter, or you’d rather not know.
 
-### 3. Adaptations
+### Adaptations
 
 How you feel about people remixing or changing your work:
 
@@ -86,7 +86,7 @@ How you feel about people remixing or changing your work:
 
 You can say whether you want to **be told about adaptations**, and which **kinds** you’re happy with. Examples include new words to your tune, fan videos, changing a story’s plot, shortening or extending a piece, setting a poem to music, and using it in a play.
 
-### 4. Attribution
+### Attribution
 
 How you’d like to be credited, which can differ by context:
 
@@ -99,7 +99,7 @@ For each context you can say **what** to credit and **how**. What could be your 
 
 There’s also space for sensitive notes. You might want an important preference repeated with every credit, or to keep a former name or your location private. You can also separate credit you legally require from credit you’d simply like.
 
-### 5. Commercial use
+### Commercial use
 
 A list of money-related activities, each of which you can allow or not:
 
@@ -110,7 +110,7 @@ A list of money-related activities, each of which you can allow or not:
 
 Each one can carry conditions, such as asking first, telling you, offering you first refusal, sharing profits, or amateurs only.
 
-### 6. Recording and writing down
+### Recording and writing down
 
 Whether your work may be captured:
 
@@ -123,7 +123,7 @@ Whether your work may be captured:
 
 You can also say whether people may **record you while you perform**. Options include no, ask first, tell me afterwards, or formal venues only and never at bardic circles.
 
-### 7. Performance etiquette
+### Performance etiquette
 
 The customs of the circle:
 
@@ -132,7 +132,7 @@ The customs of the circle:
 - **bardic circles where I’m present**: fine, check with me beforehand, a quick word is enough, ask only if you know me, or don’t
 - **learning my work**: any way you like, off-book only, or practise it thoroughly first
 
-### 8. Objectionable use
+### Objectionable use
 
 Purposes, contexts and content you don’t want your work linked to. Examples include political or religious campaigning, hateful groups, advertising certain products, events that serve alcohol, or content that isn’t suitable for children.
 
@@ -142,11 +142,11 @@ You can also say what should happen if someone is unsure. They might ask you, te
 
 :::note
 
-Coming with the catalogue. Until it opens here, your page’s licensing and etiquette notes are on the original wiki.
+Coming later. For now, each piece’s licensing card has a short note about its creator’s wishes.
 
 :::
 
-When the catalogue opens, each bard page will show an **etiquette card** that summarises your preferences in plain language. The same card will appear on the page for each of your pieces, so people see your wishes where they need them.
+Bard pages will show an **etiquette card** that summarises your preferences in plain language. The same card will appear on the page for each of your pieces, so people see your wishes where they need them.
 
 - **Every point links to its source**, your own published page, so readers can check your exact words.
 - **Piece-level rules win.** If one song has different rules from the rest of your work, the song’s own rules take precedence on its page.

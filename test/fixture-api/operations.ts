@@ -1,8 +1,12 @@
 import type { components } from "../../app/api/schema.gen";
+import { CATALOGUE_OPERATIONS } from "./catalogue-operations";
+import type { CatalogueReadId } from "./catalogue/query";
+import { errorBody, type FixtureResponse } from "./responses";
 
 /**
  * The fixture API's operations, keyed by the spec's operationIds: the five
- * FE1 calls plus the health check the e2e servers wait on. The table is
+ * FE1 calls, the health check the e2e servers wait on, and the 17 public
+ * catalogue reads (catalogue-operations.ts). The table is
  * framework-agnostic: the Node server and the msw handlers both route
  * through it (see router.ts). Handlers mirror the backend's rules so the
  * app's error handling is exercised against realistic answers.
@@ -10,11 +14,6 @@ import type { components } from "../../app/api/schema.gen";
 
 type Schemas = components["schemas"];
 type ErrorCode = Schemas["Error"]["code"];
-
-export type FixtureResponse = {
-  readonly status: number;
-  readonly body?: unknown;
-};
 
 export type UserState = {
   me: Schemas["User"];
@@ -25,13 +24,19 @@ export type UserState = {
   revoked: Set<string>;
 };
 
-type OperationRequest = {
+/** What a public operation reads: the path and query parameters. */
+export type PublicRequest = {
   readonly params: Readonly<Record<string, string>>;
+  /** Decoded; for a catalogue read, only the parameters the spec declares. */
+  readonly query: URLSearchParams;
+};
+
+type OperationRequest = PublicRequest & {
   readonly body: unknown;
   readonly nextId: () => number;
 };
 
-type FixtureOperation = {
+export type FixtureOperation = {
   readonly method: "GET" | "PATCH" | "POST" | "DELETE";
   /** The spec's path template. */
   readonly path: string;
@@ -45,7 +50,7 @@ type FixtureOperation = {
 } & (
   | {
       readonly authenticated: false;
-      readonly handle: () => FixtureResponse;
+      readonly handle: (request: PublicRequest) => FixtureResponse;
     }
   | {
       readonly authenticated: true;
@@ -62,10 +67,6 @@ const DISPLAY_NAME_INPUT_MAX = 256;
 const TOKEN_NAME_MAX = 128;
 const ACTIVE_TOKEN_LIMIT = 10;
 const CONTROL_OR_FORMAT = /[\p{Cc}\p{Cf}]/u;
-
-export function errorBody(code: ErrorCode, message: string): Schemas["Error"] {
-  return { code, message };
-}
 
 function invalid(message: string): FixtureResponse {
   return { status: 400, body: errorBody("invalid_request", message) };
@@ -124,7 +125,7 @@ const BODY_ERRORS = {
 } as const;
 
 /** The operations served; each must be a spec operationId (see router.ts). */
-export type FixtureOperationId =
+type AccountOperationId =
   | "getHealthz"
   | "getMe"
   | "updateMe"
@@ -132,8 +133,10 @@ export type FixtureOperationId =
   | "createAPIToken"
   | "revokeAPIToken";
 
-export const OPERATIONS: Readonly<
-  Record<FixtureOperationId, FixtureOperation>
+export type FixtureOperationId = AccountOperationId | CatalogueReadId;
+
+const ACCOUNT_OPERATIONS: Readonly<
+  Record<AccountOperationId, FixtureOperation>
 > = {
   getHealthz: {
     method: "GET",
@@ -252,3 +255,7 @@ export const OPERATIONS: Readonly<
     },
   },
 };
+
+export const OPERATIONS: Readonly<
+  Record<FixtureOperationId, FixtureOperation>
+> = { ...ACCOUNT_OPERATIONS, ...CATALOGUE_OPERATIONS };

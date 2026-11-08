@@ -27,6 +27,10 @@ describe("/help", () => {
     expect(html).toContain(
       '<meta name="description" content="Guides to contributing to Bardic Torch'
     );
+    expect(html).toMatch(
+      /<link rel="canonical" href="https:\/\/app\.test\/help"\/?>/
+    );
+    expect(html).toContain('<meta property="og:type" content="website"');
     expect(mainOf(html)).toMatch(/<h1[^>]*>Help<\/h1>/);
     expect(html).toContain("<footer");
   });

@@ -1,6 +1,7 @@
 import {
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -11,20 +12,28 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { build } from "./build.mjs";
 import {
   DEPLOY_CONFIG,
+  INDEXABLE_ONLY_MARKER,
   inspectBuild,
+  MARKDOWN_PARSER_MARKERS,
   readStubMarker,
   withDeployConfigRestored,
+  ZOD_MARKERS,
 } from "./check-production-build.mjs";
 
 const MARKER = "bardic-torch-stub-auth";
 const dirs: string[] = [];
+
+/** What a production server build has of the robots rules. */
+const INDEXABLE_RULES = `var rules="${INDEXABLE_ONLY_MARKER}";`;
+/** What a preview server build has instead. */
+const NOINDEX = 'var header="X-Robots-Tag";';
 
 /** A fake build output directory with the given files. */
 function fakeBuild(files: Record<string, string>): string {
   const dir = mkdtempSync(path.join(tmpdir(), "bt-inspect-"));
   dirs.push(dir);
   const all = {
-    "server/index.js": 'const routes = { "routes/_index": {} };',
+    "server/index.js": `const routes = { "routes/_index": {} }; ${INDEXABLE_RULES}`,
     "client/assets/manifest-abc.js":
       'window.__remixManifest={"routes/_index":{}}',
     ...files,
@@ -44,7 +53,7 @@ function inspect(
 }
 
 const STYLEGUIDE = {
-  "server/index.js": 'const routes = { "routes/styleguide": {} };',
+  "server/index.js": `const routes = { "routes/styleguide": {} }; ${INDEXABLE_RULES}`,
   "client/assets/manifest-abc.js":
     'window.__remixManifest={"routes/styleguide":{}}',
 };
@@ -71,8 +80,83 @@ describe("inspectBuild", () => {
     expect(inspect({})).toEqual([]);
   });
 
-  it("passes a preview build that has the styleguide", () => {
-    expect(inspect(STYLEGUIDE, "preview")).toEqual([]);
+  it.each(MARKDOWN_PARSER_MARKERS)(
+    "finds the Markdown parser in a client chunk by %s, and allows it on the server",
+    parser => {
+      expect(
+        inspect({
+          "client/assets/notes-abc.js": `var t="${parser}";`,
+          "server/assets/server-build.js": `var t="${parser}";`,
+        })
+      ).toEqual([
+        "production: the Markdown parser (micromark) in client/assets/notes-abc.js",
+      ]);
+    }
+  );
+
+  it.each(ZOD_MARKERS)(
+    "finds zod in a client chunk by %s, and allows it on the server",
+    zod => {
+      expect(
+        inspect({
+          "client/assets/catalogue-abc.js": `class e extends Error{name="${zod}"}`,
+          "server/assets/server-build.js": `var t="${zod}";`,
+        })
+      ).toEqual(["production: zod in client/assets/catalogue-abc.js"]);
+    }
+  );
+
+  it("passes a preview build that has the styleguide and noindex", () => {
+    expect(
+      inspect(
+        {
+          ...STYLEGUIDE,
+          "server/index.js": `const routes = { "routes/styleguide": {} }; ${NOINDEX}`,
+        },
+        "preview"
+      )
+    ).toEqual([]);
+  });
+
+  it("flags a production build that would be indexed without its rules, or sends noindex", () => {
+    expect(
+      inspect({ "server/index.js": 'const routes = { "routes/_index": {} };' })
+    ).toEqual([
+      "production: the crawlable robots.txt rules are missing from the server build",
+    ]);
+    expect(
+      inspect({
+        "server/index.js": `${INDEXABLE_RULES}${NOINDEX}`,
+      })
+    ).toEqual(["production: X-Robots-Tag is present in the server build"]);
+  });
+
+  it("reads the code, not the source maps that hold the text of every source", () => {
+    expect(
+      inspect(
+        {
+          ...STYLEGUIDE,
+          "server/index.js": `const routes = { "routes/styleguide": {} }; ${NOINDEX}`,
+          "server/index.js.map": `{"sourcesContent":["${INDEXABLE_ONLY_MARKER}"]}`,
+        },
+        "preview"
+      )
+    ).toEqual([]);
+  });
+
+  it("flags a preview build that is crawlable or lacks the noindex header", () => {
+    expect(
+      inspect(
+        {
+          ...STYLEGUIDE,
+          "server/index.js": `const routes = { "routes/styleguide": {} }; ${INDEXABLE_RULES}`,
+        },
+        "preview"
+      )
+    ).toEqual([
+      "preview: the crawlable robots.txt rules are present in the server build",
+      "preview: X-Robots-Tag is missing from the server build",
+    ]);
   });
 
   it("flags a stub auth chunk and the marker anywhere", () => {
@@ -104,6 +188,8 @@ describe("inspectBuild", () => {
 
   it("flags a preview build missing the styleguide route", () => {
     expect(inspect({}, "preview")).toEqual([
+      "preview: the crawlable robots.txt rules are present in the server build",
+      "preview: X-Robots-Tag is missing from the server build",
       "preview: routes/styleguide missing from the server build",
       "preview: routes/styleguide missing from the client manifest",
     ]);
@@ -111,6 +197,8 @@ describe("inspectBuild", () => {
 
   it("always expects the styleguide in preview, so a renamed route can't switch the check off", () => {
     expect(inspect({}, "preview")).toEqual([
+      "preview: the crawlable robots.txt rules are present in the server build",
+      "preview: X-Robots-Tag is missing from the server build",
       "preview: routes/styleguide missing from the server build",
       "preview: routes/styleguide missing from the client manifest",
     ]);
@@ -251,5 +339,21 @@ describe("inspectBuild on a real e2e build", () => {
         problem => !/: stub auth (marker in|chunk) /.test(problem)
       )
     ).toEqual([]);
+  });
+
+  it("parses Markdown and checks answers on the server, so the client checks look for something real", () => {
+    const server = readdirSync(path.join(buildDir, "server"), {
+      recursive: true,
+      encoding: "utf8",
+    })
+      .filter(name => name.endsWith(".js"))
+      .map(name => readFileSync(path.join(buildDir, "server", name), "utf8"))
+      .join("\n");
+    for (const parser of MARKDOWN_PARSER_MARKERS.slice(1)) {
+      expect(server).toContain(parser);
+    }
+    // The markers find zod where it is, so its absence from the client
+    // (no problem above) means something.
+    for (const zod of ZOD_MARKERS) expect(server).toContain(zod);
   });
 });

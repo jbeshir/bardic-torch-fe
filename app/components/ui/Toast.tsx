@@ -1,3 +1,4 @@
+import { BELOW_SM_QUERY } from "~/constants/breakpoints";
 import { IconX } from "@tabler/icons-react";
 import {
   createContext,
@@ -30,9 +31,6 @@ type ToastEntry = ToastMessage & {
 /** DESIGN §6.23. */
 const AUTO_DISMISS_MS = 6000;
 
-/** Below sm the stack is at the top, under the header, full width. */
-const BELOW_SM = "(max-width: 639px)";
-
 /**
  * Below sm, while toasts are shown, `--bt-toast-stack-h` holds the stack's
  * height, which base.css adds to `scroll-padding-top`: a control that
@@ -44,7 +42,7 @@ function useToastScrollPadding(region: RefObject<HTMLElement | null>) {
     const element = region.current;
     if (!element || typeof ResizeObserver === "undefined") return;
     const root = document.documentElement;
-    const narrow = window.matchMedia(BELOW_SM);
+    const narrow = window.matchMedia(BELOW_SM_QUERY);
     const update = () => {
       // Whether a toast is shown, not the height: the empty region still
       // measures the gap between its two lists.

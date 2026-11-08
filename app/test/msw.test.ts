@@ -90,6 +90,29 @@ describe("msw fixture handlers", () => {
     expect([(await me()).status, (await me()).status]).toEqual([500, 200]);
   });
 
+  it("sends an outage as-is, with its content type, and a query to the parser", async () => {
+    await mswSend({
+      method: "POST",
+      path: "/__fixtures/outage",
+      ...json({ operationId: "listPieces", mode: "html-502" }),
+    });
+    const response = await fetch(`${API_BASE_URL}/v1/pieces?q=msw`);
+    expect(response.status).toBe(502);
+    expect(response.headers.get("Content-Type")).toBe(
+      "text/html; charset=utf-8"
+    );
+    expect(await response.text()).toContain("<h1>502 Bad Gateway</h1>");
+    expect(
+      await mswSend({ method: "GET", path: "/v1/pieces?limit=0" })
+    ).toEqual({
+      status: 400,
+      body: {
+        code: "invalid_request",
+        message: "invalid limit: must be an integer from 1 to 100",
+      },
+    });
+  });
+
   it("starts every test from fresh state", () => {
     expect(fixtureApi.state().users.get("contributor")?.me).toEqual(
       SEED_USERS.contributor

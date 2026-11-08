@@ -1,8 +1,9 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 import type { Phase } from "./checkpoints";
-import { createFixtureUser } from "./fixture-api";
+import { createFixtureUser, outageNext } from "./fixture-api";
 import { waitForHydration } from "./hydration";
 import {
+  expectBarClearOfPageEnd,
   expectFocusNotObscured,
   expectNoHorizontalOverflow,
   expectPrimaryTargetsAtLeast44,
@@ -10,13 +11,16 @@ import {
 } from "./layout";
 import { accountTrigger, appBar } from "./shell";
 import { test } from "./test";
+import { applyWiderText, textAdvance } from "./text-spacing";
 
 /**
  * Every page a reader can land on, in one table, and the layout sweep each
  * one gets (R20, WCAG 2.2): no horizontal scrolling at 360 and 320 px,
  * every target at least 24 px (or spaced), focus never hidden behind the
  * header or the app bar at the page's width and at 360, and its primary
- * controls at least 44 px at 360. prod/sweeps.spec.ts and
+ * controls at least 44 px at 360; and below md, scrolled to its end, the
+ * app bar covers none of it, with the machine's sans and with wider text
+ * (expectBarClearOfPageEnd). prod/sweeps.spec.ts and
  * stub/sweeps.spec.ts run the rows of their phase; a page that needs stub
  * sign-in or the styleguide is a stub row.
  */
@@ -105,12 +109,10 @@ const JOURNEY_PAGES: readonly JourneyPage[] = [
     phase: "prod",
     open: visit("/"),
     primary: page => [
-      // The hero's call to action; a card further down repeats it.
+      main(page).getByRole("link", { name: "Browse pieces", exact: true }),
+      // The hero's second action; a card further down repeats it.
       main(page).getByRole("link", { name: "How to contribute" }).first(),
-      main(page).getByRole("link", {
-        name: "Browse on the original wiki (opens original wiki)",
-      }),
-      main(page).getByRole("searchbox", { name: "Search the original wiki" }),
+      main(page).getByRole("searchbox", { name: "Search the catalogue" }),
     ],
     inShell: true,
   },
@@ -121,6 +123,185 @@ const JOURNEY_PAGES: readonly JourneyPage[] = [
     primary: () => [],
     inShell: true,
   })),
+  {
+    name: "/pieces?letter=T",
+    phase: "prod",
+    open: visit("/pieces?letter=T"),
+    primary: page => [
+      main(page).getByRole("searchbox", { name: "Search pieces" }),
+    ],
+    inShell: true,
+    // 123 stops at 1280 and 125 at 360, beside the facet column: alone
+    // its walk takes about 14 s, but with four workers busy it ran past
+    // 90 s (on FE2's own commit too).
+    long: true,
+  },
+  {
+    name: "/pieces",
+    phase: "prod",
+    open: visit("/pieces"),
+    primary: page => [
+      main(page).getByRole("searchbox", { name: "Search pieces" }),
+      main(page)
+        .getByRole("navigation", { name: "Pagination" })
+        .getByRole("link", { name: "Next" }),
+    ],
+    inShell: true,
+    // 50 rows, the A–Z and the pages: a long Tab walk.
+    long: true,
+  },
+  {
+    name: "resting (503)",
+    phase: "prod",
+    open: async page => {
+      const q = `resting-sweep-${test.info().workerIndex}-${Date.now()}`;
+      await outageNext(page.request, {
+        operationId: "listPieces",
+        match: { q },
+        mode: "503",
+      });
+      await visit(`/pieces?q=${q}`, 503)(page);
+    },
+    primary: page => [
+      main(page).getByRole("button", { name: "Try again" }),
+      main(page).getByRole("link", { name: "Go to the home page" }),
+    ],
+    inShell: true,
+  },
+  // Track B (C4, C5): the piece and bard pages.
+  {
+    name: "/pieces/the-copper-kettle",
+    phase: "prod",
+    open: visit("/pieces/the-copper-kettle"),
+    primary: () => [],
+    inShell: true,
+  },
+  {
+    name: "/pieces/the-dragons-hoard (restricted)",
+    phase: "prod",
+    open: visit("/pieces/the-dragons-hoard"),
+    primary: () => [],
+    inShell: true,
+  },
+  {
+    name: "/bards/wren-of-the-vale",
+    phase: "prod",
+    open: visit("/bards/wren-of-the-vale"),
+    primary: () => [],
+    inShell: true,
+  },
+  {
+    name: "/bards/hollis-fenn (no page)",
+    phase: "prod",
+    open: visit("/bards/hollis-fenn"),
+    primary: () => [],
+    inShell: true,
+  },
+  {
+    name: "/bards?letter=W",
+    phase: "prod",
+    open: visit("/bards?letter=W"),
+    primary: page => [
+      main(page).getByRole("searchbox", { name: "Search bards" }),
+    ],
+    inShell: true,
+  },
+  // Track C (C6–C8): categories, collections, events, history.
+  {
+    name: "/categories",
+    phase: "prod",
+    open: visit("/categories"),
+    // The section chips are `sm` filter chips, 28 px tall on a 36 px pitch:
+    // above 2.5.8's 24 px, and not held to the 44 px primary bar.
+    primary: () => [],
+    inShell: true,
+    // Every term of every facet: a long Tab walk.
+    long: true,
+  },
+  {
+    name: "/categories/swords",
+    phase: "prod",
+    open: visit("/categories/swords"),
+    primary: page => [
+      main(page)
+        .getByRole("navigation", { name: "Page views" })
+        .getByRole("link", { name: "History" }),
+    ],
+    inShell: true,
+  },
+  {
+    name: "/collections",
+    phase: "prod",
+    open: visit("/collections"),
+    // The A–Z is LetterBar's 36 px cells on a 40 px pitch: above 2.5.8's
+    // 24 px, and not held to the 44 px primary bar.
+    primary: () => [],
+    inShell: true,
+    // A full page of collections and the A–Z: a long Tab walk.
+    long: true,
+  },
+  {
+    name: "/collections/12",
+    phase: "prod",
+    open: visit("/collections/12"),
+    primary: page => [
+      main(page)
+        .getByRole("navigation", { name: "Page views" })
+        .getByRole("link", { name: "History" }),
+    ],
+    inShell: true,
+  },
+  {
+    name: "/events",
+    phase: "prod",
+    open: visit("/events"),
+    // The kind chips are `sm` filter chips, 28 px tall on a 36 px pitch:
+    // above 2.5.8's 24 px, and not held to the 44 px primary bar.
+    primary: () => [],
+    inShell: true,
+  },
+  {
+    name: "/events/midwinter-revel",
+    phase: "prod",
+    open: visit("/events/midwinter-revel"),
+    primary: page => [
+      main(page)
+        .getByRole("navigation", { name: "Page views" })
+        .getByRole("link", { name: "History" }),
+    ],
+    inShell: true,
+  },
+  {
+    name: "/bards/wren-of-the-vale/history",
+    phase: "prod",
+    open: visit("/bards/wren-of-the-vale/history"),
+    primary: page => [
+      main(page)
+        .getByRole("navigation", { name: "Page views" })
+        .getByRole("link", { name: "Read" }),
+    ],
+    inShell: true,
+  },
+  {
+    name: "/pieces/the-copper-kettle/history",
+    phase: "prod",
+    open: visit("/pieces/the-copper-kettle/history"),
+    primary: page => [
+      main(page)
+        .getByRole("navigation", { name: "Page views" })
+        .getByRole("link", { name: "Read" }),
+    ],
+    inShell: true,
+  },
+  {
+    name: "/revisions/1003",
+    phase: "prod",
+    open: visit("/revisions/1003"),
+    primary: page => [
+      main(page).getByRole("link", { name: "Previous revision" }),
+    ],
+    inShell: true,
+  },
   {
     name: "settings, signed out",
     phase: "prod",
@@ -179,6 +360,50 @@ const JOURNEY_PAGES: readonly JourneyPage[] = [
     inShell: true,
     long: true,
   },
+
+  // C3.1: the catalogue-wide search.
+  {
+    name: "/search?q=northmarch",
+    phase: "prod",
+    open: visit("/search?q=northmarch"),
+    primary: page => [
+      main(page).getByRole("searchbox", { name: "Search the catalogue" }),
+    ],
+    inShell: true,
+  },
+
+  // C2.2: the filtered piece list (a short page), with its facet column.
+  {
+    name: "/pieces?kind=poem&term=eerie",
+    phase: "prod",
+    open: visit("/pieces?kind=poem&term=eerie"),
+    primary: page => [
+      main(page).getByRole("searchbox", { name: "Search pieces" }),
+      // The drawer's button with JS (a link to #filters without).
+      main(page).getByRole("button", { name: /^Filters/ }),
+    ],
+    inShell: true,
+  },
+];
+
+/**
+ * Pages and states outside the table that still get the app bar check
+ * (below): the other catalogue page types and states FE2 added (a stub,
+ * the bards directory unfiltered, every history page, the venue switch,
+ * no results, a 200-row venue). Their layout is that of the table's
+ * pages, so they skip its Tab-walk sweep.
+ */
+const BAR_ONLY_PAGES: readonly string[] = [
+  "/pieces/the-unfinished-lay",
+  "/pieces?q=zzqx-nothing",
+  "/bards",
+  "/bards/hollis-fenn/history",
+  "/categories/war/history",
+  "/collections/12/history",
+  "/events?kind=venue",
+  "/events/midwinter-revel/history",
+  // 200 performances: too many stops for the sweep (events.spec.ts).
+  "/events/muster-field",
 ];
 
 /** The shell's own primary controls below md: home, then the app bar. */
@@ -192,9 +417,37 @@ function shellPrimary(page: Page): Locator[] {
   ];
 }
 
-/** Registers one sweep test per journey page of `phase`. */
+/** Registers the sweep tests for each journey page of `phase`. */
 export function sweepJourneyPages(phase: Phase): void {
-  for (const journey of JOURNEY_PAGES.filter(row => row.phase === phase)) {
+  const rows = JOURNEY_PAGES.filter(row => row.phase === phase);
+  test.describe("below md the app bar never covers the end of the page", () => {
+    // The wider text is an injected <style>, which the nonce CSP would block.
+    test.use({ bypassCSP: true, viewport: MOBILE });
+    const opens = [
+      ...rows
+        .filter(row => row.inShell)
+        .map(({ name, open }) => ({ name, open })),
+      ...(phase === "prod"
+        ? BAR_ONLY_PAGES.map(path => ({ name: path, open: visit(path) }))
+        : []),
+    ];
+    for (const journey of opens) {
+      test(`${journey.name}: with the machine's sans and with wider text`, async ({
+        page,
+      }) => {
+        await journey.open(page);
+        await expectBarClearOfPageEnd(page);
+        // Not vacuous: the wider text takes effect (measured on the page's
+        // heading, as a short page doesn't get longer).
+        const heading = main(page).getByRole("heading", { level: 1 }).first();
+        const ownAdvance = await textAdvance(heading);
+        await applyWiderText(page);
+        expect(await textAdvance(heading)).toBeGreaterThan(ownAdvance);
+        await expectBarClearOfPageEnd(page);
+      });
+    }
+  });
+  for (const journey of rows) {
     test(`${journey.name}: reflows, its targets are big enough and focus is never hidden`, async ({
       page,
     }) => {
@@ -203,6 +456,21 @@ export function sweepJourneyPages(phase: Phase): void {
       await expectNoHorizontalOverflow(page);
       await expectTargetSizesAtLeast24(page);
       await expectFocusNotObscured(page);
+      // Again with every disclosure open: their content is out of the
+      // checks while closed (a restricted piece's links, a status history,
+      // a filter).
+      const opened = await main(page)
+        .locator("details:not([open])")
+        .evaluateAll(closed => {
+          for (const details of closed) {
+            if (details instanceof HTMLDetailsElement) details.open = true;
+          }
+          return closed.length;
+        });
+      if (opened > 0) {
+        await expectNoHorizontalOverflow(page);
+        await expectTargetSizesAtLeast24(page);
+      }
       await page.setViewportSize(MOBILE);
       await expectPrimaryTargetsAtLeast44([
         ...(journey.inShell ? shellPrimary(page) : []),
