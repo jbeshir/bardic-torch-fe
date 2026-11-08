@@ -365,7 +365,7 @@ describe("search", () => {
 describe("persons", () => {
   const persons = (path: string) => ok<Schemas["PersonList"]>(path);
 
-  it("lists everyone by name as written, a no-page person as a stub", () => {
+  it("lists everyone by sort key (no leading The, A or An), a no-page person as a stub", () => {
     const list = persons("/v1/persons");
     expect(list.total).toBe(PERSONS.length);
     expect(list.data.find(p => p.slug === "hollis-fenn")).toEqual({
@@ -375,7 +375,7 @@ describe("persons", () => {
       is_stub: true,
     });
     expect(slugs(list).slice(-3)).toEqual([
-      "the-greywater-minstrels",
+      "tamsin-of-the-reeds",
       "wren-of-the-vale",
       "wynne-of-caer-wyn",
     ]);
@@ -386,8 +386,14 @@ describe("persons", () => {
     expect(persons("/v1/persons?letter=W").letters).toEqual(list.letters);
     expect(list.letters.find(l => l.letter === "T")).toEqual({
       letter: "T",
-      count: 2,
+      count: 1,
     });
+    expect(slugs(persons("/v1/persons?letter=G"))).toContain(
+      "the-greywater-minstrels"
+    );
+    expect(slugs(persons("/v1/persons?letter=T"))).not.toContain(
+      "the-greywater-minstrels"
+    );
   });
 
   it("matches public aliases, never hidden ones, and no-page persons by name only", () => {
@@ -409,9 +415,10 @@ describe("persons", () => {
     expect(slugs(persons("/v1/persons?role=dancer"))).toEqual([
       "tamsin-of-the-reeds",
     ]);
+    // "The Greywater Minstrels" sorts, and counts, under G.
     expect(slugs(persons("/v1/persons?kind=group"))).toEqual([
-      "northmarch-bards",
       "the-greywater-minstrels",
+      "northmarch-bards",
     ]);
   });
 });

@@ -120,6 +120,32 @@ describe("scenarios", () => {
     }
   );
 
+  it.each(Object.keys(CATALOGUE_READS) as CatalogueReadId[])(
+    "%s has a success and a scenario for every status the spec declares",
+    operationId => {
+      const statuses = SCENARIOS.filter(
+        scenario => scenario.operationId === operationId
+      ).map(scenario => scenario.status);
+      expect(statuses).toContain(200);
+      for (const status of declaredErrorStatuses(operationId)) {
+        expect(statuses, `${operationId} ${status}`).toContain(status);
+      }
+    }
+  );
+
+  it("sends a %2F path parameter to 404 for every operation that has one", () => {
+    const withSlash = SCENARIOS.filter(scenario =>
+      scenario.path.includes("%2F")
+    );
+    const pathOperations = (
+      Object.keys(CATALOGUE_READS) as CatalogueReadId[]
+    ).filter(operationId => OPERATIONS[operationId].path.includes("{"));
+    expect(withSlash.map(scenario => scenario.operationId).sort()).toEqual(
+      [...pathOperations].sort()
+    );
+    expect(withSlash.every(scenario => scenario.status === 404)).toBe(true);
+  });
+
   it.each(
     SCENARIOS.map(
       scenario =>

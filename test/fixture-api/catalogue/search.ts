@@ -278,7 +278,7 @@ export function searchPersons(query: URLSearchParams): Schemas["PersonList"] {
     { facet: "q", test: p => rank === null || rank.has(p) },
     {
       facet: "letter",
-      test: p => letter === null || letterOf(p.name) === letter,
+      test: p => letter === null || letterOf(titleSortKey(p.name)) === letter,
     },
   ];
   const found = ordered(
@@ -291,7 +291,7 @@ export function searchPersons(query: URLSearchParams): Schemas["PersonList"] {
     data: page(found, query).map(servePersonSummary),
     total: found.length,
     letters: letterCounts(
-      PERSONS.filter(matching(filters, "letter")).map(p => p.name)
+      PERSONS.filter(matching(filters, "letter")).map(p => titleSortKey(p.name))
     ),
   };
 }

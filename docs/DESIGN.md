@@ -364,7 +364,7 @@ The base is 16 px (1 rem). The scale is about a 1.2 minor third, rounded to 4 px
 - **Tables:**
   - Full width of the measure, `border-collapse: collapse`, `body-sm`.
   - `th` has `bg-surface-sunken text-fg font-semibold text-left`, and cells have `padding: 0.5rem 0.75rem; border-bottom: 1px solid border; vertical-align: top`, so a short row label sits level with the first line of a long value.
-  - In help pages each body row gets an id from its first cell, its words joined by underscores like an API enum value (`#low_risk`), with the headings' `scroll-margin-top`, so an infobox row can link to its own table row and each ConservationBadge link lands on its status's row (§6.13).
+  - In help pages each body row gets an id from its first cell, slugged like a heading (`#low-risk`), with the headings' `scroll-margin-top`, so an infobox row can link to its own table row and each ConservationBadge link lands on its status's row (§6.13).
   - Wrap in `<div class="overflow-x-auto" tabindex="0" role="region" aria-label="{caption}">` for horizontal scroll at 360 px.
   - `caption` uses caption style, `text-fg-muted`, aligned left and on top.
 - **Definition lists** (used for "at a glance" and preference lists):
@@ -959,12 +959,12 @@ Read   Edit   History                         Last edited 3 Oct 2026
 - **Sizes:** `sm` is 24 px high, `px-2 caption gap-1`, icon 14. `md` is 28 px, `px-2.5 body-sm font-medium gap-1.5`, icon 16.
 - **Semantics:**
   - Static by default: `<span>`, with the visible text as the label.
-  - When it is a link to `/help/conservation-status#{status}`, the accessible name is "Conservation status: Endangered".
+  - When it is a link to `/help/conservation-status#{anchor}`, the accessible name is "Conservation status: Endangered".
   - Also add `sr-only` "Conservation status: " before the label wherever the context doesn't already say so (outside the infobox row labelled "Conservation").
 - **States:** hover (link variant only) adds an underline on the label. Focus-visible is the ring. There are no other states.
 - **Restricted** never appears alongside "help preserve this" prompts. The page template suppresses them (R-7).
 - **Forced colours:** the border keeps its width and style (1 px, 2 px for critically endangered, dashed for unassessed) in the system colour, and the icon and label stay, so the status still reads.
-- **Component** (`app/components/ui/ConservationBadge.tsx`): `ConservationBadge` (`status`, `size` sm | md, `link`, `named`). `link` makes it a link to `/help/conservation-status#{status}`, whose table row has the enum value as its id (§3.3). `named` drops the hidden prefix where the context already says "Conservation". Labels and the status list are in `app/constants/vocabulary.ts` (`CONSERVATION_LABELS`, a `Record` over the enum).
+- **Component** (`app/components/ui/ConservationBadge.tsx`): `ConservationBadge` (`status`, `size` sm | md, `link`, `named`). `link` makes it a link to `/help/conservation-status#{status}`, whose table row id is the hyphenated status (`#critically-endangered`, FE1's anchors; one typed map in `app/constants/vocabulary.ts`; §3.3). `named` drops the hidden prefix where the context already says "Conservation". Labels and the status list are in `app/constants/vocabulary.ts` (`CONSERVATION_LABELS`, a `Record` over the enum).
 - **Dark:** tints over charcoal. The icon colour is lighter and less saturated, and text is near-vellum.
 
 ### 6.14 Alert / Banner

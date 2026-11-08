@@ -206,10 +206,10 @@ export function comparePieces(a: RawPiece, b: RawPiece): number {
   );
 }
 
-/** Persons sort by name as written (BE PLAN §4.1): no leading The, A or An is skipped. */
+/** Persons sort by sort key like titles: no leading The, A or An, punctuation or accents (api-docs, A–Z). */
 export function comparePersons(a: RawPerson, b: RawPerson): number {
   return (
-    compareSortKeys(a.name, b.name) ||
+    compareSortKeys(titleSortKey(a.name), titleSortKey(b.name)) ||
     (PERSON_INDEX.get(a.slug)?.index ?? 0) -
       (PERSON_INDEX.get(b.slug)?.index ?? 0)
   );

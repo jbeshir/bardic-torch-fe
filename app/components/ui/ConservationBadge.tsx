@@ -77,7 +77,7 @@ export function ConservationBadge({
   readonly status: ConservationStatus;
   /** `sm` (24 px) in lists and cards, `md` (28 px) in page heads. */
   readonly size?: keyof typeof SIZES;
-  /** Link to the status's entry, `/help/conservation-status#{status}`. */
+  /** Link to the status's entry, `/help/conservation-status#{anchor}`, e.g. `#critically-endangered`. */
   readonly link?: boolean;
   /** The context already names it, so the hidden prefix is left out. */
   readonly named?: boolean;

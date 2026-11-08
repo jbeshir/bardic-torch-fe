@@ -256,7 +256,7 @@ describe("links and tables", () => {
     expect(within(table).getByRole("cell", { name: "4 places" })).toBeVisible();
   });
 
-  it("gives each table row an enum-style id from its first cell, unique on the page", async () => {
+  it("gives each table row a heading-style id from its first cell, unique on the page", async () => {
     const slot = await renderSlot(
       "## Low Risk\n\n| Status | Meaning |\n| --- | --- |\n| **Low Risk** | 4 places |\n| Critically Endangered | 0 places |\n| Low Risk | again |\n",
       "body"
@@ -264,9 +264,9 @@ describe("links and tables", () => {
     const rows = within(slot).getAllByRole("row");
     expect(rows.map(row => row.id)).toEqual([
       "",
-      "low_risk",
-      "critically_endangered",
-      "low_risk-1",
+      "low-risk-1",
+      "critically-endangered",
+      "low-risk-2",
     ]);
     expect(within(slot).getByRole("heading", { level: 2 })).toHaveAttribute(
       "id",

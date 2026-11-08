@@ -98,7 +98,7 @@ describe("ConservationBadge", () => {
     });
     expect(link).toHaveAttribute(
       "href",
-      "/help/conservation-status#critically_endangered"
+      "/help/conservation-status#critically-endangered"
     );
     expect(link).toHaveClass("group", "rounded-full", "border-2");
     expect(link.querySelector(".group-hover\\:underline")).toHaveTextContent(

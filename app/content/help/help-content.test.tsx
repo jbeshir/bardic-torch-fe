@@ -418,12 +418,12 @@ describe("conservation status", () => {
     expect(textOf(main)).not.toMatch(/Endangered: found in fewer than 3/);
   });
 
-  it("has an entry whose id is each status's API value, the badges' link target", async () => {
+  it("has an entry for each status's hyphenated anchor, the badges' link target", async () => {
     const main = await renderHelp(page("conservation-status"));
     const table = within(main).getByRole("table");
     for (const status of CONSERVATION_STATUSES) {
       const anchor = conservationHelpPath(status).split("#")[1] ?? "";
-      expect(anchor).toBe(status);
+      expect(anchor).toBe(status.replaceAll("_", "-"));
       const entry = main.querySelector(`[id="${anchor}"]`);
       expect(entry, status).not.toBeNull();
       expect(table.contains(entry), status).toBe(true);

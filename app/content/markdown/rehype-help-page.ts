@@ -8,8 +8,8 @@ import type { MdxjsEsmHast } from "mdast-util-mdxjs-esm";
  * - every h2 and h3 gets an id from its text (the same slugs GitHub uses, so
  *   in-page links such as `#how-restricted-works` keep working), and the
  *   module exports them as `contents` for the table of contents;
- * - every table body row gets an id from its first cell, its words joined
- *   by underscores like an API enum value (`#low_risk`);
+ * - every table body row gets an id from its first cell, slugged like a
+ *   heading (`#low-risk`);
  * - the infobox's and the cards' lists become their facts and cards;
  * - the page is split into three `pageslot` elements (`infobox`, `intro`:
  *   everything before the first h2, and `body`), so the template can put
@@ -160,12 +160,11 @@ function collectContents(
 }
 
 /**
- * Each body row of a table gets an id from its first cell, its words joined
- * by underscores ("Low Risk" → `#low_risk`), so a page can link to one
- * entry of a table, and an entry named like an API enum value has that
- * value as its anchor: the conservation statuses' rows are the targets of
- * every ConservationBadge link (DESIGN §6.13). Underscores also keep rows
- * apart from heading ids, which are hyphenated.
+ * Each body row of a table gets an id from its first cell, slugged like a
+ * heading ("Low Risk" → `#low-risk`), so a page can link to one entry of a
+ * table: the conservation statuses' rows are the targets of every
+ * ConservationBadge link (DESIGN §6.13). Rows and headings share one set of
+ * ids, so a clash gets a numeric suffix.
  */
 function idTableRows(
   nodes: readonly ElementContent[],
@@ -181,8 +180,7 @@ function idTableRows(
       if (!isElement(row, "tr")) continue;
       const [cell] = row.children.filter(child => isElement(child));
       if (cell) {
-        const words = textOf(cell).trim().replace(/\s+/g, "_");
-        row.properties["id"] = uniqueId(words, used);
+        row.properties["id"] = uniqueId(textOf(cell), used);
       }
     }
   }
