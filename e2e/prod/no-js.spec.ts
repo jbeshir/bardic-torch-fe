@@ -214,7 +214,7 @@ test.describe("/pieces", () => {
     await page.goto("/pieces");
     await main
       .getByRole("navigation", { name: "Pieces by letter" })
-      .getByRole("link", { name: "T" })
+      .getByRole("link", { name: "T", exact: true })
       .click();
     await expect(page).toHaveURL(/\/pieces\?letter=T$/);
     await expect(
