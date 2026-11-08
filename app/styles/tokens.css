@@ -644,6 +644,9 @@
 @utility grid-cols-shell-xl {
   grid-template-columns: 16rem minmax(0, 1fr);
 }
+@utility grid-cols-browse {
+  grid-template-columns: 16rem minmax(0, 1fr);
+}
 @utility grid-rows-shell {
   grid-template-rows: 1fr auto;
 }

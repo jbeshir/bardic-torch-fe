@@ -9,7 +9,7 @@ import {
   LICENCE_URL,
   NAV_GROUPS,
   WIKI_HOME_URL,
-  WIKI_SEARCH,
+  SEARCH,
   wikiPageUrl,
   wikiSearchUrl,
 } from "./navigation";
@@ -88,11 +88,11 @@ describe("wiki URLs", () => {
     );
   });
 
+  it("searches the catalogue with a GET to /search?q=", () => {
+    expect(SEARCH).toEqual({ action: "/search", param: "q" });
+  });
+
   it("searches the wiki with a GET to index.php?search=", () => {
-    expect(WIKI_SEARCH).toEqual({
-      action: "https://bardictorch.miraheze.org/w/index.php",
-      param: "search",
-    });
     expect(wikiSearchUrl("ballad of the reeve & bell")).toBe(
       "https://bardictorch.miraheze.org/w/index.php?search=ballad+of+the+reeve+%26+bell"
     );

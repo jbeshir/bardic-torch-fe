@@ -1,6 +1,6 @@
 import { screen, within } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
-import { FACETS, wikiPageUrl, WIKI_SEARCH } from "~/constants/navigation";
+import { FACETS, SEARCH, wikiPageUrl } from "~/constants/navigation";
 import { renderWithRouter } from "~/test/router";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
 import Index, { meta } from "./_index";
@@ -41,15 +41,12 @@ describe("Index route", () => {
     expect(router.state.location.pathname).toBe("/");
   });
 
-  it("says the catalogue isn't here yet, and searches the original wiki", async () => {
+  it("says the catalogue isn't here yet, and searches the catalogue", async () => {
     await renderWithRouter(<Index />);
     expect(
       screen.getByText(/The catalogue is moving here soon\./)
     ).toBeInTheDocument();
-    expect(screen.getByRole("search")).toHaveAttribute(
-      "action",
-      WIKI_SEARCH.action
-    );
+    expect(screen.getByRole("search")).toHaveAttribute("action", SEARCH.action);
   });
 
   it("explains the mission: an index, links only, keeping works alive, anyone can contribute", async () => {

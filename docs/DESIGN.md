@@ -755,7 +755,7 @@ Generic components live in `app/components/ui/`. App-specific ones (ThemeToggle,
 **Tag: FE1.**
 
 - **Anatomy:** `[icon?] label [trailing icon?]`, with an optional spinner that replaces the leading icon.
-- It is a `<button>` (`Button`), or a link styled the same when it navigates (`ButtonLink`: React Router `<Link>` for paths, a plain external anchor with the §6.3 marks for absolute URLs). Never use a `<div>`.
+- It is a `<button>` (`Button`), or a link styled the same when it navigates (`ButtonLink`: React Router `<Link>` for paths, a plain external anchor with the §6.3 marks for absolute URLs, and a plain `<a href="#id">` for a place on the same page, which keeps the address's query). Never use a `<div>`.
 
 | Size           | Height                                                              | Padding x | Text        | Icon | Radius | Use                                               |
 | -------------- | ------------------------------------------------------------------- | --------- | ----------- | ---- | ------ | ------------------------------------------------- |
@@ -867,6 +867,7 @@ Help text that explains format.       ← caption text-fg-muted, id="{id}-help"
   - Disabled: `bg-input-bg-locked border-border-strong`, check `fg-subtle`, label `fg-subtle`.
   - Error: border `danger-icon`, plus the field error message below the group.
 - **Groups:** `<fieldset>` with `<legend>` styled as a field label.
+- **Radio** (`app/components/ui/Radio.tsx`, FE2): the same row, hit area and states with a round box (`rounded-full`), checked as an `accent` border around a 10 px `bg-accent` dot (`peer-checked:block`); forced colours as above. Radios sharing a `name` go in a fieldset with a legend.
 - **Forced colours:** a token-drawn check is not reliable in Windows High Contrast, which would make checked and unchecked look the same. So the box carries `forced-colors:appearance-auto`, handing it back to the system control, and the overlaid marks carry `forced-colors:hidden!` (important, because `peer-checked:block` is more specific than a media-query utility). (A utility, not only the `base.css` rule: `appearance-none` is a utility, and the base layer can't override it.)
 
 ### 6.9 Tabs
@@ -1079,7 +1080,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
   - The dialog is a flex column: grab bar (<md, decorative `bg-border-strong`), title row, a scrolling body (`min-h-0 flex-1 overflow-y-auto`) and the footer. The footer sits **outside** the scroller rather than over it, so nothing in the body can scroll under it and no `scroll-padding-bottom` is needed.
   - The bottom sheet's padding is `pb-safe-b` (`env(safe-area-inset-bottom)`, a named padding value).
   - Focus goes to the close button through a ref after `showModal()`. React's `autoFocus` calls `focus()` during commit, before the dialog is shown, and doesn't render the attribute that native dialog focusing reads.
-  - It closes on any navigation (`useLocation().key` changes) and, with `closeFrom="lg"`, when `(min-width: 1024px)` starts to match; C5's nav drawer passes it.
+  - It closes on any navigation (`useLocation().key` changes) and, with `closeFrom="lg"`, when `(min-width: 1024px)` starts to match; C5's nav drawer passes it. `closeFrom="xl"` (`(min-width: 1280px)`) is the facet drawer's (§6.28).
 
 ### 6.22 Dialog
 
@@ -1189,14 +1190,14 @@ Read   Edit   History                         Last edited 3 Oct 2026
 
 ### 6.26 SearchBox
 
-**Tag: FE1.** In FE1 it searches **the original wiki**.
+**Tag: FE2** (FE1 searched the original wiki).
 
-- **Markup:** `<form role="search" method="get" action="https://bardictorch.miraheze.org/w/index.php">` (target and parameter name from `app/constants/navigation.ts`), with `<label for={inputId} class="sr-only">Search the original wiki</label>` and `<input type="search" id={inputId} name="search" autocomplete="off" enterkeyhint="search">`. The placeholder is "Search the original wiki…" at `lg` size, and "Search the wiki…" in the header field while it is narrow (md), so it is never cut mid-word; from the lg breakpoint, where the header field is wide, the long text is drawn over the field instead (an `aria-hidden` hint shown while the field is empty). The label and the submit's name always say "original wiki". The form is marked external like any wiki link: the submit button's icon is the wiki mark `IconArrowUpRight`, with `sr-only` "(opens original wiki)" in its name.
-- **Visual:** Input styling at `h-10` (40 px, header md+) or `h-11` (drawer, search sheet and home hero), `rounded-full`, with a leading `IconSearch` 18 `fg-subtle`. The submit button is a trailing ghost icon button (`IconArrowUpRight`, "Search the original wiki"), always present so the form works without Enter: 44 × 44 px at `lg` size (the input is `pr-12`), and 32 px in the 40 px header field with its hit area padded to 44 px below lg (`before:-inset-1.5`, as Button `sm`). Its hover wash is `bg-fg-10`, a decorative see-through tint (§2.6), because a `surface-sunken` wash would vanish on the dark field, which is itself `surface-sunken`.
-- **Bottom-bar Search cell (<md):** see §5.2. It opens the search sheet above the bar.
-- **States:** focus shows the ring. There are no suggestions and no loading state; the wiki owns its results page.
+- **Markup:** `<Form role="search" method="get" action="/search">` (target and parameter name from `SEARCH` in `app/constants/navigation.ts`), with `<label for={inputId} class="sr-only">Search the catalogue</label>` and `<input type="search" id={inputId} name="q" autocomplete="off" enterkeyhint="search">`, prefilled by `defaultValue` on the search page. The placeholder is "Search pieces and bards…" at `lg` size, and "Search…" in the header field while it is narrow (md), so it is never cut mid-word; from the lg breakpoint, where the header field is wide, the long text is drawn over the field instead (an `aria-hidden` hint shown while the field is empty).
+- **Visual:** Input styling at `h-10` (40 px, header md+) or `h-11` (drawer, search sheet, home hero and the search page), `rounded-full`, with a leading `IconSearch` 18 `fg-subtle`. The submit button is a trailing ghost icon button (`IconSearch`, named "Search", no external mark), always present so the form works without Enter: 44 × 44 px at `lg` size (the input is `pr-12`), and 32 px in the 40 px header field with its hit area padded to 44 px below lg (`before:-inset-1.5`, as Button `sm`). Its hover wash is `bg-fg-10`, a decorative see-through tint (§2.6), because a `surface-sunken` wash would vanish on the dark field, which is itself `surface-sunken`.
+- **Submit:** with JS it goes straight to the canonical `/search?q=` (`useCanonicalSubmit` with `searchQuery`: the search trimmed, one request); without JS the browser's own GET, which the page canonicalises with a 301 only when `q` needs it.
+- **Bottom-bar Search cell (<md):** see §5.2. It opens the search sheet above the bar; a search (any navigation) closes it.
+- **States:** focus shows the ring. There are no suggestions and no loading state; the search page (§10.8) has the results and their empty states.
 - **No keyboard shortcut.** A single-key `/` shortcut would break WCAG 2.1.4 (it fires for speech-input users too), and none is provided.
-- **FE2:** the action becomes the catalogue's own search route, `name` becomes `q`, and the empty and no-results states in §7.2 and §11.3 apply.
 
 ### 6.27 Table of contents (help pages)
 
@@ -1208,6 +1209,18 @@ Read   Edit   History                         Last edited 3 Oct 2026
 - **≥xl with no infobox (FE2+):** sticky in the right rail (`top: calc(var(--bt-header-h) + 24px)`, width 14rem). The current section is highlighted with an IntersectionObserver: `aria-current="true"`, `text-accent-text font-semibold` and an inset left bar. With no JS, there is no highlight.
 - **Built as (FE1):** `TableOfContents({ entries: [{ id, label, children? }] })`. It server-renders `<details open>` (so it is open without JS) and folds itself after hydration below md. That happens once, on mount: resizing or rotating later leaves it as the reader has it (unit-tested; e2e checks it folded at 360 on load). `WikiPage` shows it after `intro` when `contents` has four or more entries.
 - Headings get `id`s (and `scroll-margin-top`, §3.3). FE2+ adds a hover "§" anchor link, 24 × 24 px, `aria-label="Link to this section"`.
+
+### 6.28 FacetForm (piece filters)
+
+**Tag: FE2.**
+
+- **What it is:** `FacetForm` (`app/components/facets/FacetForm.tsx`), one `<Form method="get" action="/pieces">`: a `FacetGroup` fieldset per facet (Kind, the term facets mood … other, Conservation status), the "Page state" radios (All pages / Stubs only / Hide stubs) and "Apply filters" (secondary `sm`, never hidden). `q` and `letter` ride along as hidden inputs when set; the page doesn't (new filters start at page 1). The groups come from `facetGroups` (`app/catalogue/facet-groups.ts`): the API's slug counts joined with the term tree (`term-index.ts`).
+- **An option** is a Checkbox row named "Warlike, 31 pieces" and showing "Warlike (31)" (the count `aria-hidden`, `text-fg-muted`, `tabular-nums`). The count is the API's disjunctive one, never "+N". A term is indented one step (`pl-6`, then `pl-12`, `pl-16`) per level under its parent. An option nothing would match is disabled and greyed (`text-fg-subtle`, "(0)") unless it is ticked. Two options of a facet with one display name show their full names. Past 8 options a group shows the first 8 and every ticked one, then a native `<details>` "Show all {n}" (`summary-plain`, `text-link`, 44 px below lg) with the rest: closed, its boxes are still submitted.
+- **The order** ("Sort by", only with `q`) sits above the results but belongs to the form (`form={id}`); "Best match", the default, sends an empty `sort`, as "All pages" sends an empty `stub`. The loader takes those empty values as no value (`blankable`), so the form's own GET is answered 200. With JS the select applies on change; without JS a "Sort" submit beside it sends the form.
+- **Where it is:** `<section id="filters">` with its h2 "Filters", after the results and Pagination in the DOM at every width (WCAG 1.3.2, 2.4.3). From **xl** `grid-cols-browse` lifts it into a 16 rem left column, and a "Skip to filters" link (visible on focus) starts the results column. Below xl a secondary "Filters ({n} selected)" link (`IconFilter`, 44 px) after the chips jumps to it.
+- **With JS** it never submits itself: Apply goes straight to the canonical URL (`useCanonicalSubmit`, `app/components/catalogue/canonical-form.tsx`). From xl every change applies at once (`autoSubmit`, from `useMediaQuery("(min-width: 1280px)")`), the old results staying, `aria-busy`, until the new ones are in. The form is keyed on the canonical query, so a chip, a letter or Back rebuilds it from the URL; the box focused last is focused again after the rebuild.
+- **Below xl with JS: the drawer** (`FacetDrawer`, `app/components/facets/FacetDrawer.tsx`, FE2 C2.3). After hydration the in-flow `#filters` section isn't rendered (it follows the results, so nothing above it moves) and the Filters control becomes a `<button aria-haspopup="dialog" aria-controls>`. It opens the Drawer (§6.21) titled "Filter pieces", `closeLabel` "Close filters", `closeFrom="xl"`: a bottom sheet below md, the left edge from md. Its body is the same FacetForm without Apply and without auto-submit; the footer has **"Show results"** (primary, full width, the form's submit through `form={id}`) and **"Clear all"** (a secondary full-width `ButtonLink`, `nofollow`, to the list without its term, kind, status and stub filters, keeping `q` and the letter), above the Drawer's own Close. There is no live result count. Show results goes to the canonical URL; the navigation closes the drawer and focus returns to Filters. Escape, Close or the backdrop discard the unapplied ticks: the form is mounted only while the drawer is open, from the URL's state. Only one FacetForm is ever mounted (the column's or the drawer's), so its ids are unique; the order select belongs to whichever it is. A failure on Show results (an outage) is the route's error boundary, which replaces the page drawer and all.
+- **Failures:** without the terms the term facets are replaced by the SectionError "We couldn’t load the categories" (with Try again) after Kind; Kind, Conservation status and Page state still work, and the chips name categories by slug.
 
 ### 6.29 LetterBar (A–Z index)
 
@@ -1480,14 +1493,14 @@ The head is the h1 "Settings" with no tab row. Sections are separated by h2 plus
 
 ### 10.4 404 (`*` and loader 404s)
 
-**Tag: FE1.**
+**Tag: FE2** (FE1 offered only the wiki).
 
 - **h1:** "We couldn't find that page".
-- **Body:** "It may have moved, or the link may be mistyped. Bardic Torch is new, so pages from the old wiki don't redirect here yet."
-- **Actions:** [Go to the home page] (primary) and the link "Look on the original wiki ↗". The link goes to `https://bardictorch.miraheze.org/w/index.php?search={last path segment}` (URL-encoded, built from `navigation.ts`). There is no internal Search button: FE1 has no search page.
+- **Body:** "It may have moved, or the link may be mistyped. Pages from the old wiki don't redirect here yet, so try searching for it."
+- **Actions:** [Go to the home page] (primary), [Search the catalogue for ‘{term}’] (secondary, to `/search?q={term}`; "Search the catalogue", to `/search`, when the address has no term) and the link "Look on the original wiki ↗", to `https://bardictorch.miraheze.org/w/index.php?search={term}` (URL-encoded, built from `navigation.ts`). The term is the last path segment, decoded, with `_` and `-` read as spaces and trimmed, so an old wiki address finds its page here.
 - **Illustration:** the unlit torch (EmptyState art), at 64 px.
 - It returns HTTP 404 and has no tab row. The footer HelpLinks are present, as on every page.
-- **Built as (FE1):** `app/routes/$.tsx` (loader status 404) renders `NotFound` (`app/components/ErrorPages.tsx`) inside the shell. A 404 thrown by any loader reaches the root error boundary, which shows the same body on the standalone page (§10.5). The wiki search term is the last path segment, decoded, with `_` and `-` read as spaces.
+- **Built as:** `app/routes/$.tsx` (loader status 404) renders `NotFound` (`app/components/ErrorPages.tsx`) inside the shell. A 404 thrown by any loader reaches the root error boundary, which shows the same body on the standalone page (§10.5).
 
 ### 10.5 Error page (500 / unexpected)
 
@@ -1528,11 +1541,12 @@ The head is the h1 "Settings" with no tab row. Sections are separated by h2 plus
 - **Then, in DOM order:**
   1. the search box: its own `<Form method="get" action="/pieces" role="search">` ("Pieces"), an `Input type="search" name="q"` named "Search pieces" (44 px) and a secondary "Search" submit. It carries `term`, `kind`, `status` and `stub` as hidden inputs (each only when set) and drops `letter`, `sort` and `page`, so a search covers every letter from page 1 (`PieceSearch`);
   2. the LetterBar (§6.29), "Pieces by letter";
-  3. with `q` only, the order: a "Sort by" Select, "Best match" (relevance, the default) or "Title A–Z", applied by its "Sort" button, never on change (`PieceSort`);
-  4. the selected filters: one chip per value, a link to the list without it ("Search: ‘kettle’ ✕", "Letter: W ✕"), then "Clear all", all `rel="nofollow"`, under a hidden h2 "Selected filters" (`SelectedFilters`, `app/components/facets/`);
+  3. with `q` only, the order: a "Sort by" Select, "Best match" (relevance, the default) or "Title A–Z", belonging to the facet form (§6.28): applied on change with JS, by its "Sort" button without (`PieceSort`);
+  4. the selected filters: one chip per value, a link to the list without it ("Search: ‘kettle’ ✕", "Mood: Warlike ✕", "Kind: Song ✕", "Conservation: Endangered ✕", "Stubs only ✕" / "Hiding stubs ✕", "Letter: W ✕"), then "Clear all", all `rel="nofollow"`, under a hidden h2 "Selected filters" (`SelectedFilters`, `app/components/facets/`); below xl, the "Filters" link (§6.28); then, for a link with categories that no longer exist, the info Alert "Some categories in this link no longer exist, so we left them out: ‘{slug}’.";
   5. the results: a section named by its h2 ("All pieces", "Pieces under T", "Results for ‘kettle’", "Matching pieces"), marked `aria-busy` during a same-route navigation (the old results stay), with a polite `sr-only` status (`ResultsStatus`: "Showing {n} pieces", "No results", "No pieces match these filters");
   6. the rows (`PieceListItem`, a `ul role="list"`, not Cards): the title as a standalone link to `/pieces/{slug}`, then "Song · Dance music", the static `sm` ConservationBadge (not while `unassessed`) and "Stub" (`caption text-fg-subtle`); a restricted piece shows its Restricted badge and no other link;
-  7. Pagination (§6.20) over at most 201 pages; when the list is longer, the caption "Showing the first 10,050. Narrow your search to see the rest." (`ListPagination`).
+  7. Pagination (§6.20) over at most 201 pages; when the list is longer, the caption "Showing the first 10,050. Narrow your search to see the rest." (`ListPagination`);
+  8. the filters, `<section id="filters">` (FacetForm, §6.28), the left column from xl.
 - **With JS** the two forms never submit themselves: they navigate straight to the canonical URL (`canonicalFormHref`, `app/catalogue/form-href.ts`), one request, never a 301. Without JS they GET in DOM order, which is answered 200.
 - **Empty:** with `q`, "Nothing matches ‘{q}’" / "Try a shorter search, or browse by mood or topic." / [Browse pieces]; with a letter or filters, "No pieces match these filters" / "Try removing a filter." / [Clear all filters]; with nothing set, "No pieces yet".
 - **Errors** (`app/components/catalogue/CatalogueError.tsx`, kinds from `ReadFailure`):
@@ -1542,9 +1556,20 @@ The head is the h1 "Settings" with no tab row. Sections are separated by h2 plus
   - an outage, a network failure or a timeout: the resting page (§10.5), 503 with `Retry-After`;
   - an answer we can't read (502): "Something went wrong" / the unexpected-answer copy / [Try again].
     The failure pages are titled by their h1 and `noindex`; the API's `message` is logged, never shown.
-- **Meta:** title "Pieces", "Pieces under T", "Pieces matching ‘kettle’", with ", page 2" from page 2; canonical is the canonical URL. A search, a filter or an order is `noindex, follow`; letter pages and later pages are indexable.
+- **Stale categories** (plan §2.4): the terms and the pieces are read in parallel. A `term` the API refuses (deleted, unapproved or an affiliation) makes it answer 400; the page leaves out the slugs the terms don't list as piece categories, asks once more and shows the Alert above. A 400 that persists, or one with every slug known, is the "We couldn’t apply these filters" page; if the terms failed too, it adds their SectionError.
+- **Meta:** title "Pieces", "Pieces under T", "Pieces matching ‘kettle’", with ", page 2" from page 2; canonical is the canonical URL. A search, a filter, an order or left-out categories are `noindex, follow` (with a self canonical); letter pages and later pages are indexable.
 
 ---
+
+### 10.8 Search (`/search`)
+
+**Tag: FE2.** The catalogue-wide search, the SearchBox's target (`app/routes/search.tsx`, plan §4.4). The URL is only `q` (`searchQuery`: trimmed, cut at 200 code points; anything else is a 301).
+
+- **Head:** h1 "Search", then the `lg` SearchBox prefilled, and a polite `sr-only` status: "{n} pieces, {m} bards and {k} categories match ‘{q}’" (`formatCount`), counting only the sections that loaded, or "No results".
+- **Sections**, each a `<section>` named by its h2, read in parallel: **Pieces** (the top 10 `PieceListItem`s, then "See all {n} pieces" to `/pieces?q=` when there are more), **Bards** (the top 10 `PersonListItem`s, then "See all {n} bards" to `/bards?q=`) and **Categories** (up to 12 TagList chips with their facet as the prefix, linking to `/categories/{slug}`, then "and {n} more"). `listTerms` has no `q`: the terms are matched in `app/catalogue/term-search.ts` (case, accents and Þ/Æ/ß-style letters folded; every word of 3 letters or more, stopwords aside, must start a word of the display name, full name or facet label; with none, a prefix of the name). A section with nothing says "No pieces match." (etc.).
+- **Empty `q`:** h1, the SearchBox and "Type a word from a title, a name or a category."; no API call. **Nothing anywhere:** the §11.3 EmptyState "Nothing matches ‘{q}’" / "Try a shorter search, or browse by mood or topic." / [Browse pieces].
+- **Failures:** each section fails on its own, with a SectionError: a 500 to a search is "That search took too long" / "Try fewer words."; anything else "We couldn’t load the pieces" (bards, categories), with "The catalogue is briefly out of reach. Try again in a few minutes." for an outage. When all three fail, the page is the resting page (503, `Retry-After`) if all were outages, otherwise ServerError "We couldn’t load the search results" (500), inside the shell.
+- **Meta:** "Search: {q}" (or "Search"), `noindex, follow`, canonical `/search?q=`.
 
 ## 11. Voice and microcopy
 
@@ -1621,7 +1646,7 @@ The pattern is: what happened, then what to do. Don't blame the reader, and don'
 | `--max-width-*`                      | `max-w-prose` (68ch), `max-w-form` (42rem), `max-w-shell` (90rem)                                                                                                                                                                                                                                      |
 | `@utility` (max height)              | `max-h-sheet` (85dvh, the bottom-sheet drawer), `max-h-below-header` (`calc(100dvh - var(--bt-header-h))`, the sticky sidebar)                                                                                                                                                                         |
 | `@utility` (inset)                   | `top-toast` (`calc(var(--bt-header-h) + 0.5rem)`, toasts below sm), `top-header` (`var(--bt-header-h)`, the sticky sidebar), `bottom-above-app-bar` (`calc(var(--bt-app-bar-h) + env(safe-area-inset-bottom) + 1rem)`, toasts from sm to md)                                                           |
-| `@utility` (grid)                    | `grid-cols-infobox` (`7rem 1fr`, infobox rows), `grid-cols-shell` (`15rem minmax(0, 1fr)`, sidebar and main at lg), `grid-cols-shell-xl` (`16rem minmax(0, 1fr)`), `grid-rows-shell` (`1fr auto`)                                                                                                      |
+| `@utility` (grid)                    | `grid-cols-infobox` (`7rem 1fr`, infobox rows), `grid-cols-shell` (`15rem minmax(0, 1fr)`, sidebar and main at lg), `grid-cols-shell-xl` (`16rem minmax(0, 1fr)`), `grid-rows-shell` (`1fr auto`), `grid-cols-browse` (`16rem minmax(0, 1fr)`, the facet column and the results on `/pieces` from xl)  |
 | `@utility` (height)                  | `h-header` (`var(--bt-header-h)`), `h-app-bar` (`calc(var(--bt-app-bar-h) + env(safe-area-inset-bottom, 0px))`, the bar's whole box), `h-text-line` (0.75em), `h-progress` (3 px, the navigation progress bar)                                                                                         |
 | `@utility` (min height)              | `min-h-textarea` (7.5rem)                                                                                                                                                                                                                                                                              |
 | `@utility` (width)                   | `w-dialog` (`min(32rem, calc(100vw - 2rem))`), `w-drawer` (`min(20rem, 85vw)`), `w-infobox` (16.5rem), `w-infobox-xl` (18rem)                                                                                                                                                                          |

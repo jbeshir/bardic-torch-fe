@@ -2,9 +2,15 @@ import { describe, expect, it } from "vitest";
 import {
   CONSERVATION_LABELS,
   CONSERVATION_STATUSES,
+  FACET_LABELS,
+  PERSON_KIND_LABELS,
   PIECE_KIND_LABELS,
 } from "~/constants/vocabulary";
-import { conservationStatusSchema, pieceKindSchema } from "~/schemas/catalogue";
+import {
+  conservationStatusSchema,
+  facetSchema,
+  pieceKindSchema,
+} from "~/schemas/catalogue";
 
 describe("conservation vocabulary", () => {
   it("lists exactly the statuses that have a label (the labels are typed against the generated schema)", () => {
@@ -32,5 +38,25 @@ describe("piece kind vocabulary", () => {
     expect([...conservationStatusSchema.options].sort()).toEqual(
       [...CONSERVATION_STATUSES].sort()
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C2.2 facets and C3.1 persons
+
+describe("facet and person kind vocabulary", () => {
+  it("labels every facet, in the API's order and sentence case", () => {
+    expect(Object.keys(FACET_LABELS)).toEqual(facetSchema.options);
+    for (const label of Object.values(FACET_LABELS)) {
+      expect(label).toMatch(/^[A-Z][a-z ]+$/);
+    }
+  });
+
+  it("labels every person kind in sentence case", () => {
+    expect(Object.values(PERSON_KIND_LABELS)).toEqual([
+      "Community bard",
+      "Historical figure",
+      "Group",
+    ]);
   });
 });

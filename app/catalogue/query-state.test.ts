@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   pieceQuery,
   redirectIfNotCanonical,
+  searchQuery,
   type PieceQueryState,
 } from "./query-state";
 
@@ -328,5 +329,78 @@ describe("pieceQuery.toApi", () => {
 
   it("reaches offset 10000 on the last page the API serves", () => {
     expect(pieceQuery.toApi({ ...EMPTY, page: 201 }).offset).toBe(10_000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C2.2: the facet form's empty "All pages" radio (`stub=`)
+
+describe("redirectIfNotCanonical with blankable names (stub, sort)", () => {
+  function redirectWith(search: string): string | null {
+    const url = new URL(`https://app.test/pieces${search}`);
+    try {
+      redirectIfNotCanonical(
+        url,
+        parse(url.search).canonical,
+        pieceQuery.blankable
+      );
+      return null;
+    } catch (thrown) {
+      if (!(thrown instanceof Response)) throw thrown;
+      return thrown.headers.get("Location");
+    }
+  }
+
+  it.each([
+    "?stub=",
+    "?kind=song&stub=",
+    "?letter=T&stub=&kind=poem&kind=song",
+    "?sort=&q=kettle&stub=",
+  ])("answers %s, an empty stub or sort, without a redirect", search => {
+    expect(redirectWith(search)).toBeNull();
+  });
+
+  it("still redirects another empty value, and a stub given two values", () => {
+    expect(redirectWith("?stub=&q=")).toBe("/pieces");
+    expect(redirectWith("?stub=true&stub=false")).toBe("/pieces?stub=true");
+  });
+
+  it("leaves the empty stub out of the canonical form", () => {
+    expect(parse("?stub=&kind=song").canonical).toBe("?kind=song");
+  });
+
+  it("redirects an empty stub where no name is blankable", () => {
+    expect(redirectFor("?stub=")).toBe("/pieces");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C3.1: /search
+
+describe("searchQuery", () => {
+  const parseSearch = (search: string) =>
+    searchQuery.parse(new URLSearchParams(search));
+
+  it.each([
+    ["", undefined, ""],
+    ["?q=kettle", "kettle", "?q=kettle"],
+    ["?q=+copper+kettle+", "copper kettle", "?q=copper+kettle"],
+    ["?q=", undefined, ""],
+    ["?q=%20%09", undefined, ""],
+    ["?q=&q=lament", "lament", "?q=lament"],
+    ["?q=Kettle&utm_source=x", "Kettle", "?q=Kettle"],
+    ["?letter=T&page=2", undefined, ""],
+  ])("parses %s", (search, q, canonical) => {
+    expect(parseSearch(search)).toEqual({ state: { q }, canonical });
+  });
+
+  it("cuts a search to 200 code points", () => {
+    const { state } = parseSearch(`?q=${"é".repeat(250)}`);
+    expect([...(state.q ?? "")]).toHaveLength(200);
+  });
+
+  it("links to the search, or the empty search page", () => {
+    expect(searchQuery.href({ q: "a b" })).toBe("/search?q=a+b");
+    expect(searchQuery.href({ q: undefined })).toBe("/search");
   });
 });

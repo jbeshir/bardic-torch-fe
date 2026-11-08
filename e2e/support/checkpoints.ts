@@ -79,7 +79,8 @@ export const CHECKPOINTS: Readonly<
     theme: ["dark-choice"],
     errors: ["not-found", "server-error", "resting"],
     settings: ["signed-out"],
-    browse: ["index", "no-results"],
+    browse: ["index", "no-results", "filtered", "facet-drawer-open"],
+    search: ["results"],
   },
   stub: {
     styleguide: [

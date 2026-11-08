@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { API_BASE_URL, loadContext } from "~/test/context";
 import { contractResponse, offContractResponse } from "~/test/contract";
 import { serveFixtureApi } from "~/test/msw";
-import { listPieces } from "./catalogue.server";
+import { listPersons, listPieces, listTerms } from "./catalogue.server";
 
 // The anonymous read client against the fixture API through msw: what it
 // sends, and how each upstream answer maps to a ReadFailure (plan §3.3).
@@ -262,6 +262,119 @@ describe("listPieces: answers", () => {
     expect(await listPieces(loadContext(), {})).toEqual({
       ok: false,
       failure: { kind: "bad_gateway" },
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C2.2: listTerms
+
+describe("listTerms", () => {
+  const TERMS = `${API_BASE_URL}/v1/terms`;
+
+  it("reads every term in tree order, asking for no facet", async () => {
+    const seen: string[] = [];
+    fixtures.server.events.on("request:start", ({ request }) => {
+      seen.push(request.url);
+    });
+    const result = await listTerms(loadContext());
+    expect(seen).toEqual([TERMS]);
+    if (!result.ok) throw new Error("listTerms failed");
+    const warlike = result.data.data.find(term => term.slug === "warlike");
+    expect(warlike).toMatchObject({ facet: "mood", parent_slug: null });
+    expect(result.data.data.some(term => term.facet === "affiliation")).toBe(
+      true
+    );
+  });
+
+  it("sends no Authorization or cookie", async () => {
+    const headers: Headers[] = [];
+    fixtures.server.events.on("request:start", ({ request }) => {
+      headers.push(request.headers);
+    });
+    await listTerms(loadContext());
+    expect(headers[0]?.get("Authorization")).toBeNull();
+    expect(headers[0]?.get("Cookie")).toBeNull();
+  });
+
+  it.each([
+    [
+      "server for a 500 (not a search)",
+      () =>
+        contractResponse("listTerms", 500, {
+          code: "internal",
+          message: "boom",
+        }),
+      { kind: "server" },
+    ],
+    [
+      "resting for a 503",
+      () => new HttpResponse("Service Unavailable", { status: 503 }),
+      { kind: "resting", retryAfter: 60 },
+    ],
+    [
+      "resting for a network failure",
+      () => HttpResponse.error(),
+      { kind: "resting", retryAfter: 30 },
+    ],
+    [
+      "bad_gateway for a body off the contract",
+      () =>
+        offContractResponse(
+          "listTerms",
+          200,
+          { data: [{ slug: "x" }] },
+          "a term without its fields"
+        ),
+      { kind: "bad_gateway" },
+    ],
+  ])("is %s", async (_why, respond, failure) => {
+    quietErrors();
+    fixtures.server.use(http.get(TERMS, respond));
+    expect(await listTerms(loadContext())).toEqual({ ok: false, failure });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C3.1: listPersons
+
+describe("listPersons", () => {
+  it("sends the search in the spec's order and reads the page of persons", async () => {
+    const seen: string[] = [];
+    fixtures.server.events.on("request:start", ({ request }) => {
+      seen.push(request.url);
+    });
+    const result = await listPersons(loadContext(), { limit: 10, q: "wren" });
+    expect(seen).toEqual([`${API_BASE_URL}/v1/persons?q=wren&limit=10`]);
+    if (!result.ok) throw new Error("listPersons failed");
+    expect(result.data.total).toBe(1);
+    expect(result.data.data[0]).toMatchObject({ name: "Wren of the Vale" });
+  });
+
+  it("is search_timeout for a 500 to a search", async () => {
+    quietErrors();
+    fixtures.fail({
+      operationId: "listPersons",
+      status: 500,
+      code: "internal",
+      match: { q: "wren" },
+    });
+    expect(await listPersons(loadContext(), { q: "wren" })).toEqual({
+      ok: false,
+      failure: { kind: "search_timeout" },
+    });
+  });
+
+  it("is server for a 500 to the plain list", async () => {
+    quietErrors();
+    fixtures.fail({
+      operationId: "listPersons",
+      status: 500,
+      code: "internal",
+    });
+    expect(await listPersons(loadContext(), { letter: "W" })).toEqual({
+      ok: false,
+      failure: { kind: "server" },
     });
   });
 });

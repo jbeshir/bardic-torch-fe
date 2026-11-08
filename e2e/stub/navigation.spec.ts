@@ -304,7 +304,7 @@ test.describe("below md", () => {
     page,
   }) => {
     await openHydrated(page);
-    // Exact: the sheet's submit is "Search the original wiki (…)".
+    // Exact: the sheet's submit is "Search" too.
     const search = appBar(page).getByRole("button", {
       name: "Search",
       exact: true,
@@ -312,7 +312,7 @@ test.describe("below md", () => {
     await search.click();
     await expect(search).toHaveAttribute("aria-expanded", "true");
     const field = appBar(page).getByRole("searchbox", {
-      name: "Search the original wiki",
+      name: "Search the catalogue",
     });
     await expect(field).toBeFocused();
     const sheet = await field.boundingBox();
@@ -324,7 +324,7 @@ test.describe("below md", () => {
     );
     await expect(appBar(page).getByRole("search")).toHaveAttribute(
       "action",
-      /\/w\/index\.php$/
+      "/search"
     );
 
     await page.keyboard.press("Escape");
@@ -416,7 +416,7 @@ test.describe("from md", () => {
     expect(room).toBeGreaterThanOrEqual(0);
   });
 
-  test("from lg the header search says it searches the original wiki, until something is typed", async ({
+  test("from lg the header search says what it searches, until something is typed", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
@@ -424,7 +424,7 @@ test.describe("from md", () => {
     const banner = page.getByRole("banner");
     const hint = banner.getByTestId("search-long-placeholder");
     await expect(hint).toBeVisible();
-    await expect(hint).toHaveText("Search the original wiki…");
+    await expect(hint).toHaveText("Search pieces and bards…");
     // The whole hint fits.
     expect(
       await hint.evaluate(element => element.scrollWidth <= element.clientWidth)

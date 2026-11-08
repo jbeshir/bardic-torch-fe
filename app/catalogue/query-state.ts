@@ -166,9 +166,16 @@ function serialise(entries: readonly Entry[]): string {
   return search ? `?${search}` : "";
 }
 
-/** A query string's decoded `[name, value]` pairs, as a sorted multiset. */
-function decodedPairs(search: string): string[] {
+/**
+ * A query string's decoded `[name, value]` pairs, as a sorted multiset,
+ * without the empty values of the `blankable` names.
+ */
+function decodedPairs(
+  search: string,
+  blankable: readonly string[] = []
+): string[] {
   return [...new URLSearchParams(search)]
+    .filter(([name, value]) => value !== "" || !blankable.includes(name))
     .map(pair => JSON.stringify(pair))
     .sort();
 }
@@ -179,8 +186,12 @@ function decodedPairs(search: string): string[] {
  * `%7E`, `+` or `%20`, the case of percent hex) and order never differ,
  * and a proxy's URL normalisation can't cause a redirect loop.
  */
-function isCanonical(search: string, canonical: string): boolean {
-  const requested = decodedPairs(search);
+function isCanonical(
+  search: string,
+  canonical: string,
+  blankable: readonly string[]
+): boolean {
+  const requested = decodedPairs(search, blankable);
   const wanted = decodedPairs(canonical);
   return (
     requested.length === wanted.length &&
@@ -193,9 +204,17 @@ function isCanonical(search: string, canonical: string): boolean {
  * with a 301 there (§2.2 rule 10). Order-only differences are not
  * redirected: the page answers 200 and names the ordered form in its
  * canonical link. The target is canonical itself, so it is answered 200.
+ *
+ * `blankable`: names a filter form sends empty for "no filter" (a radio
+ * group's "All" choice, which can't send nothing): the same as leaving
+ * them out, so answered 200 too.
  */
-export function redirectIfNotCanonical(url: URL, canonical: string): void {
-  if (!isCanonical(url.search, canonical)) {
+export function redirectIfNotCanonical(
+  url: URL,
+  canonical: string,
+  blankable: readonly string[] = []
+): void {
+  if (!isCanonical(url.search, canonical, blankable)) {
     throw redirect(`${url.pathname}${canonical}`, 301);
   }
 }
@@ -274,6 +293,13 @@ function serialisePieces(state: PieceQueryState): string {
 
 /** `/pieces`: the piece browse, search and A–Z (plan §4.2). */
 export const pieceQuery = {
+  /**
+   * What the facet form sends empty for its defaults (see
+   * redirectIfNotCanonical): the "All pages" radio, `stub=`, and "Best
+   * match", `sort=`.
+   */
+  blankable: ["stub", "sort"],
+
   parse(params: URLSearchParams): {
     readonly state: PieceQueryState;
     readonly canonical: string;
@@ -306,5 +332,30 @@ export const pieceQuery = {
     // sort) still gives the canonical form.
     const params = new URLSearchParams(serialisePieces(next));
     return `${PIECES_PATH}${pieceQuery.parse(params).canonical}`;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// /search (C3.1)
+
+type SearchQueryState = {
+  /** The search, as `q` rules have it; undefined for none (no API call). */
+  readonly q: string | undefined;
+};
+
+const SEARCH_PATH = "/search" as const;
+
+/** `/search`: the catalogue-wide search (plan §4.4). Only `q`. */
+export const searchQuery = {
+  parse(params: URLSearchParams): {
+    readonly state: SearchQueryState;
+    readonly canonical: string;
+  } {
+    const state = { q: scalar(params, "q", searchText) };
+    return { state, canonical: serialise([["q", state.q]]) };
+  },
+
+  href(state: SearchQueryState): `${typeof SEARCH_PATH}${string}` {
+    return `${SEARCH_PATH}${serialise([["q", state.q]])}`;
   },
 };

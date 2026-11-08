@@ -214,6 +214,11 @@ type ButtonLinkProps = Look &
      * no-JS "Try again", which must work when the app itself failed.
      */
     readonly reloadDocument?: boolean;
+    /**
+     * An internal link crawlers needn't follow (`rel="nofollow"`): one that
+     * only makes another filter combination, like "Clear all".
+     */
+    readonly nofollow?: boolean;
   };
 
 /**
@@ -231,8 +236,21 @@ export function ButtonLink({
   children,
   to,
   reloadDocument = false,
+  nofollow = false,
 }: ButtonLinkProps) {
   const className = classes({ variant, size, fullWidth }, label !== undefined);
+  if (to.startsWith("#")) {
+    // A place on this page: the browser scrolls to it, with or without JS,
+    // and the address keeps its query (a router link would resolve it
+    // against the path alone).
+    return (
+      <a href={to} aria-label={label} className={className}>
+        <Inside icon={icon} trailingIcon={trailingIcon} size={size}>
+          {children}
+        </Inside>
+      </a>
+    );
+  }
   const kind = externalKind(to);
   if (kind) {
     return (
@@ -247,6 +265,7 @@ export function ButtonLink({
   return (
     <RouterLink
       to={to}
+      rel={nofollow ? "nofollow" : undefined}
       prefetch={reloadDocument ? "none" : "intent"}
       reloadDocument={reloadDocument}
       aria-label={label}

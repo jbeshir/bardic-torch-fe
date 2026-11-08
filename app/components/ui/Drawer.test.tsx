@@ -7,7 +7,7 @@ import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { Drawer } from "./Drawer";
 import { Link } from "./Link";
 
-function Menu({ closeFrom }: { closeFrom?: "lg" }) {
+function Menu({ closeFrom }: { closeFrom?: "lg" | "xl" }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -38,7 +38,7 @@ function dialog() {
 }
 
 /** A stand-in for `matchMedia` whose match can be flipped. */
-function mockViewport(matches: boolean) {
+function mockViewport(matches: boolean, expected = "(min-width: 1024px)") {
   const listeners = new Set<() => void>();
   const query = {
     matches,
@@ -48,7 +48,7 @@ function mockViewport(matches: boolean) {
       listeners.delete(listener),
   };
   vi.stubGlobal("matchMedia", (text: string) => {
-    expect(text).toBe("(min-width: 1024px)");
+    expect(text).toBe(expected);
     return query;
   });
   return {
@@ -202,6 +202,16 @@ describe("Drawer", () => {
     expect(dialog().open).toBe(true);
     act(() => viewport.grow());
     expect(dialog().open).toBe(false);
+  });
+
+  it("closes when the viewport reaches xl, with closeFrom xl (the facet drawer)", async () => {
+    const viewport = mockViewport(false, "(min-width: 1280px)");
+    await renderWithRouter(<Menu closeFrom="xl" />);
+    await act(openMenu);
+    expect(dialog().open).toBe(true);
+    act(() => viewport.grow());
+    expect(dialog().open).toBe(false);
+    expect(screen.getByRole("button", { name: "Menu" })).toHaveFocus();
   });
 
   it("doesn't open at all when the viewport is already lg, if asked", async () => {

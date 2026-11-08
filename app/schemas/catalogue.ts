@@ -68,6 +68,12 @@ export const letterSchema = z.enum([
 /** A count the API lists: only values with at least one match appear. */
 const countSchema = z.int().min(1);
 
+/** How many entries of a list sort under a letter (`LetterCount`). */
+const letterCountSchema = z.strictObject({
+  letter: letterSchema,
+  count: countSchema,
+});
+
 const pieceSummarySchema = z.strictObject({
   slug: z.string(),
   title: z.string(),
@@ -86,9 +92,7 @@ const pieceFacetsSchema = z.strictObject({
       count: countSchema,
     })
   ),
-  letters: z.array(
-    z.strictObject({ letter: letterSchema, count: countSchema })
-  ),
+  letters: z.array(letterCountSchema),
 });
 
 export const pieceListSchema = z.strictObject({
@@ -96,6 +100,55 @@ export const pieceListSchema = z.strictObject({
   total: z.int().min(0),
   facets: pieceFacetsSchema,
 });
+
+// ---------------------------------------------------------------------------
+// Terms (C2.2): the facet column's labels and tree
+
+export const facetSchema = z.enum([
+  "mood",
+  "topic",
+  "culture",
+  "language",
+  "legendaria",
+  "form",
+  "origin",
+  "other",
+  "affiliation",
+]);
+
+const termListItemSchema = z.strictObject({
+  slug: z.string(),
+  facet: facetSchema,
+  name: z.string(),
+  display_name: z.string(),
+  parent_slug: z.string().nullable(),
+  piece_count: z.int().min(0),
+  person_count: z.int().min(0),
+});
+
+export const termListSchema = z.strictObject({
+  data: z.array(termListItemSchema),
+});
+
+// ---------------------------------------------------------------------------
+// Persons (C3.1): the search page's bards
+
+const personKindSchema = z.enum(["community_bard", "historical", "group"]);
+
+const personSummarySchema = z.strictObject({
+  slug: z.string(),
+  name: z.string(),
+  kind: personKindSchema,
+  is_stub: z.boolean(),
+});
+
+export const personListSchema = z.strictObject({
+  data: z.array(personSummarySchema),
+  total: z.int().min(0),
+  letters: z.array(letterCountSchema),
+});
+
+// ---------------------------------------------------------------------------
 
 /** An operation's query object, as the generated types have it. */
 export type ApiQuery<Id extends keyof operations> = DeepReadonly<
@@ -108,6 +161,13 @@ export type PieceKind = z.output<typeof pieceKindSchema>;
 export type PieceSort = z.output<typeof pieceSortSchema>;
 export type PieceSummary = DeepReadonly<z.output<typeof pieceSummarySchema>>;
 export type PieceList = DeepReadonly<z.output<typeof pieceListSchema>>;
+export type PieceFacets = PieceList["facets"];
+export type Facet = z.output<typeof facetSchema>;
+export type TermListItem = DeepReadonly<z.output<typeof termListItemSchema>>;
+export type TermList = DeepReadonly<z.output<typeof termListSchema>>;
+export type PersonKind = z.output<typeof personKindSchema>;
+export type PersonSummary = DeepReadonly<z.output<typeof personSummarySchema>>;
+export type PersonList = DeepReadonly<z.output<typeof personListSchema>>;
 
 // Compile-time contract checks: each schema's output must equal the generated
 // type in both directions (see `Matches`).
@@ -121,4 +181,11 @@ type _ContractChecks = [
   Assert<Matches<typeof pieceSummarySchema, Schemas["PieceSummary"]>>,
   Assert<Matches<typeof pieceFacetsSchema, Schemas["PieceFacets"]>>,
   Assert<Matches<typeof pieceListSchema, Schemas["PieceList"]>>,
+  Assert<Matches<typeof facetSchema, Schemas["Facet"]>>,
+  Assert<Matches<typeof termListItemSchema, Schemas["TermListItem"]>>,
+  Assert<Matches<typeof termListSchema, Schemas["TermList"]>>,
+  Assert<Matches<typeof letterCountSchema, Schemas["LetterCount"]>>,
+  Assert<Matches<typeof personKindSchema, Schemas["PersonKind"]>>,
+  Assert<Matches<typeof personSummarySchema, Schemas["PersonSummary"]>>,
+  Assert<Matches<typeof personListSchema, Schemas["PersonList"]>>,
 ];

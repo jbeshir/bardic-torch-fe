@@ -8,9 +8,13 @@ import {
 } from "~/catalogue/read-failure";
 import { upstreamErrorSchema } from "~/schemas/api";
 import {
+  personListSchema,
   pieceListSchema,
+  termListSchema,
   type ApiQuery,
+  type PersonList,
   type PieceList,
+  type TermList,
 } from "~/schemas/catalogue";
 import { appEnvContext } from "./context.server";
 import {
@@ -66,6 +70,25 @@ const ENDPOINTS = {
       "kind",
       "conservation_status",
       "stub",
+      "q",
+      "letter",
+      "sort",
+      "limit",
+      "offset",
+    ],
+  },
+  listTerms: {
+    method: "GET",
+    path: "/v1/terms",
+    query: ["facet"],
+  },
+  listPersons: {
+    method: "GET",
+    path: "/v1/persons",
+    query: [
+      "kind",
+      "role",
+      "affiliation",
       "q",
       "letter",
       "sort",
@@ -187,4 +210,22 @@ export function listPieces(
   query: ApiQuery<"listPieces">
 ): Promise<ReadResult<PieceList>> {
   return callPublicApi(context, "listPieces", query, pieceListSchema);
+}
+
+/**
+ * Every public term, in tree order (`GET /v1/terms`): the facet column's
+ * labels and tree. Not a search, so a 500 is a plain server error.
+ */
+export function listTerms(
+  context: Readonly<RouterContextProvider>
+): Promise<ReadResult<TermList>> {
+  return callPublicApi(context, "listTerms", {}, termListSchema);
+}
+
+/** A page of persons with their letter counts (`GET /v1/persons`). */
+export function listPersons(
+  context: Readonly<RouterContextProvider>,
+  query: ApiQuery<"listPersons">
+): Promise<ReadResult<PersonList>> {
+  return callPublicApi(context, "listPersons", query, personListSchema);
 }

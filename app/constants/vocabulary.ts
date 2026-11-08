@@ -1,6 +1,8 @@
 import type {
   ConservationStatus,
+  Facet,
   Letter,
+  PersonKind,
   PieceKind,
 } from "~/schemas/catalogue";
 
@@ -68,3 +70,29 @@ export const PIECE_KIND_LABELS: Readonly<Record<PieceKind, string>> = {
 export function letterLabel(letter: Letter): string {
   return letter === "0" ? "0–9 and others" : letter;
 }
+
+// ---------------------------------------------------------------------------
+// Facets (C2.2)
+
+/** Each facet's label, in sentence case: the facet column's legends. */
+export const FACET_LABELS: Readonly<Record<Facet, string>> = {
+  mood: "Mood",
+  topic: "Topic",
+  culture: "Culture",
+  language: "Language",
+  legendaria: "Legendaria",
+  form: "Form",
+  origin: "Origin",
+  other: "Other",
+  affiliation: "Affiliation",
+};
+
+// ---------------------------------------------------------------------------
+// Persons (C3.1)
+
+/** Each person kind's label, in sentence case. */
+export const PERSON_KIND_LABELS: Readonly<Record<PersonKind, string>> = {
+  community_bard: "Community bard",
+  historical: "Historical figure",
+  group: "Group",
+};

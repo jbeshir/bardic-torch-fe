@@ -1,31 +1,75 @@
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import { WIKI_SEARCH } from "~/constants/navigation";
-import { renderWithRouter } from "~/test/router";
+import { SEARCH } from "~/constants/navigation";
+import { renderOnServer, renderRoutes, renderWithRouter } from "~/test/router";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { SearchBox } from "./SearchBox";
 
 describe("SearchBox", () => {
-  it("is a GET search form to the original wiki, named for screen readers", async () => {
+  it("is a GET search form to the catalogue's search, named for screen readers", async () => {
     await renderWithRouter(<SearchBox size="md" />);
     const form = screen.getByRole("search");
     expect(form).toHaveAttribute("method", "get");
-    expect(form).toHaveAttribute("action", WIKI_SEARCH.action);
+    expect(form).toHaveAttribute("action", SEARCH.action);
     const input = screen.getByRole("searchbox", {
-      name: "Search the original wiki",
+      name: "Search the catalogue",
     });
-    expect(input).toHaveAttribute("name", WIKI_SEARCH.param);
+    expect(input).toHaveAttribute("name", SEARCH.param);
     expect(input).toHaveAttribute("autocomplete", "off");
     expect(input).toHaveAttribute("enterkeyhint", "search");
-    expect(input).toHaveAttribute("placeholder", "Search the wiki…");
+    expect(input).toHaveAttribute("placeholder", "Search…");
+    expect(input).toHaveValue("");
   });
 
-  it("spells out the original wiki in the placeholder where the field is wide", async () => {
+  it("works without JS: the server render is the plain GET form", async () => {
+    const page = document.createElement("div");
+    page.innerHTML = await renderOnServer(<SearchBox size="lg" />);
+    const form = page.querySelector("form");
+    expect(form).toHaveAttribute("method", "get");
+    expect(form).toHaveAttribute("action", "/search");
+    expect(page.querySelector('input[name="q"]')).not.toBeNull();
+    expect(page.querySelector('button[type="submit"]')).not.toBeNull();
+  });
+
+  it("is prefilled with defaultValue", async () => {
+    await renderWithRouter(<SearchBox size="lg" defaultValue="kettle" />);
+    expect(screen.getByRole("searchbox")).toHaveValue("kettle");
+  });
+
+  it("goes with JS straight to the canonical search, trimmed", async () => {
+    const user = userEvent.setup();
+    const router = await renderRoutes(
+      [
+        { path: "/", element: <SearchBox size="md" /> },
+        { path: "/search", element: <p>Results</p> },
+      ],
+      "/"
+    );
+    await user.type(screen.getByRole("searchbox"), "  copper kettle {Enter}");
+    expect(router.state.location.pathname).toBe("/search");
+    expect(router.state.location.search).toBe("?q=copper+kettle");
+  });
+
+  it("goes to the empty search page for an empty search", async () => {
+    const user = userEvent.setup();
+    const router = await renderRoutes(
+      [
+        { path: "/", element: <SearchBox size="lg" /> },
+        { path: "/search", element: <p>Results</p> },
+      ],
+      "/"
+    );
+    await user.click(screen.getByRole("button", { name: "Search" }));
+    expect(router.state.location.pathname).toBe("/search");
+    expect(router.state.location.search).toBe("");
+  });
+
+  it("names the catalogue in the placeholder where the field is wide", async () => {
     await renderWithRouter(<SearchBox size="lg" />);
     expect(screen.getByRole("searchbox")).toHaveAttribute(
       "placeholder",
-      "Search the original wiki…"
+      "Search pieces and bards…"
     );
     expect(screen.queryByTestId("search-long-placeholder")).toBeNull();
   });
@@ -35,7 +79,7 @@ describe("SearchBox", () => {
     const input = screen.getByRole("searchbox");
     expect(input).toHaveClass("peer", "lg:placeholder:text-transparent");
     const hint = screen.getByTestId("search-long-placeholder");
-    expect(hint).toHaveTextContent("Search the original wiki…");
+    expect(hint).toHaveTextContent("Search pieces and bards…");
     expect(hint).toHaveAttribute("aria-hidden", "true");
     expect(hint).toHaveClass("hidden", "lg:peer-placeholder-shown:flex");
     // After the input: the peer variant only looks at earlier siblings.
@@ -63,12 +107,12 @@ describe("SearchBox", () => {
     );
   });
 
-  it("has a submit button marked as going to the wiki, so it works without Enter", async () => {
+  it("has a Search submit button, so it works without Enter, with no external mark", async () => {
     await renderWithRouter(<SearchBox size="md" />);
-    const submit = screen.getByRole("button", {
-      name: "Search the original wiki (opens original wiki)",
-    });
+    const submit = screen.getByRole("button", { name: "Search" });
     expect(submit).toHaveAttribute("type", "submit");
+    expect(submit.querySelector(".tabler-icon-search")).not.toBeNull();
+    expect(submit.querySelector(".tabler-icon-arrow-up-right")).toBeNull();
   });
 
   it.each([

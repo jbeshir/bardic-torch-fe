@@ -178,14 +178,17 @@ export function ErrorStates() {
                 <ButtonLink to="/" variant="primary">
                   Go to the home page
                 </ButtonLink>
+                <ButtonLink to="/search?q=styleguide">
+                  Search the catalogue for ‘styleguide’
+                </ButtonLink>
                 <Link to={wikiSearchUrl("styleguide")}>
                   Look on the original wiki
                 </Link>
               </>
             }
           >
-            It may have moved, or the link may be mistyped. Bardic Torch is new,
-            so pages from the old wiki don’t redirect here yet.
+            It may have moved, or the link may be mistyped. Pages from the old
+            wiki don’t redirect here yet, so try searching for it.
           </ErrorState>
         </div>
       </Example>

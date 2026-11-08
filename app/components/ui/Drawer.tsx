@@ -5,8 +5,14 @@ import { Button } from "./Button";
 import { showCurrentPage } from "~/client/scroll-within";
 import { useModalDialog } from "~/hooks/useModalDialog";
 
-/** Tailwind's `lg`, where the persistent sidebar takes over from the drawer. */
-const LG_QUERY = "(min-width: 1024px)";
+/**
+ * Where a persistent version takes over from the drawer: Tailwind's `lg`
+ * (the sidebar) or `xl` (the piece browse's facet column).
+ */
+const CLOSE_FROM_QUERIES = {
+  lg: "(min-width: 1024px)",
+  xl: "(min-width: 1280px)",
+} as const;
 
 /**
  * The navigation drawer (DESIGN §6.21) on a native modal `<dialog>`, opened
@@ -17,7 +23,8 @@ const LG_QUERY = "(min-width: 1024px)";
  * row and a footer that stays in the thumb zone: `footer` (e.g. the
  * ThemeToggle) above a full-width close button. It closes on Escape, the
  * backdrop, either close button and any navigation, and, with
- * `closeFrom="lg"`, when the viewport grows to where the sidebar shows.
+ * `closeFrom`, when the viewport grows to where a persistent version shows
+ * (`lg`: the sidebar; `xl`: the facet column).
  */
 export function Drawer({
   id,
@@ -39,7 +46,7 @@ export function Drawer({
   readonly children: ReactNode;
   readonly footer?: ReactNode;
   /** Close once the viewport reaches this breakpoint. */
-  readonly closeFrom?: "lg" | undefined;
+  readonly closeFrom?: keyof typeof CLOSE_FROM_QUERIES | undefined;
 }) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -68,7 +75,7 @@ export function Drawer({
 
   useEffect(() => {
     if (!open || !closeFrom) return;
-    const query = window.matchMedia(LG_QUERY);
+    const query = window.matchMedia(CLOSE_FROM_QUERIES[closeFrom]);
     const onChange = () => {
       if (query.matches) onClose();
     };

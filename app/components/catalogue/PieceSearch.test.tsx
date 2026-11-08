@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { pieceQuery } from "~/catalogue/query-state";
-import { renderRoutes, renderWithRouter } from "~/test/router";
+import { renderOnServer, renderRoutes, renderWithRouter } from "~/test/router";
 import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { PieceSearch, PieceSort } from "./PieceSearch";
 
@@ -93,57 +93,63 @@ describe("PieceSearch", () => {
 });
 
 describe("PieceSort", () => {
-  it("offers best match and title order, keeping the rest of the state", async () => {
-    await renderWithRouter(<PieceSort state={stateOf(FILTERED)} />);
+  /** The order beside a stand-in facet form it belongs to. */
+  const withForm = (search: string) => (
+    <>
+      <form id="facets" method="get" action="/pieces">
+        <button type="submit">Apply filters</button>
+      </form>
+      <PieceSort state={stateOf(search)} form="facets" />
+    </>
+  );
+
+  it("offers best match and title order, belonging to the facet form", async () => {
+    await renderWithRouter(withForm(FILTERED));
     const select = screen.getByRole("combobox", { name: "Sort by" });
     expect(select).toHaveValue("title");
+    expect(select).toHaveAttribute("name", "sort");
+    expect(select).toHaveAttribute("form", "facets");
     expect(
       within(select)
         .getAllByRole("option")
         .map(option => option.textContent)
     ).toEqual(["Best match", "Title A–Z"]);
-    const form = select.closest("form");
-    if (!form) throw new Error("no form");
-    expect(hidden(form)).toEqual([
-      ["q", "kettle"],
-      ["term", "war"],
-      ["kind", "song"],
-      ["status", "endangered"],
-      ["stub", "false"],
-      ["letter", "W"],
-    ]);
+    // With JS a change applies it, so there is no button.
+    expect(screen.queryByRole("button", { name: "Sort" })).toBeNull();
   });
 
-  it("applies the order when submitted, from the first page", async () => {
+  it("applies a new order at once with JS, from the first page, keeping the rest", async () => {
     const user = userEvent.setup();
-    const router = await renderOnPage("?q=kettle&page=3", search => (
-      <PieceSort state={stateOf(search)} />
-    ));
+    const router = await renderOnPage("?q=kettle&kind=song&page=3", withForm);
     const select = screen.getByRole("combobox", { name: "Sort by" });
-    expect(select).toHaveValue("relevance");
+    expect(select).toHaveValue("");
     await user.selectOptions(select, "title");
-    // Never on change: only Sort applies it.
-    expect(router.state.location.search).toBe("?q=kettle&page=3");
-    await user.click(screen.getByRole("button", { name: "Sort" }));
-    expect(router.state.location.search).toBe("?q=kettle&sort=title");
+    expect(router.state.location.search).toBe("?q=kettle&kind=song&sort=title");
   });
 
   it("drops the order for best match, the default", async () => {
     const user = userEvent.setup();
-    const router = await renderOnPage("?q=kettle&sort=title", search => (
-      <PieceSort state={stateOf(search)} />
-    ));
+    const router = await renderOnPage("?q=kettle&sort=title", withForm);
     await user.selectOptions(
       screen.getByRole("combobox", { name: "Sort by" }),
-      "relevance"
+      "Best match"
     );
-    await user.click(screen.getByRole("button", { name: "Sort" }));
     expect(router.state.location.search).toBe("?q=kettle");
+  });
+
+  it("has a Sort button without JS, which submits the facet form", async () => {
+    const page = document.createElement("div");
+    page.innerHTML = await renderOnServer(withForm("?q=kettle"), "/pieces");
+    const button = [...page.querySelectorAll("button")].find(
+      element => element.textContent === "Sort"
+    );
+    expect(button).toHaveAttribute("type", "submit");
+    expect(button).toHaveAttribute("form", "facets");
   });
 
   it("has the same markup in both themes", async () => {
     await expectSameMarkupInBothThemes(() =>
-      renderWithRouter(<PieceSort state={stateOf("?q=kettle")} />)
+      renderWithRouter(withForm("?q=kettle"))
     );
   });
 });

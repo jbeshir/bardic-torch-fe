@@ -3,10 +3,13 @@ import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import {
   conservationStatusSchema,
+  facetSchema,
   letterSchema,
+  personListSchema,
   pieceKindSchema,
   pieceListSchema,
   pieceSortSchema,
+  termListSchema,
 } from "./catalogue";
 
 // Type equality with the generated contract is asserted at compile time in
@@ -98,5 +101,74 @@ describe("pieceListSchema", () => {
     expect(pieceListSchema.safeParse({ ...list, total: 1.5 }).success).toBe(
       false
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C2.2 terms and C3.1 persons
+
+describe("facetSchema", () => {
+  it("is in the spec's order", () => {
+    expect(facetSchema.options).toEqual(schemas.Facet?.enum);
+  });
+});
+
+describe("termListSchema", () => {
+  const term = {
+    slug: "swords",
+    facet: "topic",
+    name: "Swords",
+    display_name: "Swords",
+    parent_slug: "war",
+    piece_count: 4,
+    person_count: 0,
+  };
+
+  it("reads a term list, a root's parent null", () => {
+    const terms = { data: [{ ...term, slug: "war", parent_slug: null }, term] };
+    expect(termListSchema.parse(terms)).toEqual(terms);
+  });
+
+  it("refuses a field the spec doesn't declare, and a negative count", () => {
+    expect(
+      termListSchema.safeParse({ data: [{ ...term, depth: 1 }] }).success
+    ).toBe(false);
+    expect(
+      termListSchema.safeParse({ data: [{ ...term, piece_count: -1 }] }).success
+    ).toBe(false);
+  });
+});
+
+describe("personListSchema", () => {
+  const persons = {
+    data: [
+      {
+        slug: "wren-of-the-vale",
+        name: "Wren of the Vale",
+        kind: "community_bard",
+        is_stub: false,
+      },
+    ],
+    total: 1,
+    letters: [{ letter: "W", count: 1 }],
+  };
+
+  it("reads the spec's example", () => {
+    expect(personListSchema.parse(persons)).toEqual(persons);
+  });
+
+  it("refuses an unknown kind and a zero letter count", () => {
+    expect(
+      personListSchema.safeParse({
+        ...persons,
+        data: [{ ...persons.data[0], kind: "bard" }],
+      }).success
+    ).toBe(false);
+    expect(
+      personListSchema.safeParse({
+        ...persons,
+        letters: [{ letter: "W", count: 0 }],
+      }).success
+    ).toBe(false);
   });
 });

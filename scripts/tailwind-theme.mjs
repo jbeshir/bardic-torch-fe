@@ -248,6 +248,8 @@ const UTILITIES = {
   // The persistent sidebar and the main column, lg and xl.
   "grid-cols-shell": { "grid-template-columns": "15rem minmax(0, 1fr)" },
   "grid-cols-shell-xl": { "grid-template-columns": "16rem minmax(0, 1fr)" },
+  // The piece browse at xl: the facet column and the results.
+  "grid-cols-browse": { "grid-template-columns": "16rem minmax(0, 1fr)" },
   // The main sheet's row takes the spare height, so the footer row sits at
   // the bottom of a short page.
   "grid-rows-shell": { "grid-template-rows": "1fr auto" },

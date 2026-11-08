@@ -20,16 +20,16 @@ export function isWikiUrl(url: string): boolean {
   return url === WIKI_ORIGIN || url.startsWith(`${WIKI_ORIGIN}/`);
 }
 
-/** The original wiki's own search (DESIGN §6.26): a GET form. */
-export const WIKI_SEARCH = {
-  action: `${WIKI_ORIGIN}/w/index.php`,
-  param: "search",
-} as const;
+/** The original wiki's own search page. */
+const WIKI_SEARCH_ACTION = `${WIKI_ORIGIN}/w/index.php`;
 
 /** The wiki's results for `query` (the 404 page's "Look on the original wiki"). */
 export function wikiSearchUrl(query: string): string {
-  return `${WIKI_SEARCH.action}?${new URLSearchParams({ [WIKI_SEARCH.param]: query })}`;
+  return `${WIKI_SEARCH_ACTION}?${new URLSearchParams({ search: query })}`;
 }
+
+/** The catalogue's search (DESIGN §6.26): a GET form to `/search?q=`. */
+export const SEARCH = { action: "/search", param: "q" } as const;
 
 /** The original wiki's front page. */
 export const WIKI_HOME_URL = wikiPageUrl("Main Page");

@@ -25,6 +25,12 @@ test("an unknown URL is a 404 page inside the shell", async ({ page }) => {
   await expect(
     main.getByRole("link", { name: /Look on the original wiki/ })
   ).toHaveAttribute("href", /index\.php\?search=Ballad\+of\+the\+Bell$/);
+  // The catalogue's own search for the address's last part (C3.2).
+  await expect(
+    main.getByRole("link", {
+      name: "Search the catalogue for ‘Ballad of the Bell’",
+    })
+  ).toHaveAttribute("href", "/search?q=Ballad+of+the+Bell");
 
   // The shell is all there: header, site nav and footer with its help links.
   await expect(page.getByRole("banner")).toBeVisible();
@@ -126,5 +132,26 @@ test("checkpoint: resting, the catalogue out of reach is a 503 with Retry-After"
   await main.getByRole("button", { name: "Try again" }).click();
   await expect(
     main.getByRole("heading", { name: `Nothing matches ‘${q}’` })
+  ).toBeVisible();
+});
+
+// ---------------------------------------------------------------------------
+// C3.2: the 404 page's search
+
+test("an old wiki address searches the catalogue for its page", async ({
+  page,
+}) => {
+  const response = await page.goto("/wiki/Northmarch_Rising");
+  expect(response?.status()).toBe(404);
+  await waitForHydration(page);
+  const main = page.getByRole("main");
+  await main
+    .getByRole("link", { name: "Search the catalogue for ‘Northmarch Rising’" })
+    .click();
+  await expect(page).toHaveURL(/\/search\?q=Northmarch\+Rising$/);
+  await expect(
+    main.getByRole("region", { name: "Pieces" }).getByRole("link", {
+      name: "Northmarch Rising",
+    })
   ).toBeVisible();
 });

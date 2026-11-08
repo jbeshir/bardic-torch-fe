@@ -14,7 +14,7 @@ import {
 } from "./ErrorPages";
 
 describe("NotFound", () => {
-  it("says the page wasn't found and offers home and the original wiki", async () => {
+  it("says the page wasn't found and offers home, a search and the original wiki", async () => {
     await renderWithRouter(<NotFound pathname="/wiki/Ballad_of_Bell" />);
     expect(
       screen.getByRole("heading", {
@@ -23,8 +23,15 @@ describe("NotFound", () => {
       })
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/pages from the old wiki don’t redirect here yet/)
+      screen.getByText(
+        "It may have moved, or the link may be mistyped. Pages from the old wiki don’t redirect here yet, so try searching for it."
+      )
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", {
+        name: "Search the catalogue for ‘Ballad of Bell’",
+      })
+    ).toHaveAttribute("href", "/search?q=Ballad+of+Bell");
     expect(
       screen.getByRole("link", { name: "Go to the home page" })
     ).toHaveAttribute("href", "/");
@@ -38,6 +45,11 @@ describe("NotFound", () => {
   it("searches for the last part of any address, decoded", async () => {
     await renderWithRouter(<NotFound pathname="/a/b/the%20reeve%27s-tale/" />);
     expect(
+      screen.getByRole("link", {
+        name: "Search the catalogue for ‘the reeve's tale’",
+      })
+    ).toHaveAttribute("href", "/search?q=the+reeve%27s+tale");
+    expect(
       screen.getByRole("link", { name: /Look on the original wiki/ })
     ).toHaveAttribute("href", wikiSearchUrl("the reeve's tale"));
   });
@@ -47,6 +59,37 @@ describe("NotFound", () => {
     expect(
       screen.getByRole("link", { name: /Look on the original wiki/ })
     ).toHaveAttribute("href", wikiSearchUrl("%E0%A4%A"));
+  });
+
+  it("trims the spaces a leading or trailing dash leaves", async () => {
+    await renderWithRouter(<NotFound pathname="/-kettle_" />);
+    expect(
+      screen.getByRole("link", { name: "Search the catalogue for ‘kettle’" })
+    ).toHaveAttribute("href", "/search?q=kettle");
+  });
+
+  it("offers the empty search page when the address has nothing to search for", async () => {
+    await renderWithRouter(<NotFound pathname="/--/" />);
+    expect(
+      screen.getByRole("link", { name: "Search the catalogue" })
+    ).toHaveAttribute("href", "/search");
+  });
+
+  it("is walked with Tab: home, the search, the original wiki", async () => {
+    const user = userEvent.setup();
+    await renderWithRouter(<NotFound pathname="/wiki/Ballad_of_Bell" />);
+    await user.tab();
+    expect(
+      screen.getByRole("link", { name: "Go to the home page" })
+    ).toHaveFocus();
+    await user.tab();
+    expect(
+      screen.getByRole("link", { name: /^Search the catalogue/ })
+    ).toHaveFocus();
+    await user.tab();
+    expect(
+      screen.getByRole("link", { name: /Look on the original wiki/ })
+    ).toHaveFocus();
   });
 
   it("looks the same in both themes", async () => {

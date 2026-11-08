@@ -110,7 +110,7 @@ const JOURNEY_PAGES: readonly JourneyPage[] = [
       main(page).getByRole("link", {
         name: "Browse on the original wiki (opens original wiki)",
       }),
-      main(page).getByRole("searchbox", { name: "Search the original wiki" }),
+      main(page).getByRole("searchbox", { name: "Search the catalogue" }),
     ],
     inShell: true,
   },
@@ -219,6 +219,30 @@ const JOURNEY_PAGES: readonly JourneyPage[] = [
     primary: () => [],
     inShell: true,
     long: true,
+  },
+
+  // C3.1: the catalogue-wide search.
+  {
+    name: "/search?q=northmarch",
+    phase: "prod",
+    open: visit("/search?q=northmarch"),
+    primary: page => [
+      main(page).getByRole("searchbox", { name: "Search the catalogue" }),
+    ],
+    inShell: true,
+  },
+
+  // C2.2: the filtered piece list (a short page), with its facet column.
+  {
+    name: "/pieces?kind=poem&term=eerie",
+    phase: "prod",
+    open: visit("/pieces?kind=poem&term=eerie"),
+    primary: page => [
+      main(page).getByRole("searchbox", { name: "Search pieces" }),
+      // The drawer's button with JS (a link to #filters without).
+      main(page).getByRole("button", { name: /^Filters/ }),
+    ],
+    inShell: true,
   },
 ];
 

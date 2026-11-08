@@ -186,9 +186,15 @@ describe("/pieces loader: paging past the data (plan §2.2 rule 8)", () => {
 });
 
 describe("/pieces loader: every listPieces failure (plan §3.3)", () => {
-  it("returns invalid_filters (400) for the API's 400, keeping the state", async () => {
+  it("returns invalid_filters (400) for the API's 400 to filters it knows, keeping the state", async () => {
     quietErrors();
-    const answer = await load("?term=no-such-term");
+    fixtures.fail({
+      operationId: "listPieces",
+      status: 400,
+      code: "invalid_request",
+      match: { kind: "poem" },
+    });
+    const answer = await load("?kind=poem");
     expect(answer).toMatchObject({
       type: "DataWithResponseInit",
       data: { failure: { kind: "invalid_filters" }, list: null },
@@ -329,7 +335,13 @@ describe("/pieces document", () => {
 
   it("is the filters page (400) for the API's 400, with the search box kept", async () => {
     quietErrors();
-    const response = await get("/pieces?term=no-such-term&q=kettle");
+    fixtures.fail({
+      operationId: "listPieces",
+      status: 400,
+      code: "invalid_request",
+      match: { q: "kettle" },
+    });
+    const response = await get("/pieces?term=warlike&q=kettle");
     expect(response.status).toBe(400);
     const html = await response.text();
     expect(html).toContain(
@@ -339,7 +351,8 @@ describe("/pieces document", () => {
     const main = mainOf(html);
     expect(main).toMatch(/<h1[^>]*>We couldn’t apply these filters<\/h1>/);
     expect(main).toContain('name="q"');
-    expect(main).toContain('value="no-such-term"');
+    expect(main).toContain('value="warlike"');
+    expect(main).toContain("Remove </span>Mood: Warlike");
     expect(main).toContain("Clear all filters");
     expect(main).not.toContain("unknown term");
   });
@@ -479,4 +492,244 @@ describe("/pieces data requests", () => {
       });
     }
   );
+});
+
+// ---------------------------------------------------------------------------
+// C2.2: the terms beside the pieces, and stale categories (plan §2.4)
+
+/** Every fixture API request's path and query, in the order they started. */
+function apiRequests() {
+  const seen: string[] = [];
+  fixtures.server.events.on("request:start", ({ request }) => {
+    const url = new URL(request.url);
+    seen.push(`${url.pathname}${url.search}`);
+  });
+  return seen;
+}
+
+describe("/pieces loader: the terms and stale categories (plan §2.4)", () => {
+  it("asks for the terms and the pieces together, once each", async () => {
+    const seen = apiRequests();
+    const answer = (await load("?term=eerie")) as {
+      terms: readonly { slug: string }[];
+      stale: readonly string[];
+    };
+    expect([...seen].sort()).toEqual([
+      "/v1/pieces?term=eerie&limit=50&offset=0",
+      "/v1/terms",
+    ]);
+    // Both are asked before either has answered.
+    expect(seen).toHaveLength(2);
+    expect(answer.terms.some(term => term.slug === "eerie")).toBe(true);
+    expect(answer.stale).toEqual([]);
+  });
+
+  it.each([
+    ["an unknown slug", "no-such-term"],
+    ["an unapproved term", "draft-topic"],
+    ["an affiliation", "northmarch"],
+  ])(
+    "leaves out %s with one more request, keeping the rest",
+    async (_why, slug) => {
+      quietErrors();
+      const seen = upstreamRequests();
+      const answer = (await load(`?term=${slug}&term=warlike&kind=song`)) as {
+        state: { term: readonly string[]; kind: readonly string[] };
+        canonical: string;
+        stale: readonly string[];
+        failure: null;
+        list: { total: number };
+      };
+      expect(answer.stale).toEqual([slug]);
+      expect(answer.state.term).toEqual(["warlike"]);
+      expect(answer.state.kind).toEqual(["song"]);
+      expect(answer.failure).toBeNull();
+      expect(answer.list.total).toBeGreaterThan(0);
+      // The canonical link stays the one asked for (self canonical).
+      expect(answer.canonical).toContain(`term=${slug}`);
+      expect(seen.map(params => params.getAll("term"))).toEqual([
+        [slug, "warlike"].sort(),
+        ["warlike"],
+      ]);
+    }
+  );
+
+  it("is the filters page (400) when the 400 persists after the cleaning", async () => {
+    quietErrors();
+    fixtures.fail({
+      operationId: "listPieces",
+      status: 400,
+      code: "invalid_request",
+      match: { kind: "poem" },
+      times: 2,
+    });
+    const seen = upstreamRequests();
+    expect(await load("?term=gone&kind=poem")).toMatchObject({
+      data: {
+        failure: { kind: "invalid_filters" },
+        stale: ["gone"],
+        state: { term: [], kind: ["poem"] },
+      },
+      init: { status: 400 },
+    });
+    expect(seen).toHaveLength(2);
+  });
+
+  it("is the filters page (400) when every slug is known: no second request", async () => {
+    quietErrors();
+    fixtures.fail({
+      operationId: "listPieces",
+      status: 400,
+      code: "invalid_request",
+      match: { term: "warlike" },
+    });
+    const seen = upstreamRequests();
+    expect(await load("?term=warlike")).toMatchObject({
+      data: { failure: { kind: "invalid_filters" }, stale: [] },
+      init: { status: 400 },
+    });
+    expect(seen).toHaveLength(1);
+  });
+
+  it("is the filters page (400) without the terms, with nothing to clean by", async () => {
+    quietErrors();
+    fixtures.fail({ operationId: "listTerms", status: 500, code: "internal" });
+    const seen = upstreamRequests();
+    expect(await load("?term=no-such-term")).toMatchObject({
+      data: { failure: { kind: "invalid_filters" }, terms: null, stale: [] },
+      init: { status: 400 },
+    });
+    expect(seen).toHaveLength(1);
+  });
+
+  it.each([
+    [
+      "a 500",
+      () =>
+        fixtures.fail({
+          operationId: "listTerms",
+          status: 500,
+          code: "internal",
+        }),
+    ],
+    [
+      "a network failure",
+      () =>
+        fixtures.server.use(
+          http.get(`${API_BASE_URL}/v1/terms`, () => HttpResponse.error())
+        ),
+    ],
+    [
+      "a malformed body",
+      () =>
+        fixtures.server.use(
+          http.get(`${API_BASE_URL}/v1/terms`, () =>
+            offContractResponse("listTerms", 200, {}, "no data")
+          )
+        ),
+    ],
+  ])(
+    "shows the pieces when the terms fail with %s",
+    async (_why, failTerms) => {
+      quietErrors();
+      failTerms();
+      const answer = (await load("?letter=T")) as {
+        terms: null;
+        failure: null;
+        list: { total: number };
+      };
+      expect(answer.terms).toBeNull();
+      expect(answer.failure).toBeNull();
+      expect(answer.list.total).toBe(5);
+    }
+  );
+
+  it("follows the pieces' failure whatever the terms did", async () => {
+    quietErrors();
+    fixtures.fail({ operationId: "listTerms", status: 500, code: "internal" });
+    await outage({ letter: "V" });
+    expect(await load("?letter=V")).toMatchObject({
+      data: { kind: "resting" },
+      init: { status: 503 },
+    });
+  });
+
+  it("cleans the total's request too, for a page past the API", async () => {
+    quietErrors();
+    expect(await redirectOf("?term=no-such-term&term=eerie&page=500")).toEqual({
+      status: 302,
+      location: "/pieces?term=eerie",
+    });
+  });
+
+  it.each(["?stub=", "?kind=song&stub=&sort=", "?q=lament&sort="])(
+    "answers %s, the facet form's empty defaults, without a redirect",
+    async search => {
+      expect(await redirectOf(search)).toBeNull();
+    }
+  );
+});
+
+describe("/pieces document: facets and stale categories", () => {
+  it("has the facet column with its groups and counts", async () => {
+    const main = mainOf(await (await get("/pieces?kind=poem")).text());
+    expect(main).toContain('id="filters"');
+    expect(main).toMatch(/<legend[^>]*>Kind<\/legend>/);
+    expect(main).toMatch(/<legend[^>]*>Mood<\/legend>/);
+    expect(main).toMatch(/<legend[^>]*>Conservation status<\/legend>/);
+    expect(main).toMatch(/<legend[^>]*>Page state<\/legend>/);
+    expect(main).toContain("Apply filters");
+    expect(main).toContain("Remove </span>Kind: Poem");
+    // Before hydration (and without JS) the Filters link jumps to the
+    // column after the results; the drawer comes with JS.
+    expect(main).toMatch(
+      /<a[^>]*href="#filters"[^>]*>.*?Filters \(1 selected\)/
+    );
+    expect(main).not.toContain("<dialog");
+  });
+
+  it("names the categories it left out, noindex with a self canonical", async () => {
+    quietErrors();
+    const response = await get("/pieces?term=no-such-term&term=eerie");
+    expect(response.status).toBe(200);
+    const html = await response.text();
+    expect(html).toContain('<meta name="robots" content="noindex, follow"/>');
+    expect(html).toMatch(
+      /<link rel="canonical" href="https:\/\/app\.test\/pieces\?term=eerie&amp;term=no-such-term"\/?>/
+    );
+    expect(mainOf(html)).toContain(
+      "Some categories in this link no longer exist, so we left them out: ‘no-such-term’."
+    );
+    expect(mainOf(html)).toContain("Remove </span>Mood: Eerie");
+    expect(mainOf(html)).not.toContain("Category: no-such-term");
+  });
+
+  it("keeps a filtered list out of the index, naming itself canonical", async () => {
+    const html = await (await get("/pieces?kind=poem&term=eerie")).text();
+    expect(html).toContain('<meta name="robots" content="noindex, follow"/>');
+    expect(html).toMatch(
+      /<link rel="canonical" href="https:\/\/app\.test\/pieces\?term=eerie&amp;kind=poem"\/?>/
+    );
+  });
+
+  it("says the categories failed in the column, and still lists the pieces", async () => {
+    quietErrors();
+    fixtures.fail({ operationId: "listTerms", status: 500, code: "internal" });
+    const response = await get("/pieces?letter=T");
+    expect(response.status).toBe(200);
+    const main = mainOf(await response.text());
+    expect(main).toContain("We couldn’t load the categories");
+    expect(main).toContain("Þorvald’s Lament");
+  });
+
+  it("is the filters page with the categories' error when both fail", async () => {
+    quietErrors();
+    fixtures.fail({ operationId: "listTerms", status: 500, code: "internal" });
+    const response = await get("/pieces?term=no-such-term");
+    expect(response.status).toBe(400);
+    const main = mainOf(await response.text());
+    expect(main).toMatch(/<h1[^>]*>We couldn’t apply these filters<\/h1>/);
+    expect(main).toContain("We couldn’t load the categories");
+    expect(main).toContain("Remove </span>Category: no-such-term");
+  });
 });

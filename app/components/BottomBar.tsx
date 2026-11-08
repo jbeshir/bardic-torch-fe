@@ -1,5 +1,6 @@
 import { IconMenu2, IconSearch } from "@tabler/icons-react";
 import { useEffect, useId, useRef, useState } from "react";
+import { useLocation } from "react-router";
 import { Button } from "~/components/ui/Button";
 import type { Account } from "~/constants/account";
 import { useDismiss } from "~/hooks/useDismiss";
@@ -62,9 +63,9 @@ export function MenuControl({
 
 /**
  * Search in the bottom bar (DESIGN §5.2): with JS, a sheet just above the
- * bar with the wiki SearchBox, focused, and Cancel; Escape or Cancel close
- * it and return focus here. Without JS, a link to the site menu, which
- * starts with the SearchBox.
+ * bar with the SearchBox, focused, and Cancel; Escape or Cancel close it
+ * and return focus here, and a search (any navigation) closes it. Without
+ * JS, a link to the site menu, which starts with the SearchBox.
  */
 function SearchCell({
   hydrated,
@@ -73,14 +74,17 @@ function SearchCell({
   readonly hydrated: boolean;
   readonly siteNavId: string;
 }) {
-  const [open, setOpen] = useState(false);
+  // Open at one location only: a search (any navigation) closes it.
+  const { key } = useLocation();
+  const [openAt, setOpenAt] = useState<string | null>(null);
+  const open = openAt === key;
   const sheetId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const close = (returnFocus: boolean) => {
-    setOpen(false);
+    setOpenAt(null);
     if (returnFocus) triggerRef.current?.focus();
   };
   useDismiss({ open, close, areas: [triggerRef, sheetRef] });
@@ -108,7 +112,7 @@ function SearchCell({
         type="button"
         aria-expanded={open}
         aria-controls={sheetId}
-        onClick={() => setOpen(!open)}
+        onClick={() => setOpenAt(open ? null : key)}
         className={BAR_CELL}
       >
         {inside}

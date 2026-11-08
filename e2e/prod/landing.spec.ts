@@ -92,7 +92,7 @@ test("the home page says what the site is and leads to contributing here, then t
   );
   await expect(
     main.getByRole("search").getByRole("searchbox", {
-      name: "Search the original wiki",
+      name: "Search the catalogue",
     })
   ).toBeVisible();
 
@@ -137,7 +137,7 @@ test("the shell has one of each landmark and a skip link to the content", async 
   expect(next.firstInMain, `focused "${next.label}"`).toBe(true);
 });
 
-test("the header links home, searches the wiki and has the theme and Log in from md", async ({
+test("the header links home, searches the catalogue and has the theme and Log in from md", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -148,9 +148,10 @@ test("the header links home, searches the wiki and has the theme and Log in from
   ).toHaveAttribute("href", "/");
   const search = banner.getByRole("search");
   await expect(search).toHaveAttribute("method", "get");
+  await expect(search).toHaveAttribute("action", "/search");
   await expect(
-    search.getByRole("searchbox", { name: "Search the original wiki" })
-  ).toHaveAttribute("name", "search");
+    search.getByRole("searchbox", { name: "Search the catalogue" })
+  ).toHaveAttribute("name", "q");
   await expect(banner.getByRole("group", { name: "Theme" })).toBeVisible();
   await expect(banner.getByRole("link", { name: "Log in" })).toHaveAttribute(
     "href",
@@ -189,7 +190,7 @@ test("at 360 the hero buttons stack full width, primary first", async ({
     name: "Browse on the original wiki (opens original wiki)",
   });
   const search = main.getByRole("searchbox", {
-    name: "Search the original wiki",
+    name: "Search the catalogue",
   });
   const [first, second, field] = await Promise.all(
     [contribute, browse, search].map(locator => locator.boundingBox())

@@ -1,6 +1,12 @@
 import { expect, type Page } from "@playwright/test";
 import { failNext } from "../support/fixture-api";
 import { waitForHydration } from "../support/hydration";
+import {
+  expectNoHorizontalOverflow,
+  expectNoLayoutShift,
+  expectPrimaryTargetsAtLeast44,
+  expectTargetSizesAtLeast24,
+} from "../support/layout";
 import { checkpoint } from "../support/journey";
 import { test } from "../support/test";
 
@@ -68,7 +74,7 @@ test("a letter lists its pieces, and an empty letter is not a link", async ({
   await expect(
     results.getByRole("link", { name: "Þorvald’s Lament" })
   ).toBeVisible();
-  await expect(page.getByRole("status")).toHaveText("Showing 5 pieces");
+  await expect(main(page).getByRole("status")).toHaveText("Showing 5 pieces");
   // The chip takes the letter off again.
   await main(page).getByRole("link", { name: "Remove Letter: T" }).click();
   await expect(page).toHaveURL(/\/pieces$/);
@@ -129,7 +135,7 @@ test("the search box searches every letter, straight to the canonical URL", asyn
   expect(requests[0]).toMatch(/^\?q=kettle(&|$)/);
   await expect(
     main(page).getByRole("combobox", { name: "Sort by" })
-  ).toHaveValue("relevance");
+  ).toHaveValue("");
 });
 
 test("checkpoint: no-results, a search that matches nothing", async ({
@@ -139,7 +145,7 @@ test("checkpoint: no-results, a search that matches nothing", async ({
   await expect(
     main(page).getByRole("heading", { name: "Nothing matches ‘zzqx-nothing’" })
   ).toBeVisible();
-  await expect(page.getByRole("status")).toHaveText("No results");
+  await expect(main(page).getByRole("status")).toHaveText("No results");
   await expect(
     main(page).getByRole("link", { name: "Browse pieces" })
   ).toHaveAttribute("href", "/pieces");
@@ -173,4 +179,208 @@ test("a search too slow keeps the search box and offers Try again", async ({
   await expect(
     main(page).getByRole("heading", { name: `Nothing matches ‘${q}’` })
   ).toBeVisible();
+});
+
+// ---------------------------------------------------------------------------
+// C2.2: the facet column, its chips and stale categories
+
+const filters = (page: Page) =>
+  main(page).getByRole("region", { name: "Filters" });
+
+test("at 1280 the facet column applies each tick at once, and its chips take them off", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await open(page, "/pieces");
+  // The column sits beside the results: left of them, at their top.
+  const column = await filters(page).boundingBox();
+  const results = await main(page)
+    .getByRole("region", { name: "All pieces" })
+    .boundingBox();
+  expect(column && results && column.x < results.x).toBe(true);
+
+  await filters(page)
+    .getByRole("checkbox", { name: /^Warlike\b/ })
+    .check();
+  await expect(page).toHaveURL(/\/pieces\?term=warlike$/);
+  await expect(main(page).getByRole("status")).toHaveText("Showing 3 pieces");
+  // Focus stays on the box the form was rebuilt with.
+  await expect(
+    filters(page).getByRole("checkbox", { name: /^Warlike\b/ })
+  ).toBeFocused();
+  await expect(
+    filters(page).getByRole("checkbox", { name: "Song, 3 pieces" })
+  ).toBeVisible();
+  await filters(page)
+    .getByRole("checkbox", { name: /^Song\b/ })
+    .press("Space");
+  await expect(page).toHaveURL(/\/pieces\?term=warlike&kind=song$/);
+  const chips = main(page).getByRole("region", { name: "Selected filters" });
+  await expect(
+    chips.getByRole("link", { name: "Remove Mood: Warlike" })
+  ).toBeVisible();
+  await expect(
+    chips.getByRole("link", { name: "Remove Kind: Song" })
+  ).toBeVisible();
+
+  await chips.getByRole("link", { name: "Remove Mood: Warlike" }).click();
+  await expect(page).toHaveURL(/\/pieces\?kind=song$/);
+  await expect(
+    filters(page).getByRole("checkbox", { name: /^Warlike\b/ })
+  ).not.toBeChecked();
+  await expect(main(page).getByRole("status")).toHaveText("Showing 229 pieces");
+  await main(page)
+    .getByRole("navigation", { name: "Pagination" })
+    .getByRole("link", { name: "Next" })
+    .click();
+  await expect(page).toHaveURL(/\/pieces\?kind=song&page=2$/);
+});
+
+test("checkpoint: filtered, a kind and a mood", async ({ page }) => {
+  await open(page, "/pieces?kind=poem&term=eerie");
+  await expect(main(page).getByRole("status")).toHaveText("Showing 3 pieces");
+  await expect(
+    main(page).getByRole("link", { name: "Remove Kind: Poem" })
+  ).toBeVisible();
+  await expect(
+    main(page).getByRole("link", { name: "Remove Mood: Eerie" })
+  ).toBeVisible();
+  await checkpoint(page, "filtered");
+});
+
+test("a link with a category that no longer exists leaves it out and says so", async ({
+  page,
+}) => {
+  await open(page, "/pieces?term=eerie&term=no-such-mood");
+  await expect(page).toHaveURL(/\?term=eerie&term=no-such-mood$/);
+  await expect(main(page)).toContainText(
+    "Some categories in this link no longer exist, so we left them out: ‘no-such-mood’."
+  );
+  await expect(
+    main(page).getByRole("link", { name: "Remove Mood: Eerie" })
+  ).toBeVisible();
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+    "content",
+    "noindex, follow"
+  );
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    "href",
+    /\/pieces\?term=eerie&term=no-such-mood$/
+  );
+});
+
+test("at 1024 the list and its filters reflow without scrolling sideways", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1024, height: 800 });
+  await open(page, "/pieces");
+  await expectNoHorizontalOverflow(page);
+  // Below xl the filters are in the drawer the Filters button opens.
+  await expect(
+    main(page).getByRole("button", { name: "Filters" })
+  ).toBeVisible();
+});
+
+// ---------------------------------------------------------------------------
+// C2.3: the facet drawer, below xl with JS
+
+const MOBILE = { width: 360, height: 800 };
+
+const drawer = (page: Page) =>
+  page.getByRole("dialog", { name: "Filter pieces" });
+
+/** Opens the drawer where there is one (below xl); from xl, the column shows. */
+async function openDrawerBelowXl(page: Page) {
+  const button = main(page).getByRole("button", { name: /^Filters/ });
+  if (
+    (page.viewportSize()?.width ?? 0) < 1280 &&
+    !(await drawer(page).isVisible())
+  ) {
+    await button.click();
+    await expect(drawer(page)).toBeVisible();
+  }
+}
+
+test("at 360 the filters open in a drawer: tick two, Show results, and the chips show them", async ({
+  page,
+}) => {
+  await page.setViewportSize(MOBILE);
+  await open(page, "/pieces");
+  // With JS the filters are the drawer's only: none left in the page.
+  await expect(main(page).getByRole("region", { name: "Filters" })).toHaveCount(
+    0
+  );
+  const trigger = main(page).getByRole("button", { name: "Filters" });
+  await trigger.click();
+  await expect(drawer(page)).toBeVisible();
+  await expect(
+    drawer(page).getByRole("button", { name: "Close filters" }).first()
+  ).toBeFocused();
+  await expectTargetSizesAtLeast24(page, [MOBILE.width]);
+  await expectPrimaryTargetsAtLeast44([
+    drawer(page).getByRole("button", { name: "Show results" }),
+    drawer(page).getByRole("button", { name: "Close filters" }).first(),
+    drawer(page).locator("label").first(),
+  ]);
+
+  await drawer(page)
+    .getByRole("checkbox", { name: /^Poem\b/ })
+    .check();
+  await drawer(page)
+    .getByRole("checkbox", { name: /^Eerie\b/ })
+    .check();
+  // Nothing applies until asked: no live count, no navigation.
+  await expect(page).toHaveURL(/\/pieces$/);
+  await drawer(page).getByRole("button", { name: "Show results" }).click();
+  await expect(page).toHaveURL(/\/pieces\?term=eerie&kind=poem$/);
+  await expect(drawer(page)).toBeHidden();
+  await expect(
+    main(page).getByRole("button", { name: "Filters (2 selected)" })
+  ).toBeFocused();
+  await expect(main(page).getByRole("status")).toHaveText("Showing 3 pieces");
+  await expect(
+    main(page).getByRole("link", { name: "Remove Kind: Poem" })
+  ).toBeVisible();
+  await expect(
+    main(page).getByRole("link", { name: "Remove Mood: Eerie" })
+  ).toBeVisible();
+});
+
+test("Escape closes the drawer and forgets its unapplied ticks", async ({
+  page,
+}) => {
+  await page.setViewportSize(MOBILE);
+  await open(page, "/pieces?letter=T");
+  const trigger = main(page).getByRole("button", { name: "Filters" });
+  await trigger.focus();
+  await page.keyboard.press("Enter");
+  await expect(drawer(page)).toBeVisible();
+  await drawer(page)
+    .getByRole("checkbox", { name: /^Song\b/ })
+    .check();
+  await page.keyboard.press("Escape");
+  await expect(drawer(page)).toBeHidden();
+  await expect(trigger).toBeFocused();
+  await expect(page).toHaveURL(/\/pieces\?letter=T$/);
+  await trigger.click();
+  await expect(
+    drawer(page).getByRole("checkbox", { name: /^Song\b/ })
+  ).not.toBeChecked();
+});
+
+test("hydration moves nothing at 360: the filters after the results give way to the drawer", async ({
+  page,
+}) => {
+  await expectNoLayoutShift(page, "/pieces?kind=poem&term=eerie", MOBILE);
+});
+
+test("checkpoint: facet-drawer-open (the facet column at 1280)", async ({
+  page,
+}) => {
+  await open(page, "/pieces?kind=poem");
+  await checkpoint(page, "facet-drawer-open", {
+    target: "dialog[open], #filters",
+    atEachViewport: openDrawerBelowXl,
+    viewportOnly: true,
+  });
 });

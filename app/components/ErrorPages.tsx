@@ -2,9 +2,9 @@ import { isRouteErrorResponse } from "react-router";
 import { ButtonLink } from "~/components/ui/Button";
 import { ErrorState, TryAgain } from "~/components/ui/ErrorState";
 import { Link } from "~/components/ui/Link";
-import { wikiSearchUrl } from "~/constants/navigation";
+import { SEARCH, wikiSearchUrl } from "~/constants/navigation";
 
-/** The last segment of a path, decoded, to search the old wiki for. */
+/** The last segment of a path, decoded, to search for (here and on the old wiki). */
 function lastSegment(pathname: string): string {
   const segment = pathname.split("/").filter(Boolean).at(-1) ?? "";
   try {
@@ -52,10 +52,12 @@ export function isResting(error: unknown): boolean {
 
 /**
  * The 404 page body (DESIGN §10.4): the unlit torch, what happened, the way
- * home and a search of the original wiki for the address's last part,
- * since its old pages don't redirect here yet.
+ * home, a search of the catalogue for the address's last part (an old
+ * wiki address names its page there), and the same search on the original
+ * wiki, since its old pages don't redirect here yet.
  */
 export function NotFound({ pathname }: { readonly pathname: string }) {
+  const term = lastSegment(pathname).trim();
   return (
     <ErrorState
       art="missing"
@@ -65,15 +67,24 @@ export function NotFound({ pathname }: { readonly pathname: string }) {
           <ButtonLink to="/" variant="primary">
             Go to the home page
           </ButtonLink>
-          <Link to={wikiSearchUrl(lastSegment(pathname))}>
-            Look on the original wiki
-          </Link>
+          <ButtonLink
+            to={
+              term
+                ? `${SEARCH.action}?${new URLSearchParams({ [SEARCH.param]: term })}`
+                : SEARCH.action
+            }
+          >
+            {term
+              ? `Search the catalogue for ‘${term}’`
+              : "Search the catalogue"}
+          </ButtonLink>
+          <Link to={wikiSearchUrl(term)}>Look on the original wiki</Link>
         </>
       }
     >
       <p>
-        It may have moved, or the link may be mistyped. Bardic Torch is new, so
-        pages from the old wiki don’t redirect here yet.
+        It may have moved, or the link may be mistyped. Pages from the old wiki
+        don’t redirect here yet, so try searching for it.
       </p>
     </ErrorState>
   );

@@ -218,6 +218,30 @@ describe("ButtonLink", () => {
     expect(router.state.location.pathname).toBe("/help/contributing");
   });
 
+  it("is a plain anchor to a place on the page, keeping the query", async () => {
+    const router = await renderWithRouter(
+      <ButtonLink to="#filters">Filters</ButtonLink>,
+      "/pieces?kind=song"
+    );
+    const link = screen.getByRole("link", { name: "Filters" });
+    expect(link).toHaveAttribute("href", "#filters");
+    expect(link).toHaveClass("min-h-11");
+    expect(link).not.toHaveAttribute("rel");
+    expect(router.state.location.search).toBe("?kind=song");
+  });
+
+  it("can be nofollow, for a link that only makes another filter combination", async () => {
+    await renderWithRouter(
+      <ButtonLink to="/pieces?q=kettle" nofollow>
+        Clear all
+      </ButtonLink>
+    );
+    expect(screen.getByRole("link", { name: "Clear all" })).toHaveAttribute(
+      "rel",
+      "nofollow"
+    );
+  });
+
   it("follows with Enter from the keyboard", async () => {
     const user = userEvent.setup();
     const router = await renderWithRouter(

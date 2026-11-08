@@ -229,3 +229,119 @@ test.describe("/pieces", () => {
     await expect(page).toHaveURL(/\/pieces\?page=2$/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// C2.2: the facet form without JS
+
+test.describe("/pieces filters", () => {
+  test("ticking boxes and Apply filters is the form's own GET, answered 200", async ({
+    page,
+  }) => {
+    await page.goto("/pieces?letter=W");
+    const main = page.getByRole("main");
+    const filters = main.getByRole("region", { name: "Filters" });
+    // The Filters link jumps to the column after the results.
+    await expect(main.getByRole("link", { name: "Filters" })).toHaveAttribute(
+      "href",
+      "#filters"
+    );
+    await filters.getByRole("checkbox", { name: /^Song\b/ }).check();
+    await filters.getByRole("radio", { name: "Hide stubs" }).check();
+    const [response] = await Promise.all([
+      page.waitForResponse(r => new URL(r.url()).pathname === "/pieces"),
+      filters.getByRole("button", { name: "Apply filters" }).click(),
+    ]);
+    // In DOM order (the letter first, an empty sort never sent without q):
+    // an order-only difference, so no redirect.
+    expect(response.status()).toBe(200);
+    await expect(page).toHaveURL(/\/pieces\?letter=W&kind=song&stub=false$/);
+    await expect(
+      main.getByRole("link", { name: "Remove Kind: Song" })
+    ).toBeVisible();
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      "href",
+      /\/pieces\?kind=song&stub=false&letter=W$/
+    );
+  });
+
+  test("All pages sends an empty stub, answered 200 without it", async ({
+    page,
+  }) => {
+    await page.goto("/pieces?stub=true");
+    const filters = page
+      .getByRole("main")
+      .getByRole("region", { name: "Filters" });
+    await filters.getByRole("radio", { name: "All pages" }).check();
+    const [response] = await Promise.all([
+      page.waitForResponse(r => new URL(r.url()).pathname === "/pieces"),
+      filters.getByRole("button", { name: "Apply filters" }).click(),
+    ]);
+    expect(response.status()).toBe(200);
+    await expect(page).toHaveURL(/\/pieces\?stub=$/);
+  });
+
+  test("the order applies with its Sort button", async ({ page }) => {
+    await page.goto("/pieces?q=lament");
+    const main = page.getByRole("main");
+    await main.getByRole("combobox", { name: "Sort by" }).selectOption("title");
+    const [response] = await Promise.all([
+      page.waitForResponse(r => new URL(r.url()).pathname === "/pieces"),
+      main.getByRole("button", { name: "Sort" }).click(),
+    ]);
+    expect(response.status()).toBe(200);
+    await expect(page).toHaveURL(/sort=title/);
+    await expect(main.getByRole("combobox", { name: "Sort by" })).toHaveValue(
+      "title"
+    );
+  });
+});
+
+test.describe("/pieces filters below xl", () => {
+  test.use({ viewport: MOBILE });
+
+  test("Filters jumps to the filters after the results, which apply with their own button", async ({
+    page,
+  }) => {
+    await page.goto("/pieces?letter=T");
+    const main = page.getByRole("main");
+    const link = main.getByRole("link", { name: "Filters" });
+    await expect(link).toHaveAttribute("href", "#filters");
+    await expectPrimaryTargetsAtLeast44([link]);
+    await link.click();
+    await expect(page).toHaveURL(/\?letter=T#filters$/);
+    const filters = main.getByRole("region", { name: "Filters" });
+    await expect(filters).toBeInViewport();
+    await filters.getByRole("checkbox", { name: /^Song\b/ }).check();
+    const [response] = await Promise.all([
+      page.waitForResponse(r => new URL(r.url()).pathname === "/pieces"),
+      filters.getByRole("button", { name: "Apply filters" }).click(),
+    ]);
+    expect(response.status()).toBe(200);
+    await expect(page).toHaveURL(/\/pieces\?letter=T&kind=song/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C3.1: the catalogue search without JS
+
+test.describe("/search", () => {
+  test("the header search is a plain GET to /search, answered 200", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/help");
+    const header = page.getByRole("banner");
+    await header
+      .getByRole("searchbox", { name: "Search the catalogue" })
+      .fill("northmarch");
+    const [response] = await Promise.all([
+      page.waitForResponse(r => new URL(r.url()).pathname === "/search"),
+      header.getByRole("button", { name: "Search", exact: true }).click(),
+    ]);
+    expect(response.status()).toBe(200);
+    await expect(page).toHaveURL(/\/search\?q=northmarch$/);
+    await expect(
+      page.getByRole("main").getByRole("link", { name: "Northmarch Rising" })
+    ).toBeVisible();
+  });
+});
