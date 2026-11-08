@@ -53,7 +53,7 @@ A place is somewhere the work can actually be found, heard or got hold of. Examp
 
 ## How a status is set
 
-When the catalogue opens here:
+Statuses are set like this:
 
 1. **Each link records what kind of place it is**, such as a streaming service, the author’s site or a community archive.
 2. **The site suggests a status** by counting the distinct places among a piece’s links that are still working. Links are checked regularly, so a dead link stops counting.
@@ -65,9 +65,9 @@ When the catalogue opens here:
 - **Add links.** If you know of performances, lyrics, recordings, or places to buy or borrow an Endangered or Critically Endangered work, add them to the piece.
 - **Suggest a new status.** When a piece gains enough places to move up (Endangered to Low Risk, or Critically Endangered to Endangered), suggest the change and give the reason. A moderator will confirm it.
 - **Spot losses.** If a Low Risk piece has lost its places, suggest moving it down. That might be because the websites went down, the piece was removed, the seller stopped selling it, or the person holding the hard copy can no longer be contacted.
-- **Host a copy.** If you have a copy of an Endangered or Critically Endangered piece, and the creator’s wishes allow it, consider putting it on your own site or in a community archive so we can link to it. See the [collections on the original wiki](https://bardictorch.miraheze.org/wiki/Collections) for community archives and songbooks.
+- **Host a copy.** If you have a copy of an Endangered or Critically Endangered piece, and the creator’s wishes allow it, consider putting it on your own site or in a community archive so we can link to it. See the [collections](/collections) for community archives and songbooks.
 
-Until the catalogue opens, you can see pieces by status on the [original wiki](https://bardictorch.miraheze.org/wiki/Category:Conservation_Status).
+Each piece’s status badge links to its entry on this page. To see pieces by status, browse [endangered pieces](/pieces?status=endangered), [critically endangered pieces](/pieces?status=critically_endangered) or [low-risk pieces](/pieces?status=low_risk), or see every status on the [categories](/categories?facet=conservation) page.
 
 ## How Restricted works
 

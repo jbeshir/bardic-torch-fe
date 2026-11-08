@@ -69,7 +69,7 @@ const VISIBLE_CHIPS = 12;
 
 /**
  * Category and facet chips (DESIGN §6.12): a wrapping list of link chips.
- * External chips point at the original wiki unless told otherwise. With no
+ * A chip to another site is marked as external. With no
  * tags it says so in a caption instead of leaving a gap.
  *
  * More than 12 chips show the first 12 and a "Show all {n}" disclosure

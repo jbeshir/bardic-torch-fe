@@ -7,6 +7,7 @@ import {
 } from "react-router";
 import { CatalogueError } from "~/components/catalogue/CatalogueError";
 import { ServerError } from "~/components/ErrorPages";
+import { UnderPageHead } from "~/components/ui/ErrorState";
 import { HistoryView } from "~/components/HistoryView";
 import { catalogueHeaders } from "~/catalogue/headers";
 import { historyMeta, matchData } from "~/catalogue/history-meta";
@@ -65,9 +66,20 @@ export function ErrorBoundary() {
   const error = useRouteError();
   const failure = thrownPageFailure(error);
   const reference = useErrorReference(error, failure === null);
-  return failure ? (
-    <CatalogueError failure={failure} what="the history" missing={MISSING} />
-  ) : (
-    <ServerError title="We couldn’t load the history" reference={reference} />
+  return (
+    <UnderPageHead>
+      {failure ? (
+        <CatalogueError
+          failure={failure}
+          what="the history"
+          missing={MISSING}
+        />
+      ) : (
+        <ServerError
+          title="We couldn’t load the history"
+          reference={reference}
+        />
+      )}
+    </UnderPageHead>
   );
 }

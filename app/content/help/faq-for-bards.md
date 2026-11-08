@@ -71,7 +71,7 @@ No. We don’t host any works, including yours, even if you’ve released it for
 - your own website or blog
 - YouTube
 - Spotify, Bandcamp, SoundCloud or another music service
-- a community archive such as MidBards (see the [collections on the original wiki](https://bardictorch.miraheze.org/wiki/Collections))
+- a community archive such as MidBards (see the [collections](/collections))
 - all of the above
 
 The more places your work lives, the safer it is. See [Conservation status](/help/conservation-status).

@@ -14,6 +14,7 @@ import { ListPagination } from "~/components/catalogue/ListPagination";
 import { PersonListItem } from "~/components/catalogue/PersonListItem";
 import { PieceListItem } from "~/components/catalogue/PieceListItem";
 import { SERVER_ERROR_META, ServerError } from "~/components/ErrorPages";
+import { UnderPageHead } from "~/components/ui/ErrorState";
 import { ButtonLink } from "~/components/ui/Button";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { Link } from "~/components/ui/Link";
@@ -197,9 +198,13 @@ export function ErrorBoundary() {
   const error = useRouteError();
   const failure = thrownPageFailure(error);
   const reference = useErrorReference(error, failure === null);
-  return failure ? (
-    <CatalogueError failure={failure} what={WHAT} missing="that category" />
-  ) : (
-    <ServerError title={`We couldn’t load ${WHAT}`} reference={reference} />
+  return (
+    <UnderPageHead>
+      {failure ? (
+        <CatalogueError failure={failure} what={WHAT} missing="that category" />
+      ) : (
+        <ServerError title={`We couldn’t load ${WHAT}`} reference={reference} />
+      )}
+    </UnderPageHead>
   );
 }

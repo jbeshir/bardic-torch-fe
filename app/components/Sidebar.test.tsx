@@ -20,11 +20,7 @@ describe("Sidebar", () => {
     expect(
       screen.getAllByRole("heading", { level: 3 }).map(h => h.textContent)
     ).toEqual(["Browse", "Facets", "Help", "Keep the torch lit"]);
-    expect(
-      screen.getByText(
-        "The catalogue is on its way. Until it opens, these links go to the original Bardic Torch wiki."
-      )
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/on its way/)).not.toBeInTheDocument();
   });
 
   it("lists every item from the navigation config, in order", async () => {
@@ -39,17 +35,58 @@ describe("Sidebar", () => {
     });
   });
 
-  it("marks wiki links as external: an arrow, and the hidden destination, in the same tab", async () => {
+  it("links only inside the site: nothing is marked as external", async () => {
     await renderSidebar();
-    const pieces = screen.getByRole("link", {
-      name: "Pieces (opens original wiki)",
-    });
-    expect(pieces).not.toHaveAttribute("target");
-    expect(pieces).toHaveAttribute("rel", "noopener");
-    expect(pieces.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    for (const link of screen.getAllByRole("link")) {
+      expect(link.getAttribute("href")).toMatch(/^\//);
+      expect(link).not.toHaveAttribute("rel");
+      expect(link.querySelector("svg")).toBeNull();
+    }
+  });
+
+  it.each([
+    ["/pieces", "Pieces"],
+    ["/pieces?letter=T&page=2", "Pieces"],
+    ["/pieces/the-copper-kettle", "Pieces"],
+    ["/pieces/the-copper-kettle/history", "Pieces"],
+    ["/bards/ansgar-the-reed", "Bards"],
+    ["/collections/12", "Collections"],
+    ["/events", "Events and venues"],
+    ["/events/midwinter-revel", "Events and venues"],
+    ["/categories", "Categories"],
+    ["/categories/swords", "Categories"],
+    ["/categories?facet=mood", "Mood"],
+    ["/categories?facet=kind", "Genre / kind"],
+    ["/categories?facet=conservation", "Conservation"],
+  ])(
+    "marks the section of %s as current: %s, and only that",
+    async (url, name) => {
+      await renderSidebar(url);
+      expect(
+        screen
+          .getAllByRole("link")
+          .filter(link => link.hasAttribute("aria-current"))
+          .map(link => link.textContent)
+      ).toEqual([name]);
+      expect(screen.getByRole("link", { name })).toHaveAttribute(
+        "aria-current",
+        "page"
+      );
+    }
+  );
+
+  it.each([
+    "/",
+    "/search?q=bell",
+    "/pieces-and-more",
+    "/categories?facet=form",
+  ])("marks nothing as current on %s", async url => {
+    await renderSidebar(url);
     expect(
-      screen.getByRole("link", { name: "Contributing" }).querySelector("svg")
-    ).toBeNull();
+      screen
+        .getAllByRole("link")
+        .filter(link => link.hasAttribute("aria-current"))
+    ).toEqual([]);
   });
 
   it("marks the help page being shown as current", async () => {

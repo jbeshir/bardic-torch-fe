@@ -416,7 +416,7 @@ describe("the Worker's CSRF check (React Router's, answered before it runs)", ()
     }
     await collect(await routes, "");
     vi.unstubAllEnvs();
-    expect(found.filter(route => !route.page).length).toBe(7);
+    expect(found.filter(route => !route.page).length).toBe(10);
 
     const fetch = worker();
     for (const route of found) {

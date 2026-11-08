@@ -42,8 +42,8 @@ test.describe("navigation below md", () => {
     await expect(nav.getByRole("search")).toBeVisible();
     await expect(nav.getByRole("group", { name: "Theme" })).toBeVisible();
     await expect(
-      nav.getByRole("link", { name: "Mood (opens original wiki)" })
-    ).toBeVisible();
+      nav.getByRole("link", { name: "Mood", exact: true })
+    ).toHaveAttribute("href", "/categories?facet=mood");
 
     // It comes after main and before the footer.
     const order = await page.evaluate(() => {
@@ -519,5 +519,55 @@ test.describe("history", () => {
     await expect(main.getByText("2 revisions")).toBeVisible();
     await views.getByRole("link", { name: "Read" }).click();
     await expect(page).toHaveURL(/\/events\/midwinter-revel$/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C9, C11.1: the home page and the shell's catalogue links without JS
+
+test.describe("home", () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test("the hero search is a plain GET to /search, and Browse pieces and the chips are links", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const main = page.getByRole("main");
+    await expect(
+      main.getByRole("link", { name: "Browse pieces", exact: true })
+    ).toHaveAttribute("href", "/pieces");
+    await expect(
+      main.getByRole("region", { name: "Start exploring" }).getByRole("link", {
+        name: "All categories",
+      })
+    ).toHaveAttribute("href", "/categories");
+    await main
+      .getByRole("searchbox", { name: "Search the catalogue" })
+      .fill("kettle");
+    const [response] = await Promise.all([
+      page.waitForResponse(r => new URL(r.url()).pathname === "/search"),
+      main.getByRole("button", { name: "Search", exact: true }).click(),
+    ]);
+    expect(response.status()).toBe(200);
+    await expect(page).toHaveURL(/\/search\?q=kettle$/);
+  });
+
+  test("the sidebar's catalogue links navigate, and the current section is marked", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const nav = page.getByRole("navigation", { name: "Site" });
+    await nav
+      .getByRole("link", { name: "Events and venues", exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/events$/);
+    await expect(
+      page
+        .getByRole("main")
+        .getByRole("heading", { level: 1, name: "Events and venues" })
+    ).toBeVisible();
+    await expect(
+      nav.getByRole("link", { name: "Events and venues", exact: true })
+    ).toHaveAttribute("aria-current", "page");
   });
 });

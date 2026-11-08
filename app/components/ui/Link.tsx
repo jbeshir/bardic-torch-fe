@@ -7,7 +7,7 @@ import { isWikiUrl } from "~/constants/navigation";
 type ExternalKind = "web" | "wiki";
 
 /** Each kind's icon and the hidden text that says where the link goes. */
-export const EXTERNAL_MARKS = {
+const EXTERNAL_MARKS = {
   web: { icon: IconExternalLink, suffix: " (external link)" },
   wiki: { icon: IconArrowUpRight, suffix: " (opens original wiki)" },
 } as const;

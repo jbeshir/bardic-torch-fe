@@ -50,3 +50,16 @@ export function formatCount(
 ): string {
   return `${formatNumber(n)} ${PLURAL.select(n) === "one" ? singular : plural}`;
 }
+
+/**
+ * The home page's size line: "142 pieces and 61 people and groups so far".
+ * Persons include groups, historical figures and stubs, so not "bards".
+ */
+export function formatCatalogueSize(pieces: number, people: number): string {
+  const personOrGroup = formatCount(
+    people,
+    `person or ${"group"}`,
+    "people and groups"
+  );
+  return `${formatCount(pieces, "piece")} and ${personOrGroup} so far`;
+}

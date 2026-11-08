@@ -347,6 +347,9 @@ export const pieceQuery = {
   },
 };
 
+/** `/pieces` with no filter: the state a link adds its one filter to. */
+export const NO_PIECE_FILTERS = pieceQuery.parse(new URLSearchParams()).state;
+
 // ---------------------------------------------------------------------------
 // /search (C3.1)
 

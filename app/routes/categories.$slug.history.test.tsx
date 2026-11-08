@@ -150,8 +150,13 @@ describe("/categories/:slug/history page", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "War" })
     ).toBeVisible();
+    // The head keeps the page's one h1; the failure is an h2 under it.
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(
-      screen.getByRole("heading", { name: "We couldn’t load the history" })
+      screen.getByRole("heading", {
+        level: 2,
+        name: "We couldn’t load the history",
+      })
     ).toBeVisible();
   });
 

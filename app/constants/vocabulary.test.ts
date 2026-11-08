@@ -3,6 +3,7 @@ import {
   ATTRIBUTION_LABELS,
   CERTAINTY_QUALIFIERS,
   COLLECTION_KIND_LABELS,
+  BROWSE_STATUS_LABELS,
   CONSERVATION_LABELS,
   CC_LICENCE_SHORT_NAMES,
   CONSERVATION_STATUSES,
@@ -39,6 +40,13 @@ describe("conservation vocabulary", () => {
     expect([...CONSERVATION_STATUSES].sort()).toEqual(
       Object.keys(CONSERVATION_LABELS).sort()
     );
+  });
+
+  it("words a browse link for every status", () => {
+    expect(Object.keys(BROWSE_STATUS_LABELS).sort()).toEqual(
+      [...CONSERVATION_STATUSES].sort()
+    );
+    expect(BROWSE_STATUS_LABELS.endangered).toBe("Browse endangered pieces");
   });
 
   it("lists each status once", () => {

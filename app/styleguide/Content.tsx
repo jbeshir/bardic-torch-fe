@@ -4,7 +4,6 @@ import { TryAgain } from "~/components/ui/ErrorState";
 import { Infobox } from "~/components/ui/Infobox";
 import { Link } from "~/components/ui/Link";
 import { TagList } from "~/components/ui/TagList";
-import { wikiPageUrl } from "~/constants/navigation";
 import { CONSERVATION_STATUSES } from "~/constants/vocabulary";
 import { Example, Specimen } from "./Specimen";
 
@@ -30,8 +29,8 @@ const FACTS = [
           <TagList
             size="sm"
             tags={[
-              { label: "Singalong", to: wikiPageUrl("Category:Singalong") },
-              { label: "Tragic", to: wikiPageUrl("Category:Tragic") },
+              { label: "Singalong", to: "/categories/singalong" },
+              { label: "Tragic", to: "/categories/tragic" },
             ]}
           />
         ),
@@ -135,14 +134,14 @@ export function Tags() {
     <Specimen
       id="tag-list"
       title="Chip and TagList"
-      summary="Category and facet chips (DESIGN §6.12). In FE1 they point at the original wiki."
+      summary="Category and facet chips (DESIGN §6.12), internal links to category pages."
     >
-      <Example label="Categories (to the original wiki)" wide>
+      <Example label="Categories" wide>
         <TagList
           tags={[
-            { label: "Singalong", to: wikiPageUrl("Category:Singalong") },
-            { label: "Drinking", to: wikiPageUrl("Category:Drinking") },
-            { label: "Tragic", to: wikiPageUrl("Category:Tragic") },
+            { label: "Singalong", to: "/categories/singalong" },
+            { label: "Drinking", to: "/categories/drinking" },
+            { label: "Tragic", to: "/categories/tragic" },
           ]}
         />
       </Example>

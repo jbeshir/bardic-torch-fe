@@ -138,3 +138,46 @@ test("an error page's heading keeps its focus outline", async ({ page }) => {
   await expectOutlineDrawn(heading);
   await checkpoint(page, "error-heading-focus");
 });
+
+test("a facet checkbox keeps its focus outline, and ticked differs from unticked", async ({
+  page,
+}) => {
+  await page.goto("/pieces");
+  await waitForHydration(page);
+  await expectForcedColours(page);
+  const filters = page
+    .getByRole("main")
+    .getByRole("region", { name: "Filters", exact: true });
+  const song = filters.getByRole("checkbox", { name: /^Song, \d+ pieces$/ });
+  await focusByKeyboard(page, song);
+  await expectOutlineDrawn(song);
+  // The system draws the box (appearance: auto), so ticking it changes what
+  // is drawn: the native control, not a token colour, shows the state.
+  const appearance = await song.evaluate(
+    element => getComputedStyle(element).appearance
+  );
+  expect(appearance).toBe("auto");
+  await page.keyboard.press("Space");
+  await expect(song).toBeChecked();
+  await expect(page).toHaveURL(/\/pieces\?kind=song$/);
+});
+
+test("a conservation badge keeps its border and its icon on a piece's page", async ({
+  page,
+}) => {
+  await page.goto("/pieces/the-copper-kettle");
+  await waitForHydration(page);
+  await expectForcedColours(page);
+  const badge = page
+    .getByRole("main")
+    .getByRole("complementary", { name: "About this piece" })
+    .getByRole("link", { name: "Conservation status: Endangered" });
+  const { border, icons } = await badge.evaluate(element => ({
+    border: getComputedStyle(element).borderStyle,
+    icons: element.querySelectorAll("svg").length,
+  }));
+  expect(border).toBe("solid");
+  expect(icons).toBe(1);
+  await focusByKeyboard(page, badge);
+  await expectOutlineDrawn(badge);
+});

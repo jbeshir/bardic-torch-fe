@@ -91,7 +91,7 @@ export function Buttons() {
         <ButtonLink to="/" variant="primary" icon={IconArrowRight}>
           Go to the home page
         </ButtonLink>
-        <ButtonLink to={WIKI_HOME_URL}>Browse on the original wiki</ButtonLink>
+        <ButtonLink to={WIKI_HOME_URL}>Original wiki</ButtonLink>
       </Example>
     </Specimen>
   );

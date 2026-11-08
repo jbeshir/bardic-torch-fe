@@ -183,9 +183,10 @@ describe("no feed-only bindings", () => {
 
 /**
  * The original wiki is reached through app/constants/navigation.ts only
- * (DESIGN §5.3), so the catalogue launch is a change to one module. The
- * help content adapted from the wiki (app/content/) and the docs may name
- * it too; navigation's own test pins its URLs.
+ * (DESIGN §5.3). The catalogue is on this site, so the wiki is named only
+ * for the help pages' attribution (app/content/), the footer's link and
+ * the 404 page's secondary link; the docs may name it too. Navigation's
+ * own test pins its URLs.
  */
 const WIKI_HOST = "bardictorch.miraheze.org";
 const WIKI_HOST_ALLOWED = [
@@ -194,6 +195,32 @@ const WIKI_HOST_ALLOWED = [
   /^docs\//,
   /^(README|CLAUDE)\.md$/,
 ];
+
+/** FE1's placeholders for the catalogue's launch (plan §5), now gone. */
+const STALE_PLACEHOLDERS =
+  /catalogue is on its way|until the catalogue opens|when the catalogue opens/i;
+
+describe("no placeholder copy about the catalogue opening", () => {
+  it("is in no source, test or content file", () => {
+    const offenders = scannedFiles().filter(path =>
+      STALE_PLACEHOLDERS.test(readFileSync(join(root, path), "utf8"))
+    );
+    expect(offenders).toEqual([]);
+  });
+
+  it("catches each phrase, in any case", () => {
+    for (const phrase of [
+      "The catalogue is on its way.",
+      "Until the catalogue opens, see the wiki.",
+      "When the catalogue opens here:",
+    ]) {
+      expect(STALE_PLACEHOLDERS.test(phrase), phrase).toBe(true);
+    }
+    expect(STALE_PLACEHOLDERS.test("The catalogue opens at /pieces.")).toBe(
+      false
+    );
+  });
+});
 
 describe("wiki host only in allowed files", () => {
   it("is named in navigation.ts", () => {

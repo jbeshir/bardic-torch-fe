@@ -1,6 +1,6 @@
 # Bardic Torch design system
 
-**Status:** v2, for milestone FE1 (foundation). v2 folds in the design critique (items D1–D32) and aligns routes and names with the FE1 plan. **Owner:** product design. **Applies to:** `bardic-torch-fe` (React Router 8, Tailwind 4, Cloudflare Workers).
+**Status:** v3, for milestone FE2 (the read UI). v2 (FE1, the foundation) folded in the design critique (items D1–D32) and aligned routes and names with the FE1 plan; v3 marks what FE2 built and adds the catalogue's components and page templates (§6.28–§6.30, §10.7–§10.16). **Owner:** product design. **Applies to:** `bardic-torch-fe` (React Router 8, Tailwind 4, Cloudflare Workers).
 
 This is the reference for every visual and interaction decision in the frontend. Where it gives a value, use that value. Where it says MUST, a reviewer will check it. If something you need isn't covered, add it here in the same PR as the code. Don't improvise in a component.
 
@@ -10,11 +10,12 @@ This is the reference for every visual and interaction decision in the frontend.
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **FE1**                  | Built, tested and wired into FE1 pages.                                                                                                                                                                                |
 | **SG** (styleguide-only) | Built and tested in FE1 and shown on `/styleguide` in every state, but not wired into any FE1 page. The brief requires the component library, so these exist. Page-level wiring waits for the milestone that needs it. |
-| **FE2+**                 | Specified here for later milestones. It is **not** built in FE1. Building it now would be a half-wired feature.                                                                                                        |
+| **FE2**                  | Built, tested and wired into the catalogue's pages in FE2 (the read UI). A component tagged FE2 that was specified in FE1 as FE2+ is now built.                                                                        |
+| **FE2+**                 | Specified here for later milestones (FE3 editing and after). It is **not** built yet. Building it early would be a half-wired feature.                                                                                 |
 
-A component tagged FE1 can still have individual states or variants tagged SG or FE2+. Those are marked inline.
+A component tagged FE1 or FE2 can still have individual states or variants tagged SG or FE2+. Those are marked inline.
 
-**FE1 routes** (the only ones that exist): `/`, `/help`, `/help/contributing`, `/help/faq-for-bards`, `/help/bard-preference-checklist`, `/help/conservation-status`, `/help/licence`, `/settings`, `/auth/login`, `/auth/callback`, `/auth/logout` (POST), `/resources/theme` (POST), `/api/me` (PATCH), `/api/tokens` (POST), `/api/tokens/:tokenId` (DELETE), `/styleguide` (not in production builds), and a catch-all 404. FE1 has **no** `/search`, `/contact` or `/login` route, no flash messages, no dismissible banners, no confirm routes, no `/` keyboard shortcut and no toast actions. Catalogue links and header search go to the original wiki through `app/constants/navigation.ts` (§5.3).
+**Routes.** FE1: `/`, `/help`, `/help/contributing`, `/help/faq-for-bards`, `/help/bard-preference-checklist`, `/help/conservation-status`, `/help/licence`, `/settings`, `/auth/login`, `/auth/callback`, `/auth/logout` (POST), `/resources/theme` (POST), `/api/me` (PATCH), `/api/tokens` (POST), `/api/tokens/:tokenId` (DELETE), `/styleguide` (not in production builds), and a catch-all 404. FE2 adds the catalogue's reads: `/pieces`, `/search`, `/bards`, `/categories`, `/collections`, `/events`, each entity's page (`/pieces/:slug`, `/bards/:slug`, `/categories/:slug`, `/collections/:id`, `/events/:slug`) with its `…/history`, `/revisions/:id`, `/robots.txt`, `/sitemap.xml` and `/sitemap/:type`. There is still **no** `/contact` or `/login` route, no flash messages, no dismissible banners, no confirm routes, no `/` keyboard shortcut and no toast actions. Catalogue links and the header search are on this site; the original wiki is linked only from the help pages' attribution, the footer and the 404 page, through `app/constants/navigation.ts` (§5.3).
 
 **The brief:** _looks like a wiki, but modern and lovely._ People should recognise the wiki layout straight away: a page title with a rule under it, Read / Edit / History tabs, a left nav, a right infobox and category chips at the bottom. That familiarity tells them editing is allowed. The finish should be warm and crafted: firelight, vellum, iron-gall ink and lapis, used with restraint. Light and dark are both first-class designs.
 
@@ -271,7 +272,7 @@ The ratios were computed with the WCAG 2.x relative-luminance formula:
 | `accent` on `hero-glow`              | 3:1   | 5.06:1  | 7.21:1  | hero logo mark                                              |
 | `info-icon` on `surface-raised`      | 3:1   | 6.91:1  | 7.46:1  | toast icon and edge bar                                     |
 | `success-icon` on `surface-raised`   | 3:1   | 6.19:1  | 7.71:1  | toast icon and edge bar                                     |
-| `info-icon` on `surface-sunken`      | 3:1   | 5.62:1  | 9.02:1  | SidebarNote icon                                            |
+| `info-icon` on `surface-sunken`      | 3:1   | 5.62:1  | 9.02:1  | Info icon on sunken                                         |
 | `accent-text` on `surface-sunken`    | 3:1   | 5.45:1  | 10.18:1 | external nav arrow on hover                                 |
 | `fg-muted` on `success-bg`           | 4.5:1 | 7.69:1  | 8.46:1  | muted text in a success alert                               |
 | `border-strong` on `success-bg`      | 3:1   | 3.62:1  | 3.27:1  | token value box and Copy button edge in the reveal          |
@@ -486,20 +487,20 @@ The app shell has `max-width: 90rem` (1440 px) and is centred. The canvas extend
 
 ```
 BROWSE                                  ← group heading
-  ⓘ The catalogue is on its way. Until it opens, these links go to the
-    original Bardic Torch wiki.          ← SidebarNote (caption, fg-muted)
-  Pieces ↗                               → https://bardictorch.miraheze.org/wiki/Category:Pieces
-  Bards ↗                                → …/wiki/Category:Bards
-  Collections ↗                          → …/wiki/Collections
+  Pieces                                 → /pieces
+  Bards                                  → /bards
+  Collections                            → /collections
+  Events and venues                      → /events
+  Categories                             → /categories
 FACETS
-  Genre / kind ↗                         → …/wiki/Category:Genres
-  Mood ↗                                 → …/wiki/Category:Moods
-  Topic ↗                                → …/wiki/Category:Topics
-  Culture ↗                              → …/wiki/Category:Cultures
-  Language ↗                             → …/wiki/Category:Languages
-  Legendaria ↗                           → …/wiki/Category:Legendaria
-  Origin ↗                               → …/wiki/Category:Source_Category
-  Conservation ↗                         → …/wiki/Category:Conservation_Status
+  Genre / kind                           → /categories?facet=kind
+  Mood                                   → /categories?facet=mood
+  Topic                                  → /categories?facet=topic
+  Culture                                → /categories?facet=culture
+  Language                               → /categories?facet=language
+  Legendaria                             → /categories?facet=legendaria
+  Origin                                 → /categories?facet=origin
+  Conservation                           → /categories?facet=conservation
 HELP
   Contributing                           → /help/contributing
   FAQ for bards                          → /help/faq-for-bards
@@ -509,23 +510,14 @@ HELP
 CONTRIBUTE                               ← ContributeCard (see below)
 ```
 
-- The URL map lives in one typed, read-only module, `app/constants/navigation.ts`. Each entry is `{label, href}`, so the catalogue launch (FE2) only changes `href`. Whether a link is external, and to the wiki or elsewhere, follows from its address alone (`externalKind` in `app/components/ui/Link.tsx`, used by every link-like component and the sidebar). The help pages' slugs and sidebar labels are listed once there too (`HELP_PAGES`); the help route, the sidebar, the footer and the home page take their addresses from it. The same module holds the header search target (`https://bardictorch.miraheze.org/w/index.php`, query parameter `search`) and the contact form (`https://forms.gle/wUwWnMKtWZSUisWCA`, until FE4). `bardictorch.miraheze.org` appears only in this module, the help content and the docs (a repo-hygiene test checks this). Every wiki target title must exist in `test/fixtures/wiki-categories.json`, a snapshot taken from the wiki dump.
+- The URL map lives in one typed, read-only module, `app/constants/navigation.ts`. Each entry is `{label, href}`, and every sidebar entry is an internal path. The help pages' slugs and sidebar labels are listed once there too (`HELP_PAGES`); the help route, the sidebar, the footer and the home page take their addresses from it. The module also holds the catalogue search target (`SEARCH`: `/search`, parameter `q`), the contact form (`https://forms.gle/wUwWnMKtWZSUisWCA`, until FE4) and the original wiki's addresses, which are used only for the help pages' attribution, the footer's "Original wiki" link and the 404 page's secondary link. Whether a link is external, and to the wiki or elsewhere, follows from its address alone (`externalKind` in `app/components/ui/Link.tsx`). `bardictorch.miraheze.org` appears only in this module, the help content and the docs (a repo-hygiene test checks this).
 - **Nav item:**
-  - Layout: `flex items-center gap-2 min-h-11 (44px) <lg / min-h-7 (28px) ≥lg`, `px-3`, `rounded-md`, `text-fg-muted`. Focus ring inset (`-outline-offset-2`). The tighter ≥lg rhythm (and the note's `p-2.5`) lets Browse, Facets and the whole Help group fit in an 800 px tall window, clear of the "more below" fade. Only the Browse note's height depends on the sans the reader's system has (how many lines it wraps to); the rows, headings and gaps don't. 32 px rows left too little room: the Help group's last item sat under the fade, and with DejaVu Sans (Ubuntu's default sans, one more note line) it fell 0.6 px below the fold. At 28 px the Help group ends above the fade in the Playwright image's sans and in DejaVu Sans, and in both with 0.1em wider text, which wraps the note further. The e2e check runs all four (docs/TESTING.md, "Fonts").
+  - Layout: `flex items-center gap-2 min-h-11 (44px) <lg / min-h-7 (28px) ≥lg`, `px-3`, `rounded-md`, `text-fg-muted`. Focus ring inset (`-outline-offset-2`). The tighter ≥lg rhythm lets Browse, Facets and the whole Help group fit in an 800 px tall window, clear of the "more below" fade. The rows, headings and gaps don't depend on the sans the reader's system has; only a label that wraps does, and it adds one line to its row. At 1280 × 800 the Help group's last item ends at 692 px, 84 px above the fade's top (776 px), in the Playwright image's sans and in DejaVu Sans (Ubuntu's default sans); with 0.1em wider text DejaVu wraps the longest label, "Bard preference checklist", and the item ends at 706 px. FE1's 32 px rows left too little room for its Browse note, the one block whose height depended on the font: with DejaVu Sans the Help group's last item fell 0.6 px below the fold. The e2e check runs with both sans, plain and with 0.1em wider text (docs/TESTING.md, "Fonts").
   - Hover: `bg-surface-sunken text-fg`.
   - Focus-visible: standard ring.
-  - Current (`aria-current="page"`): `bg-accent-subtle text-accent-text font-semibold`, plus a 3 px `accent` bar on the left inset (`box-shadow: inset 3px 0 0 rgb(var(--bt-accent))`).
+  - Current (`aria-current="page"`, for the section being shown: `/pieces/*`, including a piece's history, marks Pieces; a facet entry is current only on its own `/categories?facet=…`, and Categories is not current while a facet is picked, so one entry is current per page): `bg-accent-subtle text-accent-text font-semibold`, plus a 3 px `accent` bar on the left inset (`box-shadow: inset 3px 0 0 rgb(var(--bt-accent))`).
   - On desktop the 28 px height is above the 24 px minimum (WCAG 2.5.8; ≥lg is a pointer layout).
 - **Taller than the window:** the sidebar scrolls on its own. On each page it scrolls itself (never the page) so the current item is in view and clear of the fade, and while anything is below its fold a 24 px `bg-fade-up` fade sits at its foot (sticky, `aria-hidden`), so the ContributeCard's existence is signalled. The sidebar's end space is padding on an inner wrapper, not on the scroller, so the fade's solid end meets the sidebar's visible foot (a sticky element stops at its scroller's padding edge). The navigation Drawer likewise scrolls its body to the current page's link when it opens.
-- **External nav item:**
-  - Label, then `IconArrowUpRight` 14 px `text-fg-subtle`, pushed to the right with `ml-auto`, `aria-hidden`.
-  - Then `<span class="sr-only"> (opens original wiki)</span>`.
-  - It opens in the **same tab**. We don't force new windows, and the hidden text describes the destination, not the window.
-  - On hover the arrow moves 2 px up-right (`motion-safe:transition-transform`, 120 ms; no movement under reduced motion) and turns `text-accent-text`.
-- **SidebarNote:**
-  - `flex gap-2 p-3 mb-2 rounded-lg bg-surface-sunken caption text-fg-muted`, with `IconInfoCircle` 16 px `text-info-icon`.
-  - Text: "The catalogue is on its way. Until it opens, these links go to the original Bardic Torch wiki."
-  - It is plain text, not a live region.
 - **ContributeCard:**
   - `rounded-lg border border-border bg-surface p-4`.
   - The logo mark sits at 20 px, with the heading "Keep the torch lit" (`h4`) and the text "Anyone can add a piece, a link or a performance." (`body-sm text-fg-muted`).
@@ -539,11 +531,11 @@ CONTRIBUTE                               ← ContributeCard (see below)
 - The **page head** has these parts, in order:
   1. Breadcrumbs (optional, caption).
   2. `h1`.
-  3. Optional subtitle or meta line (`body-sm text-fg-muted`, for example "Song · 1994"; FE2+). Help pages have none: the breadcrumb already says "Help".
+  3. Optional subtitle or meta line (`body-sm text-fg-muted`, for example "Song · 1994"; built in FE2 on every entity head). Help pages have none: the breadcrumb already says "Help".
   4. The **tab row**, which sits on the title rule. The rule is the tab row's 1 px `border-border` bottom border, running the full sheet width. When a page has only one view (every FE1 page), the row holds a non-interactive "Read" label instead of tabs (§6.9).
   5. 24 px gap, then content.
 - The right of the tab row holds page meta (`caption text-fg-subtle`, for example "Adapted from the original wiki ↗" on help pages, or "Last edited 3 Oct 2026" in FE2+). It wraps under the label below sm rather than hiding, because on help pages it is the only source link.
-- Below the tab row, the order is: optional status banners (pending, stub, restricted; FE2+), then content (infobox first in source order), then category chips, then the licence meta line.
+- Below the tab row, the order is: optional status banners (stub, restricted and prefers-no-page, built in FE2; pending is FE3), then content (infobox first in source order), then category chips, then the licence meta line.
 
 ### 5.5 Infobox placement
 
@@ -573,25 +565,25 @@ These show a help page (`/help/conservation-status`), signed in. Signed out, the
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
-│ [skip] 🔥 Bardic Torch     [🔍 Search the original wiki…      ]  Theme [▣ System|☀ Light|☾ Dark] (JD ▾)│ 64
+│ [skip] 🔥 Bardic Torch     [🔍 Search the catalogue…        ]  Theme [▣ System|☀ Light|☾ Dark] (JD ▾)│ 64
 ├──────────────────────────────────────────────────────────────────────────────────────────────┤
 │ BROWSE               ┌───────────────────────────────────────────────────────────────────────┐ │
-│ ┌ⓘ Catalogue on its ┐│ Help › Conservation status                                            │ │
-│ │ way; links go to  ││ Conservation status                                     (h1 Fraunces) │ │
-│ │ the original wiki.││                                                                       │ │
-│ └───────────────────┘│ Read (label, not a tab)           Adapted from the original wiki ↗    │ │
-│ Pieces            ↗ │ ───────────────────────────────────────────────────────────────────── │ │
-│ Bards             ↗ │                                              ┌─ ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀ ─┐ │ │
-│ Collections       ↗ │ Conservation statuses help flag works that   │  At a glance (h2)     │ │ │
+│ Pieces               │ Help › Conservation status                                            │ │
+│ Bards                │ Conservation status                                     (h1 Fraunces) │ │
+│ Collections          │                                                                       │ │
+│ Events and venues    │ Read (label, not a tab)           Adapted from the original wiki ↗    │ │
+│ Categories           │ ───────────────────────────────────────────────────────────────────── │ │
+│                      │                                              ┌─ ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀ ─┐ │ │
+│                      │ Conservation statuses help flag works that   │  At a glance (h2)     │ │ │
 │ FACETS               │ may need more work to preserve them …        │  STATUSES (h3)        │ │ │
-│ Genre / kind      ↗ │                                              │  Low risk             │ │ │
-│ Mood              ↗ │ Contents                                     │  Endangered           │ │ │
-│ Topic             ↗ │  1 Low risk  2 Endangered  3 …               │  Critically endangered│ │ │
-│ Culture           ↗ │                                              │  Restricted           │ │ │
-│ Language          ↗ │ Low risk                         (h2)        │  Not yet assessed     │ │ │
-│ Legendaria        ↗ │ ───────────────────────────                  └───────────────────────┘ │ │
-│ Origin            ↗ │ A work is low risk if it exists in at least four places …              │ │
-│ Conservation      ↗ │  • Recordings on YouTube                                              │ │
+│ Genre / kind         │                                              │  Low risk             │ │ │
+│ Mood                 │ Contents                                     │  Endangered           │ │ │
+│ Topic                │  1 Low risk  2 Endangered  3 …               │  Critically endangered│ │ │
+│ Culture              │                                              │  Restricted           │ │ │
+│ Language             │ Low risk                         (h2)        │  Not yet assessed     │ │ │
+│ Legendaria           │ ───────────────────────────                  └───────────────────────┘ │ │
+│ Origin               │ A work is low risk if it exists in at least four places …              │ │
+│ Conservation         │  • Recordings on YouTube                                              │ │
 │ HELP                 │                                                                       │ │
 │▌Conservation status  │ ───────────────────────────────────────────────────────────────────── │ │
 │ Contributing         │ CATEGORIES  (Help) (Conservation)                                     │ │
@@ -664,9 +656,9 @@ Drawer (open, bottom sheet from the bar, max-height 85dvh):
 ┌──────────────────────────────────┐
 │ ── (grab bar, decorative)        │
 │ Site menu (h2)              (✕)  │ ← close button gets focus on open
-│ [🔍 Search the original wiki… ]  │
-│ BROWSE  ⓘ note                   │
-│ Pieces                        ↗  │  items 44 px tall
+│ [🔍 Search the catalogue…     ]  │
+│ BROWSE                           │
+│ Pieces                           │  items 44 px tall
 │ …                                │  (list scrolls; scroll-padding-bottom
 │ HELP …                           │   = sticky bar height)
 │ Keep the torch lit [Start]       │
@@ -698,39 +690,42 @@ Drawer (open, bottom sheet from the bar, max-height 85dvh):
 
 Generic components live in `app/components/ui/`. App-specific ones (ThemeToggle, LogoMark, Wordmark, AccountMenu, SearchBox, TOC, HelpLinks and so on) live in `app/components/`. Each has a styleguide entry (§10.6) and a `*.test.tsx`. Unless a component says otherwise, the shared rules below apply.
 
-| Component                               | Tag | FE1 use                                                        |
-| --------------------------------------- | --- | -------------------------------------------------------------- |
-| Button (6.2)                            | FE1 | Everywhere                                                     |
-| Link (6.3)                              | FE1 | Everywhere                                                     |
-| Field, Input (6.4, 6.5)                 | FE1 | Settings                                                       |
-| Textarea, Select, Checkbox (6.6–6.8)    | SG  | None in FE1                                                    |
-| Tabs (6.9): Read label                  | FE1 | Every page head                                                |
-| Tabs (6.9): page-link tabs and tablist  | SG  | Styleguide (the tablist drives the theme preview)              |
-| Infobox (6.10)                          | FE1 | Help pages ("At a glance")                                     |
-| Card (6.11)                             | FE1 | Home, help index                                               |
-| Chip / TagList (6.12)                   | FE1 | Category chips, home facet chips                               |
-| ConservationBadge (6.13)                | FE2 | Piece lists (`/pieces`, §10.7); FE1 wrote status names as text |
-| Alert (6.14)                            | FE1 | Settings, home, noscript notice                                |
-| Banner (6.14): page states (PageBanner) | FE2 | None in FE1 (stub, restricted, prefers no page)                |
-| EmptyState (6.15)                       | FE1 | No API tokens; no matching pieces (§10.7)                      |
-| ErrorState (6.16)                       | FE1 | 404, error boundaries, catalogue failures (§10.7)              |
-| Spinner (6.17)                          | FE1 | Button loading                                                 |
-| Skeleton (6.18)                         | SG  | None in FE1 (SSR pages render real content)                    |
-| Breadcrumbs (6.19)                      | FE1 | Help pages                                                     |
-| Pagination (6.20)                       | FE2 | `/pieces` (§10.7); none in FE1                                 |
-| Drawer (6.21)                           | FE1 | Navigation <lg                                                 |
-| Dialog (6.22)                           | FE1 | Revoke-token confirm                                           |
-| Toast (6.23)                            | FE1 | Settings feedback                                              |
-| ThemeToggle (6.24)                      | FE1 | Header from md; drawer (and the no-JS site menu) below md      |
-| AccountMenu (6.25)                      | FE1 | Header / bottom bar                                            |
-| SearchBox (6.26)                        | FE1 | Header, drawer, home hero (searches the original wiki)         |
-| TOC (6.27)                              | FE1 | Help pages with ≥4 h2s                                         |
-| LetterBar (6.29)                        | FE2 | `/pieces` (§10.7)                                              |
-| TermTree (10.12)                        | FE2 | `/categories` (§10.12)                                         |
-| LogoMark, Wordmark (5.9)                | FE1 | Header, footer, EmptyState art                                 |
-| SidebarNote, ContributeCard (5.3)       | FE1 | Sidebar and drawer                                             |
-| HelpLinks (5.7)                         | FE1 | Every footer and the root error page                           |
-| Progress indicator (7.1)                | FE1 | Client navigations                                             |
+| Component                                  | Tag | FE1 use                                                      |
+| ------------------------------------------ | --- | ------------------------------------------------------------ |
+| Button (6.2)                               | FE1 | Everywhere                                                   |
+| Link (6.3)                                 | FE1 | Everywhere                                                   |
+| Field, Input (6.4, 6.5)                    | FE1 | Settings                                                     |
+| Textarea, Select (6.6, 6.7)                | SG  | None yet                                                     |
+| Checkbox (6.8)                             | FE2 | Facet filters, kind filters                                  |
+| Tabs (6.9): Read label                     | FE1 | Every page head                                              |
+| Tabs (6.9): page-link tabs (Read, History) | FE2 | Every entity page; the in-page tablist is SG (theme preview) |
+| Infobox (6.10)                             | FE1 | Help pages ("At a glance")                                   |
+| Card (6.11)                                | FE1 | Home, help index                                             |
+| Chip / TagList (6.12)                      | FE2 | Category chips (overflow, current chip), home chips          |
+| ConservationBadge (6.13)                   | FE2 | Piece lists, pages and infoboxes, home card, `/categories`   |
+| Alert (6.14)                               | FE1 | Settings, home, noscript notice                              |
+| Banner (6.14): page states (PageBanner)    | FE2 | Piece and bard pages (stub, restricted, prefers no page)     |
+| EmptyState (6.15)                          | FE1 | No API tokens; no matching pieces (§10.7)                    |
+| ErrorState (6.16)                          | FE1 | 404, error boundaries, catalogue failures (§10.7)            |
+| Spinner (6.17)                             | FE1 | Button loading                                               |
+| Skeleton (6.18)                            | SG  | None in FE1 (SSR pages render real content)                  |
+| Breadcrumbs (6.19)                         | FE2 | Help pages and entity pages (collapse at 360 px)             |
+| Pagination (6.20)                          | FE2 | Every list and every history                                 |
+| Drawer (6.21)                              | FE1 | Navigation <lg                                               |
+| Dialog (6.22)                              | FE1 | Revoke-token confirm                                         |
+| Toast (6.23)                               | FE1 | Settings feedback                                            |
+| ThemeToggle (6.24)                         | FE1 | Header from md; drawer (and the no-JS site menu) below md    |
+| AccountMenu (6.25)                         | FE1 | Header / bottom bar                                          |
+| SearchBox (6.26)                           | FE2 | Header, drawer, home hero, search page (the catalogue)       |
+| TOC (6.27)                                 | FE1 | Help pages with ≥4 h2s                                       |
+| FacetForm, FacetDrawer (6.28)              | FE2 | `/pieces`, `/bards`, `/collections` filters                  |
+| LetterBar (6.29)                           | FE2 | `/pieces`, `/bards`, `/collections` (§10.7)                  |
+| LinkGroups, LicensingCard, Diff (6.30)     | FE2 | Piece and bard pages, revisions                              |
+| TermTree (10.12)                           | FE2 | `/categories` (§10.12)                                       |
+| LogoMark, Wordmark (5.9)                   | FE1 | Header, footer, EmptyState art                               |
+| ContributeCard (5.3)                       | FE1 | Sidebar and drawer                                           |
+| HelpLinks (5.7)                            | FE1 | Every footer and the root error page                         |
+| Progress indicator (7.1)                   | FE1 | Client navigations                                           |
 
 ### 6.1 Shared rules
 
@@ -856,7 +851,7 @@ Help text that explains format.       ← caption text-fg-muted, id="{id}-help"
 
 ### 6.8 Checkbox
 
-**Tag: SG.**
+**Tag: FE2** (the facet and kind filters; FE1 had it as SG).
 
 - Use a native `<input type="checkbox">` with `appearance: none`: 20 × 20 px, `rounded-sm`, `border-2 border-border-strong`, `bg-surface-raised`.
   - **Checked:** `bg-accent border-accent`, with an `IconCheck` (stroke 3) in `accent-fg` laid over the box (`pointer-events-none`, shown by `peer-checked:`). An overlaid SVG rather than a CSS mask keeps the tick a token colour and needs no data URI.
@@ -873,7 +868,7 @@ Help text that explains format.       ← caption text-fg-muted, id="{id}-help"
 
 ### 6.9 Tabs
 
-**(a) Page tabs: Read / Edit / History** (**SG** in FE1; wired from FE2+). These are wiki navigation, so they are **links**, not a tablist.
+**(a) Page tabs: Read / Edit / History** (**FE2**: Read and History are wired on every entity page; Edit is FE3). These are wiki navigation, so they are **links**, not a tablist.
 
 ```
 Read   Edit   History                         Last edited 3 Oct 2026
@@ -939,7 +934,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
 
 ### 6.12 Chip / TagList (category chips)
 
-**Tag: FE1.** The current-chip state is **SG** (no FE1 term pages). Overflow is **FE2**.
+**Tag: FE2.** The current-chip state (a category's own page) and the overflow ("Show all {n}" past 12) are built in FE2.
 
 - The list is `<ul class="flex flex-wrap gap-2" role="list">`, and each item is a link chip.
 - **Chip:**
@@ -950,7 +945,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
   - Focus-visible: the ring.
   - Current (on its own term page): `aria-current="page"`, `bg-accent-subtle text-accent-text border-accent`. The focus ring is inset here, on `accent-subtle` (§2.7).
   - Disabled does not exist.
-- **External chips** (FE1, pointing at the old wiki) get a trailing `IconArrowUpRight` 14 plus `sr-only` "(opens original wiki)".
+- **External chips** (a chip to another site) get a trailing external mark, `IconArrowUpRight` 14 plus `sr-only` "(external link)" ("(opens original wiki)" for the wiki). No FE2 page renders one: every chip is an internal category or filter link.
 - **Empty:** if a page has no categories, show `caption text-fg-subtle` "No categories yet." with an Edit link for editable pages (FE3).
 - **Overflow:** more than 12 chips collapse behind a "Show all {n}" ghost `sm` button under the list (a disclosure: `aria-expanded`, `aria-controls` on the list). Pressing it shows the rest and relabels it "Show fewer"; focus stays on the button. The hidden chips are `hidden`, so Tab skips them. Without JS, and before hydration, all chips are shown and there is no button.
 
@@ -1002,7 +997,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
   - a title (h3)
   - a body (body-sm fg-muted, ≤2 sentences)
   - one primary or secondary action
-- **Semantics:** a plain `<section aria-labelledby>` (id from `useId()`). It is not live. (FE2+: when it replaces search results, the results-count status region announces "No results".)
+- **Semantics:** a plain `<section aria-labelledby>` (id from `useId()`). It is not live. (When it replaces search results, the results-count status region announces "No results".)
 - **Components:** `EmptyState` (`title`, body, `action`, `headingLevel` 3 by default) and its art `UnlitMark` (`app/components/LogoMark.tsx`): the handle and cresset `fill-current text-fg-subtle`, the flame `stroke-border-strong` with `vector-effect: non-scaling-stroke`, so the outline is exactly 1.5 px at every size.
 
 ### 6.16 ErrorState
@@ -1015,6 +1010,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
 - **Components** (`app/components/ui/ErrorState.tsx`):
   - `TryAgain` (`variant`, `size`): with JS a Button that calls `useRevalidator().revalidate()` and is `loading` while the loaders run (a successful revalidation also clears an error boundary). In the server render and before hydration it is a `ButtonLink reloadDocument` to the current path and query, so it works without JS.
   - `SectionError` (`title`, cause): the inline form, a danger Alert with a `sm` TryAgain.
+  - `UnderPageHead`: wraps the error a child route shows under its layout's head (a category's members, a history), so its heading is an `h2` (`text-h2`) and the page keeps its one `h1`. An error that replaces the whole page keeps the `h1`.
   - `ErrorState` (`title`, body, `reference`, `actions`, `art`): the page form. `art="broken"` (default) is the UnlitMark at 64 px with a dashed outline; `art="missing"` (404, §10.4) is the plain unlit torch at 64 px. When it mounts after hydration (an error during a client navigation), focus moves to the h1 (`tabindex="-1"`); a server-rendered error page leaves focus alone.
 
 ### 6.17 Spinner
@@ -1037,7 +1033,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
 
 ### 6.19 Breadcrumbs
 
-**Tag: FE1.** The collapse is **FE2** (FE1 crumbs are two deep).
+**Tag: FE2.** The collapse (past three crumbs at 360 px) is built; FE1's crumbs were two deep.
 
 - `<nav aria-label="Breadcrumb"><ol>` containing links, with the last item `<span aria-current="page">` in `text-fg-muted`, not a link. The separator is `IconChevronRight` 14 `text-fg-subtle aria-hidden`, an inline SVG in a `separated-list-mark` that starts every item (CSS `::before` can't draw a token-coloured Tabler icon without a data URI). The `ol` is a `separated-list separated-list-tight` (§5.7): the chevron that would start a line is clipped, so when the trail wraps no chevron dangles at either end of a line. Text is caption, links are `text-link` with no underline (underline on hover), and each link is `inline-flex min-h-6 items-center` (§6.1, WCAG 2.5.8).
 - Component: `Breadcrumbs` (`trail: [{label, to}, …]`, `current`), `ol role="list"` with `gap-y-2`.
@@ -1046,7 +1042,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
 
 ### 6.20 Pagination
 
-**Tag: SG.**
+**Tag: FE2** (every list and history; FE1 had it as SG).
 
 - `<nav aria-label="Pagination">` containing: "Previous" (`IconChevronLeft` + text), page numbers, and "Next". These are links with `?page=n`.
 - **Items:** `min-w-11 h-11 rounded-md body-sm` (44 px). The current page is `aria-current="page"`, `bg-accent text-accent-fg font-semibold`, and is a `span`, not a link, so it never takes focus (an inset ring on `accent` would be invisible, §2.6). Hover is `bg-surface-sunken`.
@@ -1191,7 +1187,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
 
 ### 6.26 SearchBox
 
-**Tag: FE2** (FE1 searched the original wiki).
+**Tag: FE2** (built; FE1 searched the original wiki).
 
 - **Markup:** `<Form role="search" method="get" action="/search">` (target and parameter name from `SEARCH` in `app/constants/navigation.ts`), with `<label for={inputId} class="sr-only">Search the catalogue</label>` and `<input type="search" id={inputId} name="q" autocomplete="off" enterkeyhint="search">`, prefilled by `defaultValue` on the search page. The placeholder is "Search pieces and bards…" at `lg` size, and "Search…" in the header field while it is narrow (md), so it is never cut mid-word; from the lg breakpoint, where the header field is wide, the long text is drawn over the field instead (an `aria-hidden` hint shown while the field is empty).
 - **Visual:** Input styling at `h-10` (40 px, header md+) or `h-11` (drawer, search sheet, home hero and the search page), `rounded-full`, with a leading `IconSearch` 18 `fg-subtle`. The submit button is a trailing ghost icon button (`IconSearch`, named "Search", no external mark), always present so the form works without Enter: 44 × 44 px at `lg` size (the input is `pr-12`), and 32 px in the 40 px header field with its hit area padded to 44 px below lg (`before:-inset-1.5`, as Button `sm`). Its hover wash is `bg-fg-10`, a decorative see-through tint (§2.6), because a `surface-sunken` wash would vanish on the dark field, which is itself `surface-sunken`.
@@ -1216,7 +1212,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
 **Tag: FE2.**
 
 - **What it is:** `FacetForm` (`app/components/facets/FacetForm.tsx`), one `<Form method="get" action="/pieces">`: a `FacetGroup` fieldset per facet (Kind, the term facets mood … other, Conservation status), the "Page state" radios (All pages / Stubs only / Hide stubs) and "Apply filters" (secondary `sm`, never hidden). `q` and `letter` ride along as hidden inputs when set; the page doesn't (new filters start at page 1). The groups come from `facetGroups` (`app/catalogue/facet-groups.ts`): the API's slug counts joined with the term tree (`term-index.ts`).
-- **An option** is a Checkbox row named "Warlike, 31 pieces" and showing "Warlike (31)" (the count `aria-hidden`, `text-fg-muted`, `tabular-nums`). The count is the API's disjunctive one, never "+N". A term is indented one step (`pl-6`, then `pl-12`, `pl-16`) per level under its parent. An option nothing would match is disabled and greyed (`text-fg-subtle`, "(0)") unless it is ticked. Two options of a facet with one display name show their full names. Past 8 options a group shows the first 8 and every ticked one, then a native `<details>` "Show all {n}" (`summary-plain`, `text-link`, 44 px below lg) with the rest: closed, its boxes are still submitted.
+- **An option** is a Checkbox row named "Warlike, 31 pieces" and showing "Warlike (31)" (the visible text, count included, is `aria-hidden`; the count is `text-fg-muted` and `tabular-nums`). The name is one `sr-only` run, "Warlike, 31 pieces": a comma in a second `sr-only` span would get a space before it (an absolutely positioned span counts as a block in the accessible name), so the label is written out whole. The count is the API's disjunctive one, never "+N". A term is indented one step (`pl-6`, then `pl-12`, `pl-16`) per level under its parent. An option nothing would match is disabled and greyed (`text-fg-subtle`, "(0)") unless it is ticked. Two options of a facet with one display name show their full names. Past 8 options a group shows the first 8 and every ticked one, then a native `<details>` "Show all {n}" (`summary-plain`, `text-link`, 44 px below lg) with the rest: closed, its boxes are still submitted.
 - **The order** ("Sort by", only with `q`) sits above the results but belongs to the form (`form={id}`); "Best match", the default, sends an empty `sort`, as "All pages" sends an empty `stub`. The loader takes those empty values as no value (`blankable`), so the form's own GET is answered 200. With JS the select applies on change; without JS a "Sort" submit beside it sends the form.
 - **Where it is:** `<section id="filters">` with its h2 "Filters", after the results and Pagination in the DOM at every width (WCAG 1.3.2, 2.4.3). From **xl** `grid-cols-browse` lifts it into a 16 rem left column, and a "Skip to filters" link (visible on focus) follows the page heading. Below xl a secondary "Filters ({n} selected)" link (`IconFilter`, 44 px) after the chips jumps to it.
 - **With JS** it never submits itself: Apply goes straight to the canonical URL (`useCanonicalSubmit`, `app/components/catalogue/canonical-form.tsx`). From xl every change applies at once (`autoSubmit`, from `useMediaQuery("(min-width: 1280px)")`), the old results staying, `aria-busy`, until the new ones are in. The form is keyed on the canonical query, so a chip, a letter or Back rebuilds it from the URL; the box focused last is focused again after the rebuild.
@@ -1275,7 +1271,7 @@ Read   Edit   History                         Last edited 3 Oct 2026
 The shape is always a title, one or two sentences, and one action. See §11 for copy. Examples:
 
 - **No API tokens (FE1):** "No tokens yet" / "Create a token to let tools like an MCP client work with Bardic Torch for you." / [Create token].
-- **No search results (FE2+):** see §11.3. FE1 has no search page: search goes to the original wiki.
+- **No search results (FE2):** see §11.3 and the search page (§10.11).
 - **No categories (FE1):** the inline caption (§6.12).
 
 ### 7.3 Errors: inline vs page
@@ -1399,7 +1395,7 @@ Content pages write their meta one way, with `pageMeta(args, {title, description
 
 ### 10.1 Home (`/`)
 
-**Tag: FE1.** There are no tabs and no Read label. The sheet has no title rule: the hero replaces the page head.
+**Tag: FE2** (FE1's placeholder home sent browsing to the original wiki). There are no tabs and no Read label. The sheet has no title rule: the hero replaces the page head.
 
 ```
 ┌ sheet (bg-surface) ──────────────────────────────────────────────┐
@@ -1410,9 +1406,10 @@ Content pages write their meta one way, with `pageMeta(args, {title, description
 │   Bardic Torch is a community-kept index of SCA bardic pieces    │ body-lg fg-muted, ≤60ch
 │   and the bards who made them — so they can be found, sung and   │
 │   passed on.                                                     │
-│   [How to contribute] (primary lg)  [Browse on the original      │
-│                                      wiki ↗] (secondary lg)      │
-│   [🔍 Search the original wiki…            ] (SearchBox h-11)     │
+│   [Browse pieces] (primary lg)      [How to contribute]          │
+│                                      (secondary lg)              │
+│   [🔍 Search the catalogue…               ] (SearchBox h-11)      │
+│   142 pieces and 61 people and groups so far      (body-sm)      │
 ├──────────────────────────────────────────────────────────────────┤
 │  Why Bardic Torch                                    (h2 + rule)  │
 │  ┌ An index, not ┐ ┌ Links only ───┐ ┌ Keep works ───┐            │ 3 static Cards in a
@@ -1420,9 +1417,9 @@ Content pages write their meta one way, with `pageMeta(args, {title, description
 │  │ We make       │ │ lyrics, audio │ │ Some works …  │            │ 2+1 md, 3 col ≥lg)
 │  │ existing …    │ │ or video …    │ │ [statuses →]  │            │
 │  └───────────────┘ └───────────────┘ └───────────────┘            │
-│  Start exploring on the original wiki                (h2)        │
-│  TagList md: (Songs ↗)(Poems ↗)(Stories ↗)(Singalong ↗)(Warlike ↗)│
-│  (Norse ↗)(Arthuriana ↗) …   + every facet in the nav            │
+│  Start exploring                                     (h2)        │
+│  TagList md: (Song (120))(Poem (6)) …(Mood: Joyful)(Topic: War)  │
+│  All categories · Collections · Events and venues                │
 │  For bards                                           (h2)        │
 │  Short paragraph + [FAQ for bards] [Bard preference checklist]    │
 │  ┌ info Alert (not dismissible) ──────────────────────────────┐   │
@@ -1435,15 +1432,14 @@ Content pages write their meta one way, with `pageMeta(args, {title, description
 - **Hero copy**, adapted from the wiki Main Page:
   - Heading (h1): "Find the songs, stories and poems of the bardic community."
   - Lead: "Bardic Torch helps bards find where a piece's words, music, history, context and etiquette live, and helps audiences find that song they loved around the campfire but forgot the title of. We gather the bardic community's scattered songbooks, playlists and album pages into one index, so works can be found, sung and passed on." (The judged home copy, `content-drafts/home.md`, except its opening: "find music, lyrics, history…" read as a lyrics site to a skimmer, against "links only, never lyrics"; "find where … live" says the same thing as an index. Longer than the first sketch, still ≤ 60ch per line.)
-  - Catalogue note under the buttons (`body-sm fg-muted`): "The catalogue is moving here soon. Until it opens, you can browse every piece and bard on the original Bardic Torch wiki."
-- **Calls to action.** The primary action stays on this site: **"How to contribute"** (primary `lg`, to `/help/contributing`). The catalogue isn't here yet, so the honest secondary action is **"Browse on the original wiki ↗"** (secondary `lg`, external, with `sr-only` "(opens original wiki)" after the visible label, so the visible label starts the accessible name, WCAG 2.5.3).
+- **Calls to action.** **"Browse pieces"** (primary `lg`, to `/pieces`) and **"How to contribute"** (secondary `lg`, to `/help/contributing`). The search under them searches the catalogue (`/search?q=`, §6.26). Under the search, a `body-sm fg-muted` line says how big the catalogue is: "{n} pieces and {m} people and groups so far" (`persons` include groups, historical figures and stubs, so "bards" would overstate). If either count can't be read the line is left out and a SectionError appears under "Start exploring".
 - **Why cards** (`static` Card variant, §6.11), from the judged home copy. The "links only" message is the end of card 1, creator's wishes included:
   1. **An index, not an archive**: "Bardic works are spread across many songbooks, playlists and album pages. We don't replace them. We link to them and make them findable by mood, topic, culture, origin and more. We never host lyrics, recordings or video: every piece points to where it already lives, and to its creator's wishes about sharing."
-  2. **Every version, everywhere**: "We link to each version of the words and each performance, wherever it lives online or in print. Some works exist in only one or two places. When you find an endangered piece, add a link or host a copy, and help pass the torch." It ends with a text link, "How conservation statuses work", to `/help/conservation-status`. (ConservationBadge examples are FE2+.)
+  2. **Every version, everywhere**: "We link to each version of the words and each performance, wherever it lives online or in print. Some works exist in only one or two places. When you find an endangered piece, add a link or host a copy, and help pass the torch." It ends with a text link, "How conservation statuses work", to `/help/conservation-status`. Under the text, three static `sm` ConservationBadges (Endangered, Critically endangered, Low risk), each followed by a plain link ("Browse endangered pieces", …) to `/pieces?status=…`. The badge itself is not the link: its link variant goes to the help page (§6.13).
   3. **Anyone can contribute**: "You don't have to be a bard, and no contribution is too small. Log in, add what you know, and a moderator will review it before it goes live. That way the index can keep growing beyond what any one person could maintain." It ends with a text link, "How to contribute".
 - **For bards:** the paragraph from the home copy, then two secondary buttons, "FAQ for bards" and "Bard preference checklist", then the non-affiliation info Alert.
-- **Built as (FE1):** `app/routes/_index.tsx`. The hero panel is `rounded-xl bg-hero` (the radial glow, Appendix A). Each section is a `<section>` labelled by its h2 (with the rule). The chips are the sidebar's facets (`FACETS` in `navigation.ts`).
-- **Facet chips** come **after** the Why cards, under a heading that says where they go ("Start exploring on the original wiki"). Every chip is an external old-wiki chip (§6.12).
+- **Built as (FE2):** `app/routes/_index.tsx`, with a loader that reads `listPieces?limit=1`, `listPersons?limit=1` and `listTerms` anonymously. The hero panel is `rounded-xl bg-hero` (the radial glow, Appendix A). Each section is a `<section>` labelled by its h2 (with the rule). A failed read never fails the page: its region says so with a SectionError and "Try again".
+- **Start exploring** comes **after** the Why cards. Its chips are the piece kinds with their counts (`/pieces?kind=song`, from the facet counts) and the three most-used moods and topics (`/categories/{slug}`), all internal. Then plain links to "All categories", "Collections" and "Events and venues".
 - **Hero visual:** a soft radial gradient from the top-left, `accent-glow` at 18 % (light) or 8 % (dark) fading to transparent, composited **over `surface` only** (never over `accent-subtle`). Its strongest point is the `hero-glow` token, and every pair on the hero is checked against it in §2.7. The 48 px mark sits above the heading. There is no image.
 - **Name note** (caption, fg-subtle, bottom of the sheet): "The name has two meanings: a torch to search by, and passing the torch so works are kept for the next generation."
 - **Mobile:** the hero buttons stack full width (`lg`), primary first, then the search.
@@ -1462,7 +1458,7 @@ Content pages write their meta one way, with `pageMeta(args, {title, description
 - **TOC** when there are ≥4 h2s (§6.27).
 - Prose in `.prose-bt`.
 - **Template (FE1):** `WikiPage` (`app/components/WikiPage.tsx`): `title`, `breadcrumbs?` (Breadcrumbs props), `meta?` (the tab row's right end), `infobox?`, `intro?`, `contents?` (TOC entries), `categories?` (TagList tags; the chip row is `<nav>` labelled by its "Categories" h2), `licence?` (the footer meta line) and the prose as children. The Read label's `to` is the current path.
-- Category chips at the bottom (e.g. "Help", "Conservation"). In FE1 these are internal links to `/help`, or external to the old wiki category ↗.
+- Category chips at the bottom (e.g. "Help", "Conservation"): internal links, to `/help` or to the category's page (`/categories?facet=conservation`).
 - **Footer meta line** (caption fg-subtle): "This page is available under CC BY-SA 4.0. Adapted from 'Conservation Status' on the original Bardic Torch wiki by its contributors."
 - **Content pages in FE1:** `contributing`, `faq-for-bards`, `bard-preference-checklist`, `conservation-status`, `licence`, plus an index at `/help`. The index is a `ul role="list"` of `link` Cards.
 - Help pages are **Markdown** (`.md`, compiled by `@mdx-js/rollup` with `format: "md"`), with `:::note`, `:::warning` and `:::infobox` directives that map to Alert and Infobox. They are reviewed for tone (§11) and adapted rather than copied verbatim. Remove the wiki's mobile warning and "make an account on Miraheze" instructions.
@@ -1706,12 +1702,12 @@ The pattern is: what happened, then what to do. Don't blame the reader, and don'
 
 ### 11.3 Empty states
 
-| Where                    | Title                   | Body                                                                             | Action             |
-| ------------------------ | ----------------------- | -------------------------------------------------------------------------------- | ------------------ |
-| API tokens               | "No tokens yet"         | "Create a token to let tools like an MCP client work with Bardic Torch for you." | Create token       |
-| No search results (FE2)  | "Nothing matches '{q}'" | "Try a shorter search, or browse by mood or topic."                              | Browse pieces      |
-| No categories            | —                       | "No categories yet."                                                             | Edit (if editable) |
-| Stub with no links (FE2) | "No links yet"          | "Know where this piece lives online or in print? Add the first link."            | Add a link         |
+| Where                    | Title                   | Body                                                                             | Action                                   |
+| ------------------------ | ----------------------- | -------------------------------------------------------------------------------- | ---------------------------------------- |
+| API tokens               | "No tokens yet"         | "Create a token to let tools like an MCP client work with Bardic Torch for you." | Create token                             |
+| No search results (FE2)  | "Nothing matches '{q}'" | "Try a shorter search, or browse by mood or topic."                              | Browse pieces                            |
+| No categories            | —                       | "No categories yet."                                                             | Edit (if editable)                       |
+| Stub with no links (FE2) | "No links yet"          | "Know where this piece lives online or in print? Add the first link."            | How to contribute (until FE3 adds links) |
 
 ### 11.4 Fixed strings
 
@@ -1720,7 +1716,6 @@ The pattern is: what happened, then what to do. Don't blame the reader, and don'
 - External old-wiki link suffix (screen readers): "(opens original wiki)". Other external links: "(external link)".
 - Settings without JS: "Changing your settings needs JavaScript. Everything else on Bardic Torch works without it."
 - Theme toggle group label: "Theme". Options: "System", "Light", "Dark".
-- Sidebar note: "The catalogue is on its way. Until it opens, these links go to the original Bardic Torch wiki."
 
 ---
 

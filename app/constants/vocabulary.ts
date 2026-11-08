@@ -54,6 +54,17 @@ export const CONSERVATION_LABELS: Readonly<Record<ConservationStatus, string>> =
     unassessed: "Not yet assessed",
   };
 
+/** "Browse endangered pieces": each status's link to the pieces with it. */
+export const BROWSE_STATUS_LABELS: Readonly<
+  Record<ConservationStatus, string>
+> = {
+  low_risk: "Browse low-risk pieces",
+  endangered: "Browse endangered pieces",
+  critically_endangered: "Browse critically endangered pieces",
+  restricted: "Browse restricted pieces",
+  unassessed: "Browse pieces not yet assessed",
+};
+
 /**
  * Each status's row id on the conservation help page: the row's first cell
  * slugged like a heading, so hyphenated (FE1's anchors, which other pages and

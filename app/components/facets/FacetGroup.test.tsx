@@ -51,15 +51,18 @@ describe("FacetGroup", () => {
   it("names each box with its count in words, and shows the count in brackets", () => {
     render(<FacetGroup group={MOOD} />);
     const warlike = screen.getByRole("checkbox", {
-      // "Warlike, 31 pieces" in a browser; the test setup spaces inline children.
-      name: /^Warlike ?, 31 pieces$/,
+      // Exactly as a screen reader says it: no space before the comma.
+      name: "Warlike, 31 pieces",
     });
     expect(warlike).toHaveAttribute("name", "term");
     expect(warlike).toHaveAttribute("value", "warlike");
     expect(warlike).toBeChecked();
-    expect(screen.getByText("(31)")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByText("(31)").closest("[aria-hidden]")).toHaveAttribute(
+      "aria-hidden",
+      "true"
+    );
     expect(
-      screen.getByRole("checkbox", { name: /^Battle-cries.*1 piece$/ })
+      screen.getByRole("checkbox", { name: "Battle-cries, 1 piece" })
     ).not.toBeChecked();
   });
 

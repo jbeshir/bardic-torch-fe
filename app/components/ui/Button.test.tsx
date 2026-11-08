@@ -256,11 +256,11 @@ describe("ButtonLink", () => {
   it("marks an external target with an icon and a hidden suffix after the label", async () => {
     await renderWithRouter(
       <ButtonLink to={WIKI_HOME_URL} size="lg">
-        Browse on the original wiki
+        Original wiki
       </ButtonLink>
     );
     const link = screen.getByRole("link", {
-      name: "Browse on the original wiki (opens original wiki)",
+      name: "Original wiki (opens original wiki)",
     });
     expect(link).toHaveAttribute("href", WIKI_HOME_URL);
     expect(link).toHaveAttribute("rel", "noopener");

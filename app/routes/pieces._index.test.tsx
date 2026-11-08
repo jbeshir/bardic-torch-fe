@@ -450,7 +450,7 @@ describe("/pieces facets", () => {
         .map(group => group.querySelector("legend")?.textContent)
     ).toEqual(["Kind", "Mood", "Topic", "Conservation status", "Page state"]);
     expect(
-      within(filters).getByRole("checkbox", { name: /^Warlike ?, 3 pieces$/ })
+      within(filters).getByRole("checkbox", { name: "Warlike, 3 pieces" })
     ).toBeEnabled();
     // Listed by the terms, but nothing would match it now.
     expect(

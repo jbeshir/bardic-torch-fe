@@ -209,7 +209,7 @@ test("at 1280 the facet column applies each tick at once, and its chips take the
     filters(page).getByRole("checkbox", { name: /^Warlike\b/ })
   ).toBeFocused();
   await expect(
-    filters(page).getByRole("checkbox", { name: /^Song\s*, 3 pieces$/ })
+    filters(page).getByRole("checkbox", { name: "Song, 3 pieces", exact: true })
   ).toBeVisible();
   await filters(page)
     .getByRole("checkbox", { name: /^Song\b/ })

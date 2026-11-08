@@ -142,11 +142,11 @@ You can also say what should happen if someone is unsure. They might ask you, te
 
 :::note
 
-Coming with the catalogue. Until it opens here, your page’s licensing and etiquette notes are on the original wiki.
+Coming later. For now, each piece’s licensing card has a short note about its creator’s wishes.
 
 :::
 
-When the catalogue opens, each bard page will show an **etiquette card** that summarises your preferences in plain language. The same card will appear on the page for each of your pieces, so people see your wishes where they need them.
+Bard pages will show an **etiquette card** that summarises your preferences in plain language. The same card will appear on the page for each of your pieces, so people see your wishes where they need them.
 
 - **Every point links to its source**, your own published page, so readers can check your exact words.
 - **Piece-level rules win.** If one song has different rules from the rest of your work, the song’s own rules take precedence on its page.

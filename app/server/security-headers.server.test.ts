@@ -1,5 +1,9 @@
-import { describe, expect, it } from "vitest";
-import { createNonce, withSecurityHeaders } from "./security-headers.server";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  createNonce,
+  withSecurityHeaders,
+  withStaticPageHeaders,
+} from "./security-headers.server";
 
 const env = { AUTH0_DOMAIN: "tenant.auth0.test", SENTRY_DSN: undefined };
 
@@ -128,5 +132,32 @@ describe("withSecurityHeaders", () => {
     );
     expect(headers.get("Content-Security-Policy")).not.toContain("*");
     expect(headers.get("Set-Cookie")).toBe("a=b");
+  });
+});
+
+describe("X-Robots-Tag", () => {
+  const options = {
+    env: { AUTH0_DOMAIN: "auth0.test", SENTRY_DSN: undefined },
+    nonce: "n",
+    development: false,
+  } as const;
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("is not sent by a production build", () => {
+    expect(
+      withSecurityHeaders(new Headers(), options).get("X-Robots-Tag")
+    ).toBeNull();
+    expect(withStaticPageHeaders({}).get("X-Robots-Tag")).toBeNull();
+  });
+
+  it("is noindex on every response of a build that isn't production", () => {
+    vi.stubGlobal("__INDEXABLE__", false);
+    expect(
+      withSecurityHeaders(new Headers(), options).get("X-Robots-Tag")
+    ).toBe("noindex");
+    expect(withStaticPageHeaders({}).get("X-Robots-Tag")).toBe("noindex");
   });
 });

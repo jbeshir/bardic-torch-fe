@@ -22,6 +22,7 @@ import { formatCount, formatNumber } from "~/catalogue/format";
 import { catalogueHeaders } from "~/catalogue/headers";
 import {
   categoryIndexQuery,
+  NO_PIECE_FILTERS,
   pieceQuery,
   redirectIfNotCanonical,
   type CategoryFacet,
@@ -35,6 +36,7 @@ import {
 import { pageMeta } from "~/catalogue/seo";
 import { buildTermIndex } from "~/catalogue/term-index";
 import {
+  BROWSE_STATUS_LABELS,
   CONSERVATION_STATUSES,
   FACET_LABELS,
   PIECE_KIND_LABELS,
@@ -42,7 +44,6 @@ import {
 import { useErrorReference } from "~/hooks/useErrorReference";
 import {
   facetSchema,
-  type ConservationStatus,
   type PieceList,
   type TermList,
 } from "~/schemas/catalogue";
@@ -161,18 +162,6 @@ export const meta: MetaFunction = args => {
   });
 };
 
-/** `/pieces` with only `change` set. */
-const NO_PIECE_FILTERS = pieceQuery.parse(new URLSearchParams()).state;
-
-/** "Browse endangered pieces": each status as the end of that sentence. */
-const BROWSE_STATUS: Readonly<Record<ConservationStatus, string>> = {
-  low_risk: "Browse low-risk pieces",
-  endangered: "Browse endangered pieces",
-  critically_endangered: "Browse critically endangered pieces",
-  restricted: "Browse restricted pieces",
-  unassessed: "Browse pieces not yet assessed",
-};
-
 /** A link with its count after it: "(31)", read "31 pieces". */
 function Counted({
   count,
@@ -231,7 +220,7 @@ function ConservationSection({ counts }: { readonly counts: PieceCounts }) {
               to={pieceQuery.href(NO_PIECE_FILTERS, { status: [status] })}
               compact
             >
-              {BROWSE_STATUS[status]}
+              {BROWSE_STATUS_LABELS[status]}
             </Link>
           </Counted>
         </li>

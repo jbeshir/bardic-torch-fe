@@ -2,10 +2,12 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach, beforeEach, vi } from "vitest";
 
-// Builds replace `__STUB_AUTH__` at compile time; tests start without stub
-// auth and opt in with `vi.stubGlobal("__STUB_AUTH__", true)`.
+// Builds replace `__STUB_AUTH__` and `__INDEXABLE__` at compile time; tests
+// start without stub auth, as a production build (indexable), and opt in
+// with `vi.stubGlobal("__STUB_AUTH__", true)` or `("__INDEXABLE__", false)`.
 beforeEach(() => {
   vi.stubGlobal("__STUB_AUTH__", false);
+  vi.stubGlobal("__INDEXABLE__", true);
   // jsdom has no matchMedia; components see a narrow screen that never
   // changes, unless a test stubs its own.
   if (

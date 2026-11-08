@@ -255,7 +255,9 @@ describe("/bards page", () => {
     await user.click(screen.getByRole("checkbox", { name: "Group" }));
     expect(router.state.location.search).toBe("?kind=group");
     // The chip takes it off again; the remounted form forgets it.
-    await user.click(screen.getByRole("link", { name: "Remove Kind: Group" }));
+    await user.click(
+      await screen.findByRole("link", { name: "Remove Kind: Group" })
+    );
     expect(router.state.location.search).toBe("");
     expect(screen.getByRole("checkbox", { name: "Group" })).not.toBeChecked();
     await user.click(screen.getByRole("checkbox", { name: "Poet" }));

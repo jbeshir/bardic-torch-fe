@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { cleanup, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { HelpPage } from "~/components/HelpPage";
 import {
@@ -22,6 +22,9 @@ import { findHelpPage, HELP_INDEX, type HelpContent } from "./pages";
 const NAV_HELP_PATHS = NAV_GROUPS.flatMap(({ items }) => items)
   .map(({ href }) => href)
   .filter(href => href.startsWith("/help/"));
+
+/** The catalogue pages a help page may link to (the links carry any query). */
+const CATALOGUE_PATHS = ["/pieces", "/collections", "/categories"];
 
 const SLUGS = NAV_HELP_PATHS.map(path => path.replace("/help/", ""));
 
@@ -129,7 +132,7 @@ describe.each(ALL)("help page %s", (slug, content) => {
     expect(Math.max(...levels)).toBeLessThanOrEqual(3);
   });
 
-  it("links only over https, to the help pages, or to its own sections", async () => {
+  it("links only over https, to the help pages, the catalogue, or to its own sections", async () => {
     const main = await renderHelp(content);
     const ids = new Set(
       [...main.querySelectorAll("[id]")].map(node => node.id)
@@ -142,7 +145,9 @@ describe.each(ALL)("help page %s", (slug, content) => {
       } else if (path === "" || path === `/help/${slug}`) {
         expect(ids).toContain(hash);
       } else {
-        expect(["/help", ...NAV_HELP_PATHS]).toContain(path);
+        expect(["/help", ...NAV_HELP_PATHS, ...CATALOGUE_PATHS]).toContain(
+          path?.split("?")[0]
+        );
       }
     }
   });
@@ -268,15 +273,62 @@ describe("contributing guide", () => {
     );
   });
 
-  it("says the catalogue isn't here yet, linking to the original wiki", async () => {
+  it("points at the catalogue on this site, not the original wiki", async () => {
     const main = await renderHelp(page("contributing"));
     const note = within(main).getByText(/^Information:/).parentElement;
-    expect(note).toHaveTextContent("The catalogue is on its way.");
-    expect(
-      within(note as HTMLElement).getByRole("link", {
-        name: "original Bardic Torch wiki (opens original wiki)",
-      })
-    ).toHaveAttribute("href", wikiPageUrl("Category:Pieces"));
+    expect(note).toHaveTextContent(
+      "You can browse every piece and its categories on this site."
+    );
+    const note_ = within(note as HTMLElement);
+    expect(note_.getByRole("link", { name: "piece" })).toHaveAttribute(
+      "href",
+      "/pieces"
+    );
+    expect(note_.getByRole("link", { name: "categories" })).toHaveAttribute(
+      "href",
+      "/categories"
+    );
+    expect(within(note as HTMLElement).queryByText(/original/)).toBeNull();
+  });
+});
+
+describe("links to the catalogue", () => {
+  it("links the conservation page to the pieces with each status", async () => {
+    const main = await renderHelp(page("conservation-status"));
+    for (const [name, href] of [
+      ["endangered pieces", "/pieces?status=endangered"],
+      ["critically endangered pieces", "/pieces?status=critically_endangered"],
+      ["low-risk pieces", "/pieces?status=low_risk"],
+    ] as const) {
+      expect(within(main).getByRole("link", { name })).toHaveAttribute(
+        "href",
+        href
+      );
+    }
+  });
+
+  it("links the collections to this site's collections", async () => {
+    for (const slug of ["faq-for-bards", "conservation-status"]) {
+      const main = await renderHelp(page(slug));
+      expect(
+        within(main).getByRole("link", { name: "collections" })
+      ).toHaveAttribute("href", "/collections");
+      cleanup();
+    }
+  });
+
+  it("holds no link to a wiki Category: page in any help page", async () => {
+    for (const slug of SLUGS) {
+      const main = await renderHelp(page(slug));
+      const hrefs = within(main)
+        .getAllByRole("link")
+        .map(link => link.getAttribute("href") ?? "");
+      expect(
+        hrefs.filter(href => /\/wiki\/Category:/.test(href)),
+        slug
+      ).toEqual([]);
+      cleanup();
+    }
   });
 });
 
@@ -382,13 +434,14 @@ describe("bard preference checklist", () => {
     ).toHaveAttribute("href", wikiPageUrl("Bard Preference Checklist"));
   });
 
-  it("says the etiquette card comes with the catalogue, every point sourced", async () => {
+  it("says the etiquette card comes later, every point sourced", async () => {
     const main = await renderHelp(page("bard-preference-checklist"));
     const showing = section(
       main,
       "How Bardic Torch will show your preferences"
     );
-    expect(showing).toContain("Coming with the catalogue.");
+    expect(showing).toContain("Coming later.");
+    expect(showing).toContain("each piece’s licensing card has a short note");
     expect(showing).toContain("Every point links to its source");
     expect(showing).toContain("Piece-level rules win.");
   });

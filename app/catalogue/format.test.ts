@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { formatCount, formatDate, formatNumber } from "./format";
+import {
+  formatCatalogueSize,
+  formatCount,
+  formatDate,
+  formatNumber,
+} from "./format";
 
 describe("formatDate", () => {
   const zone = process.env["TZ"];
@@ -52,6 +57,20 @@ describe("formatCount", () => {
     );
     expect(formatCount(61, "person or group", "people and groups")).toBe(
       "61 people and groups"
+    );
+  });
+});
+
+describe("formatCatalogueSize", () => {
+  it("counts pieces and people and groups, singular and plural", () => {
+    expect(formatCatalogueSize(142, 61)).toBe(
+      "142 pieces and 61 people and groups so far"
+    );
+    expect(formatCatalogueSize(1, 1)).toBe(
+      "1 piece and 1 person or group so far"
+    );
+    expect(formatCatalogueSize(10050, 0)).toBe(
+      "10,050 pieces and 0 people and groups so far"
     );
   });
 });

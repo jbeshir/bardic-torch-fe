@@ -22,7 +22,10 @@ import { fixtureAppEnv } from "./dev-fixtures.mjs";
  * - each deploys to its own Worker (bardic-torch-fe, bardic-torch-fe-preview);
  * - neither carries a `.dev.vars` copy or an AUTH_MODE variable;
  * - neither's client build has the Markdown parser (micromark), which runs
- *   in loaders only (plan §0.7, C4.2).
+ *   in loaders only (plan §0.7, C4.2);
+ * - `__INDEXABLE__` is true in production only: its server build has the
+ *   crawlable robots.txt rules and no X-Robots-Tag, and the preview build
+ *   has the opposite (plan C10.1).
  *
  * Building rewrites .wrangler/deploy/config.json, which points `wrangler
  * dev` and `wrangler deploy` at a build; it is put back as it was.
@@ -32,6 +35,14 @@ const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const STUB_SOURCE = path.join(ROOT, "app/server/stub-auth.server.ts");
 const FIXTURE_HOSTS = ["fixture.invalid", "127.0.0.1:4010"];
 const STYLEGUIDE_ROUTE_ID = "routes/styleguide";
+/**
+ * Strings that survive in a server build only for the `__INDEXABLE__` value
+ * they are under (app/server/indexing.server.ts and
+ * security-headers.server.ts): the crawlable robots.txt rules, and the
+ * noindex header.
+ */
+export const INDEXABLE_ONLY_MARKER = "Disallow: /auth/";
+const NOT_INDEXABLE_ONLY_MARKER = "X-Robots-Tag";
 export const DEPLOY_CONFIG = ".wrangler/deploy/config.json";
 
 /**
@@ -128,6 +139,28 @@ export function inspectBuild({ buildDir, mode, marker }) {
   if (server.length === 0) problems.push(`${mode}: no server build`);
   if (manifests.length !== 1) {
     problems.push(`${mode}: expected one client manifest`);
+  }
+  // The code, not its source maps, which hold every source file's text.
+  const serverSource = server
+    .filter(({ name }) => /\.m?js$/.test(name))
+    .map(({ content }) => content)
+    .join("\n");
+  const indexable = mode === "production";
+  if (
+    server.length > 0 &&
+    serverSource.includes(INDEXABLE_ONLY_MARKER) !== indexable
+  ) {
+    problems.push(
+      `${mode}: the crawlable robots.txt rules are ${indexable ? "missing from" : "present in"} the server build`
+    );
+  }
+  if (
+    server.length > 0 &&
+    serverSource.includes(NOT_INDEXABLE_ONLY_MARKER) === indexable
+  ) {
+    problems.push(
+      `${mode}: X-Robots-Tag is ${indexable ? "present in" : "missing from"} the server build`
+    );
   }
   const has = list =>
     list.some(({ content }) => content.includes(`"${STYLEGUIDE_ROUTE_ID}"`));

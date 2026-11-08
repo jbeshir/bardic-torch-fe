@@ -9,6 +9,7 @@ import {
 import { CatalogueError } from "~/components/catalogue/CatalogueError";
 import { EntityPage } from "~/components/EntityPage";
 import { ServerError } from "~/components/ErrorPages";
+import { UnderPageHead } from "~/components/ui/ErrorState";
 import { HistoryView } from "~/components/HistoryView";
 import { personHead, type PersonView } from "~/components/person/PersonPage";
 import { catalogueHeaders } from "~/catalogue/headers";
@@ -81,7 +82,9 @@ export function ErrorBoundary() {
     <ServerError title="We couldn’t load the history" reference={reference} />
   );
   return view ? (
-    <EntityPage {...personHead(view.person)}>{body}</EntityPage>
+    <EntityPage {...personHead(view.person)}>
+      <UnderPageHead>{body}</UnderPageHead>
+    </EntityPage>
   ) : (
     body
   );

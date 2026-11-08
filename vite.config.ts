@@ -26,6 +26,8 @@ export default defineConfig(({ command, mode }) => ({
   // Tests (vitest.config.ts) stub both per case instead.
   define: {
     __STUB_AUTH__: JSON.stringify(mode === "e2e" || mode === "development"),
+    // Only production is indexed (app/server/indexing.server.ts).
+    __INDEXABLE__: JSON.stringify(mode === "production"),
     // Builds get none: a deployed or e2e Worker reads only its bindings.
     __DEV_ENV_OVERRIDES__: JSON.stringify(
       command === "serve" ? devEnvOverrides() : {}

@@ -473,7 +473,7 @@ test.describe("from md", () => {
     }
   });
 
-  test("at lg the sidebar is always there, with the catalogue links going to the wiki", async ({
+  test("at lg the sidebar is always there, with the catalogue links on this site", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
@@ -484,8 +484,8 @@ test.describe("from md", () => {
       page.getByRole("banner").getByRole("button", { name: "Menu" })
     ).toBeHidden();
     await expect(
-      nav.getByRole("link", { name: "Pieces (opens original wiki)" })
-    ).toHaveAttribute("href", /\/wiki\/Category:Pieces$/);
+      nav.getByRole("link", { name: "Pieces", exact: true })
+    ).toHaveAttribute("href", "/pieces");
     await expect(
       nav.getByRole("link", { name: "Contributing", exact: true })
     ).toHaveAttribute("aria-current", "page");
@@ -494,6 +494,53 @@ test.describe("from md", () => {
     expect((navBox?.x ?? 0) + (navBox?.width ?? 0)).toBeLessThanOrEqual(
       mainBox?.x ?? 0
     );
+  });
+
+  test("the sidebar's catalogue links are all on this site and mark the section being read", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await openHydrated(page, "/");
+    const nav = page.getByRole("navigation", { name: "Site" });
+    const hrefs = await nav
+      .getByRole("link")
+      .evaluateAll(links => links.map(link => link.getAttribute("href")));
+    for (const href of hrefs) expect(href).toMatch(/^\//);
+    await expect(
+      nav.getByRole("link", { name: "Pieces", exact: true })
+    ).toHaveAttribute("href", "/pieces");
+    await expect(
+      nav.getByRole("link", { name: "Bards", exact: true })
+    ).toHaveAttribute("href", "/bards");
+    await expect(
+      nav.getByRole("link", { name: "Collections", exact: true })
+    ).toHaveAttribute("href", "/collections");
+    await expect(
+      nav.getByRole("link", { name: "Events and venues", exact: true })
+    ).toHaveAttribute("href", "/events");
+    await expect(
+      nav.getByRole("link", { name: "Categories", exact: true })
+    ).toHaveAttribute("href", "/categories");
+    // The home page is in no section.
+    await expect(nav.locator("[aria-current]")).toHaveCount(0);
+
+    // A piece's page, and its history, are in Pieces.
+    await nav.getByRole("link", { name: "Pieces", exact: true }).click();
+    await expect(page).toHaveURL(/\/pieces$/);
+    await expect(
+      nav.getByRole("link", { name: "Pieces", exact: true })
+    ).toHaveAttribute("aria-current", "page");
+    await page.goto("/pieces/the-copper-kettle/history");
+    await waitForHydration(page);
+    await expect(nav.locator("[aria-current]")).toHaveText(["Pieces"]);
+
+    // A facet entry is current alone; the categories entry is not.
+    await nav.getByRole("link", { name: "Mood", exact: true }).click();
+    await expect(page).toHaveURL(/\/categories\?facet=mood$/);
+    await expect(nav.locator("[aria-current]")).toHaveText(["Mood"]);
+    await nav.getByRole("link", { name: "Categories", exact: true }).click();
+    await expect(page).toHaveURL(/\/categories$/);
+    await expect(nav.locator("[aria-current]")).toHaveText(["Categories"]);
   });
 
   test("following a sidebar link moves focus to the new page's content and announces it", async ({
@@ -594,25 +641,29 @@ test.describe("with wider text (0.1em more letter spacing) the shell's room hold
   test("at 1280 × 800 the sidebar shows the current page and the Help group, and says when there is more below", async ({
     page,
   }) => {
-    const note = page
+    // The longest label. Its text's advance (the sum of its line boxes,
+    // so wrapping doesn't shorten it) is what the font's metrics decide.
+    const label = page
       .getByRole("navigation", { name: "Site" })
-      .getByText("The catalogue is on its way.");
-    const noteHeight = async () => {
-      const box = await note.boundingBox();
-      if (!box) throw new Error("not laid out");
-      return box.height;
-    };
+      .getByRole("link", { name: "Bard preference checklist" });
+    const textAdvance = () =>
+      label.evaluate(element => {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const lines = [...range.getClientRects()];
+        if (lines.length === 0) throw new Error("not laid out");
+        return lines.reduce((sum, line) => sum + line.width, 0);
+      });
     await page.setViewportSize({ width: 1280, height: 800 });
     await openHydrated(page, "/");
-    const ownHeight = await noteHeight();
-    let widenedHeight = 0;
+    const ownAdvance = await textAdvance();
+    let widenedAdvance = 0;
     await expectSidebarFold(page, async () => {
       await applyWiderText(page);
-      widenedHeight = await noteHeight();
+      widenedAdvance = await textAdvance();
     });
-    // Not vacuous: the Browse note wraps to more lines than in the
-    // machine's own sans (two more in the Playwright image).
-    expect(widenedHeight).toBeGreaterThan(ownHeight);
+    // Not vacuous: the widening reached the sidebar's labels.
+    expect(widenedAdvance).toBeGreaterThan(ownAdvance);
   });
 });
 

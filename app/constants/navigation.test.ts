@@ -13,12 +13,13 @@ import {
   wikiPageUrl,
   wikiSearchUrl,
 } from "./navigation";
-
+/**
 /**
  * The titles of the original wiki's categories (and the two plain pages the
- * site links to), snapshotted from the wiki dump by
- * scripts/wiki-categories.mjs. A link to a title missing here would be a
- * dead link on the wiki.
+ * site once linked to), snapshotted from the wiki dump by
+ * scripts/wiki-categories.mjs. No navigation entry or help link points at a
+ * category any more; the only wiki page the site links to by title from here
+ * is its front page (the footer), checked below.
  */
 const SNAPSHOT = JSON.parse(
   readFileSync("test/fixtures/wiki-categories.json", "utf8")
@@ -55,15 +56,6 @@ describe("wiki targets", () => {
       )
     ).toBe(true);
   });
-
-  it.each(items.filter(item => isWikiUrl(item.href)))(
-    "$label goes to a page that exists on the wiki",
-    ({ href }) => {
-      const title = wikiTitle(href);
-      expect(title, href).not.toBeNull();
-      expect(existsOnWiki(title ?? ""), `${title} on the wiki`).toBe(true);
-    }
-  );
 
   it("the wiki's front page exists", () => {
     expect(existsOnWiki(wikiTitle(WIKI_HOME_URL) ?? "")).toBe(true);
@@ -113,38 +105,34 @@ describe("isWikiUrl", () => {
 });
 
 describe("navigation", () => {
-  it("has Browse, Facets and Help in that order, with the wiki note on Browse", () => {
+  it("has Browse, Facets and Help in that order, with no note", () => {
     expect(NAV_GROUPS.map(group => group.heading)).toEqual([
       "Browse",
       "Facets",
       "Help",
     ]);
-    expect(NAV_GROUPS[0]?.note).toBe(
-      "The catalogue is on its way. Until it opens, these links go to the original Bardic Torch wiki."
-    );
+    expect(NAV_GROUPS.every(group => !("note" in group))).toBe(true);
   });
 
-  it("lists the catalogue entries from the plan, all on the wiki", () => {
+  it("lists the catalogue entries from the plan, all internal", () => {
     expect(
       NAV_GROUPS.slice(0, 2).flatMap(group =>
-        group.items.map(({ label, href }) => [
-          label,
-          wikiTitle(href),
-          isWikiUrl(href),
-        ])
+        group.items.map(({ label, href }) => [label, href])
       )
     ).toEqual([
-      ["Pieces", "Category:Pieces", true],
-      ["Bards", "Category:Bards", true],
-      ["Collections", "Collections", true],
-      ["Genre / kind", "Category:Genres", true],
-      ["Mood", "Category:Moods", true],
-      ["Topic", "Category:Topics", true],
-      ["Culture", "Category:Cultures", true],
-      ["Language", "Category:Languages", true],
-      ["Legendaria", "Category:Legendaria", true],
-      ["Origin", "Category:Source Category", true],
-      ["Conservation", "Category:Conservation Status", true],
+      ["Pieces", "/pieces"],
+      ["Bards", "/bards"],
+      ["Collections", "/collections"],
+      ["Events and venues", "/events"],
+      ["Categories", "/categories"],
+      ["Genre / kind", "/categories?facet=kind"],
+      ["Mood", "/categories?facet=mood"],
+      ["Topic", "/categories?facet=topic"],
+      ["Culture", "/categories?facet=culture"],
+      ["Language", "/categories?facet=language"],
+      ["Legendaria", "/categories?facet=legendaria"],
+      ["Origin", "/categories?facet=origin"],
+      ["Conservation", "/categories?facet=conservation"],
     ]);
   });
 
@@ -171,9 +159,10 @@ describe("navigation", () => {
     );
   });
 
-  it("leaves the wiki for every absolute URL, and only for those", () => {
+  it("sends no navigation entry to the wiki", () => {
     for (const { href } of items) {
-      expect(isWikiUrl(href), href).toBe(/^https:\/\//.test(href));
+      expect(isWikiUrl(href), href).toBe(false);
+      expect(href.startsWith("/"), href).toBe(true);
     }
   });
 

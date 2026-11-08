@@ -68,7 +68,7 @@ import {
  * read is a `PageFailure`.
  */
 
-type ReadResult<T, Failure extends ReadFailure = ReadFailure> =
+export type ReadResult<T, Failure extends ReadFailure = ReadFailure> =
   | { readonly ok: true; readonly data: T }
   | { readonly ok: false; readonly failure: Failure };
 

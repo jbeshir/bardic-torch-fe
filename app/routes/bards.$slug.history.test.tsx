@@ -188,7 +188,11 @@ describe("/bards/:slug/history page", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Wren of the Vale" })
     ).toBeVisible();
-    expect(screen.getByRole("heading", { name: title })).toBeVisible();
+    // The head keeps the page's one h1; the failure is an h2 under it.
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    expect(
+      screen.getByRole("heading", { level: 2, name: title })
+    ).toBeVisible();
   });
 
   it("renders the same markup in both themes", async () => {

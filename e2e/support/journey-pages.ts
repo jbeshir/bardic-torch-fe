@@ -105,11 +105,9 @@ const JOURNEY_PAGES: readonly JourneyPage[] = [
     phase: "prod",
     open: visit("/"),
     primary: page => [
-      // The hero's call to action; a card further down repeats it.
+      main(page).getByRole("link", { name: "Browse pieces", exact: true }),
+      // The hero's second action; a card further down repeats it.
       main(page).getByRole("link", { name: "How to contribute" }).first(),
-      main(page).getByRole("link", {
-        name: "Browse on the original wiki (opens original wiki)",
-      }),
       main(page).getByRole("searchbox", { name: "Search the catalogue" }),
     ],
     inShell: true,

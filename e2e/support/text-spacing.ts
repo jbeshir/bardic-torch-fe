@@ -19,10 +19,10 @@ export async function applyTextSpacing(page: Page): Promise<void> {
  * Wider text: 0.1em more letter spacing on every element, as a wider
  * face's advances would give. The sans is whatever `system-ui` the
  * machine has (WenQuanYi Zen Hei in the Playwright image, DejaVu Sans on
- * a stock Ubuntu machine, which wraps the sidebar's Browse note to one
- * more line), so layout that mustn't depend on the font is checked under
- * this too. In the image it wraps the note as far as DejaVu does, and
- * with DejaVu one line further. It is an injected <style>:
+ * a stock Ubuntu machine, whose wider glyphs wrap text that fits in the
+ * image), so layout that mustn't depend on the font is checked under
+ * this too. With DejaVu it wraps the sidebar's longest label, "Bard
+ * preference checklist", to two lines. It is an injected <style>:
  * specs using it set `test.use({ bypassCSP: true })`.
  */
 export async function applyWiderText(page: Page): Promise<void> {

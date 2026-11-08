@@ -34,16 +34,20 @@ function Option({
         disabled={option.disabled}
         label={
           <>
-            {option.label}
-            <span
-              aria-hidden="true"
-              className={`tabular-nums ${option.disabled ? "text-fg-subtle" : "text-fg-muted"}`}
-            >
-              {" "}
-              ({formatNumber(option.count)})
+            <span aria-hidden="true">
+              {option.label}
+              <span
+                className={`tabular-nums ${option.disabled ? "text-fg-subtle" : "text-fg-muted"}`}
+              >
+                {" "}
+                ({formatNumber(option.count)})
+              </span>
             </span>
+            {/* The name is one sr-only run, "Song, 3 pieces": a comma after a
+                separate sr-only span would get a space before it, because an
+                absolutely positioned span counts as a block in the name. */}
             <span className="sr-only">
-              , {formatCount(option.count, "piece")}
+              {option.label}, {formatCount(option.count, "piece")}
             </span>
           </>
         }

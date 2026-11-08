@@ -64,6 +64,9 @@ function contentSecurityPolicy({
 function withPolicy(headers: HeadersInit, policy: string): Headers {
   const result = new Headers(headers);
   result.set("Content-Security-Policy", policy);
+  // Preview, e2e and development builds must never be indexed, whatever
+  // links to them (app/server/indexing.server.ts).
+  if (!__INDEXABLE__) result.set("X-Robots-Tag", "noindex");
   result.set("X-Content-Type-Options", "nosniff");
   result.set("Referrer-Policy", "strict-origin-when-cross-origin");
   result.set(
