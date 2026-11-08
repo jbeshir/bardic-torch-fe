@@ -1,6 +1,7 @@
 import {
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -12,6 +13,7 @@ import { build } from "./build.mjs";
 import {
   DEPLOY_CONFIG,
   inspectBuild,
+  MARKDOWN_PARSER_MARKERS,
   readStubMarker,
   withDeployConfigRestored,
 } from "./check-production-build.mjs";
@@ -70,6 +72,20 @@ describe("inspectBuild", () => {
   it("passes a clean production build", () => {
     expect(inspect({})).toEqual([]);
   });
+
+  it.each(MARKDOWN_PARSER_MARKERS)(
+    "finds the Markdown parser in a client chunk by %s, and allows it on the server",
+    parser => {
+      expect(
+        inspect({
+          "client/assets/notes-abc.js": `var t="${parser}";`,
+          "server/assets/server-build.js": `var t="${parser}";`,
+        })
+      ).toEqual([
+        "production: the Markdown parser (micromark) in client/assets/notes-abc.js",
+      ]);
+    }
+  );
 
   it("passes a preview build that has the styleguide", () => {
     expect(inspect(STYLEGUIDE, "preview")).toEqual([]);
@@ -251,5 +267,18 @@ describe("inspectBuild on a real e2e build", () => {
         problem => !/: stub auth (marker in|chunk) /.test(problem)
       )
     ).toEqual([]);
+  });
+
+  it("parses Markdown on the server, so the client check looks for something real", () => {
+    const server = readdirSync(path.join(buildDir, "server"), {
+      recursive: true,
+      encoding: "utf8",
+    })
+      .filter(name => name.endsWith(".js"))
+      .map(name => readFileSync(path.join(buildDir, "server", name), "utf8"))
+      .join("\n");
+    for (const parser of MARKDOWN_PARSER_MARKERS.slice(1)) {
+      expect(server).toContain(parser);
+    }
   });
 });

@@ -38,6 +38,7 @@
     "@sentry/react": "11.10.0",
     "@tabler/icons-react": "3.50.0",
     "isbot": "5.2.2",
+    "mdast-util-from-markdown": "2.1.0",
     "openid-client": "6.8.9",
     "react": "19.3.1",
     "react-dom": "19.3.1",

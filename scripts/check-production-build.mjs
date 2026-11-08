@@ -20,7 +20,9 @@ import { fixtureAppEnv } from "./dev-fixtures.mjs";
  *   dev:fixtures`' values;
  * - `/styleguide` is excluded from production and present in preview;
  * - each deploys to its own Worker (bardic-torch-fe, bardic-torch-fe-preview);
- * - neither carries a `.dev.vars` copy or an AUTH_MODE variable.
+ * - neither carries a `.dev.vars` copy or an AUTH_MODE variable;
+ * - neither's client build has the Markdown parser (micromark), which runs
+ *   in loaders only (plan §0.7, C4.2).
  *
  * Building rewrites .wrangler/deploy/config.json, which points `wrangler
  * dev` and `wrangler deploy` at a build; it is put back as it was.
@@ -45,6 +47,17 @@ const DEV_VALUES = [
       .map(([, value]) => value)
   ),
 ].filter(value => !FIXTURE_HOSTS.some(host => value.includes(host)));
+
+/**
+ * Strings micromark's code keeps when minified (the client build drops its
+ * name with the comments; its token types are string literals), so a
+ * client chunk that has any of them has the Markdown parser.
+ */
+export const MARKDOWN_PARSER_MARKERS = [
+  "micromark",
+  "codeFencedFenceSequence",
+  "characterReferenceMarkerHexadecimal",
+];
 
 /** The marker string stub-auth.server.ts puts into every build it is in. */
 export function readStubMarker(source) {
@@ -89,6 +102,12 @@ export function inspectBuild({ buildDir, mode, marker }) {
       if (content.includes(value)) {
         problems.push(`${mode}: dev:fixtures value ${value} in ${name}`);
       }
+    }
+    if (
+      name.startsWith("client") &&
+      MARKDOWN_PARSER_MARKERS.some(parser => content.includes(parser))
+    ) {
+      problems.push(`${mode}: the Markdown parser (micromark) in ${name}`);
     }
     if (path.basename(name) === ".dev.vars") {
       problems.push(`${mode}: local variables copied into ${name}`);
@@ -164,7 +183,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     } else {
       console.log(
         "check:prod-build: production and preview builds are free of stub auth, fixture hosts and local variables, " +
-          `deploy to their own Workers, and ${STYLEGUIDE_ROUTE_ID} is only in preview`
+          `keep the Markdown parser out of the browser, deploy to their own Workers, and ${STYLEGUIDE_ROUTE_ID} is only in preview`
       );
     }
   } finally {

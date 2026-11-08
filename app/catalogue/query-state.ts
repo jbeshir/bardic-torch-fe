@@ -3,11 +3,17 @@ import { isSlug, PAGE_SIZE } from "~/schemas/address";
 import {
   conservationStatusSchema,
   letterSchema,
+  personKindSchema,
+  personRoleSchema,
+  personSortSchema,
   pieceKindSchema,
   pieceSortSchema,
   type ApiQuery,
   type ConservationStatus,
   type Letter,
+  type PersonKind,
+  type PersonRole,
+  type PersonSort,
   type PieceKind,
   type PieceSort,
 } from "~/schemas/catalogue";
@@ -357,5 +363,97 @@ export const searchQuery = {
 
   href(state: SearchQueryState): `${typeof SEARCH_PATH}${string}` {
     return `${SEARCH_PATH}${serialise([["q", state.q]])}`;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// /bards (C5.2)
+
+export type PersonQueryState = {
+  readonly q: string | undefined;
+  readonly kind: readonly PersonKind[];
+  readonly role: readonly PersonRole[];
+  /** One affiliation term's slug. */
+  readonly affiliation: string | undefined;
+  readonly letter: Letter | undefined;
+  /** Only a non-default order: `name` with `q` (relevance is the default). */
+  readonly sort: PersonSort | undefined;
+  /** From 1. */
+  readonly page: number;
+};
+
+const BARDS_PATH = "/bards";
+
+function parsePersons(params: URLSearchParams): PersonQueryState {
+  const q = scalar(params, "q", searchText);
+  const sort = scalar(params, "sort", value => {
+    const normalised = normaliseEnum(value);
+    return oneOf(personSortSchema.options)(normalised) ? normalised : undefined;
+  });
+  return {
+    q,
+    kind: repeated(params, "kind", {
+      valid: oneOf(personKindSchema.options),
+      order: personKindSchema.options,
+    }),
+    role: repeated(params, "role", {
+      valid: oneOf(personRoleSchema.options),
+      order: personRoleSchema.options,
+    }),
+    affiliation: scalar(params, "affiliation", value => {
+      const normalised = normaliseEnum(value);
+      return isSlug(normalised) ? normalised : undefined;
+    }),
+    letter: scalar(params, "letter", letter),
+    // As for pieces: name is the default without q, relevance with it.
+    sort: q !== undefined && sort === "name" ? "name" : undefined,
+    page: scalar(params, "page", pageNumber) ?? 1,
+  };
+}
+
+function serialisePersons(state: PersonQueryState): string {
+  return serialise([
+    ["q", state.q],
+    ["kind", state.kind],
+    ["role", state.role],
+    ["affiliation", state.affiliation],
+    ["letter", state.letter],
+    ["sort", state.sort],
+    ["page", state.page > 1 ? String(state.page) : undefined],
+  ]);
+}
+
+/** `/bards`: the bards directory, its search and A–Z (plan §4.7). */
+export const personQuery = {
+  parse(params: URLSearchParams): {
+    readonly state: PersonQueryState;
+    readonly canonical: string;
+  } {
+    const state = parsePersons(params);
+    return { state, canonical: serialisePersons(state) };
+  },
+
+  toApi(state: PersonQueryState): ApiQuery<"listPersons"> {
+    return {
+      ...(state.kind.length > 0 ? { kind: state.kind } : {}),
+      ...(state.role.length > 0 ? { role: state.role } : {}),
+      ...(state.affiliation === undefined
+        ? {}
+        : { affiliation: state.affiliation }),
+      ...(state.q === undefined ? {} : { q: state.q }),
+      ...(state.letter === undefined ? {} : { letter: state.letter }),
+      ...(state.sort === undefined ? {} : { sort: state.sort }),
+      limit: PAGE_SIZE,
+      offset: offsetOf(state.page),
+    };
+  },
+
+  href(
+    state: PersonQueryState,
+    change: Partial<PersonQueryState> = {}
+  ): string {
+    const next: PersonQueryState = { ...state, page: 1, ...change };
+    const params = new URLSearchParams(serialisePersons(next));
+    return `${BARDS_PATH}${personQuery.parse(params).canonical}`;
   },
 };

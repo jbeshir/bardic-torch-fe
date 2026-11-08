@@ -3,7 +3,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { API_BASE_URL, loadContext } from "~/test/context";
 import { contractResponse, offContractResponse } from "~/test/contract";
 import { serveFixtureApi } from "~/test/msw";
-import { listPersons, listPieces, listTerms } from "./catalogue.server";
+import {
+  getPiece,
+  listPersons,
+  listPieces,
+  listTerms,
+} from "./catalogue.server";
 
 // The anonymous read client against the fixture API through msw: what it
 // sends, and how each upstream answer maps to a ReadFailure (plan §3.3).
@@ -277,7 +282,7 @@ describe("listTerms", () => {
     fixtures.server.events.on("request:start", ({ request }) => {
       seen.push(request.url);
     });
-    const result = await listTerms(loadContext());
+    const result = await listTerms(loadContext(), {});
     expect(seen).toEqual([TERMS]);
     if (!result.ok) throw new Error("listTerms failed");
     const warlike = result.data.data.find(term => term.slug === "warlike");
@@ -292,7 +297,7 @@ describe("listTerms", () => {
     fixtures.server.events.on("request:start", ({ request }) => {
       headers.push(request.headers);
     });
-    await listTerms(loadContext());
+    await listTerms(loadContext(), {});
     expect(headers[0]?.get("Authorization")).toBeNull();
     expect(headers[0]?.get("Cookie")).toBeNull();
   });
@@ -306,6 +311,15 @@ describe("listTerms", () => {
           message: "boom",
         }),
       { kind: "server" },
+    ],
+    [
+      "bad_gateway for a 400 (a list of checked values, not a search)",
+      () =>
+        contractResponse("listTerms", 400, {
+          code: "invalid_request",
+          message: "bad facet",
+        }),
+      { kind: "bad_gateway" },
     ],
     [
       "resting for a 503",
@@ -331,7 +345,21 @@ describe("listTerms", () => {
   ])("is %s", async (_why, respond, failure) => {
     quietErrors();
     fixtures.server.use(http.get(TERMS, respond));
-    expect(await listTerms(loadContext())).toEqual({ ok: false, failure });
+    expect(await listTerms(loadContext(), {})).toEqual({ ok: false, failure });
+  });
+
+  it("asks for one facet when told to, and a 500 is still a server error", async () => {
+    quietErrors();
+    const seen: string[] = [];
+    fixtures.server.events.on("request:start", ({ request }) => {
+      seen.push(request.url);
+    });
+    fixtures.fail({ operationId: "listTerms", status: 500, code: "internal" });
+    expect(await listTerms(loadContext(), { facet: "affiliation" })).toEqual({
+      ok: false,
+      failure: { kind: "server" },
+    });
+    expect(seen).toEqual([`${TERMS}?facet=affiliation`]);
   });
 });
 
@@ -375,6 +403,78 @@ describe("listPersons", () => {
     expect(await listPersons(loadContext(), { letter: "W" })).toEqual({
       ok: false,
       failure: { kind: "server" },
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// C4.1: getPiece
+
+describe("getPiece (C4.1)", () => {
+  const PIECE = `${API_BASE_URL}/v1/pieces/:slug`;
+
+  it("asks for the piece by its slug, with nothing but Accept", async () => {
+    const seen: { url: string; headers: Headers }[] = [];
+    fixtures.server.events.on("request:start", ({ request }) => {
+      seen.push({ url: request.url, headers: request.headers });
+    });
+    const result = await getPiece(loadContext(), "the-copper-kettle");
+    expect(result).toMatchObject({
+      ok: true,
+      data: { slug: "the-copper-kettle", title: "The Copper Kettle" },
+    });
+    expect(seen.map(({ url }) => url)).toEqual([
+      `${API_BASE_URL}/v1/pieces/the-copper-kettle`,
+    ]);
+    expect(seen[0]?.headers.get("Authorization")).toBeNull();
+    expect(seen[0]?.headers.get("Cookie")).toBeNull();
+  });
+
+  it("is not_found for the API's 404, and for its 400", async () => {
+    quietErrors();
+    expect(await getPiece(loadContext(), "no-such-piece")).toEqual({
+      ok: false,
+      failure: { kind: "not_found" },
+    });
+    fixtures.server.use(
+      http.get(PIECE, () =>
+        contractResponse("getPiece", 400, {
+          code: "invalid_request",
+          message: "bad slug",
+        })
+      )
+    );
+    expect(await getPiece(loadContext(), "the-copper-kettle")).toEqual({
+      ok: false,
+      failure: { kind: "not_found" },
+    });
+  });
+
+  it("is server for a 500, even though nothing was filtered", async () => {
+    quietErrors();
+    fixtures.fail({ operationId: "getPiece", status: 500, code: "internal" });
+    expect(await getPiece(loadContext(), "the-copper-kettle")).toEqual({
+      ok: false,
+      failure: { kind: "server" },
+    });
+  });
+
+  it("is resting for a network failure, and bad_gateway for a body off the contract", async () => {
+    quietErrors();
+    fixtures.server.use(http.get(PIECE, () => HttpResponse.error()));
+    expect(await getPiece(loadContext(), "the-copper-kettle")).toEqual({
+      ok: false,
+      failure: { kind: "resting", retryAfter: 30 },
+    });
+    fixtures.server.resetHandlers();
+    fixtures.server.use(
+      http.get(PIECE, () =>
+        offContractResponse("getPiece", 200, { title: 1 }, "not a piece")
+      )
+    );
+    expect(await getPiece(loadContext(), "the-copper-kettle")).toEqual({
+      ok: false,
+      failure: { kind: "bad_gateway" },
     });
   });
 });

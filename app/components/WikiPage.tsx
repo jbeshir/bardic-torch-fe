@@ -8,15 +8,19 @@ import { TableOfContents, type TocEntry } from "./TableOfContents";
 
 /**
  * The wiki page template (DESIGN §5.4–5.6, §10.2), inside the shell's main
- * sheet: breadcrumbs, the h1, the title rule with the non-interactive
- * "Read" label (every FE1 page has one view) and its meta, then the
- * infobox (first, so it floats right from md and stacks above the prose
- * below), the intro, the contents, the prose, the category chips and the
- * licence line.
+ * sheet: breadcrumbs, the h1, the subtitle, the title rule with the page's
+ * views (by default the non-interactive "Read" label: a help page has one
+ * view) and its meta, the page's banners, then the infobox (first, so it
+ * floats right from md and stacks above the prose below), the intro, the
+ * contents, the prose, the category chips and the licence line. Catalogue
+ * pages use it through EntityPage.
  */
 export function WikiPage({
   title,
   breadcrumbs,
+  subtitle,
+  views,
+  banners,
   meta,
   infobox,
   intro,
@@ -27,6 +31,12 @@ export function WikiPage({
 }: {
   readonly title: string;
   readonly breadcrumbs?: ComponentProps<typeof Breadcrumbs>;
+  /** The meta line under the h1: "Song · Dance music · 1580–1600". */
+  readonly subtitle?: ReactNode;
+  /** The page's views on the title rule; the current one is the path. */
+  readonly views?: ComponentProps<typeof ViewTabs>["views"];
+  /** Page-level states under the title rule (PageBanner). */
+  readonly banners?: ReactNode;
   /** At the right end of the title rule: e.g. the source link. */
   readonly meta?: ReactNode;
   /** An Infobox. */
@@ -50,13 +60,17 @@ export function WikiPage({
         </div>
       ) : null}
       <h1 className="text-h1 text-fg">{title}</h1>
+      {subtitle ? (
+        <p className="mt-1 text-body-sm text-fg-muted">{subtitle}</p>
+      ) : null}
       <div className="mt-4">
         <ViewTabs
-          views={[{ label: "Read", to: pathname, icon: IconBook2 }]}
+          views={views ?? [{ label: "Read", to: pathname, icon: IconBook2 }]}
           current={pathname}
           meta={meta}
         />
       </div>
+      {banners ? <div className="mt-6 grid gap-3">{banners}</div> : null}
       <div className="mt-6 flow-root">
         {infobox}
         <div className="prose-bt">

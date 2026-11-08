@@ -81,6 +81,10 @@ export const CHECKPOINTS: Readonly<
     settings: ["signed-out"],
     browse: ["index", "no-results", "filtered", "facet-drawer-open"],
     search: ["results"],
+    // Track B (C4, C5): the piece and bard pages.
+    piece: ["full", "stub", "restricted"],
+    bard: ["profile", "no-page"],
+    directories: ["bards"],
   },
   stub: {
     styleguide: [

@@ -14,13 +14,16 @@ export function HiddenFields({ href }: { readonly href: string }) {
   ));
 }
 
+/** A list page's URL state, as `canonicalFormHref` reads it. */
 type Query<State> = Parameters<typeof canonicalFormHref<State>>[1];
 
 /**
  * Goes to the canonical URL a GET form asks for (plan §2.5), in one
  * request and keeping the scroll position: the raw form is never sent with
  * JS. Without JS the browser sends the fields in DOM order, which the
- * loader answers 200 all the same.
+ * loader answers 200 all the same. Also applies a form at once, where its
+ * filters apply as soon as one changes (the facet column, the bards filters
+ * at xl).
  */
 export function useCanonicalNavigate<State>(query: Query<State>) {
   const navigate = useNavigate();

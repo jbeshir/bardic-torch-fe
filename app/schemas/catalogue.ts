@@ -133,7 +133,11 @@ export const termListSchema = z.strictObject({
 // ---------------------------------------------------------------------------
 // Persons (C3.1): the search page's bards
 
-const personKindSchema = z.enum(["community_bard", "historical", "group"]);
+export const personKindSchema = z.enum([
+  "community_bard",
+  "historical",
+  "group",
+]);
 
 const personSummarySchema = z.strictObject({
   slug: z.string(),
@@ -188,4 +192,366 @@ type _ContractChecks = [
   Assert<Matches<typeof personKindSchema, Schemas["PersonKind"]>>,
   Assert<Matches<typeof personSummarySchema, Schemas["PersonSummary"]>>,
   Assert<Matches<typeof personListSchema, Schemas["PersonList"]>>,
+];
+
+// ---------------------------------------------------------------------------
+// The piece page (C4.1): `getPiece`'s body and what it nests.
+// ---------------------------------------------------------------------------
+
+const eventKindSchema = z.enum(["venue", "event"]);
+
+const licensingStatusSchema = z.enum(["known", "unknown"]);
+
+const licenceSchema = z.enum([
+  "pd",
+  "cc_by",
+  "cc_by_sa",
+  "cc_by_nc",
+  "cc_by_nc_sa",
+  "cc_by_nd",
+  "cc_by_nc_nd",
+  "arr",
+  "other",
+]);
+
+const pieceAliasKindSchema = z.enum([
+  "alt_title",
+  "nickname",
+  "subtitle",
+  "redirect",
+]);
+
+const piecePartSchema = z.enum(["words", "tune", "verses", "chorus"]);
+
+/** The credit roles, in the order a person's works are grouped by. */
+export const creditRoleSchema = z.enum([
+  "lyrics",
+  "tune",
+  "author",
+  "choreography",
+  "music",
+  "arrangement",
+  "translation",
+]);
+
+const attributionSchema = z.enum([
+  "named",
+  "traditional",
+  "unknown",
+  "anonymous",
+  "various",
+]);
+
+const certaintySchema = z.enum(["certain", "probable", "possible", "disputed"]);
+
+const pieceRelationTypeSchema = z.enum([
+  "variant_of",
+  "contrafactum_of",
+  "setting_of",
+  "same_text_other_form",
+]);
+
+const relationDirectionSchema = z.enum(["outgoing", "incoming"]);
+
+const linkPlaceTypeSchema = z.enum([
+  "recording_platform",
+  "streaming",
+  "author_site",
+  "community_archive",
+  "physical_archive",
+  "book",
+  "vendor",
+  "author_contact",
+  "oral_tradition",
+  "other",
+]);
+
+const livenessSchema = z.enum(["unknown", "ok", "dead", "blocked"]);
+
+/** The link roles, in the order a page groups links by (the spec's). */
+export const linkRoleSchema = z.enum([
+  "official",
+  "lyrics",
+  "text",
+  "sheet_music",
+  "dance_instructions",
+  "text_source",
+  "translation",
+  "performance",
+  "licensing_source",
+  "website",
+  "external_profile",
+  "other",
+]);
+
+const termSummarySchema = z.strictObject({
+  slug: z.string(),
+  facet: facetSchema,
+  display_name: z.string(),
+});
+
+const collectionRefSchema = z.strictObject({
+  id: z.int().min(1),
+  name: z.string(),
+});
+
+const eventSummarySchema = z.strictObject({
+  slug: z.string(),
+  name: z.string(),
+  kind: eventKindSchema,
+});
+
+const piecePerformanceSchema = z.strictObject({
+  year: z.int().nullable(),
+  uploader: z.string().nullable(),
+  description_verbatim: z.string(),
+  event: eventSummarySchema.nullable(),
+  performers: z.array(personSummarySchema),
+});
+
+/** The fields every link has, a piece's or a person's. */
+const linkFields = {
+  url: z.string(),
+  title: z.string().nullable(),
+  description: z.string().nullable(),
+  platform: z.string().nullable(),
+  place_type: linkPlaceTypeSchema.nullable(),
+  collection: collectionRefSchema.nullable(),
+  locator: z.string().nullable(),
+  liveness: livenessSchema,
+  last_checked_at: z.string().nullable(),
+  archived_url: z.string().nullable(),
+  roles: z.array(linkRoleSchema),
+};
+
+const pieceLinkSchema = z.strictObject({
+  ...linkFields,
+  performances: z.array(piecePerformanceSchema),
+});
+
+/**
+ * A credit names a person exactly when its attribution is `named` (the API
+ * docs); a credit that breaks that is a contract break, not a credit to
+ * show as "unknown".
+ */
+const pieceCreditSchema = z
+  .strictObject({
+    role: creditRoleSchema,
+    attribution: attributionSchema,
+    certainty: certaintySchema,
+    part: piecePartSchema.nullable(),
+    note: z.string().nullable(),
+    person: personSummarySchema.nullable(),
+  })
+  .refine(
+    credit => (credit.attribution === "named") === (credit.person !== null),
+    { message: "a credit names a person exactly when it is named" }
+  );
+
+export const pieceSchema = z.strictObject({
+  slug: z.string(),
+  title: z.string(),
+  kind: pieceKindSchema,
+  secondary_kinds: z.array(pieceKindSchema),
+  conservation_status: conservationStatusSchema,
+  is_stub: z.boolean(),
+  notes_md: z.string().nullable(),
+  version_notes_md: z.string().nullable(),
+  licensing_status: licensingStatusSchema,
+  licensing_notes_md: z.string().nullable(),
+  licence: licenceSchema.nullable(),
+  historical_source_md: z.string().nullable(),
+  period_start: z.int().nullable(),
+  period_end: z.int().nullable(),
+  aliases: z.array(
+    z.strictObject({ text: z.string(), kind: pieceAliasKindSchema })
+  ),
+  terms: z.array(
+    z.strictObject({
+      term: termSummarySchema,
+      is_primary: z.boolean(),
+      part: piecePartSchema.nullable(),
+    })
+  ),
+  credits: z.array(pieceCreditSchema),
+  relations: z.array(
+    z.strictObject({
+      type: pieceRelationTypeSchema,
+      direction: relationDirectionSchema,
+      piece: pieceSummarySchema,
+    })
+  ),
+  links: z.array(pieceLinkSchema),
+  conservation_history: z.array(
+    z.strictObject({
+      conservation_status: conservationStatusSchema,
+      reason: z.string(),
+      source_url: z.string().nullable(),
+      at: z.string(),
+    })
+  ),
+});
+
+export type Piece = DeepReadonly<z.output<typeof pieceSchema>>;
+export type PieceAliasKind = z.output<typeof pieceAliasKindSchema>;
+export type PiecePart = z.output<typeof piecePartSchema>;
+export type CreditRole = z.output<typeof creditRoleSchema>;
+export type Attribution = z.output<typeof attributionSchema>;
+export type Certainty = z.output<typeof certaintySchema>;
+export type LinkRole = z.output<typeof linkRoleSchema>;
+export type LinkPlaceType = z.output<typeof linkPlaceTypeSchema>;
+export type Licence = z.output<typeof licenceSchema>;
+export type LicensingStatus = z.output<typeof licensingStatusSchema>;
+export type PieceRelationType = z.output<typeof pieceRelationTypeSchema>;
+export type RelationDirection = z.output<typeof relationDirectionSchema>;
+
+type _PieceContractChecks = [
+  Assert<Matches<typeof eventKindSchema, Schemas["EventKind"]>>,
+  Assert<Matches<typeof licensingStatusSchema, Schemas["LicensingStatus"]>>,
+  Assert<Matches<typeof licenceSchema, Schemas["Licence"]>>,
+  Assert<Matches<typeof pieceAliasKindSchema, Schemas["PieceAliasKind"]>>,
+  Assert<Matches<typeof piecePartSchema, Schemas["PiecePart"]>>,
+  Assert<Matches<typeof creditRoleSchema, Schemas["CreditRole"]>>,
+  Assert<Matches<typeof attributionSchema, Schemas["Attribution"]>>,
+  Assert<Matches<typeof certaintySchema, Schemas["Certainty"]>>,
+  Assert<Matches<typeof pieceRelationTypeSchema, Schemas["PieceRelationType"]>>,
+  Assert<Matches<typeof relationDirectionSchema, Schemas["RelationDirection"]>>,
+  Assert<Matches<typeof linkPlaceTypeSchema, Schemas["LinkPlaceType"]>>,
+  Assert<Matches<typeof livenessSchema, Schemas["Liveness"]>>,
+  Assert<Matches<typeof linkRoleSchema, Schemas["LinkRole"]>>,
+  Assert<Matches<typeof termSummarySchema, Schemas["TermSummary"]>>,
+  Assert<Matches<typeof collectionRefSchema, Schemas["CollectionRef"]>>,
+  Assert<Matches<typeof eventSummarySchema, Schemas["EventSummary"]>>,
+  Assert<Matches<typeof piecePerformanceSchema, Schemas["PiecePerformance"]>>,
+  Assert<Matches<typeof pieceLinkSchema, Schemas["PieceLink"]>>,
+  Assert<Matches<typeof pieceCreditSchema, Schemas["PieceCredit"]>>,
+  Assert<Matches<typeof pieceSchema, Schemas["Piece"]>>,
+];
+
+// ---------------------------------------------------------------------------
+// The bard page (C5.1): `getPerson`'s body.
+// ---------------------------------------------------------------------------
+
+const personStatusSchema = z.enum(["active", "deceased", "prefers_no_page"]);
+
+const personAliasKindSchema = z.enum([
+  "legal",
+  "sca",
+  "stage",
+  "nickname",
+  "former",
+  "redirect",
+]);
+
+const personRelationTypeSchema = z.enum(["heir_of", "member_of", "same_as"]);
+
+export const personRoleSchema = z.enum([
+  "singer",
+  "songwriter",
+  "musician",
+  "instrumentalist",
+  "storyteller",
+  "poet",
+  "jester",
+  "dancer",
+]);
+
+const personLinkSchema = z.strictObject(linkFields);
+
+const personProfileSchema = z.strictObject({
+  pronouns: z.string().nullable(),
+  notes_md: z.string().nullable(),
+  licensing_status: licensingStatusSchema,
+  licensing_notes_md: z.string().nullable(),
+  aliases: z.array(
+    z.strictObject({ name: z.string(), kind: personAliasKindSchema })
+  ),
+  roles: z.array(personRoleSchema),
+  affiliations: z.array(termSummarySchema),
+  relations: z.array(
+    z.strictObject({
+      type: personRelationTypeSchema,
+      direction: relationDirectionSchema,
+      person: personSummarySchema,
+    })
+  ),
+  links: z.array(personLinkSchema),
+  works: z
+    .array(
+      z.strictObject({
+        piece: pieceSummarySchema,
+        role: creditRoleSchema,
+        certainty: certaintySchema,
+        part: piecePartSchema.nullable(),
+      })
+    )
+    .max(200),
+  works_total: z.int().min(0),
+  performances: z
+    .array(
+      z.strictObject({
+        piece: pieceSummarySchema.nullable(),
+        link: z.strictObject({
+          url: z.string(),
+          title: z.string().nullable(),
+          platform: z.string().nullable(),
+        }),
+        year: z.int().nullable(),
+        event: eventSummarySchema.nullable(),
+        description_verbatim: z.string(),
+      })
+    )
+    .max(200),
+  performances_total: z.int().min(0),
+});
+
+/**
+ * A person has no profile exactly when they prefer not to have a page (the
+ * spec); a body that breaks that is a contract break.
+ */
+export const personSchema = z
+  .strictObject({
+    slug: z.string(),
+    name: z.string(),
+    kind: personKindSchema,
+    is_stub: z.boolean(),
+    status: personStatusSchema,
+    status_date: z.string().nullable(),
+    status_source_url: z.string().nullable(),
+    profile: personProfileSchema.nullable(),
+  })
+  .refine(
+    person =>
+      (person.status === "prefers_no_page") === (person.profile === null),
+    { message: "a person has no profile exactly when they prefer no page" }
+  );
+
+export type Person = DeepReadonly<z.output<typeof personSchema>>;
+export type PersonAliasKind = z.output<typeof personAliasKindSchema>;
+export type PersonRole = z.output<typeof personRoleSchema>;
+export type PersonRelationType = z.output<typeof personRelationTypeSchema>;
+
+type _PersonContractChecks = [
+  Assert<Matches<typeof personStatusSchema, Schemas["PersonStatus"]>>,
+  Assert<Matches<typeof personAliasKindSchema, Schemas["PersonAliasKind"]>>,
+  Assert<
+    Matches<typeof personRelationTypeSchema, Schemas["PersonRelationType"]>
+  >,
+  Assert<Matches<typeof personRoleSchema, Schemas["PersonRole"]>>,
+  Assert<Matches<typeof personLinkSchema, Schemas["PersonLink"]>>,
+  Assert<Matches<typeof personProfileSchema, Schemas["PersonProfile"]>>,
+  Assert<Matches<typeof personSchema, Schemas["Person"]>>,
+];
+
+// ---------------------------------------------------------------------------
+// The bards directory (C5.2): its sort. `personListSchema` and
+// `termListSchema` are above, shared with search and the facets.
+// ---------------------------------------------------------------------------
+
+export const personSortSchema = z.enum(["name", "relevance"]);
+
+export type PersonSort = z.output<typeof personSortSchema>;
+
+type _DirectoryContractChecks = [
+  Assert<Matches<typeof personSortSchema, Schemas["PersonSort"]>>,
 ];

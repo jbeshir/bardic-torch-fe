@@ -110,7 +110,7 @@ export async function loader({ url, context }: LoaderFunctionArgs) {
 
   // The terms name the facets; asked for alongside the pieces, so the
   // common case is one round trip.
-  const termsRead = listTerms(context);
+  const termsRead = listTerms(context, {});
   const termsData = async () => {
     const terms = await termsRead;
     return terms.ok ? terms.data.data : null;

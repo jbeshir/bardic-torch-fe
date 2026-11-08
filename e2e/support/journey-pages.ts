@@ -162,6 +162,44 @@ const JOURNEY_PAGES: readonly JourneyPage[] = [
     ],
     inShell: true,
   },
+  // Track B (C4, C5): the piece and bard pages.
+  {
+    name: "/pieces/the-copper-kettle",
+    phase: "prod",
+    open: visit("/pieces/the-copper-kettle"),
+    primary: () => [],
+    inShell: true,
+  },
+  {
+    name: "/pieces/the-dragons-hoard (restricted)",
+    phase: "prod",
+    open: visit("/pieces/the-dragons-hoard"),
+    primary: () => [],
+    inShell: true,
+  },
+  {
+    name: "/bards/wren-of-the-vale",
+    phase: "prod",
+    open: visit("/bards/wren-of-the-vale"),
+    primary: () => [],
+    inShell: true,
+  },
+  {
+    name: "/bards/hollis-fenn (no page)",
+    phase: "prod",
+    open: visit("/bards/hollis-fenn"),
+    primary: () => [],
+    inShell: true,
+  },
+  {
+    name: "/bards?letter=W",
+    phase: "prod",
+    open: visit("/bards?letter=W"),
+    primary: page => [
+      main(page).getByRole("searchbox", { name: "Search bards" }),
+    ],
+    inShell: true,
+  },
   {
     name: "settings, signed out",
     phase: "prod",

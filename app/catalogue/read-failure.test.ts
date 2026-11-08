@@ -1,8 +1,10 @@
 import { data } from "react-router";
 import { describe, expect, it } from "vitest";
 import {
+  detailFailure,
   failureInit,
   isPageFailure,
+  listFailure,
   searchFailure,
   thrownPageFailure,
   throwPageFailure,
@@ -106,6 +108,7 @@ describe("page failures", () => {
     expect(isPageFailure({ kind: "resting", retryAfter: 30 })).toBe(true);
     expect(isPageFailure({ kind: "server" })).toBe(true);
     expect(isPageFailure({ kind: "bad_gateway" })).toBe(true);
+    expect(isPageFailure({ kind: "not_found" })).toBe(true);
     expect(isPageFailure({ kind: "search_timeout" })).toBe(false);
     expect(isPageFailure({ kind: "invalid_filters" })).toBe(false);
   });
@@ -138,6 +141,9 @@ describe("page failures", () => {
     expect(thrownPageFailure(response({ kind: "server" }, 500))).toEqual({
       kind: "server",
     });
+    expect(thrownPageFailure(response({ kind: "not_found" }, 404))).toEqual({
+      kind: "not_found",
+    });
     expect(
       thrownPageFailure(response({ kind: "resting", retryAfter: 30 }, 503))
     ).toEqual({ kind: "resting", retryAfter: 30 });
@@ -149,5 +155,89 @@ describe("page failures", () => {
     expect(thrownPageFailure(response({ kind: "other" }, 500))).toBeNull();
     expect(thrownPageFailure(new Error("boom"))).toBeNull();
     expect(thrownPageFailure(undefined)).toBeNull();
+  });
+});
+
+describe("detailFailure (plan §3.3, detail reads)", () => {
+  it.each([
+    [
+      "404 not_found",
+      { status: 404, code: "not_found" },
+      { kind: "not_found" },
+    ],
+    [
+      "400 invalid_request (a contract mismatch after our own check)",
+      { status: 400, code: "invalid_request" },
+      { kind: "not_found" },
+    ],
+    ["500 internal", { status: 500, code: "internal" }, { kind: "server" }],
+    [
+      "a 503 of any body",
+      { status: 503, code: undefined },
+      { kind: "resting", retryAfter: 60 },
+    ],
+    [
+      "unavailable at any status",
+      { status: 500, code: "unavailable" },
+      { kind: "resting", retryAfter: 60 },
+    ],
+    [
+      "a 404 without an Error body",
+      { status: 404, code: undefined },
+      { kind: "bad_gateway" },
+    ],
+    [
+      "an undeclared code",
+      { status: 400, code: "conflict" },
+      { kind: "bad_gateway" },
+    ],
+  ] as const)("maps %s", (_why, upstream, failure) => {
+    expect(detailFailure(upstream)).toEqual(failure);
+  });
+
+  it("is resting with the shorter wait for no answer at all", () => {
+    expect(detailFailure("unreachable")).toEqual({
+      kind: "resting",
+      retryAfter: 30,
+    });
+  });
+
+  it("answers not found 404", () => {
+    expect(failureInit({ kind: "not_found" }).status).toBe(404);
+  });
+});
+
+describe("listFailure (plan §3.3, lists that aren't searches)", () => {
+  it.each([
+    ["500 internal", { status: 500, code: "internal" }, { kind: "server" }],
+    [
+      "400 invalid_request (we sent only checked values)",
+      { status: 400, code: "invalid_request" },
+      { kind: "bad_gateway" },
+    ],
+    [
+      "a 503 of any body",
+      { status: 503, code: undefined },
+      { kind: "resting", retryAfter: 60 },
+    ],
+    [
+      "unavailable at any status",
+      { status: 500, code: "unavailable" },
+      { kind: "resting", retryAfter: 60 },
+    ],
+    [
+      "a 500 without an Error body",
+      { status: 500, code: undefined },
+      { kind: "bad_gateway" },
+    ],
+  ] as const)("maps %s", (_why, upstream, failure) => {
+    expect(listFailure(upstream)).toEqual(failure);
+  });
+
+  it("is resting with the shorter wait for no answer at all", () => {
+    expect(listFailure("unreachable")).toEqual({
+      kind: "resting",
+      retryAfter: 30,
+    });
   });
 });

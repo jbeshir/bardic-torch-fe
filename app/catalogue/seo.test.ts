@@ -145,3 +145,27 @@ describe("pageMeta", () => {
     ).toContainEqual({ name: "twitter:card", content: "summary" });
   });
 });
+
+describe("pageMeta structured data (C4.1)", () => {
+  it("adds the page's JSON-LD, built with the site's origin", () => {
+    const tags = pageMeta(args(), {
+      title: "The Copper Kettle",
+      description: "A song.",
+      path: "/pieces/the-copper-kettle",
+      structuredData: origin => ({ url: `${origin}/pieces/x` }),
+    });
+    expect(tags).toContainEqual({
+      "script:ld+json": { url: `${ORIGIN}/pieces/x` },
+    });
+  });
+
+  it("leaves it out without an origin to build it with, or when not asked", () => {
+    const has = (tags: ReturnType<typeof pageMeta>) =>
+      tags.some(tag => "script:ld+json" in tag);
+    const page = { description: "A song.", path: "/pieces/x" } as const;
+    expect(
+      has(pageMeta(args(null), { ...page, structuredData: () => ({}) }))
+    ).toBe(false);
+    expect(has(pageMeta(args(), page))).toBe(false);
+  });
+});

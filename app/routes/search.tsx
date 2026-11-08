@@ -94,7 +94,7 @@ export async function loader({ url, context }: LoaderFunctionArgs) {
   const [pieces, persons, terms] = await Promise.all([
     listPieces(context, { q, limit: TOP }),
     listPersons(context, { q, limit: TOP }),
-    listTerms(context),
+    listTerms(context, {}),
   ]);
   if (!pieces.ok && !persons.ok && !terms.ok) {
     allFailed([pieces.failure, persons.failure, terms.failure]);
