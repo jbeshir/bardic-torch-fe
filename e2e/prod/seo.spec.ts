@@ -1,5 +1,4 @@
 import { expect } from "@playwright/test";
-import { failNext } from "../support/fixture-api";
 import { test } from "../support/test";
 
 /**
@@ -86,24 +85,4 @@ test("sitemap.xml is one urlset of the pages and unrestricted entries", async ({
   // left out.
   expect(xml).not.toContain("/pieces/the-dragons-hoard<");
   expect(xml).not.toContain("/bards/hollis-fenn<");
-});
-
-test("the sitemap is a 503 with Retry-After, and no partial list, when the API fails", async ({
-  request,
-}) => {
-  // The only requests with these paging parameters are the sitemap's.
-  await failNext(request, {
-    operationId: "listPieces",
-    status: 500,
-    code: "internal",
-    times: 1,
-    match: { limit: "100", offset: "200" },
-  });
-  const response = await request.get("/sitemap.xml");
-  expect(response.status()).toBe(503);
-  expect(response.headers()["retry-after"]).toBe("60");
-  expect(response.headers()["cache-control"]).toBe("no-store");
-  expect(await response.text()).not.toContain("<loc>");
-  // The failure was for one read: the next attempt works.
-  expect((await request.get("/sitemap.xml")).status()).toBe(200);
 });

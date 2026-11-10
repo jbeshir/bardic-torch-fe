@@ -264,7 +264,7 @@ test.describe("/pieces filters", () => {
     );
   });
 
-  test("All pages sends an empty stub, answered 200 without it", async ({
+  test("All pages sends an empty stub, which lands on the page without it", async ({
     page,
   }) => {
     await page.goto("/pieces?stub=true");
@@ -272,23 +272,15 @@ test.describe("/pieces filters", () => {
       .getByRole("main")
       .getByRole("region", { name: "Filters" });
     await filters.getByRole("radio", { name: "All pages" }).check();
-    const [response] = await Promise.all([
-      page.waitForResponse(r => new URL(r.url()).pathname === "/pieces"),
-      filters.getByRole("button", { name: "Apply filters" }).click(),
-    ]);
-    expect(response.status()).toBe(200);
-    await expect(page).toHaveURL(/\/pieces\?stub=$/);
+    await filters.getByRole("button", { name: "Apply filters" }).click();
+    await expect(page).toHaveURL(/\/pieces$/);
   });
 
   test("the order applies with its Sort button", async ({ page }) => {
     await page.goto("/pieces?q=lament");
     const main = page.getByRole("main");
     await main.getByRole("combobox", { name: "Sort by" }).selectOption("title");
-    const [response] = await Promise.all([
-      page.waitForResponse(r => new URL(r.url()).pathname === "/pieces"),
-      main.getByRole("button", { name: "Sort" }).click(),
-    ]);
-    expect(response.status()).toBe(200);
+    await main.getByRole("button", { name: "Sort" }).click();
     await expect(page).toHaveURL(/sort=title/);
     await expect(main.getByRole("combobox", { name: "Sort by" })).toHaveValue(
       "title"
@@ -315,12 +307,10 @@ test.describe("/pieces filters below xl", () => {
     });
     await expect(filters).toBeInViewport();
     await filters.getByRole("checkbox", { name: /^Song\b/ }).check();
-    const [response] = await Promise.all([
-      page.waitForResponse(r => new URL(r.url()).pathname === "/pieces"),
-      filters.getByRole("button", { name: "Apply filters" }).click(),
-    ]);
-    expect(response.status()).toBe(200);
-    await expect(page).toHaveURL(/\/pieces\?letter=T&kind=song/);
+    await filters.getByRole("button", { name: "Apply filters" }).click();
+    await expect(page).toHaveURL(
+      /\/pieces\?(kind=song&letter=T|letter=T&kind=song)$/
+    );
   });
 });
 

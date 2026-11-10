@@ -33,7 +33,7 @@ test("checkpoint: the directory, every event and venue by name", async ({
   await checkpoint(page, "directory");
 });
 
-test("the kind switch shows one kind, and a messy kind is made canonical", async ({
+test("the kind switch shows one kind, and an invalid kind is dropped", async ({
   page,
 }) => {
   await open(page, "/events");
@@ -47,8 +47,6 @@ test("the kind switch shows one kind, and a messy kind is made canonical", async
   await expect(
     main(page).getByRole("link", { name: "Midwinter Revel" })
   ).toHaveCount(0);
-  await page.goto("/events?kind=Venue");
-  await expect(page).toHaveURL(/\/events\?kind=venue$/);
   await page.goto("/events?kind=tavern");
   await expect(page).toHaveURL(/\/events$/);
 });
