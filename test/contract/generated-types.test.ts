@@ -15,31 +15,9 @@ describe("generated API types", () => {
     expectTypeOf<paths["/v1/me"]["patch"]>().toEqualTypeOf<
       operations["updateMe"]
     >();
-    expectTypeOf<paths["/v1/tokens"]["get"]>().toEqualTypeOf<
-      operations["listAPITokens"]
-    >();
-    expectTypeOf<paths["/v1/tokens"]["post"]>().toEqualTypeOf<
-      operations["createAPIToken"]
-    >();
-    expectTypeOf<paths["/v1/tokens/{token_id}"]["delete"]>().toEqualTypeOf<
-      operations["revokeAPIToken"]
-    >();
-  });
-
-  it("type nullable 3.1 properties as unions with null", () => {
-    expectTypeOf<Schemas["APIToken"]["name"]>().toEqualTypeOf<string | null>();
-    expectTypeOf<Schemas["APIToken"]["last_used_at"]>().toEqualTypeOf<
-      string | null
-    >();
-    expectTypeOf<Schemas["CreateAPITokenRequest"]>().toEqualTypeOf<{
-      name?: string | null;
-    }>();
   });
 
   it("type the error code as the spec's enum", () => {
-    expectTypeOf<"token_limit_reached">().toMatchTypeOf<
-      Schemas["Error"]["code"]
-    >();
     expectTypeOf<"method_not_allowed">().toMatchTypeOf<
       Schemas["Error"]["code"]
     >();

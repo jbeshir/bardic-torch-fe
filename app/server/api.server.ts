@@ -3,18 +3,12 @@ import { z } from "zod";
 import type { operations } from "~/api/schema.gen";
 import { isUnavailable } from "~/catalogue/read-failure";
 import {
-  apiTokenListSchema,
-  createdApiTokenSchema,
   upstreamErrorSchema,
   userSchema,
   type UpstreamErrorCode,
   type User,
 } from "~/schemas/api";
-import {
-  ACTIVE_TOKEN_LIMIT,
-  DISPLAY_NAME_RULE,
-  TOKEN_NAME_RULE,
-} from "~/schemas/rules";
+import { DISPLAY_NAME_RULE } from "~/schemas/rules";
 import {
   UNEXPECTED_ANSWER,
   type ProxyBody,
@@ -76,9 +70,6 @@ const MAX_BODY_BYTES = 8 * 1024;
 const ENDPOINTS = {
   getMe: { method: "GET", path: "/v1/me" },
   updateMe: { method: "PATCH", path: "/v1/me" },
-  listAPITokens: { method: "GET", path: "/v1/tokens" },
-  createAPIToken: { method: "POST", path: "/v1/tokens" },
-  revokeAPIToken: { method: "DELETE", path: "/v1/tokens/{token_id}" },
 } as const satisfies {
   readonly [Id in keyof operations]?: EndpointOf<operations[Id]>;
 };
@@ -122,17 +113,6 @@ function upstreamError(
         message:
           "Your account is blocked, so you can’t make changes. Contact the Bardic Torch team if you think this is a mistake.",
       };
-    case "api_token_not_allowed":
-      return {
-        code,
-        message:
-          "API tokens can’t manage API tokens. Log in on the website to do this.",
-      };
-    case "token_limit_reached":
-      return {
-        code,
-        message: `You already have ${ACTIVE_TOKEN_LIMIT} API tokens, the most allowed. Revoke one before creating another.`,
-      };
     case "moderator_required":
       return { code, message: "Only moderators can do that." };
     case "request_too_large":
@@ -141,9 +121,7 @@ function upstreamError(
       return {
         code,
         message:
-          operationId === "revokeAPIToken"
-            ? "That token no longer exists. Reload the page to see your current tokens."
-            : "We couldn’t find what you asked for. Reload the page and try again.",
+          "We couldn’t find what you asked for. Reload the page and try again.",
       };
     case "conflict":
       return {
@@ -159,14 +137,9 @@ function upstreamError(
           fields: [{ field: "display_name", message: DISPLAY_NAME_RULE }],
         };
       }
-      if (operationId === "createAPIToken") {
-        return {
-          code,
-          message: "Check the token name.",
-          fields: [{ field: "name", message: TOKEN_NAME_RULE }],
-        };
-      }
       return { code, message: TRY_AGAIN };
+    case "api_token_not_allowed":
+    case "token_limit_reached":
     case "method_not_allowed":
     case "unsupported_media_type":
     case "internal":
@@ -442,39 +415,5 @@ export function updateMe(
     operationId: "updateMe",
     body,
     schema: userSchema,
-  });
-}
-
-export function listApiTokens(
-  request: Request,
-  context: Readonly<RouterContextProvider>
-) {
-  return callApi(request, context, {
-    operationId: "listAPITokens",
-    schema: apiTokenListSchema,
-  });
-}
-
-export function createApiToken(
-  request: Request,
-  context: Readonly<RouterContextProvider>,
-  body: RequestBody<"createAPIToken">
-) {
-  return callApi(request, context, {
-    operationId: "createAPIToken",
-    body,
-    schema: createdApiTokenSchema,
-  });
-}
-
-export function revokeApiToken(
-  request: Request,
-  context: Readonly<RouterContextProvider>,
-  tokenId: string
-) {
-  return callApi(request, context, {
-    operationId: "revokeAPIToken",
-    params: { token_id: tokenId },
-    schema: z.null(),
   });
 }

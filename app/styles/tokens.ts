@@ -29,7 +29,7 @@ function luminance(hex: Hex): number {
 
 /**
  * The WCAG 2.x contrast ratio of two colours, 1 to 21: the one
- * implementation behind `npm run check:contrast` and the styleguide.
+ * implementation behind `npm run check:contrast`.
  */
 export function contrastRatio(first: Hex, second: Hex): number {
   const [lighter = 0, darker = 0] = [luminance(first), luminance(second)].sort(

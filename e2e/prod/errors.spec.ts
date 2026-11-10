@@ -92,14 +92,6 @@ test("going home from the 404 page works", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("the styleguide is not part of the production build", async ({ page }) => {
-  const response = await page.goto("/styleguide");
-  expect(response?.status()).toBe(404);
-  await expect(
-    page.getByRole("heading", { level: 1, name: "We couldn’t find that page" })
-  ).toBeVisible();
-});
-
 test("checkpoint: resting, the catalogue out of reach is a 503 with Retry-After", async ({
   page,
   request,

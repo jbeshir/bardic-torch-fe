@@ -9,10 +9,9 @@ import { fileURLToPath } from "node:url";
  * `node scripts/build.mjs --from-branch`, which picks the mode from the
  * branch being built (docs/DEPLOY.md §2).
  *
- * The mode decides three things: which routes there are (BT_BUILD_MODE,
- * app/routes.ts: the styleguide is left out of production), whether stub
- * sign-in is compiled in (the Vite mode, vite.config.ts: e2e only), and
- * which Worker the built config deploys to (CLOUDFLARE_ENV: `preview`
+ * The mode decides two things: whether stub sign-in is compiled in (the
+ * Vite mode, vite.config.ts: e2e only), and which Worker the built config
+ * deploys to (CLOUDFLARE_ENV: `preview`
  * selects wrangler.jsonc's `env.preview`, the bardic-torch-fe-preview
  * Worker). Then it checks the built config names the Worker it should, and
  * deletes the `.dev.vars` copy the Cloudflare plugin writes next to it.
@@ -63,8 +62,8 @@ export function selectBuildMode(env) {
 }
 
 /**
- * The process environment of `react-router build` for `mode`: BT_BUILD_MODE,
- * and CLOUDFLARE_ENV only for the preview Worker. An inherited
+ * The process environment of `react-router build` for `mode`:
+ * CLOUDFLARE_ENV only for the preview Worker. An inherited
  * CLOUDFLARE_ENV is dropped, so a stray export can't build production code
  * for another Worker.
  * @param {keyof typeof BUILD_MODES} mode
@@ -76,7 +75,6 @@ export function buildEnvironment(mode, env) {
   const { cloudflareEnv } = BUILD_MODES[mode];
   return {
     ...inherited,
-    BT_BUILD_MODE: mode,
     ...(cloudflareEnv ? { CLOUDFLARE_ENV: cloudflareEnv } : {}),
   };
 }

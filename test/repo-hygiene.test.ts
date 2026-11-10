@@ -244,7 +244,6 @@ describe("wiki host only in allowed files", () => {
     expect(allowed("app/constants/navigation.ts")).toBe(true);
     expect(allowed("app/content/help/licence.md")).toBe(true);
     expect(allowed("docs/DESIGN.md")).toBe(true);
-    expect(allowed("app/styleguide/Content.tsx")).toBe(false);
     expect(allowed("app/constants/navigation.tsx")).toBe(false);
     expect(allowed("test/fixtures/wiki-categories.json")).toBe(false);
   });
@@ -378,16 +377,6 @@ describe("CI workflows", () => {
   it("runs pull requests once, and pushes only to the deployed branches", () => {
     expect(Object.keys(ciWorkflow.on).sort()).toEqual(["pull_request", "push"]);
     expect(ciWorkflow.on.push?.branches).toEqual(["main", "preview"]);
-  });
-
-  it("audits every push to any branch, and every pull request", () => {
-    expect(Object.keys(auditWorkflow.on).sort()).toEqual([
-      "pull_request",
-      "push",
-    ]);
-    // No branch, tag or path filter: an empty `push:` is every push.
-    expect(auditWorkflow.on.push).toBeNull();
-    expect(auditWorkflow.on.pull_request).toBeNull();
   });
 
   it("validate installs from the lockfile and runs npm run validate", () => {

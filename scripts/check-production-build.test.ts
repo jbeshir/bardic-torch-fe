@@ -34,8 +34,6 @@ function fakeBuild(files: Record<string, string>): string {
   dirs.push(dir);
   const all = {
     "server/index.js": `const routes = { "routes/_index": {} }; ${INDEXABLE_RULES}`,
-    "client/assets/manifest-abc.js":
-      'window.__remixManifest={"routes/_index":{}}',
     ...files,
   };
   for (const [name, content] of Object.entries(all)) {
@@ -51,12 +49,6 @@ function inspect(
 ) {
   return inspectBuild({ buildDir: fakeBuild(files), mode, marker: MARKER });
 }
-
-const STYLEGUIDE = {
-  "server/index.js": `const routes = { "routes/styleguide": {} }; ${INDEXABLE_RULES}`,
-  "client/assets/manifest-abc.js":
-    'window.__remixManifest={"routes/styleguide":{}}',
-};
 
 afterEach(() => {
   for (const dir of dirs.splice(0))
@@ -106,12 +98,11 @@ describe("inspectBuild", () => {
     }
   );
 
-  it("passes a preview build that has the styleguide and noindex", () => {
+  it("passes a preview build that has noindex", () => {
     expect(
       inspect(
         {
-          ...STYLEGUIDE,
-          "server/index.js": `const routes = { "routes/styleguide": {} }; ${NOINDEX}`,
+          "server/index.js": `const routes = { "routes/_index": {} }; ${NOINDEX}`,
         },
         "preview"
       )
@@ -135,8 +126,7 @@ describe("inspectBuild", () => {
     expect(
       inspect(
         {
-          ...STYLEGUIDE,
-          "server/index.js": `const routes = { "routes/styleguide": {} }; ${NOINDEX}`,
+          "server/index.js": `const routes = { "routes/_index": {} }; ${NOINDEX}`,
           "server/index.js.map": `{"sourcesContent":["${INDEXABLE_ONLY_MARKER}"]}`,
         },
         "preview"
@@ -148,8 +138,7 @@ describe("inspectBuild", () => {
     expect(
       inspect(
         {
-          ...STYLEGUIDE,
-          "server/index.js": `const routes = { "routes/styleguide": {} }; ${INDEXABLE_RULES}`,
+          "server/index.js": `const routes = { "routes/_index": {} }; ${INDEXABLE_RULES}`,
         },
         "preview"
       )
@@ -176,31 +165,6 @@ describe("inspectBuild", () => {
       inspect({ "server/assets/a.js": "fetch('http://127.0.0.1:4010/v1/me')" })
     ).toEqual([
       "production: fixture host 127.0.0.1:4010 in server/assets/a.js",
-    ]);
-  });
-
-  it("flags the styleguide in production", () => {
-    expect(inspect(STYLEGUIDE)).toEqual([
-      "production: routes/styleguide present in the server build",
-      "production: routes/styleguide present in the client manifest",
-    ]);
-  });
-
-  it("flags a preview build missing the styleguide route", () => {
-    expect(inspect({}, "preview")).toEqual([
-      "preview: the crawlable robots.txt rules are present in the server build",
-      "preview: X-Robots-Tag is missing from the server build",
-      "preview: routes/styleguide missing from the server build",
-      "preview: routes/styleguide missing from the client manifest",
-    ]);
-  });
-
-  it("always expects the styleguide in preview, so a renamed route can't switch the check off", () => {
-    expect(inspect({}, "preview")).toEqual([
-      "preview: the crawlable robots.txt rules are present in the server build",
-      "preview: X-Robots-Tag is missing from the server build",
-      "preview: routes/styleguide missing from the server build",
-      "preview: routes/styleguide missing from the client manifest",
     ]);
   });
 
@@ -232,10 +196,7 @@ describe("inspectBuild", () => {
         mode: "production",
         marker: MARKER,
       })
-    ).toEqual([
-      "production: no server build",
-      "production: expected one client manifest",
-    ]);
+    ).toEqual(["production: no server build"]);
   });
 });
 
@@ -323,7 +284,6 @@ describe("inspectBuild on a real e2e build", () => {
   });
 
   it("finds the stub auth marker, and only stub auth", () => {
-    // e2e builds keep the styleguide, as preview builds do.
     const problems = inspectBuild({
       buildDir,
       mode: "preview",

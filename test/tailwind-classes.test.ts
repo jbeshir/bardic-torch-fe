@@ -167,13 +167,11 @@ describe("Tailwind classes in the app", () => {
   it("finds the strings that flow into class attributes", () => {
     const texts = new Set(parts.map(({ text }) => text));
     // A className literal, a helper's return value through an import
-    // (textControlClasses), a record entry (Button's VARIANTS), a `.map`
-    // callback's destructured element (the styleguide's SURFACES).
+    // (textControlClasses) and a record entry (Button's VARIANTS).
     for (const text of [
       "sr-only",
       "disabled:cursor-not-allowed disabled:border-solid disabled:border-border disabled:bg-input-bg-locked disabled:text-fg-subtle",
       "border border-transparent bg-danger text-danger-on hover:bg-danger-hover active:bg-danger-hover",
-      "bg-surface-sunken",
     ]) {
       expect(texts).toContain(text);
     }

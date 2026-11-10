@@ -118,28 +118,11 @@ describe("/bards loader", () => {
     expect(await redirectOf(search)).toEqual({ status: 301, location });
   });
 
-  it.each(["?affiliation=&kind=group", "?q=&letter=W"])(
-    "answers %s, the forms' empty defaults, without a redirect",
-    async search => {
-      expect(await redirectOf(search)).toBeNull();
-    }
-  );
-
-  it("answers an order-only difference without a redirect", async () => {
-    expect(await redirectOf("?role=singer&kind=group")).toBeNull();
-  });
-
-  it("sends a page past the end to the last page, and one past the API there in one hop", async () => {
+  it("sends a page past the end to the last page", async () => {
     expect(await redirectOf("?page=2")).toEqual({
       status: 302,
       location: "/bards",
     });
-    const seen = upstreamRequests("/v1/persons");
-    expect(await redirectOf("?page=999")).toEqual({
-      status: 302,
-      location: "/bards",
-    });
-    expect(seen.map(params => params.toString())).toEqual(["limit=1&offset=0"]);
   });
 
   it("leaves out an affiliation that no longer exists, with one re-query", async () => {
@@ -157,20 +140,6 @@ describe("/bards loader", () => {
     expect(seen.map(params => params.toString())).toEqual([
       "kind=group&affiliation=gone-kingdom&limit=50&offset=0",
       "kind=group&limit=50&offset=0",
-    ]);
-  });
-
-  it("cleans a stale affiliation past the API too, keeping it in the redirect", async () => {
-    const seen = upstreamRequests("/v1/persons");
-    expect(
-      await redirectOf("?kind=group&affiliation=gone-kingdom&page=999")
-    ).toEqual({
-      status: 302,
-      location: "/bards?kind=group&affiliation=gone-kingdom",
-    });
-    expect(seen.map(params => params.toString())).toEqual([
-      "kind=group&affiliation=gone-kingdom&limit=1&offset=0",
-      "kind=group&limit=1&offset=0",
     ]);
   });
 

@@ -6,8 +6,6 @@ import {
   DISPLAY_NAME_MAX,
   displayNameProblem,
   normaliseDisplayName,
-  TOKEN_NAME_MAX,
-  tokenNameProblem,
 } from "./rules";
 
 /**
@@ -51,22 +49,6 @@ export const userSchema = z.object({
   role: roleSchema,
 });
 
-const timestamp = z.iso.datetime({ offset: true });
-
-const apiTokenSchema = z.object({
-  id: z.string(),
-  prefix: z.string().regex(/^[0-9a-f]{8}$/),
-  name: characters(1, TOKEN_NAME_MAX).nullable(),
-  created_at: timestamp,
-  last_used_at: timestamp.nullable(),
-});
-
-export const apiTokenListSchema = z.object({ data: z.array(apiTokenSchema) });
-
-export const createdApiTokenSchema = apiTokenSchema.extend({
-  token: z.string().regex(/^user_api\|[0-9a-f]{64}$/),
-});
-
 /** An upstream error body. Its `message` is never shown to users. */
 export const upstreamErrorSchema = z.object({
   code: errorCodeSchema,
@@ -94,16 +76,6 @@ export const updateMeFormSchema = z.object({
     .transform(value => normaliseDisplayName(value ?? "")),
 });
 
-/** Form body of `POST /api/tokens`; a blank name means no name. */
-export const createApiTokenFormSchema = z
-  .object({
-    name: z.string().superRefine(checkedBy(tokenNameProblem)).optional(),
-  })
-  .transform(({ name }): Schemas["CreateAPITokenRequest"] => {
-    const trimmed = name?.trim();
-    return trimmed ? { name: trimmed } : {};
-  });
-
 export type User = z.output<typeof userSchema>;
 export type UpstreamErrorCode = z.output<typeof errorCodeSchema>;
 
@@ -113,12 +85,6 @@ type _ContractChecks = [
   Assert<Matches<typeof roleSchema, Schemas["User"]["role"]>>,
   Assert<Matches<typeof errorCodeSchema, Schemas["Error"]["code"]>>,
   Assert<Matches<typeof userSchema, Schemas["User"]>>,
-  Assert<Matches<typeof apiTokenSchema, Schemas["APIToken"]>>,
-  Assert<Matches<typeof apiTokenListSchema, Schemas["APITokenList"]>>,
-  Assert<Matches<typeof createdApiTokenSchema, Schemas["CreatedAPIToken"]>>,
   Assert<Matches<typeof upstreamErrorSchema, Schemas["Error"]>>,
   Assert<Matches<typeof updateMeFormSchema, Schemas["UpdateMeRequest"]>>,
-  Assert<
-    Matches<typeof createApiTokenFormSchema, Schemas["CreateAPITokenRequest"]>
-  >,
 ];

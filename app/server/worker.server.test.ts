@@ -394,7 +394,6 @@ describe("the Worker's CSRF check (React Router's, answered before it runs)", ()
     Object.assign(globalThis, {
       __reactRouterAppDirectory: path.join(process.cwd(), "app"),
     });
-    vi.stubEnv("BT_BUILD_MODE", "development");
     const { default: routes } = await import("~/routes");
     type Entry = Awaited<typeof routes>[number];
     /** Every route of app/routes as a URL path, and whether it renders. */
@@ -424,15 +423,12 @@ describe("the Worker's CSRF check (React Router's, answered before it runs)", ()
         .sort()
     ).toEqual([
       "/api/me",
-      "/api/tokens",
-      "/api/tokens/x",
       "/auth/callback",
       "/auth/login",
       "/auth/logout",
       "/resources/theme",
       "/robots.txt",
       "/sitemap.xml",
-      "/sitemap/x",
     ]);
 
     const fetch = worker();

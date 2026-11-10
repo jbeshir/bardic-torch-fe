@@ -363,7 +363,7 @@ Nothing in FE1 or FE2 reads either key.
 
 - **Production:** merge to `main`. The required checks run on the pull request; Workers Builds builds `main` in production mode and deploys it to `bardic-torch-fe`, served on `bardictorch.org`.
 - **Preview:** push to `preview`, e.g. `git push origin HEAD:preview`. Workers Builds builds it in preview mode, with `/styleguide`, and deploys it to `bardic-torch-fe-preview`, served on `https://preview.bardictorch.org`. Sign-in works there against the same Auth0 application and API.
-- **Other branches** are not deployed (§2). CI still runs on their pull requests, and the `audit` job on every push.
+- **Other branches** are not deployed (§2). CI still runs on their pull requests, and the `audit` job weekly.
 
 Until production is signed off, deploy to the preview Worker only.
 

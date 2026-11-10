@@ -66,19 +66,19 @@ describe("/events loader", () => {
   });
 
   it.each([
-    ["an upper-case kind", "?kind=Venue", "/events?kind=venue"],
+    ["an upper-case kind", "?kind=Venue", "/events"],
     ["an invalid kind", "?kind=tavern", "/events"],
     ["a repeated kind", "?kind=venue&kind=event", "/events?kind=venue"],
   ])("redirects %s with one 301", async (_why, search, location) => {
     expect(await redirectOf(search)).toEqual({ status: 301, location });
   });
 
-  it.each([
-    ["past the end", "?page=2", "/events"],
-    ["past the API", "?kind=venue&page=500", "/events?kind=venue"],
-  ])("sends a page %s on with one 302", async (_why, search, location) => {
-    expect(await redirectOf(search)).toEqual({ status: 302, location });
-  });
+  it.each([["past the end", "?page=2", "/events"]])(
+    "sends a page %s on with one 302",
+    async (_why, search, location) => {
+      expect(await redirectOf(search)).toEqual({ status: 302, location });
+    }
+  );
 
   it.each([
     [

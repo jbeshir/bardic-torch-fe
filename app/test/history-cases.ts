@@ -63,6 +63,5 @@ export function historyRedirects(path: string) {
   return [
     ["page 1", "?page=1", 301, path],
     ["past the end", "?page=2", 302, path],
-    ["past the API", "?page=900", 302, path],
   ] as const;
 }

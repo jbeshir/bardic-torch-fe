@@ -27,25 +27,6 @@ const FE1_OPERATIONS = [
     requestBody: "UpdateMeRequest",
     success: { status: "200", schema: "User" },
   },
-  {
-    operationId: "listAPITokens",
-    method: "GET",
-    path: "/v1/tokens",
-    success: { status: "200", schema: "APITokenList" },
-  },
-  {
-    operationId: "createAPIToken",
-    method: "POST",
-    path: "/v1/tokens",
-    requestBody: "CreateAPITokenRequest",
-    success: { status: "201", schema: "CreatedAPIToken" },
-  },
-  {
-    operationId: "revokeAPIToken",
-    method: "DELETE",
-    path: "/v1/tokens/{token_id}",
-    success: { status: "204", schema: undefined },
-  },
 ] as const;
 
 /** The catalogue reads FE2 makes: anonymous, `security: []`. */

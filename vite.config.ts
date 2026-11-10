@@ -19,8 +19,7 @@ function devEnvOverrides(): Record<string, string> {
   );
 }
 
-// Build modes: production | preview | e2e | development (scripts/build.mjs,
-// scripts/dev.mjs). Which routes a mode has is in app/routes.ts.
+// Build modes: production | preview | e2e | development (scripts/build.mjs).
 /** @public Loaded by `react-router build` and `react-router dev`. */
 export default defineConfig(({ command, mode }) => ({
   // Tests (vitest.config.ts) stub both per case instead.

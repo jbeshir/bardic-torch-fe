@@ -342,7 +342,7 @@ async function renderedCanvas(page: Page): Promise<string> {
  * (contrast aside) and in its author colours, and captured in forced
  * colours (see `inForcedAndAuthorColours`).
  *
- * With `target` (a CSS selector, e.g. one styleguide block or an open
+ * With `target` (a CSS selector, e.g. an open
  * dialog), axe and the screenshot cover that element only; with `target`
  * and `viewportOnly`, axe covers the element and the screenshot is the
  * viewport (an open dialog with its scrim, toasts where they appear).

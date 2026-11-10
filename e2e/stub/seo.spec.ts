@@ -26,7 +26,6 @@ test("every kind of response says noindex in a header: documents, resource route
     "/help/licence",
     "/no-such-page",
     "/sitemap.xml",
-    "/sitemap/pages.xml",
     "/robots.txt",
     "/resources/theme",
   ]) {

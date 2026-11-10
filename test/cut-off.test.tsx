@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { findCutOffControls } from "../e2e/support/cut-off";
 
 /**
- * The text-spacing check in e2e/stub/styleguide.spec.ts. jsdom has no
+ * The text-spacing check in e2e/support/cut-off.ts. jsdom has no
  * layout, so each test lays out its nodes by hand: `place(node, ...rects)`
  * gives an element or text node its boxes (one per line fragment).
  */

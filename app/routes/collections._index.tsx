@@ -27,11 +27,7 @@ import { Link } from "~/components/ui/Link";
 import { ViewTabs } from "~/components/ui/Tabs";
 import { formatCount } from "~/catalogue/format";
 import { catalogueHeaders } from "~/catalogue/headers";
-import {
-  isBeyondApi,
-  redirectPastTheEnd,
-  showingText,
-} from "~/catalogue/paging";
+import { redirectPastTheEnd, showingText } from "~/catalogue/paging";
 import {
   collectionQuery,
   redirectIfNotCanonical,
@@ -89,14 +85,6 @@ export async function loader({ url, context }: LoaderFunctionArgs) {
   redirectIfNotCanonical(url, canonical);
   const pageHref = (page: number) => collectionQuery.href(state, { page });
 
-  if (isBeyondApi(state.page)) {
-    const first = await listCollections(context, {
-      ...collectionQuery.toApi({ ...state, page: 1 }),
-      limit: 1,
-    });
-    if (!first.ok) return failed(first.failure, state, canonical);
-    redirectPastTheEnd(state.page, first.data.total, pageHref);
-  }
   const result = await listCollections(context, collectionQuery.toApi(state));
   if (!result.ok) return failed(result.failure, state, canonical);
   redirectPastTheEnd(state.page, result.data.total, pageHref);

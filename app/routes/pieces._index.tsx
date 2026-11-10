@@ -32,11 +32,7 @@ import { ViewTabs } from "~/components/ui/Tabs";
 import { facetGroups, termChipLabel } from "~/catalogue/facet-groups";
 import { formatCount } from "~/catalogue/format";
 import { catalogueHeaders } from "~/catalogue/headers";
-import {
-  isBeyondApi,
-  redirectPastTheEnd,
-  showingText,
-} from "~/catalogue/paging";
+import { redirectPastTheEnd, showingText } from "~/catalogue/paging";
 import {
   pieceQuery,
   redirectIfNotCanonical,
@@ -113,7 +109,7 @@ function failed(
 export async function loader({ url, context }: LoaderFunctionArgs) {
   const asked = pieceQuery.parse(url.searchParams);
   const { canonical } = asked;
-  redirectIfNotCanonical(url, canonical, pieceQuery.blankable);
+  redirectIfNotCanonical(url, canonical);
 
   // The terms name the facets; asked for alongside the pieces, so the
   // common case is one round trip.
@@ -124,17 +120,13 @@ export async function loader({ url, context }: LoaderFunctionArgs) {
   };
 
   /**
-   * The pieces for `state` (only the total with `totalOnly`). A `term` the
+   * The pieces for `state`. A `term` the
    * API doesn't know (deleted, unapproved or an affiliation) makes it
    * answer 400: with the terms at hand, those slugs are left out and the
    * list asked for once more (§2.4).
    */
-  async function readPieces(state: PieceQueryState, totalOnly = false) {
-    const query = (from: PieceQueryState) =>
-      totalOnly
-        ? { ...pieceQuery.toApi({ ...from, page: 1 }), limit: 1 }
-        : pieceQuery.toApi(from);
-    const first = await listPieces(context, query(state));
+  async function readPieces(state: PieceQueryState) {
+    const first = await listPieces(context, pieceQuery.toApi(state));
     const unchanged = { state, stale: [], result: first } as const;
     if (first.ok || first.failure.kind !== "invalid_filters") return unchanged;
     const terms = await termsRead;
@@ -149,7 +141,7 @@ export async function loader({ url, context }: LoaderFunctionArgs) {
     return {
       state: cleaned,
       stale,
-      result: await listPieces(context, query(cleaned)),
+      result: await listPieces(context, pieceQuery.toApi(cleaned)),
     };
   }
 
@@ -157,21 +149,6 @@ export async function loader({ url, context }: LoaderFunctionArgs) {
   // categories and all, so the page it lands on still says they were left
   // out.
   const pageHref = (page: number) => pieceQuery.href(asked.state, { page });
-
-  if (isBeyondApi(asked.state.page)) {
-    // An offset the API would refuse: ask for the total, then go to the
-    // last page there is.
-    const head = await readPieces(asked.state, true);
-    if (!head.result.ok) {
-      return failed(head.result.failure, {
-        state: head.state,
-        canonical,
-        terms: await termsData(),
-        stale: head.stale,
-      });
-    }
-    redirectPastTheEnd(asked.state.page, head.result.data.total, pageHref);
-  }
 
   const { state, stale, result } = await readPieces(asked.state);
   const page = { state, canonical, terms: await termsData(), stale };
@@ -505,7 +482,6 @@ export default function PiecesRoute() {
                 page={state.page}
                 total={list.total}
                 href={page => pieceQuery.href(state, { page })}
-                narrowable={isFiltered(state)}
               />
             </div>
           </section>

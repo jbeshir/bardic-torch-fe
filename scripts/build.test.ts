@@ -73,22 +73,18 @@ describe("buildEnvironment", () => {
     ["production", undefined],
     ["preview", "preview"],
     ["e2e", undefined],
-  ] as const)(
-    "builds %s with BT_BUILD_MODE set and CLOUDFLARE_ENV %s",
-    (mode, cloudflareEnv) => {
-      const env = buildEnvironment(mode, { PATH: "/bin" });
-      expect(env).toEqual({
-        PATH: "/bin",
-        BT_BUILD_MODE: mode,
-        ...(cloudflareEnv ? { CLOUDFLARE_ENV: cloudflareEnv } : {}),
-      });
-    }
-  );
+  ] as const)("builds %s with CLOUDFLARE_ENV %s", (mode, cloudflareEnv) => {
+    const env = buildEnvironment(mode, { PATH: "/bin" });
+    expect(env).toEqual({
+      PATH: "/bin",
+      ...(cloudflareEnv ? { CLOUDFLARE_ENV: cloudflareEnv } : {}),
+    });
+  });
 
   it("drops an inherited CLOUDFLARE_ENV, so production can't be built for another Worker", () => {
     expect(
       buildEnvironment("production", { CLOUDFLARE_ENV: "preview" })
-    ).toEqual({ BT_BUILD_MODE: "production" });
+    ).toEqual({});
   });
 });
 

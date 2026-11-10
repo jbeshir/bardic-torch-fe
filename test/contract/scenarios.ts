@@ -7,7 +7,7 @@ import type { FixtureOperationId } from "../fixture-api/operations";
  */
 
 type Caller =
-  /** A fresh fixture user with the sample tokens. */
+  /** A fresh fixture user. */
   | "user"
   /** A fresh fixture user who is blocked. */
   | "blocked"
@@ -32,8 +32,6 @@ type Scenario = {
     /** Required for a public operation: path or query parameters to fail on. */
     readonly match?: Readonly<Record<string, string>>;
   };
-  /** Create tokens until the user is at the limit first. */
-  readonly atTokenLimit?: boolean;
   readonly status: number;
 };
 
@@ -50,7 +48,6 @@ type SendResult = { readonly status: number; readonly body: unknown };
 /** One transport: the router directly, the HTTP server or msw. */
 export type Send = (request: SendRequest) => Promise<SendResult>;
 
-const SAMPLE_TOKEN_ID = "00000000-0000-4000-8000-000000000001";
 const LONG = (length: number) => "x".repeat(length);
 
 export function bearer(userId: string): string {
@@ -81,17 +78,6 @@ export async function runScenario(
   const userId = await createUser(send, {
     blocked: scenario.caller === "blocked",
   });
-  if (scenario.atTokenLimit) {
-    let status = 201;
-    while (status === 201) {
-      ({ status } = await send({
-        method: "POST",
-        path: "/v1/tokens",
-        authorization: bearer(userId),
-        ...json({}),
-      }));
-    }
-  }
   if (scenario.fail) {
     const injected = await send({
       method: "POST",
@@ -129,22 +115,6 @@ const updateMe = {
   method: "PATCH",
   path: "/v1/me",
 } as const;
-const listTokens = {
-  operationId: "listAPITokens",
-  method: "GET",
-  path: "/v1/tokens",
-} as const;
-const createToken = {
-  operationId: "createAPIToken",
-  method: "POST",
-  path: "/v1/tokens",
-} as const;
-const revokeToken = {
-  operationId: "revokeAPIToken",
-  method: "DELETE",
-  path: `/v1/tokens/${SAMPLE_TOKEN_ID}`,
-} as const;
-
 /**
  * One public catalogue read: a request that succeeds, one that is a real
  * invalid parameter (400), one for an unknown entity (404, only where the
@@ -426,79 +396,6 @@ export const SCENARIOS: readonly Scenario[] = [
     name: "injected 500",
     caller: "user",
     body: { display_name: "Morwen" },
-    fail: { status: 500 },
-    status: 500,
-  },
-
-  { ...listTokens, name: "signed in", caller: "user", status: 200 },
-  { ...listTokens, name: "signed out", caller: "anonymous", status: 401 },
-  {
-    ...listTokens,
-    name: "injected 403 api_token_not_allowed",
-    caller: "user",
-    fail: { status: 403, code: "api_token_not_allowed" },
-    status: 403,
-  },
-
-  {
-    ...createToken,
-    name: "named",
-    caller: "user",
-    body: { name: " CI runner " },
-    status: 201,
-  },
-  { ...createToken, name: "unnamed", caller: "user", body: {}, status: 201 },
-  {
-    ...createToken,
-    name: "null name",
-    caller: "user",
-    body: { name: null },
-    status: 201,
-  },
-  {
-    ...createToken,
-    name: "129-character name",
-    caller: "user",
-    body: { name: LONG(129) },
-    status: 400,
-  },
-  {
-    ...createToken,
-    name: "signed out",
-    caller: "anonymous",
-    body: {},
-    status: 401,
-  },
-  {
-    ...createToken,
-    name: "at the token limit",
-    caller: "user",
-    body: {},
-    atTokenLimit: true,
-    status: 409,
-  },
-  {
-    ...createToken,
-    name: "injected 403 api_token_not_allowed",
-    caller: "user",
-    body: {},
-    fail: { status: 403, code: "api_token_not_allowed" },
-    status: 403,
-  },
-
-  { ...revokeToken, name: "own token", caller: "user", status: 204 },
-  {
-    ...revokeToken,
-    name: "unknown token",
-    caller: "user",
-    path: "/v1/tokens/no-such-token",
-    status: 404,
-  },
-  { ...revokeToken, name: "signed out", caller: "anonymous", status: 401 },
-  {
-    ...revokeToken,
-    name: "injected 500",
-    caller: "user",
     fail: { status: 500 },
     status: 500,
   },

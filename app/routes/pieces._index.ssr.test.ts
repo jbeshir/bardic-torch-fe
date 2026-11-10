@@ -113,18 +113,6 @@ describe("/pieces loader: the canonical URL (plan §2.2)", () => {
     expect(await redirectOf(search)).toBeNull();
   });
 
-  it("never sends the API a repeated scalar", async () => {
-    const seen = upstreamRequests();
-    expect(await redirectOf("?letter=A&letter=B")).toEqual({
-      status: 301,
-      location: "/pieces?letter=A",
-    });
-    expect(seen).toHaveLength(0);
-    await load("?letter=A");
-    expect(seen).toHaveLength(1);
-    expect(seen[0]?.getAll("letter")).toEqual(["A"]);
-  });
-
   it("asks the API for the state's page, with the API's names", async () => {
     const seen = upstreamRequests();
     await load("?status=endangered&stub=false&page=2");
@@ -157,30 +145,10 @@ describe("/pieces loader: paging past the data (plan §2.2 rule 8)", () => {
     });
   });
 
-  it("sends a page past the API to the last page in one hop, asking only for the total", async () => {
-    const seen = upstreamRequests();
-    expect(await redirectOf("?page=999")).toEqual({
-      status: 302,
-      location: "/pieces?page=5",
-    });
-    expect(seen.map(params => params.toString())).toEqual(["limit=1&offset=0"]);
-  });
-
   it("keeps the filters on the way", async () => {
-    expect(await redirectOf("?letter=T&page=300")).toEqual({
+    expect(await redirectOf("?letter=T&page=99")).toEqual({
       status: 302,
       location: "/pieces?letter=T",
-    });
-  });
-
-  it("shows the failure when even the total can't be had", async () => {
-    quietErrors();
-    fixtures.fail({ operationId: "listPieces", status: 500, code: "internal" });
-    const answer = await load("?page=999");
-    expect(answer).toMatchObject({
-      type: "DataWithResponseInit",
-      data: { kind: "server" },
-      init: { status: 500 },
     });
   });
 });
@@ -303,14 +271,6 @@ describe("/pieces document", () => {
     expect(main).toContain('href="/pieces/1588-armada-ballad"');
     expect(main).toContain('href="/pieces?page=2"');
     expect(main).toContain('rel="next"');
-  });
-
-  it("answers an order-only difference 200, naming the ordered form canonical", async () => {
-    const response = await get("/pieces?letter=T&q=lament");
-    expect(response.status).toBe(200);
-    expect(await response.text()).toMatch(
-      /<link rel="canonical" href="https:\/\/app\.test\/pieces\?q=lament&amp;letter=T"\/?>/
-    );
   });
 
   it("indexes a letter page, and keeps a search out of the index", async () => {
@@ -564,7 +524,7 @@ describe("/pieces loader: the terms and stale categories (plan §2.4)", () => {
     expect(params.get("page")).toBeNull();
     quietErrors();
     expect(
-      (await redirectOf("?term=gone&term=warlike&page=900"))?.location
+      (await redirectOf("?term=gone&term=warlike&page=99"))?.location
     ).toBe(location);
   });
 
@@ -676,32 +636,6 @@ describe("/pieces loader: the terms and stale categories (plan §2.4)", () => {
       init: { status: 503 },
     });
   });
-
-  it("cleans the total's request too, for a page past the API", async () => {
-    quietErrors();
-    const seen = upstreamRequests();
-    // The redirect keeps the stale slug, so the page it lands on says so.
-    expect(await redirectOf("?term=no-such-term&term=eerie&page=500")).toEqual({
-      status: 302,
-      location: "/pieces?term=eerie&term=no-such-term",
-    });
-    expect(seen.map(params => params.getAll("term"))).toEqual([
-      ["eerie", "no-such-term"],
-      ["eerie"],
-    ]);
-  });
-
-  it.each([
-    "?stub=",
-    "?kind=song&stub=&sort=",
-    "?q=lament&sort=",
-    "?q=&kind=song",
-  ])(
-    "answers %s, the forms' empty defaults, without a redirect",
-    async search => {
-      expect(await redirectOf(search)).toBeNull();
-    }
-  );
 });
 
 describe("/pieces document: facets and stale categories", () => {

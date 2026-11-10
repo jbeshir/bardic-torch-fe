@@ -41,15 +41,12 @@ const ACTION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
  */
 const RESOURCE_ROUTE_PATHS: readonly string[] = [
   "/api/me",
-  "/api/tokens",
-  "/api/tokens/:tokenId",
   "/auth/callback",
   "/auth/login",
   "/auth/logout",
   "/resources/theme",
   "/robots.txt",
   "/sitemap.xml",
-  "/sitemap/:type",
 ];
 
 /**

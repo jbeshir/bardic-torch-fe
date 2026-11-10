@@ -7,9 +7,9 @@ import { renderRoutes } from "~/test/router";
 import PiecesRoute, { ErrorBoundary, loader } from "./pieces._index";
 
 // The real /pieces form against the real loader (the fixture API through
-// msw): what the form sends without JS, in DOM order, is answered 200,
-// never a 301 (plan §2.5), and with JS it goes to the canonical URL in one
-// request.
+// msw): what the form sends without JS, in DOM order, is answered 200 or by
+// one 301 to a URL answered 200 (its blank fields are dropped there), and
+// with JS it goes to the canonical URL in one request.
 
 const fixtures = serveFixtureApi();
 
@@ -70,15 +70,17 @@ describe("/pieces: the facet form's own GET", () => {
     ["stubs only", "?stub=true"],
     ["hiding stubs, with a letter", "?stub=false&letter=W"],
     ["every filter", "?q=song&term=warlike&kind=song&stub=false&letter=S"],
-  ])("is answered 200 for %s", async (_why, search) => {
+  ])("is answered 200, after at most one 301, for %s", async (_why, search) => {
     await renderPage(search);
     await userEvent.click(screen.getByRole("button", { name: /^Filters/ }));
     const sent = nativeSubmission();
-    const result = await answer(sent);
-    expect(
-      result instanceof Response ? result.status : 200,
-      `GET /pieces${sent}`
-    ).toBe(200);
+    let result = await answer(sent);
+    if (result instanceof Response) {
+      expect(result.status, `GET /pieces${sent}`).toBe(301);
+      const target = result.headers.get("Location") ?? "";
+      result = await answer(target.slice("/pieces".length));
+    }
+    expect(result, `GET /pieces${sent}`).not.toBeInstanceOf(Response);
   });
 
   it("is answered 200 after ticking more boxes too", async () => {

@@ -1,5 +1,5 @@
 import type { RouterContextProvider } from "react-router";
-import { isBeyondApi, redirectPastTheEnd } from "~/catalogue/paging";
+import { redirectPastTheEnd } from "~/catalogue/paging";
 import {
   historyQuery,
   redirectIfNotCanonical,
@@ -43,14 +43,6 @@ export async function loadHistory({
   const { state, canonical } = historyQuery.parse(url.searchParams);
   redirectIfNotCanonical(url, canonical);
   const pageHref = (page: number) => historyQuery.href(path, page);
-  if (isBeyondApi(state.page)) {
-    const first = await listRevisions(context, entity, address, {
-      limit: 1,
-      offset: 0,
-    });
-    if (!first.ok) throwPageFailure(asPageFailure(first.failure));
-    redirectPastTheEnd(state.page, first.data.total, pageHref);
-  }
   const result = await listRevisions(
     context,
     entity,

@@ -22,7 +22,7 @@ import { applyWiderText, textAdvance } from "./text-spacing";
  * app bar covers none of it, with the machine's sans and with wider text
  * (expectBarClearOfPageEnd). prod/sweeps.spec.ts and
  * stub/sweeps.spec.ts run the rows of their phase; a page that needs stub
- * sign-in or the styleguide is a stub row.
+ * sign-in is a stub row.
  */
 
 type JourneyPage = {
@@ -338,29 +338,12 @@ const JOURNEY_PAGES: readonly JourneyPage[] = [
       await expect(page).toHaveURL(/\/settings$/);
       await waitForHydration(page);
       await expect(
-        main(page).getByRole("heading", { level: 2, name: "API tokens" })
+        main(page).getByRole("heading", { level: 2, name: "Profile" })
       ).toBeVisible();
     },
-    primary: page => [
-      main(page).getByRole("button", { name: "Save changes" }),
-      main(page).getByRole("button", { name: "Create token" }),
-    ],
+    primary: page => [main(page).getByRole("button", { name: "Save changes" })],
     inShell: true,
   },
-  {
-    name: "styleguide",
-    phase: "stub",
-    open: async page => {
-      await visit("/styleguide")(page);
-      await expect(
-        page.getByRole("tablist", { name: "Preview" })
-      ).toBeVisible();
-    },
-    primary: () => [],
-    inShell: true,
-    long: true,
-  },
-
   // C3.1: the catalogue-wide search.
   {
     name: "/search?q=northmarch",

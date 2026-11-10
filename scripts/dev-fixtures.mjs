@@ -51,7 +51,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       env: {
         ...process.env,
         ...fixtureAppEnv(devPort, fixturePort),
-        BT_BUILD_MODE: "development",
       },
     }),
   ];

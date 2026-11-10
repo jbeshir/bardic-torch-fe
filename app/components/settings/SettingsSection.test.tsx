@@ -21,14 +21,14 @@ describe("SettingsSection", () => {
   it("with headingRef, the heading can take focus from code but is not in the tab order", () => {
     const heading = createRef<HTMLHeadingElement>();
     render(
-      <SettingsSection title="API tokens" headingRef={heading}>
+      <SettingsSection title="Profile" headingRef={heading}>
         <p>Body</p>
       </SettingsSection>
     );
     expect(heading.current).toHaveAttribute("tabindex", "-1");
     heading.current?.focus();
     expect(
-      screen.getByRole("heading", { level: 2, name: "API tokens" })
+      screen.getByRole("heading", { level: 2, name: "Profile" })
     ).toHaveFocus();
   });
 

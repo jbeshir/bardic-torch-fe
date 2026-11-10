@@ -131,11 +131,6 @@ describe("npm run dev:fixtures", () => {
     expect(await response.text()).toContain("<h1>Choose a fixture user</h1>");
   });
 
-  it("serves the styleguide (the development build mode)", async () => {
-    const response = await fetch(`${origin}/styleguide`);
-    expect(response.status).toBe(200);
-  });
-
   it("signs in a fixture user with stub auth and the session reaches the fixture API", async () => {
     const login = await fetch(
       `${origin}/auth/login?as=moderator&returnTo=%2Fhelp`,
@@ -159,7 +154,7 @@ describe("npm run dev:fixtures", () => {
     });
   });
 
-  it("renders /settings for a signed-in fixture user from the fixture API (root /v1/me, settings /v1/tokens)", async () => {
+  it("renders /settings for a signed-in fixture user from the fixture API (root /v1/me)", async () => {
     const login = await fetch(
       `${origin}/auth/login?as=contributor&returnTo=%2Fsettings`,
       { redirect: "manual" }
@@ -176,14 +171,9 @@ describe("npm run dev:fixtures", () => {
     });
     expect(response.status).toBe(200);
     const html = await response.text();
-    // The display name field holds the seeded name, and the token list has
-    // the seeded tokens.
+    // The display name field holds the seeded name.
     expect(html).toMatch(/<input[^>]*value="Morwen of the Marches"/);
-    expect(html).toContain("Laptop scripts");
-    expect(html).toContain("Songbook importer");
-    expect(html).not.toContain(
-      "Log in to change your display name and manage your API tokens."
-    );
+    expect(html).not.toContain("Log in to change your display name.");
   });
 
   it("refuses the same call without the session", async () => {

@@ -131,11 +131,6 @@ describe("/categories/:slug loaders", () => {
       "/categories/joyful?page=9",
       "/categories/joyful?page=5",
     ],
-    [
-      "past the API, asking for the total first",
-      "/categories/joyful?page=500",
-      "/categories/joyful?page=5",
-    ],
     ["of a short list", "/categories/swords?page=2", "/categories/swords"],
     [
       "of an empty list",
@@ -143,13 +138,10 @@ describe("/categories/:slug loaders", () => {
       "/categories/miscellany",
     ],
   ])("sends a page %s with one 302", async (_why, path, location) => {
-    const seen = termRequests();
     const answer = await run(membersModule, path);
     expect(answer).toBeInstanceOf(Response);
     expect((answer as Response).status).toBe(302);
     expect((answer as Response).headers.get("Location")).toBe(location);
-    if (path.endsWith("500"))
-      expect(seen).toEqual(["/v1/terms/joyful?limit=1"]);
   });
 
   it("lists an affiliation's bards", async () => {

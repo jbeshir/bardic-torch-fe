@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
-import { isEntityId, isSlug, MAX_PAGE, PAGE_SIZE } from "./address";
+import { isEntityId, isSlug, PAGE_SIZE } from "./address";
 
 // The paging limits and the slug rule, read from the spec itself, so the
 // constants can't drift from it.
@@ -20,19 +20,11 @@ const parameters = (
 ).components.parameters;
 
 const limit = parameters["Limit"]?.schema ?? {};
-const offset = parameters["Offset"]?.schema ?? {};
 const slug = parameters["Slug"]?.schema ?? {};
 
 describe("paging limits", () => {
   it("pages by the API's default limit", () => {
     expect(PAGE_SIZE).toBe(limit.default);
-  });
-
-  it("stops at the last page whose offset the API accepts", () => {
-    const maxOffset = offset.maximum ?? 0;
-    expect((MAX_PAGE - 1) * PAGE_SIZE).toBeLessThanOrEqual(maxOffset);
-    expect(MAX_PAGE * PAGE_SIZE).toBeGreaterThan(maxOffset);
-    expect(MAX_PAGE).toBe(201);
   });
 });
 

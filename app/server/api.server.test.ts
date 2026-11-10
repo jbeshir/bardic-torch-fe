@@ -8,14 +8,8 @@ import {
   sessionCookie,
   sessionTokens,
 } from "~/test/context";
-import { DISPLAY_NAME_RULE, TOKEN_NAME_RULE } from "~/schemas/rules";
-import {
-  createApiToken,
-  getMe,
-  listApiTokens,
-  revokeApiToken,
-  updateMe,
-} from "./api.server";
+import { DISPLAY_NAME_RULE } from "~/schemas/rules";
+import { getMe, updateMe } from "./api.server";
 import { contractResponse, offContractResponse } from "~/test/contract";
 import { serveMocks } from "~/test/msw";
 
@@ -35,36 +29,12 @@ const OPERATIONS = {
     call: (request: Request) =>
       updateMe(request, loadContext(), { display_name: "Morwen" }),
   },
-  listAPITokens: {
-    method: "get",
-    path: "/v1/tokens",
-    call: (request: Request) => listApiTokens(request, loadContext()),
-  },
-  createAPIToken: {
-    method: "post",
-    path: "/v1/tokens",
-    call: (request: Request) => createApiToken(request, loadContext(), {}),
-  },
-  revokeAPIToken: {
-    method: "delete",
-    path: "/v1/tokens/:tokenId",
-    call: (request: Request) => revokeApiToken(request, loadContext(), "t1"),
-  },
 } as const;
 const me = {
   id: "google-oauth2|1",
   display_name: "Morwen of the Marches",
   role: "contributor",
 };
-const token = {
-  id: "6f1c1f0e-8a4b-4f43-9a5e-2d7c0b1e3a55",
-  prefix: "0123abcd",
-  name: null,
-  created_at: "2026-01-01T00:00:00Z",
-  last_used_at: "2026-02-01T00:00:00+01:00",
-};
-const secret = `user_api|${"0123abcd".repeat(8)}`;
-
 beforeEach(() => {
   vi.spyOn(console, "error").mockReturnValue();
 });
@@ -243,52 +213,12 @@ describe("responses", () => {
       "declared",
     ],
     [
-      "createAPIToken",
-      400,
-      "invalid_request",
-      {
-        message: "Check the token name.",
-        fields: [{ field: "name", message: TOKEN_NAME_RULE }],
-      },
-      "declared",
-    ],
-    [
       "getMe",
       403,
       "user_blocked",
       {
         message:
           "Your account is blocked, so you can’t make changes. Contact the Bardic Torch team if you think this is a mistake.",
-      },
-      "declared",
-    ],
-    [
-      "createAPIToken",
-      403,
-      "api_token_not_allowed",
-      {
-        message:
-          "API tokens can’t manage API tokens. Log in on the website to do this.",
-      },
-      "declared",
-    ],
-    [
-      "createAPIToken",
-      409,
-      "token_limit_reached",
-      {
-        message:
-          "You already have 10 API tokens, the most allowed. Revoke one before creating another.",
-      },
-      "declared",
-    ],
-    [
-      "revokeAPIToken",
-      404,
-      "not_found",
-      {
-        message:
-          "That token no longer exists. Reload the page to see your current tokens.",
       },
       "declared",
     ],
@@ -326,13 +256,7 @@ describe("responses", () => {
       { message: "Only moderators can do that." },
       "declared",
     ],
-    [
-      "listAPITokens",
-      400,
-      "invalid_request",
-      { message: TRY_AGAIN },
-      "undeclared",
-    ],
+    ["getMe", 400, "invalid_request", { message: TRY_AGAIN }, "undeclared"],
     [
       "updateMe",
       415,
@@ -411,10 +335,10 @@ describe("responses", () => {
   it("maps an error without an Error body to 502", async () => {
     captureUpstream(
       "get",
-      "/v1/tokens",
+      "/v1/me",
       () => new HttpResponse("Bad gateway", { status: 500 })
     );
-    const result = await listApiTokens(await signedInRequest(), loadContext());
+    const result = await getMe(await signedInRequest(), loadContext());
     expect(result).toMatchObject({
       ok: false,
       status: 502,
@@ -439,13 +363,10 @@ describe("responses", () => {
     async (_name, status, body) => {
       captureUpstream(
         "get",
-        "/v1/tokens",
+        "/v1/me",
         () => new HttpResponse(body, { status })
       );
-      const result = await listApiTokens(
-        await signedInRequest(),
-        loadContext()
-      );
+      const result = await getMe(await signedInRequest(), loadContext());
       expect(result).toMatchObject({
         ok: false,
         status,
@@ -532,18 +453,14 @@ describe("upstream timeout", () => {
       .spyOn(AbortSignal, "timeout")
       .mockImplementation(() => timeout(20));
     server.use(
-      http.post(`${API_BASE_URL}/v1/tokens`, async () => {
+      http.patch(`${API_BASE_URL}/v1/me`, async () => {
         await delay("infinite");
-        return offContractResponse("createAPIToken", 200, {}, "never sent");
+        return offContractResponse("updateMe", 200, {}, "never sent");
       })
     );
-    const result = await createApiToken(
-      await signedInRequest(),
-      loadContext(),
-      {
-        name: "Laptop",
-      }
-    );
+    const result = await updateMe(await signedInRequest(), loadContext(), {
+      display_name: "Morwen",
+    });
     expect(asked).toHaveBeenCalledWith(10_000);
     expect(result).toMatchObject({
       ok: false,
@@ -572,97 +489,5 @@ describe("operations", () => {
     expect(JSON.parse(seen[0]?.body ?? "")).toEqual({
       display_name: "Master Tobias Fiddler",
     });
-  });
-
-  it("listApiTokens validates every token", async () => {
-    captureUpstream("get", "/v1/tokens", () =>
-      contractResponse("listAPITokens", 200, { data: [token] })
-    );
-    const result = await listApiTokens(await signedInRequest(), loadContext());
-    expect(result).toMatchObject({ ok: true, data: { data: [token] } });
-  });
-
-  it.each([
-    ["a malformed date", { created_at: "yesterday" }],
-    ["a prefix that is not 8 hex digits", { prefix: "bt_ab" }],
-    ["an empty name", { name: "" }],
-  ])("listApiTokens rejects a token with %s", async (_label, change) => {
-    captureUpstream("get", "/v1/tokens", () =>
-      offContractResponse(
-        "listAPITokens",
-        200,
-        { data: [{ ...token, ...change }] },
-        "an invalid token"
-      )
-    );
-    const result = await listApiTokens(await signedInRequest(), loadContext());
-    expect(result).toMatchObject({ ok: false, status: 502 });
-  });
-
-  it("createApiToken returns the one-time secret with status 201", async () => {
-    const created = {
-      ...token,
-      name: "CI runner",
-      last_used_at: null,
-      token: secret,
-    };
-    const seen = captureUpstream("post", "/v1/tokens", () =>
-      contractResponse("createAPIToken", 201, created)
-    );
-    const result = await createApiToken(
-      await signedInRequest(),
-      loadContext(),
-      { name: "CI runner" }
-    );
-    expect(result).toMatchObject({ ok: true, status: 201, data: created });
-    expect(JSON.parse(seen[0]?.body ?? "")).toEqual({ name: "CI runner" });
-  });
-
-  it("createApiToken rejects a secret without the user_api| prefix", async () => {
-    captureUpstream("post", "/v1/tokens", () =>
-      offContractResponse(
-        "createAPIToken",
-        201,
-        { ...token, token: "0123abcd".repeat(8) },
-        "a secret without its prefix"
-      )
-    );
-    const result = await createApiToken(
-      await signedInRequest(),
-      loadContext(),
-      {}
-    );
-    expect(result).toMatchObject({ ok: false, status: 502 });
-  });
-
-  it("revokeApiToken encodes the id and accepts 204", async () => {
-    const seen = captureUpstream("delete", "/v1/tokens/:tokenId", () =>
-      contractResponse("revokeAPIToken", 204)
-    );
-    const result = await revokeApiToken(
-      await signedInRequest(),
-      loadContext(),
-      "a/b?c"
-    );
-    expect(result).toMatchObject({ ok: true, status: 204, data: null });
-    expect(new URL(seen[0]?.url ?? "").pathname).toBe("/v1/tokens/a%2Fb%3Fc");
-    expect(seen[0]?.headers.get("Content-Type")).toBeNull();
-  });
-
-  it("revokeApiToken rejects a success that has a body", async () => {
-    captureUpstream("delete", "/v1/tokens/:tokenId", () =>
-      offContractResponse(
-        "revokeAPIToken",
-        200,
-        { unexpected: true },
-        "a body on a success the contract declares as an empty 204"
-      )
-    );
-    const result = await revokeApiToken(
-      await signedInRequest(),
-      loadContext(),
-      "t1"
-    );
-    expect(result).toMatchObject({ ok: false, status: 502 });
   });
 });

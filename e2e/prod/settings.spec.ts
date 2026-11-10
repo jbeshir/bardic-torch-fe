@@ -35,9 +35,7 @@ test("signed out, settings offers Log in back to it, is never cached and has the
     main.getByRole("heading", { level: 1, name: "Settings" })
   ).toBeVisible();
   await expect(
-    main.getByText(
-      "Log in to change your display name and manage your API tokens."
-    )
+    main.getByText("Log in to change your display name.")
   ).toBeVisible();
   await expect(main.getByRole("link", { name: "Log in" })).toHaveAttribute(
     "href",

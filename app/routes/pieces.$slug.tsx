@@ -17,7 +17,6 @@ import {
   thrownPageFailure,
 } from "~/catalogue/read-failure";
 import { pageMeta } from "~/catalogue/seo";
-import { pieceStructuredData } from "~/catalogue/structured-data";
 import { useErrorReference } from "~/hooks/useErrorReference";
 import { isSlug } from "~/schemas/address";
 import { getPiece } from "~/server/catalogue.server";
@@ -75,7 +74,6 @@ export const meta: MetaFunction = args => {
     description: `${piece.title}: ${pieceSubtitle(piece).toLowerCase()} in the Bardic Torch catalogue, with its credits, origin, conservation status and where to find it.`,
     path: `/pieces/${piece.slug}`,
     robots: restricted ? "noindex, nofollow" : undefined,
-    structuredData: restricted ? undefined : pieceStructuredData(piece),
   });
 };
 

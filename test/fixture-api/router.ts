@@ -1,7 +1,7 @@
 import type { components } from "../../app/api/schema.gen";
 import { isCatalogueRead, parseCatalogueRequest } from "./catalogue/query";
 import { publicTermFacet } from "./catalogue/visibility";
-import { SAMPLE_TOKENS, SEED_USERS, type SeedUserId } from "./data";
+import { SEED_USERS, type SeedUserId } from "./data";
 import {
   OPERATIONS,
   type FixtureOperation,
@@ -18,9 +18,9 @@ import { responseProblems, specRoute } from "./spec";
  * Anything else is unauthenticated. Tests and Playwright workers that create
  * their own user never interfere with each other.
  *
- * - `POST /__fixtures/users {role?, display_name?, tokens?: "sample"|"none",
- *   blocked?}` → 201 `{id}`: an isolated user, with the sample tokens unless
- *   "none"; a blocked user gets 403 `user_blocked` from every operation.
+ * - `POST /__fixtures/users {role?, display_name?, blocked?}` → 201 `{id}`:
+ *   an isolated user; a blocked user gets 403 `user_blocked` from every
+ *   operation.
  * - `POST /__fixtures/fail {operationId, status, code?, times?, userId?,
  *   match?}` → 204: the next `times` (default 1) calls of the operation fail
  *   with `status` and `code`, which must be a pair the spec allows for it.
@@ -120,13 +120,11 @@ const OUTAGE_RESPONSES: Readonly<Record<OutageMode, FixtureResponse>> = {
 
 function newUser(
   me: UserState["me"],
-  { tokens, blocked }: { tokens: boolean; blocked: boolean }
+  { blocked }: { blocked: boolean }
 ): UserState {
   return {
     me: { ...me },
     blocked,
-    tokens: tokens ? SAMPLE_TOKENS.map(token => ({ ...token })) : [],
-    revoked: new Set(),
   };
 }
 
@@ -137,7 +135,7 @@ export function createFixtureState({
     users: new Map(
       (Object.keys(SEED_USERS) as SeedUserId[]).map(id => [
         id,
-        newUser(SEED_USERS[id], { tokens: true, blocked: false }),
+        newUser(SEED_USERS[id], { blocked: false }),
       ])
     ),
     failures: new Map(),
@@ -213,7 +211,7 @@ function createUser(state: FixtureState, body: unknown): FixtureResponse {
     id,
     newUser(
       { id: `fixture|${id}`, display_name: displayName, role },
-      { tokens: options.tokens !== "none", blocked: options.blocked === true }
+      { blocked: options.blocked === true }
     )
   );
   return { status: 201, body: { id } };
@@ -498,11 +496,7 @@ function handleAuthenticated(
   }
   const body = parseBody(request.body);
   if (body === INVALID_JSON) return controlError("invalid request body");
-  return operation.handle(user, {
-    ...parameters,
-    body,
-    nextId: () => nextSequence(state),
-  });
+  return operation.handle(user, { ...parameters, body });
 }
 
 export function handleFixtureRequest(

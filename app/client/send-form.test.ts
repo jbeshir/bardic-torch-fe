@@ -38,11 +38,11 @@ describe("sendForm", () => {
     [
       "the proxy’s own failure",
       409,
-      { ok: false, error: { code: "token_limit_reached", message: "Ten." } },
+      { ok: false, error: { code: "conflict", message: "Changed." } },
     ],
   ])("passes on %s as it is", async (_case, status, body) => {
     answer(async () => Response.json(body, { status }));
-    expect(await sendForm("/api/tokens", "POST", {})).toEqual(body);
+    expect(await sendForm("/api/me", "PATCH", {})).toEqual(body);
   });
 
   it.each([
@@ -69,7 +69,7 @@ describe("sendForm", () => {
 
   it("reports a fetch that fails (no network) as offline, without rejecting", async () => {
     answer(() => Promise.reject(new TypeError("Failed to fetch")));
-    expect(await sendForm("/api/tokens/t1", "DELETE", {})).toEqual({
+    expect(await sendForm("/api/me", "PATCH", {})).toEqual({
       ok: false,
       error: OFFLINE,
     });

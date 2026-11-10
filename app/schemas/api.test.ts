@@ -1,15 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
-import {
-  apiTokenListSchema,
-  createApiTokenFormSchema,
-  createdApiTokenSchema,
-  updateMeFormSchema,
-  upstreamErrorSchema,
-  userSchema,
-} from "./api";
-import { DISPLAY_NAME_RULE, TOKEN_NAME_RULE } from "./rules";
+import { updateMeFormSchema, upstreamErrorSchema, userSchema } from "./api";
+import { DISPLAY_NAME_RULE } from "./rules";
 
 // Type equality with the generated contract is asserted at compile time in
 // api.ts; these tests cover the runtime rules that types cannot express, with
@@ -27,15 +20,6 @@ const schemas = (
 const DISPLAY_NAME_MAX = schemas.User?.properties.display_name?.maxLength ?? 0;
 const DISPLAY_NAME_INPUT_MAX =
   schemas.UpdateMeRequest?.properties.display_name?.maxLength ?? 0;
-const TOKEN_NAME_MAX = schemas.APIToken?.properties.name?.maxLength ?? 0;
-
-const token = {
-  id: "6f1c1f0e-8a4b-4f43-9a5e-2d7c0b1e3a55",
-  prefix: "0123abcd",
-  name: "Laptop",
-  created_at: "2026-01-01T00:00:00Z",
-  last_used_at: null,
-};
 
 function messages(result: {
   success: boolean;
@@ -46,14 +30,9 @@ function messages(result: {
 
 describe("limits read from the spec", () => {
   it("are the ones the copy promises", () => {
-    expect([DISPLAY_NAME_MAX, DISPLAY_NAME_INPUT_MAX, TOKEN_NAME_MAX]).toEqual([
-      64, 256, 128,
-    ]);
+    expect([DISPLAY_NAME_MAX, DISPLAY_NAME_INPUT_MAX]).toEqual([64, 256]);
     expect(DISPLAY_NAME_RULE).toBe(
       "Use 1 to 64 characters, without control or invisible formatting characters."
-    );
-    expect(TOKEN_NAME_RULE).toBe(
-      "Use 128 characters or fewer, or leave the name blank."
     );
   });
 });
@@ -112,31 +91,6 @@ describe("updateMeFormSchema", () => {
   });
 });
 
-describe("createApiTokenFormSchema", () => {
-  it.each([
-    [{}, {}],
-    [{ name: "" }, {}],
-    [{ name: "   " }, {}],
-    [{ name: " Laptop " }, { name: "Laptop" }],
-  ])("turns %j into %j", (input, output) => {
-    expect(createApiTokenFormSchema.parse(input)).toEqual(output);
-  });
-
-  it("allows exactly the maximum and rejects one more", () => {
-    expect(
-      createApiTokenFormSchema.safeParse({ name: "x".repeat(TOKEN_NAME_MAX) })
-        .success
-    ).toBe(true);
-    expect(
-      messages(
-        createApiTokenFormSchema.safeParse({
-          name: "x".repeat(TOKEN_NAME_MAX + 1),
-        })
-      )
-    ).toEqual(["Token names can be up to 128 characters."]);
-  });
-});
-
 describe("response schemas", () => {
   it("accept the documented shapes", () => {
     expect(
@@ -144,13 +98,6 @@ describe("response schemas", () => {
         id: "google-oauth2|123",
         display_name: "Morwen",
         role: "moderator",
-      }).success
-    ).toBe(true);
-    expect(apiTokenListSchema.safeParse({ data: [token] }).success).toBe(true);
-    expect(
-      createdApiTokenSchema.safeParse({
-        ...token,
-        token: `user_api|${"0123abcd".repeat(8)}`,
       }).success
     ).toBe(true);
     expect(
@@ -170,38 +117,6 @@ describe("response schemas", () => {
       { id: "u", display_name: "", role: "contributor" },
     ],
     [
-      "a non-ISO date",
-      apiTokenListSchema,
-      { data: [{ ...token, created_at: "1 Jan" }] },
-    ],
-    // RFC 3339 (the spec's `format: date-time`) needs both: zod 4 refuses
-    // them, where zod 3 accepted them.
-    [
-      "a date-time offset without a colon",
-      apiTokenListSchema,
-      { data: [{ ...token, created_at: "2026-11-02T10:00:00+0000" }] },
-    ],
-    [
-      "a date-time without seconds",
-      apiTokenListSchema,
-      { data: [{ ...token, last_used_at: "2026-11-02T10:00Z" }] },
-    ],
-    [
-      "a missing nullable",
-      apiTokenListSchema,
-      { data: [{ ...token, last_used_at: undefined }] },
-    ],
-    [
-      "an uppercase prefix",
-      apiTokenListSchema,
-      { data: [{ ...token, prefix: "0123ABCD" }] },
-    ],
-    [
-      "a secret without its prefix",
-      createdApiTokenSchema,
-      { ...token, token: "0123abcd".repeat(8) },
-    ],
-    [
       "an unknown error code",
       upstreamErrorSchema,
       { code: "teapot", message: "y" },
@@ -209,13 +124,5 @@ describe("response schemas", () => {
     ["an error without a message", upstreamErrorSchema, { code: "internal" }],
   ] as const)("reject %s", (_label, schema, value) => {
     expect(schema.safeParse(value).success).toBe(false);
-  });
-
-  it("accepts dates with an offset", () => {
-    expect(
-      apiTokenListSchema.safeParse({
-        data: [{ ...token, last_used_at: "2026-02-01T10:00:00+01:00" }],
-      }).success
-    ).toBe(true);
   });
 });

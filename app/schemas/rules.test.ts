@@ -4,8 +4,6 @@ import {
   DISPLAY_NAME_MAX,
   displayNameProblem,
   normaliseDisplayName,
-  TOKEN_NAME_MAX,
-  tokenNameProblem,
 } from "./rules";
 
 // The shared rules both the proxy (through zod, see api.test.ts) and the
@@ -63,20 +61,5 @@ describe("displayNameProblem", () => {
     ],
   ])("rejects %j: %s", (value, message) => {
     expect(displayNameProblem(value)).toBe(message);
-  });
-});
-
-describe("tokenNameProblem", () => {
-  it.each(["", "   ", "Laptop MCP", ` ${"x".repeat(TOKEN_NAME_MAX)} `])(
-    "accepts %j",
-    value => {
-      expect(tokenNameProblem(value)).toBeNull();
-    }
-  );
-
-  it("rejects a name over 128 characters after trimming", () => {
-    expect(tokenNameProblem("x".repeat(TOKEN_NAME_MAX + 1))).toBe(
-      "Token names can be up to 128 characters."
-    );
   });
 });

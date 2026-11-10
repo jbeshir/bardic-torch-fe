@@ -48,12 +48,4 @@ test("settings says changes need JavaScript, and its buttons wait for it", async
   await expect(
     main.getByRole("button", { name: "Save changes" })
   ).toBeDisabled();
-  await expect(
-    main.getByRole("button", { name: "Create token" })
-  ).toBeDisabled();
-  await expect(
-    main
-      .getByRole("table", { name: "Your API tokens" })
-      .getByRole("button", { name: "Revoke token Laptop scripts" })
-  ).toBeDisabled();
 });

@@ -63,7 +63,7 @@ export async function expectBarClearOfPageEnd(page: Page): Promise<void> {
   expect(footer.y + footer.height).toBeLessThanOrEqual(bar.y + unscrollable);
 }
 
-/** What the sweeps (and the styleguide focus states) count as a control. */
+/** What the sweeps count as a control. */
 export const FOCUSABLE =
   'a[href], button, input:not([type="hidden"]), select, textarea, summary, ' +
   '[tabindex]:not([tabindex="-1"]), [contenteditable="true"]';

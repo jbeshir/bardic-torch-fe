@@ -29,29 +29,6 @@ describe("ListPagination", () => {
     expect(screen.queryByText(/Showing the first/)).toBeNull();
   });
 
-  it("says only the first 10,050 can be listed, with no search to narrow", async () => {
-    await renderWithRouter(
-      <ListPagination page={1} total={10_051} href={href} />
-    );
-    expect(
-      screen.getByText("Only the first 10,050 can be listed.")
-    ).toBeVisible();
-    expect(screen.queryByText(/Narrow your search/)).toBeNull();
-  });
-
-  it("stops at page 201 and, for a search, says to narrow it", async () => {
-    await renderWithRouter(
-      <ListPagination page={1} total={10_051} href={href} narrowable />
-    );
-    expect(screen.getByRole("link", { name: "Page 201" })).toBeVisible();
-    expect(screen.queryByRole("link", { name: "Page 202" })).toBeNull();
-    expect(
-      screen.getByText(
-        "Showing the first 10,050. Narrow your search to see the rest."
-      )
-    ).toBeVisible();
-  });
-
   it("has the same markup in both themes", async () => {
     await expectSameMarkupInBothThemes(() =>
       renderWithRouter(<ListPagination page={3} total={20_000} href={href} />)

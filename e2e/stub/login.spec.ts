@@ -5,8 +5,6 @@ import { waitForHydration } from "../support/hydration";
 import { accountPanel, accountTrigger } from "../support/shell";
 import { test } from "../support/test";
 
-const FORM = "application/x-www-form-urlencoded";
-
 test("stub sign-in as the seeded contributor sets the session cookie and returns home", async ({
   page,
   context,
@@ -61,32 +59,6 @@ test("a fresh fixture user's session reaches the fixture API through the proxy",
       role: "contributor",
     },
   });
-});
-
-test("an API token can be created once and revoked through the proxy", async ({
-  page,
-  baseURL,
-}) => {
-  const id = await createFixtureUser(page.request, { tokens: "none" });
-  await page.goto(`/auth/login?as=${id}`);
-
-  const created = await page.request.post("/api/tokens", {
-    form: { name: "E2E runner" },
-    headers: { Origin: baseURL ?? "" },
-  });
-  expect(created.status()).toBe(201);
-  const { data } = (await created.json()) as {
-    data: { id: string; name: string; token: string };
-  };
-  expect(data.name).toBe("E2E runner");
-  expect(data.token).toMatch(/^user_api\|[0-9a-f]{64}$/);
-
-  const revoked = await page.request.delete(
-    `/api/tokens/${encodeURIComponent(data.id)}`,
-    { headers: { Origin: baseURL ?? "", "Content-Type": FORM }, data: "" }
-  );
-  expect(revoked.status()).toBe(200);
-  expect(await revoked.json()).toEqual({ ok: true, data: null });
 });
 
 test("a blocked fixture user gets the app's blocked message", async ({

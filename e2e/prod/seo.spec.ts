@@ -3,7 +3,7 @@ import { failNext } from "../support/fixture-api";
 import { test } from "../support/test";
 
 /**
- * Indexing in the production build (plan C10): robots.txt, the sitemaps and
+ * Indexing in the production build (plan C10): robots.txt, the sitemap and
  * a piece's head as the server sent it. The preview, e2e and development
  * builds are the opposite (e2e/stub/seo.spec.ts).
  */
@@ -42,7 +42,7 @@ test("no response of the production build says noindex in a header", async ({
   }
 });
 
-test("a piece's raw HTML has its canonical address, social card and JSON-LD", async ({
+test("a piece's raw HTML has its canonical address and social card", async ({
   request,
   baseURL,
 }) => {
@@ -58,18 +58,9 @@ test("a piece's raw HTML has its canonical address, social card and JSON-LD", as
   );
   expect(html).toContain('<meta name="twitter:card" content="summary"');
   expect(html).not.toContain('<meta name="robots"');
-  const json =
-    /<script type="application\/ld\+json"[^>]*>(.*?)<\/script>/s.exec(
-      html
-    )?.[1];
-  expect(json).toBeTruthy();
-  const data = JSON.parse(json ?? "{}") as Record<string, unknown>;
-  expect(data["@context"]).toBe("https://schema.org");
-  expect(["MusicComposition", "CreativeWork"]).toContain(data["@type"]);
-  expect(data["name"]).toBe("The Copper Kettle");
 });
 
-test("sitemap.xml indexes six sitemaps on this origin", async ({
+test("sitemap.xml is one urlset of the pages and unrestricted entries", async ({
   request,
   baseURL,
 }) => {
@@ -80,75 +71,27 @@ test("sitemap.xml indexes six sitemaps on this origin", async ({
   );
   expect(response.headers()["cache-control"]).toBe("public, max-age=3600");
   const xml = await response.text();
-  expect(xml).toContain("<sitemapindex");
-  for (const name of [
-    "pages",
-    "pieces",
-    "bards",
-    "categories",
-    "collections",
-    "events",
+  expect(xml).toContain("<urlset");
+  for (const path of [
+    "/help/licence",
+    "/pieces/the-copper-kettle",
+    "/bards/the-greywater-minstrels",
+    "/categories/warlike",
+    "/collections/12",
+    "/events/muster-field",
   ]) {
-    expect(xml).toContain(`<loc>${baseURL}/sitemap/${name}.xml</loc>`);
+    expect(xml).toContain(`<loc>${baseURL}${path}</loc>`);
   }
-  // Each catalogue sitemap answers, with this origin's pages.
-  for (const [name, path] of [
-    ["categories", "/categories/warlike"],
-    ["collections", "/collections/12"],
-    ["events", "/events/muster-field"],
-  ] as const) {
-    const sitemap = await request.get(`/sitemap/${name}.xml`);
-    expect(sitemap.status(), name).toBe(200);
-    expect(await sitemap.text()).toContain(`<loc>${baseURL}${path}</loc>`);
-  }
-});
-
-test("the pieces sitemap lists every unrestricted fixture piece, once", async ({
-  request,
-  baseURL,
-}) => {
-  const response = await request.get("/sitemap/pieces.xml");
-  expect(response.status()).toBe(200);
-  const xml = await response.text();
-  const locations = [...xml.matchAll(/<loc>([^<]*)<\/loc>/g)].map(
-    match => match[1]
-  );
-  expect(locations.length).toBeGreaterThan(200);
-  expect(new Set(locations).size).toBe(locations.length);
-  expect(locations).toContain(`${baseURL}/pieces/the-copper-kettle`);
-  // A restricted piece asks not to be shared.
-  expect(locations).not.toContain(`${baseURL}/pieces/the-dragons-hoard`);
-});
-
-test("the bards sitemap leaves out a person without a page", async ({
-  request,
-  baseURL,
-}) => {
-  const xml = await (await request.get("/sitemap/bards.xml")).text();
-  expect(xml).toContain(`<loc>${baseURL}/bards/the-greywater-minstrels</loc>`);
+  // A restricted piece asks not to be shared; a person without a page is
+  // left out.
+  expect(xml).not.toContain("/pieces/the-dragons-hoard<");
   expect(xml).not.toContain("/bards/hollis-fenn<");
 });
 
-test("the pages sitemap lists the home page, help and the directories", async ({
-  request,
-  baseURL,
-}) => {
-  const xml = await (await request.get("/sitemap/pages.xml")).text();
-  for (const path of ["/", "/help/licence", "/pieces", "/events"]) {
-    expect(xml).toContain(`<loc>${baseURL}${path}</loc>`);
-  }
-  expect(xml).not.toContain("/search");
-});
-
-test("an unknown sitemap is a 404", async ({ request }) => {
-  expect((await request.get("/sitemap/nope.xml")).status()).toBe(404);
-});
-
-test("a sitemap is a 503 with Retry-After, and no partial list, when the API fails", async ({
+test("the sitemap is a 503 with Retry-After, and no partial list, when the API fails", async ({
   request,
 }) => {
-  // The only requests with these paging parameters are the sitemap's; the
-  // other sitemap tests read the same pages, so the failure is for one.
+  // The only requests with these paging parameters are the sitemap's.
   await failNext(request, {
     operationId: "listPieces",
     status: 500,
@@ -156,11 +99,11 @@ test("a sitemap is a 503 with Retry-After, and no partial list, when the API fai
     times: 1,
     match: { limit: "100", offset: "200" },
   });
-  const response = await request.get("/sitemap/pieces.xml");
+  const response = await request.get("/sitemap.xml");
   expect(response.status()).toBe(503);
   expect(response.headers()["retry-after"]).toBe("60");
   expect(response.headers()["cache-control"]).toBe("no-store");
   expect(await response.text()).not.toContain("<loc>");
   // The failure was for one read: the next attempt works.
-  expect((await request.get("/sitemap/pieces.xml")).status()).toBe(200);
+  expect((await request.get("/sitemap.xml")).status()).toBe(200);
 });

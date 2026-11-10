@@ -9,14 +9,14 @@ describe("ProblemAlert", () => {
     await renderWithRouter(
       <ProblemAlert
         error={{
-          code: "token_limit_reached",
-          message: "You already have 10 API tokens.",
+          code: "conflict",
+          message: "Something changed while you were editing.",
         }}
-        fallback="We couldn’t create a token."
+        fallback="We couldn’t save your changes."
       />
     );
     expect(
-      screen.getByText("You already have 10 API tokens.")
+      screen.getByText("Something changed while you were editing.")
     ).toBeInTheDocument();
     expect(screen.getByText("Error:", { exact: false })).toHaveClass("sr-only");
     expect(screen.queryByRole("link")).toBeNull();
@@ -29,12 +29,12 @@ describe("ProblemAlert", () => {
           code: "internal",
           message: "We couldn’t do that just now.",
         }}
-        fallback="We couldn’t create a token. Check your connection and try again."
+        fallback="We couldn’t save your changes. Check your connection and try again."
       />
     );
     expect(
       screen.getByText(
-        "We couldn’t create a token. Check your connection and try again."
+        "We couldn’t save your changes. Check your connection and try again."
       )
     ).toBeInTheDocument();
   });

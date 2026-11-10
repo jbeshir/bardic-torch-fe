@@ -200,17 +200,6 @@ describe("/bards/:slug document", () => {
     );
     expect(html).toContain('<meta property="og:type" content="profile"/>');
     expect(html).not.toContain('name="robots"');
-    const ld = /<script type="application\/ld\+json">(.*?)<\/script>/s.exec(
-      html
-    )?.[1];
-    expect(JSON.parse(ld ?? "null")).toEqual({
-      "@context": "https://schema.org",
-      "@type": "Person",
-      name: "Wren of the Vale",
-      alternateName: ["Wren Vale-Singer", "The Vale Sparrow"],
-      url: "https://app.test/bards/wren-of-the-vale",
-      sameAs: ["https://wren-vale.example/", "https://profiles.example/wren"],
-    });
     const main = mainOf(html);
     expect(main).toMatch(/<h1[^>]*>Wren of the Vale<\/h1>/);
     expect(main).toContain("Community bard · she/her");
@@ -228,9 +217,8 @@ describe("/bards/:slug document", () => {
     expect(html).not.toContain("The Dragon’s Hoard, live");
   });
 
-  it("is a group's MusicGroup, disbanded", async () => {
+  it("is a group, disbanded", async () => {
     const html = await (await get("/bards/the-greywater-minstrels")).text();
-    expect(html).toContain('"@type":"MusicGroup"');
     expect(mainOf(html)).toContain("Group · Disbanded 1 Sep 2019");
   });
 
@@ -239,7 +227,6 @@ describe("/bards/:slug document", () => {
     expect(response.status).toBe(200);
     const html = await response.text();
     expect(html).toContain('<meta name="robots" content="noindex, nofollow"/>');
-    expect(html).not.toContain("application/ld+json");
     const main = mainOf(html);
     expect(main).toMatch(/<h1[^>]*>Hollis Fenn<\/h1>/);
     expect(main).toContain("Hollis Fenn has asked not to have a page here.");

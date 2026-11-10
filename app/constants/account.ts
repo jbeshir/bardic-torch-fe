@@ -38,14 +38,4 @@ export const SETTINGS_PATH = "/settings";
 /** The `intent` field of each settings form. */
 export const SETTINGS_INTENT = {
   updateProfile: "update-profile",
-  createToken: "create-token",
-  revokeToken: "revoke-token",
 } as const;
-
-/** The proxy route that creates API tokens. */
-export const TOKENS_ACTION = "/api/tokens";
-
-/** The proxy route that revokes the API token `tokenId`. */
-export function tokenAction(tokenId: string): string {
-  return `${TOKENS_ACTION}/${encodeURIComponent(tokenId)}`;
-}

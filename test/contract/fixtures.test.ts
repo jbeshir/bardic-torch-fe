@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SAMPLE_TOKENS, SEED_USERS } from "../fixture-api/data";
+import { SEED_USERS } from "../fixture-api/data";
 import {
   CATALOGUE_READS,
   parseCatalogueRequest,
@@ -23,13 +23,7 @@ import {
   type Send,
 } from "./scenarios";
 
-const FE1_OPERATIONS: readonly FixtureOperationId[] = [
-  "getMe",
-  "updateMe",
-  "listAPITokens",
-  "createAPIToken",
-  "revokeAPIToken",
-];
+const FE1_OPERATIONS: readonly FixtureOperationId[] = ["getMe", "updateMe"];
 
 /** Send through the router, as both transports do. */
 function directSend(state: FixtureState): Send {
@@ -96,15 +90,6 @@ describe("seed data", () => {
 
   it.each(Object.values(SEED_USERS))("$display_name is a valid User", user => {
     expect(responseProblems("getMe", 200, user)).toEqual([]);
-  });
-
-  it("the sample tokens are a valid list with a named, an unnamed and a never-used token", () => {
-    expect(
-      responseProblems("listAPITokens", 200, { data: SAMPLE_TOKENS })
-    ).toEqual([]);
-    expect(SAMPLE_TOKENS.some(token => token.name === null)).toBe(true);
-    expect(SAMPLE_TOKENS.some(token => token.name !== null)).toBe(true);
-    expect(SAMPLE_TOKENS.some(token => token.last_used_at === null)).toBe(true);
   });
 });
 
@@ -181,73 +166,6 @@ describe("behaviour", () => {
       display_name: "Cerdi\u0107",
     });
   });
-
-  it("lists tokens newest first, a created one first with its secret's prefix", async () => {
-    const { send, userId } = await setUp();
-    const created = (
-      await send({
-        method: "POST",
-        path: "/v1/tokens",
-        authorization: bearer(userId),
-        ...json({ name: "  CI runner  " }),
-      })
-    ).body as { id: string; prefix: string; name: string; token: string };
-    expect(created.name).toBe("CI runner");
-    expect(created.token).toBe(
-      `user_api|${created.prefix}${created.token.slice(17)}`
-    );
-    const list = (
-      await send({
-        method: "GET",
-        path: "/v1/tokens",
-        authorization: bearer(userId),
-      })
-    ).body as { data: { id: string }[] };
-    expect(list.data.map(token => token.id)).toEqual([
-      created.id,
-      ...[...SAMPLE_TOKENS].reverse().map(token => token.id),
-    ]);
-  });
-
-  it("drops a revoked token from the list, and revoking it again succeeds", async () => {
-    const { send, userId } = await setUp();
-    const revoke = () =>
-      send({
-        method: "DELETE",
-        path: `/v1/tokens/${SAMPLE_TOKENS[0]?.id}`,
-        authorization: bearer(userId),
-      });
-    expect((await revoke()).status).toBe(204);
-    expect((await revoke()).status).toBe(204);
-    const list = (
-      await send({
-        method: "GET",
-        path: "/v1/tokens",
-        authorization: bearer(userId),
-      })
-    ).body as { data: { id: string }[] };
-    expect(list.data.map(token => token.id)).not.toContain(
-      SAMPLE_TOKENS[0]?.id
-    );
-  });
-
-  it("stops at 10 active tokens with 409 token_limit_reached", async () => {
-    const { send, userId } = await setUp();
-    const statuses: number[] = [];
-    for (let attempt = 0; attempt < 8; attempt += 1) {
-      const response = await send({
-        method: "POST",
-        path: "/v1/tokens",
-        authorization: bearer(userId),
-        ...json({}),
-      });
-      statuses.push(response.status);
-      if (response.status === 409) {
-        expect(response.body).toMatchObject({ code: "token_limit_reached" });
-      }
-    }
-    expect(statuses).toEqual([201, 201, 201, 201, 201, 201, 201, 409]);
-  });
 });
 
 describe("per-user state", () => {
@@ -262,11 +180,6 @@ describe("per-user state", () => {
       authorization: bearer(first),
       ...json({ display_name: "Changed" }),
     });
-    await send({
-      method: "DELETE",
-      path: `/v1/tokens/${SAMPLE_TOKENS[0]?.id}`,
-      authorization: bearer(first),
-    });
 
     const me = async (userId: string) =>
       (
@@ -278,22 +191,13 @@ describe("per-user state", () => {
       ).body;
     expect(await me(first)).toMatchObject({ display_name: "Changed" });
     expect(await me(second)).not.toMatchObject({ display_name: "Changed" });
-    const secondTokens = (
-      await send({
-        method: "GET",
-        path: "/v1/tokens",
-        authorization: bearer(second),
-      })
-    ).body as { data: unknown[] };
-    expect(secondTokens.data).toHaveLength(SAMPLE_TOKENS.length);
   });
 
-  it("creates users with a role, a name, no tokens or blocked", async () => {
+  it("creates users with a role, a name or blocked", async () => {
     const send = directSend(createFixtureState());
     const id = await createUser(send, {
       role: "moderator",
       display_name: "Wynn the Watchful",
-      tokens: "none",
     });
     expect(
       await send({ method: "GET", path: "/v1/me", authorization: bearer(id) })
@@ -305,21 +209,11 @@ describe("per-user state", () => {
         role: "moderator",
       },
     });
-    expect(
-      (
-        await send({
-          method: "GET",
-          path: "/v1/tokens",
-          authorization: bearer(id),
-        })
-      ).body
-    ).toEqual({ data: [] });
-
     const blocked = await createUser(send, { blocked: true });
     expect(
       await send({
         method: "GET",
-        path: "/v1/tokens",
+        path: "/v1/me",
         authorization: bearer(blocked),
       })
     ).toEqual({
@@ -363,13 +257,12 @@ describe("per-user state", () => {
     await send({
       method: "POST",
       path: "/__fixtures/fail",
-      ...json({ userId, operationId: "listAPITokens", status: 500 }),
+      ...json({ userId, operationId: "updateMe", status: 500 }),
     });
     const status = async (path: string) =>
       (await send({ method: "GET", path, authorization: bearer(userId) }))
         .status;
     expect(await status("/v1/me")).toBe(200);
-    expect(await status("/v1/tokens")).toBe(500);
   });
 
   it.each([
@@ -418,7 +311,7 @@ describe("per-user state", () => {
 
   it.each([
     ["an unknown user", bearer("ghost")],
-    ["an API token", `Bearer user_api|${"0".repeat(64)}`],
+    ["a user_api bearer", `Bearer user_api|${"0".repeat(64)}`],
     ["a raw Auth0 token", "Bearer auth0|eyJhbGciOiJSUzI1NiJ9.e30.sig"],
     ["no Bearer scheme", "auth0|fixture:contributor"],
   ])("treats %s as unauthenticated", async (_label, authorization) => {
@@ -443,7 +336,6 @@ describe("per-user state", () => {
 describe("spec validation of every response", () => {
   it.each([
     ["a User missing fields", "getMe", 200, { id: "u1" }],
-    ["a body on a 204", "revokeAPIToken", 204, { ok: true }],
     ["an undeclared status", "getMe", 404, { code: "not_found", message: "y" }],
     [
       "an Error with an unknown code",
@@ -462,12 +354,6 @@ describe("spec validation of every response", () => {
       "getMe",
       200,
       { ...SEED_USERS.contributor, email: "x" },
-    ],
-    [
-      "a token with a non-date created_at",
-      "listAPITokens",
-      200,
-      { data: [{ ...SAMPLE_TOKENS[0], created_at: "yesterday" }] },
     ],
   ] as const)("catches %s", (_label, operationId, status, body) => {
     expect(responseProblems(operationId, status, body)).not.toEqual([]);

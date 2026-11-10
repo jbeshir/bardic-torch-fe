@@ -225,7 +225,7 @@ describe("root shouldRevalidate", () => {
     }
   );
 
-  it.each(["update-profile", "create-token", "revoke-token"])(
+  it.each(["update-profile"])(
     "reloads when a settings call (%s) found the session ended, so the header shows Log in",
     intent => {
       expect(
@@ -247,12 +247,7 @@ describe("root shouldRevalidate", () => {
     ).toBe(true);
   });
 
-  it("keeps the data for other submissions, tokens included", () => {
-    for (const intent of ["create-token", "revoke-token"]) {
-      expect(
-        shouldRevalidate(args(settingsForm(intent, { ok: true, data: null })))
-      ).toBe(false);
-    }
+  it("keeps the data for other submissions", () => {
     expect(
       shouldRevalidate(args({ formMethod: "POST", formAction: "/elsewhere" }))
     ).toBe(false);

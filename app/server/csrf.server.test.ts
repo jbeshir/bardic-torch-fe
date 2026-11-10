@@ -3,8 +3,6 @@ import type { ActionFunctionArgs } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SETTINGS_INTENT } from "~/constants/account";
 import { action as updateMe } from "~/routes/api.me";
-import { action as createToken } from "~/routes/api.tokens";
-import { action as revokeToken } from "~/routes/api.tokens.$tokenId";
 import { action as logout } from "~/routes/auth.logout";
 import { action as saveTheme } from "~/routes/resources.theme";
 import * as settingsModule from "~/routes/settings";
@@ -38,19 +36,6 @@ const ROUTES: ReadonlyArray<{
     action: saveTheme,
   },
   { name: "/api/me", method: "PATCH", path: "/api/me", action: updateMe },
-  {
-    name: "/api/tokens",
-    method: "POST",
-    path: "/api/tokens",
-    action: createToken,
-  },
-  {
-    name: "/api/tokens/:tokenId",
-    method: "DELETE",
-    path: "/api/tokens/t1",
-    action: revokeToken,
-    params: { tokenId: "t1" },
-  },
 ];
 
 type RouteModule = Readonly<Record<string, unknown>>;
@@ -139,8 +124,6 @@ describe("/settings submissions", () => {
 
   it.each([
     [SETTINGS_INTENT.updateProfile, { display_name: "Morwen" }, "/api/me"],
-    [SETTINGS_INTENT.createToken, { name: "Laptop" }, "/api/tokens"],
-    [SETTINGS_INTENT.revokeToken, { tokenId: "a/b" }, "/api/tokens/:tokenId"],
   ])(
     "sends %s same-origin to a CSRF-checked route",
     async (intent, fields, route) => {
@@ -160,7 +143,7 @@ describe("/settings submissions", () => {
           id: "routes/settings",
           path: "settings",
           module: settingsModule,
-          hasLoader: true,
+          hasLoader: false,
         },
       ]),
       "production"
@@ -176,8 +159,8 @@ describe("/settings submissions", () => {
             "Content-Type": "application/x-www-form-urlencoded",
           },
           body: new URLSearchParams({
-            intent: SETTINGS_INTENT.revokeToken,
-            tokenId: "t1",
+            intent: SETTINGS_INTENT.updateProfile,
+            display_name: "Morwen",
           }),
         }),
         loadContext()

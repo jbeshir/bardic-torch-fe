@@ -69,7 +69,7 @@ describe("/collections loader", () => {
   });
 
   it.each([
-    ["an upper-case kind", "?kind=Wiki", "/collections?kind=wiki"],
+    ["an upper-case kind", "?kind=Wiki", "/collections"],
     ["an unknown kind", "?kind=zine&letter=c", "/collections?letter=C"],
     ["a repeated kind", "?kind=blog&kind=blog", "/collections?kind=blog"],
     ["page 1", "?page=1", "/collections"],
@@ -77,16 +77,12 @@ describe("/collections loader", () => {
     expect(await redirectOf(search)).toEqual({ status: 301, location });
   });
 
-  it("answers an order-only difference without a redirect", async () => {
-    expect(await redirectOf("?letter=C&kind=blog")).toBeNull();
-  });
-
-  it.each([
-    ["a page past the end", "?page=3", "/collections"],
-    ["a page past the API", "?kind=wiki&page=999", "/collections?kind=wiki"],
-  ])("sends %s on with one 302", async (_why, search, location) => {
-    expect(await redirectOf(search)).toEqual({ status: 302, location });
-  });
+  it.each([["a page past the end", "?page=3", "/collections"]])(
+    "sends %s on with one 302",
+    async (_why, search, location) => {
+      expect(await redirectOf(search)).toEqual({ status: 302, location });
+    }
+  );
 
   it("returns search_timeout (500) for a 500 to a kind filter", async () => {
     quietErrors();

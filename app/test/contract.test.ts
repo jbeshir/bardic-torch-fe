@@ -12,20 +12,16 @@ const ME = {
 describe("contractMisuse", () => {
   it("accepts a declared answer the contract allows", () => {
     expect(contractMisuse("declared", "getMe", 200, ME)).toBeUndefined();
-    expect(
-      contractMisuse("declared", "revokeAPIToken", 204, undefined)
-    ).toBeUndefined();
   });
 
   it.each([
     ["a body breaking its schema", "getMe", 200, { ...ME, role: "admin" }],
     [
       "an undeclared status",
-      "listAPITokens",
+      "getMe",
       503,
       { code: "unavailable", message: "x" },
     ],
-    ["a body on an empty response", "revokeAPIToken", 204, {}],
   ] as const)(
     "flags a declared answer with %s",
     (_label, operation, status, body) => {
@@ -76,8 +72,6 @@ describe("msw answers in app tests", () => {
       expect.arrayContaining([
         "app/server/api.server.test.ts",
         "app/routes/api.me.test.ts",
-        "app/routes/api.tokens.test.ts",
-        "app/routes/api.tokens.$tokenId.test.ts",
       ])
     );
   });

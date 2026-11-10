@@ -102,7 +102,7 @@ describe("/categories loader", () => {
 
   it.each([
     ["an invalid facet", "?facet=genre", "/categories"],
-    ["an upper-case facet", "?facet=Mood", "/categories?facet=mood"],
+    ["an upper-case facet", "?facet=Mood", "/categories"],
     ["an unknown parameter", "?page=2", "/categories"],
   ])("redirects %s with one 301", async (_why, search, location) => {
     const answer = await load(search);

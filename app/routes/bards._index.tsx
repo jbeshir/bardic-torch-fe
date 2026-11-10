@@ -28,11 +28,7 @@ import { EmptyState } from "~/components/ui/EmptyState";
 import { ViewTabs } from "~/components/ui/Tabs";
 import { formatCount } from "~/catalogue/format";
 import { catalogueHeaders } from "~/catalogue/headers";
-import {
-  isBeyondApi,
-  redirectPastTheEnd,
-  showingText,
-} from "~/catalogue/paging";
+import { redirectPastTheEnd, showingText } from "~/catalogue/paging";
 import {
   personQuery,
   redirectIfNotCanonical,
@@ -97,7 +93,7 @@ type BardsData = {
 export async function loader({ url, context }: LoaderFunctionArgs) {
   const asked = personQuery.parse(url.searchParams);
   const { canonical } = asked;
-  redirectIfNotCanonical(url, canonical, personQuery.blankable);
+  redirectIfNotCanonical(url, canonical);
 
   // The terms fill the select, and tell a stale affiliation from another
   // refusal; asked for alongside the list, so the common case is one
@@ -109,17 +105,13 @@ export async function loader({ url, context }: LoaderFunctionArgs) {
   };
 
   /**
-   * The persons for `state` (only the total with `totalOnly`). An
+   * The persons for `state`. An
    * affiliation the API no longer knows makes it answer 400: with the
    * terms at hand, it is left out and the list asked for once more (§2.4),
    * and the cleaned state is what the page shows and links from.
    */
-  async function readPersons(state: PersonQueryState, totalOnly = false) {
-    const query = (from: PersonQueryState) =>
-      totalOnly
-        ? { ...personQuery.toApi({ ...from, page: 1 }), limit: 1 }
-        : personQuery.toApi(from);
-    const first = await listPersons(context, query(state));
+  async function readPersons(state: PersonQueryState) {
+    const first = await listPersons(context, personQuery.toApi(state));
     const unchanged = { state, staleAffiliation: false, result: first };
     if (
       first.ok ||
@@ -139,7 +131,7 @@ export async function loader({ url, context }: LoaderFunctionArgs) {
     return {
       state: cleaned,
       staleAffiliation: true,
-      result: await listPersons(context, query(cleaned)),
+      result: await listPersons(context, personQuery.toApi(cleaned)),
     };
   }
 
@@ -160,20 +152,6 @@ export async function loader({ url, context }: LoaderFunctionArgs) {
   // affiliation and all, so the page it lands on still says it was left
   // out.
   const pageHref = (page: number) => personQuery.href(asked.state, { page });
-
-  if (isBeyondApi(asked.state.page)) {
-    // An offset the API would refuse: ask for the total, then go to the
-    // last page there is.
-    const head = await readPersons(asked.state, true);
-    if (!head.result.ok) {
-      return failed(head.result.failure, {
-        state: head.state,
-        canonical,
-        affiliations: await affiliationsData(),
-      });
-    }
-    redirectPastTheEnd(asked.state.page, head.result.data.total, pageHref);
-  }
 
   const { state, staleAffiliation, result } = await readPersons(asked.state);
   const page = { state, canonical, affiliations: await affiliationsData() };
@@ -418,7 +396,6 @@ export default function BardsRoute() {
                 page={state.page}
                 total={list.total}
                 href={page => personQuery.href(state, { page })}
-                narrowable={isFiltered(state)}
               />
             </div>
           </section>

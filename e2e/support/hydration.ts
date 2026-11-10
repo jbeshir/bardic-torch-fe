@@ -3,8 +3,8 @@ import { expect, type Page } from "@playwright/test";
 /**
  * How long a page may take to hydrate. Hydration is a precondition, not
  * the behaviour under test, and under a loaded run (four workers, each
- * running axe and full-page screenshots against one workerd) the big
- * styleguide page took more than 5 s after `load` to hydrate, with every
+ * running axe and full-page screenshots against one workerd) a big
+ * page took more than 5 s after `load` to hydrate, with every
  * script already downloaded.
  */
 const HYDRATION_TIMEOUT = 30_000;

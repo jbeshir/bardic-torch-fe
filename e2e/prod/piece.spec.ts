@@ -134,9 +134,6 @@ test("checkpoint: restricted, its links inside one closed disclosure", async ({
     "content",
     "noindex, nofollow"
   );
-  await expect(page.locator('script[type="application/ld+json"]')).toHaveCount(
-    0
-  );
   await checkpoint(page, "restricted");
 });
 

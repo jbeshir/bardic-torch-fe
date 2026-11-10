@@ -320,31 +320,6 @@ describe("/pieces/:slug document", () => {
       /<link rel="canonical" href="https:\/\/app\.test\/pieces\/the-copper-kettle"\/?>/
     );
     expect(html).not.toContain('name="robots"');
-    const ld = /<script type="application\/ld\+json">(.*?)<\/script>/s.exec(
-      html
-    )?.[1];
-    expect(JSON.parse(ld ?? "null")).toEqual({
-      "@context": "https://schema.org",
-      "@type": "MusicComposition",
-      name: "The Copper Kettle",
-      alternateName: ["The Kettle Song", "Old Copper", "A Tavern Favourite"],
-      genre: ["Song", "Dance music"],
-      // The tune and the arrangement are the music's; the words are
-      // traditional, so there is no author.
-      composer: [
-        {
-          "@type": "Person",
-          name: "Wren of the Vale",
-          url: "https://app.test/bards/wren-of-the-vale",
-        },
-        {
-          "@type": "Person",
-          name: "Aldith of Ashdown",
-          url: "https://app.test/bards/aldith-of-ashdown",
-        },
-      ],
-      url: "https://app.test/pieces/the-copper-kettle",
-    });
     const main = mainOf(html);
     expect(main).toMatch(/<h1[^>]*>The Copper Kettle<\/h1>/);
     expect(main).toContain("Song · Dance music · 1650–1750");
@@ -416,7 +391,6 @@ describe("/pieces/:slug document", () => {
   it("keeps a restricted piece out of search results, with no description for them", async () => {
     const html = await (await get("/pieces/the-dragons-hoard")).text();
     expect(html).toContain('<meta name="robots" content="noindex, nofollow"/>');
-    expect(html).not.toContain("application/ld+json");
     expect(mainOf(html)).toContain(
       "The creator has asked that this work isn’t recorded or shared."
     );

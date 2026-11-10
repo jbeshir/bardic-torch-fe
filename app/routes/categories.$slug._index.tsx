@@ -20,11 +20,7 @@ import { ButtonLink } from "~/components/ui/Button";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { Link } from "~/components/ui/Link";
 import { catalogueHeaders } from "~/catalogue/headers";
-import {
-  isBeyondApi,
-  redirectPastTheEnd,
-  showingText,
-} from "~/catalogue/paging";
+import { redirectPastTheEnd, showingText } from "~/catalogue/paging";
 import {
   redirectIfNotCanonical,
   termMembersQuery,
@@ -79,11 +75,6 @@ export async function loader({
   const pageHref = (page: number) =>
     termMembersQuery.href(categoryPath(slug), page);
 
-  if (isBeyondApi(state.page)) {
-    const first = await getTerm(context, slug, { limit: 1 });
-    if (!first.ok) throwPageFailure(asPageFailure(first.failure));
-    redirectPastTheEnd(state.page, memberTotal(first.data), pageHref);
-  }
   const result = await getTerm(context, slug, termMembersQuery.toApi(state));
   if (!result.ok) throwPageFailure(asPageFailure(result.failure));
   redirectPastTheEnd(state.page, memberTotal(result.data), pageHref);
