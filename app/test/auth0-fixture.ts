@@ -4,10 +4,9 @@ import { testEnv } from "./context";
 /**
  * A fake Auth0 for auth tests: its endpoints, and ID tokens as Auth0 issues
  * them. Each test run generates its own RSA key; the ID tokens are real
- * RS256 JWTs signed with it, and `auth0Jwks` is the matching key set.
- * Production fetches no JWKS (an ID token from the token endpoint is
- * checked for its claims and algorithm, not its signature), so the key set
- * only proves the fixture tokens are genuine.
+ * RS256 JWTs signed with it.
+ * Production fetches no JWKS: an ID token from the token endpoint is checked
+ * for its claims and algorithm, not its signature.
  */
 
 const env = testEnv();
@@ -31,20 +30,6 @@ const signingKey = await crypto.subtle.generateKey(
   true,
   ["sign", "verify"]
 );
-
-/** The public half of this run's signing key, as Auth0 publishes it. */
-const auth0Jwks: {
-  readonly keys: ReadonlyArray<JsonWebKey & { readonly kid: string }>;
-} = {
-  keys: [
-    {
-      ...(await crypto.subtle.exportKey("jwk", signingKey.publicKey)),
-      kid: KEY_ID,
-      alg: "RS256",
-      use: "sig",
-    },
-  ],
-};
 
 function encodeJson(value: unknown): string {
   return Buffer.from(JSON.stringify(value)).toString("base64url");
@@ -93,28 +78,6 @@ export async function idToken({
           signingInput
         );
   return `${header}.${payload}.${Buffer.from(signature).toString("base64url")}`;
-}
-
-/**
- * Whether `token`'s RS256 signature verifies against a key in `auth0Jwks`
- * (the check a relying party fetching Auth0's JWKS would make).
- */
-export async function verifiesWithJwks(token: string): Promise<boolean> {
-  const [header = "", payload = "", signature = ""] = token.split(".");
-  const { kid } = JSON.parse(Buffer.from(header, "base64url").toString()) as {
-    readonly kid?: string;
-  };
-  const jwk = auth0Jwks.keys.find(key => key.kid === kid);
-  if (!jwk) return false;
-  const publicKey = await crypto.subtle.importKey("jwk", jwk, RS256, false, [
-    "verify",
-  ]);
-  return crypto.subtle.verify(
-    RS256,
-    publicKey,
-    Buffer.from(signature, "base64url"),
-    new TextEncoder().encode(`${header}.${payload}`)
-  );
 }
 
 /**

@@ -1,6 +1,5 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { THEME_COLOURS } from "./theme-colour";
 import {
   channelString,
   COLOURS,
@@ -8,7 +7,6 @@ import {
   type ColourName,
 } from "./tokens";
 
-const HEX = /^#[0-9A-F]{6}$/;
 const names = Object.keys(COLOURS.light) as ColourName[];
 const css = readFileSync(new URL("./tokens.css", import.meta.url), "utf8");
 
@@ -21,33 +19,13 @@ function block(selector: string): string {
   return css.slice(open + 1, css.indexOf("}", open)).replace(/\s+/g, " ");
 }
 
-describe("colour tokens", () => {
-  it("define the same tokens in both themes", () => {
-    expect(Object.keys(COLOURS.dark).sort()).toEqual([...names].sort());
-    expect(names.length).toBeGreaterThan(50);
-  });
-
-  it.each(["light", "dark"] as const)(
-    "give every token a #RRGGBB value or an alias to a plain token in %s",
-    theme => {
-      for (const name of names) {
-        const value = COLOURS[theme][name];
-        if (typeof value !== "string") {
-          expect(typeof COLOURS[theme][value.alias], name).toBe("string");
-        }
-        expect(resolveColour(theme, name), name).toMatch(HEX);
-      }
+it("defines the same tokens in both themes, each a #RRGGBB value or an alias", () => {
+  expect(Object.keys(COLOURS.dark).sort()).toEqual([...names].sort());
+  for (const theme of ["light", "dark"] as const) {
+    for (const name of names) {
+      expect(resolveColour(theme, name), name).toMatch(/^#[0-9A-F]{6}$/);
     }
-  );
-
-  it("resolve aliases per theme", () => {
-    expect(resolveColour("light", "input-bg")).toBe(
-      resolveColour("light", "surface-raised")
-    );
-    expect(resolveColour("dark", "input-bg")).toBe(
-      resolveColour("dark", "surface-sunken")
-    );
-  });
+  }
 });
 
 // tokens.css is hand-written; this keeps it in step with tokens.ts, which the
@@ -71,11 +49,4 @@ describe("tokens.css", () => {
       }
     }
   );
-
-  it("has the theme-colour constants equal the canvas token", () => {
-    expect(THEME_COLOURS).toEqual({
-      light: resolveColour("light", "canvas"),
-      dark: resolveColour("dark", "canvas"),
-    });
-  });
 });

@@ -27,7 +27,7 @@ function plain(result: object): Readonly<Record<string, unknown>> {
  * thrown `data()` or Response) or an `Error` (anything else, sanitised in
  * production).
  */
-export async function singleFetchResults(
+async function singleFetchResults(
   response: Response
 ): Promise<Readonly<Record<string, unknown>>> {
   if (!response.body) throw new Error("A .data answer has a body");

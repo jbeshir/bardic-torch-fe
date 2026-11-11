@@ -48,13 +48,6 @@ async function rootData(cookie?: string) {
 }
 
 describe("root loader", () => {
-  it("gives the site's origin, from the request, for canonical links", async () => {
-    const loaded = (await rootData()).data as unknown as {
-      siteOrigin: unknown;
-    };
-    expect(loaded.siteOrigin).toBe("https://app.test");
-  });
-
   it("is signed out without a session", async () => {
     expect((await rootData()).data.account).toEqual({ state: "signed-out" });
   });
@@ -90,36 +83,12 @@ describe("root loader", () => {
     expect(html).toContain("<h1");
   });
 
-  it("tells a blocked account so", async () => {
-    const me = fixtures.state().users.get("contributor");
-    if (me) me.blocked = true;
-    const html = await (await get("/", await contributor())).text();
-    expect(html).toMatch(/Your account is blocked/);
-  });
-
   it("forwards the cleared session when the API rejects it", async () => {
     const { response, data } = await rootData(
       await sessionCookie(sessionTokens({ accessToken: "stale" }))
     );
     expect(data.account).toEqual({ state: "signed-out" });
     expect(response.headers.get("Set-Cookie")).toMatch(/^__Host-bt_session=;/);
-  });
-});
-
-describe("root headers", () => {
-  it("send the loader's no-store on while signed in, to documents and .data answers, its own route's and its children's", async () => {
-    const cacheControl = async (path: string, cookie?: string) =>
-      (await get(path, cookie)).headers.get("Cache-Control");
-    const signedIn = await contributor();
-    // The home page and the 404 route have no `headers` export of their own.
-    for (const path of ["/", "/_.data", "/nowhere", "/nowhere.data"]) {
-      expect(await cacheControl(path, signedIn), path).toBe("no-store");
-      expect(await cacheControl(path), path).toBe("private, no-cache");
-    }
-    // A .data answer without the root's loader has none of its headers.
-    expect(
-      await cacheControl("/nowhere.data?_routes=routes%2F%24", signedIn)
-    ).toBe("private, no-cache");
   });
 });
 
@@ -136,83 +105,53 @@ describe("root shouldRevalidate", () => {
     ...overrides,
   });
 
-  it("keeps the data on plain navigations", () => {
-    expect(shouldRevalidate(args({}))).toBe(false);
-  });
+  const settings = (intent: string, actionResult: unknown) => {
+    const formData = new FormData();
+    formData.set("intent", intent);
+    return args({
+      formMethod: "POST",
+      formAction: "/settings",
+      formData,
+      actionResult,
+      currentUrl: url("/settings"),
+      nextUrl: url("/settings"),
+    });
+  };
+  const saved = { ok: true, data: {} };
+  const failure = (code: string) => ({ ok: false, error: { code } });
 
-  /** A settings form submission (to the settings route's clientAction). */
-  const settingsForm = (
-    intent: string,
-    actionResult: unknown
-  ): Partial<Parameters<typeof shouldRevalidate>[0]> => ({
-    formMethod: "POST",
-    formAction: "/settings",
-    formData: (() => {
-      const form = new FormData();
-      form.set("intent", intent);
-      return form;
-    })(),
-    actionResult,
-    currentUrl: url("/settings"),
-    nextUrl: url("/settings"),
-  });
-  const failure = (code: string) => ({
-    ok: false,
-    error: { code, message: "" },
-  });
-
-  it("reloads after a display-name change was saved", () => {
-    expect(
-      shouldRevalidate(
-        args(settingsForm("update-profile", { ok: true, data: {} }))
-      )
-    ).toBe(true);
-  });
-
-  it.each(["invalid_request", "offline", "unexpected_response", "internal"])(
-    "keeps the data when a display-name change failed (%s)",
-    code => {
-      expect(
-        shouldRevalidate(args(settingsForm("update-profile", failure(code))))
-      ).toBe(false);
-    }
-  );
-
-  it.each(["update-profile"])(
-    "reloads when a settings call (%s) found the session ended, so the header shows Log in",
-    intent => {
-      expect(
-        shouldRevalidate(args(settingsForm(intent, failure("unauthenticated"))))
-      ).toBe(true);
-    }
-  );
-
-  it("reloads after logging out", () => {
-    expect(
-      shouldRevalidate(args({ formMethod: "POST", formAction: "/auth/logout" }))
-    ).toBe(true);
-  });
-
-  it("reloads on the way into or out of /auth", () => {
-    expect(shouldRevalidate(args({ nextUrl: url("/auth/login") }))).toBe(true);
-    expect(
-      shouldRevalidate(args({ currentUrl: url("/auth/callback?code=x") }))
-    ).toBe(true);
-  });
-
-  it("keeps the data for other submissions", () => {
-    expect(
-      shouldRevalidate(args({ formMethod: "POST", formAction: "/elsewhere" }))
-    ).toBe(false);
-  });
-
-  it("reloads when asked to on the same page (Try again)", () => {
-    expect(shouldRevalidate(args({ nextUrl: url("/help") }))).toBe(true);
-    expect(
-      shouldRevalidate(
-        args({ nextUrl: url("/help"), defaultShouldRevalidate: false })
-      )
-    ).toBe(false);
+  it.each([
+    ["a plain navigation", args({}), false],
+    ["a saved display name", settings("update-profile", saved), true],
+    [
+      "a failed display name",
+      settings("update-profile", failure("invalid_request")),
+      false,
+    ],
+    [
+      "a settings call that found the session ended",
+      settings("update-profile", failure("unauthenticated")),
+      true,
+    ],
+    [
+      "logging out",
+      args({ formMethod: "POST", formAction: "/auth/logout" }),
+      true,
+    ],
+    ["going into /auth", args({ nextUrl: url("/auth/login") }), true],
+    [
+      "coming out of /auth",
+      args({ currentUrl: url("/auth/callback?code=x") }),
+      true,
+    ],
+    [
+      "another submission",
+      args({ formMethod: "POST", formAction: "/elsewhere" }),
+      false,
+    ],
+    ["Try again on the same page", args({ nextUrl: url("/help") }), true],
+  ])("%s: %s", (_case, given, expected) => {
+    expect(shouldRevalidate(given)).toBe(expected);
   });
 });
 

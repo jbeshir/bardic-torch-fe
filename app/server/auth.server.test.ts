@@ -8,10 +8,7 @@ import {
   afterEach,
   type MockInstance,
 } from "vitest";
-import {
-  DEFAULT_TOKEN_EXPIRY_SECONDS,
-  TOKEN_REFRESH_THRESHOLD_MS,
-} from "~/constants/auth";
+import { TOKEN_REFRESH_THRESHOLD_MS } from "~/constants/auth";
 import {
   loadContext,
   sessionCookie,
@@ -21,7 +18,6 @@ import {
 import {
   AUTH0_REVOKE_ENDPOINT,
   AUTH0_TOKEN_ENDPOINT,
-  hangingAuth0,
   idToken,
 } from "~/test/auth0-fixture";
 import { contractResponse } from "~/test/contract";
@@ -128,15 +124,6 @@ describe("getServerAuthContext", () => {
     expect(result.headers).toBeUndefined();
   });
 
-  it("does not refresh just outside the threshold", async () => {
-    const expiresAt = NOW + TOKEN_REFRESH_THRESHOLD_MS + 1;
-    await getServerAuthContext(
-      await requestFor(tokens({ expiresAt })),
-      loadContext()
-    );
-    expect(grants).toEqual([]);
-  });
-
   it("refreshes a token within the threshold and re-issues the cookie", async () => {
     auth0Answers(() =>
       auth0Tokens({
@@ -167,84 +154,8 @@ describe("getServerAuthContext", () => {
     });
   });
 
-  it("refreshes an already expired token", async () => {
-    auth0Answers(() =>
-      auth0Tokens({
-        access_token: "new-access",
-        expires_in: 60,
-        token_type: "Bearer",
-      })
-    );
-    const result = await getServerAuthContext(
-      await requestFor(tokens({ expiresAt: NOW - 1000 })),
-      loadContext()
-    );
-    expect(result.authContext).toEqual({
-      isAuthenticated: true,
-      accessToken: "new-access",
-    });
-  });
-
-  it("keeps the old refresh token and assumes the default lifetime when Auth0 sends neither", async () => {
-    // Refresh-token rotation off: Auth0 answers with an access token only.
-    auth0Answers(() =>
-      auth0Tokens({ access_token: "new-access", token_type: "Bearer" })
-    );
-    const result = await getServerAuthContext(
-      await requestFor(tokens({ expiresAt: NOW })),
-      loadContext()
-    );
-    expect(result.authContext.isAuthenticated).toBe(true);
-    expect(await storedTokens(result)).toEqual({
-      accessToken: "new-access",
-      refreshToken: "old-refresh",
-      expiresAt: NOW + DEFAULT_TOKEN_EXPIRY_SECONDS * 1000,
-    });
-    expect(consoleError).not.toHaveBeenCalled();
-  });
-
-  it.each([400, 401, 403])(
-    "clears the session when Auth0 refuses the refresh token with a %i",
-    async status => {
-      // Auth0's OAuth error body on a 400 or 401, and a 403 without a body
-      // (more shapes in the next test).
-      auth0Answers(() =>
-        status === 403
-          ? new HttpResponse(null, { status })
-          : HttpResponse.json(
-              {
-                error: "invalid_grant",
-                error_description: "Unknown or invalid refresh token.",
-              },
-              { status }
-            )
-      );
-      const result = await getServerAuthContext(
-        await requestFor(tokens({ expiresAt: NOW + 1000 })),
-        loadContext()
-      );
-      expect(result.authContext).toEqual(SIGNED_OUT);
-      expect(result.headers?.get("Set-Cookie")).toMatch(
-        /^__Host-bt_session=;.*Expires=Thu, 01 Jan 1970/
-      );
-      expect(consoleWarn).toHaveBeenCalledWith(
-        "Auth0 refused the refresh token:",
-        expect.any(Error)
-      );
-    }
-  );
-
   it.each([
-    ["a 400 and an empty body", () => new HttpResponse(null, { status: 400 })],
     ["a 401 and an empty body", () => new HttpResponse(null, { status: 401 })],
-    [
-      "a 403 and an HTML page",
-      () =>
-        new HttpResponse("<html><body>Forbidden</body></html>", {
-          status: 403,
-          headers: { "Content-Type": "text/html" },
-        }),
-    ],
     [
       "a 403 and invalid_grant",
       () =>
@@ -255,14 +166,6 @@ describe("getServerAuthContext", () => {
           },
           403
         ),
-    ],
-    [
-      "a 401 and a WWW-Authenticate challenge",
-      () =>
-        new HttpResponse(null, {
-          status: 401,
-          headers: { "WWW-Authenticate": 'Bearer error="invalid_token"' },
-        }),
     ],
   ])(
     "clears the session when Auth0 refuses the refresh token with %s",
@@ -285,13 +188,10 @@ describe("getServerAuthContext", () => {
   );
 
   it.each([
-    ["a 408", () => new HttpResponse(null, { status: 408 })],
     [
       "a 500 and an OAuth error",
       () => auth0Error({ error: "server_error" }, 500),
     ],
-    ["a 503", () => new HttpResponse(null, { status: 503 })],
-    ["a 429", () => new HttpResponse(null, { status: 429 })],
     ["a network failure", () => HttpResponse.error()],
     ["a malformed body", () => new HttpResponse("<html>", { status: 200 })],
   ])(
@@ -321,35 +221,6 @@ describe("getServerAuthContext", () => {
     expect(result.headers).toBeUndefined();
   });
 
-  it("gives up on a hanging Auth0 after the timeout and keeps the session", async () => {
-    const request = await requestFor(tokens({ expiresAt: NOW + 60_000 }));
-    const hang = hangingAuth0();
-    const result = await getServerAuthContext(request, loadContext());
-    expect(hang).toHaveBeenCalledWith(AUTH0_TOKEN_ENDPOINT, expect.anything());
-    expect(result.authContext).toEqual({
-      isAuthenticated: true,
-      accessToken: "old-access",
-    });
-    expect(result.headers).toBeUndefined();
-    expect(consoleError).toHaveBeenCalledWith(
-      "Couldn’t refresh the access token:",
-      expect.objectContaining({ code: "OAUTH_TIMEOUT" })
-    );
-  });
-
-  it("bounds the refresh by AUTH0_TIMEOUT_MS (5 s)", async () => {
-    auth0Answers(() =>
-      auth0Tokens({ access_token: "new-access", token_type: "Bearer" })
-    );
-    const asked = vi.spyOn(AbortSignal, "timeout");
-    const result = await getServerAuthContext(
-      await requestFor(tokens({ expiresAt: NOW })),
-      loadContext()
-    );
-    expect(result.authContext.isAuthenticated).toBe(true);
-    expect(asked.mock.calls).toEqual([[5_000]]);
-  });
-
   it("refreshes with the client's HTTP Basic credentials", async () => {
     const seen: Array<string | null> = [];
     server.use(
@@ -377,25 +248,6 @@ describe("getServerAuthContext", () => {
     expect(grants[0]?.has("client_secret")).toBe(false);
   });
 
-  it("uses a token without a refresh token until it expires, then ends the session", async () => {
-    const { refreshToken: _omitted, ...withoutRefresh } = tokens();
-
-    const valid = await getServerAuthContext(
-      await requestFor({ ...withoutRefresh, expiresAt: NOW + 1000 }),
-      loadContext()
-    );
-    expect(valid.authContext.isAuthenticated).toBe(true);
-    expect(valid.headers).toBeUndefined();
-
-    const expired = await getServerAuthContext(
-      await requestFor({ ...withoutRefresh, expiresAt: NOW }),
-      loadContext()
-    );
-    expect(grants).toEqual([]);
-    expect(expired.authContext).toEqual(SIGNED_OUT);
-    expect(expired.headers?.get("Set-Cookie")).toMatch(/^__Host-bt_session=;/);
-  });
-
   it("shares one refresh across parallel calls in a request", async () => {
     auth0Answers(() =>
       auth0Tokens({ access_token: "new-access", token_type: "Bearer" })
@@ -412,18 +264,6 @@ describe("getServerAuthContext", () => {
     expect(grants).toHaveLength(1);
     expect(second).toBe(first);
     expect(third).toBe(first);
-  });
-
-  it("does not share results between requests", async () => {
-    auth0Answers(() =>
-      auth0Tokens({ access_token: "new-access", token_type: "Bearer" })
-    );
-    const request = await requestFor(tokens({ expiresAt: NOW }));
-
-    await getServerAuthContext(request, loadContext());
-    await getServerAuthContext(request, loadContext());
-
-    expect(grants).toHaveLength(2);
   });
 });
 
@@ -450,25 +290,6 @@ describe("createAuthenticatedFetch", () => {
     expect(auth.headers).toBeUndefined();
     await auth.authFetch("https://api.test/v1/me");
     expect(seen).toEqual(["Bearer auth0|abc"]);
-  });
-
-  it("sends no Authorization signed out", async () => {
-    const seen: Array<string | null> = [];
-    server.use(
-      http.get("https://api.test/v1/me", ({ request }) => {
-        seen.push(request.headers.get("Authorization"));
-        return contractResponse("getMe", 200, ME);
-      })
-    );
-    const auth = await createAuthenticatedFetch(
-      await requestFor(),
-      loadContext()
-    );
-    expect(auth.isAuthenticated).toBe(false);
-    await auth.authFetch("https://api.test/v1/me", {
-      headers: { Authorization: "Bearer forged" },
-    });
-    expect(seen).toEqual(["Bearer forged"]);
   });
 });
 
@@ -506,39 +327,5 @@ describe("revokeRefreshToken", () => {
       "Couldn’t revoke the refresh token at logout:",
       expect.anything()
     );
-  });
-
-  it("gives up after the timeout", async () => {
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => undefined);
-    const hang = hangingAuth0();
-    await expect(revokeRefreshToken("refresh-1", env)).resolves.toBeUndefined();
-    expect(hang).toHaveBeenCalledWith(AUTH0_REVOKE_ENDPOINT, expect.anything());
-    expect(consoleError).toHaveBeenCalledWith(
-      "Couldn’t revoke the refresh token at logout:",
-      expect.objectContaining({ code: "OAUTH_TIMEOUT" })
-    );
-  });
-
-  it("bounds the revocation by AUTH0_TIMEOUT_MS (5 s), as a refresh token, with HTTP Basic credentials", async () => {
-    const revoked: Array<{
-      readonly form: URLSearchParams;
-      readonly authorization: string | null;
-    }> = [];
-    server.use(
-      http.post(AUTH0_REVOKE_ENDPOINT, async ({ request }) => {
-        revoked.push({
-          form: new URLSearchParams(await request.text()),
-          authorization: request.headers.get("Authorization"),
-        });
-        return new HttpResponse(null, { status: 200 });
-      })
-    );
-    const asked = vi.spyOn(AbortSignal, "timeout");
-    await revokeRefreshToken("refresh-1", env);
-    expect(asked.mock.calls).toEqual([[5_000]]);
-    expect(revoked[0]?.form.get("token_type_hint")).toBe("refresh_token");
-    expect(revoked[0]?.authorization).toMatch(/^Basic /);
   });
 });

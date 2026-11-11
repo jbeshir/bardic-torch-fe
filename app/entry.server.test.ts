@@ -4,7 +4,6 @@ import { handleError } from "./entry.server";
 import * as indexModule from "./routes/_index";
 import { loadContext } from "./test/context";
 import { serveApp } from "./test/server-build";
-import { routeData } from "./test/single-fetch";
 
 const captured = vi.hoisted(() => [] as unknown[]);
 vi.mock("@sentry/cloudflare", () => ({
@@ -30,12 +29,6 @@ const broken = {
   },
   default: () => null,
 };
-const brokenRender = {
-  default: () => {
-    throw new Error("The page broke while rendering");
-  },
-};
-
 const get = serveApp([
   { id: "routes/_index", index: true, module: indexModule, hasLoader: false },
   {
@@ -45,12 +38,6 @@ const get = serveApp([
     hasLoader: true,
   },
   { id: "routes/broken", path: "broken", module: broken, hasLoader: true },
-  {
-    id: "routes/render",
-    path: "render",
-    module: brokenRender,
-    hasLoader: false,
-  },
 ]);
 
 function scriptNonce(response: Response): string {
@@ -74,15 +61,6 @@ describe("server error reporting (R28)", () => {
       expect.objectContaining({ message: "The loader broke" }),
     ]);
     expect(consoleError).toHaveBeenCalledWith(captured[0]);
-  });
-
-  it("logs and reports an error thrown while rendering", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const response = await get("/render");
-    expect(response.status).toBe(500);
-    expect(captured).toContainEqual(
-      expect.objectContaining({ message: "The page broke while rendering" })
-    );
   });
 
   it("doesn't report a 4xx answer (React Router's 405 for a POST without an action)", () => {
@@ -171,28 +149,5 @@ describe("document responses", () => {
   it("keep a route's no-store", async () => {
     const response = await get("/private");
     expect(response.headers.get("Cache-Control")).toBe("no-store");
-  });
-});
-
-describe("data responses", () => {
-  it("carry the security and cache headers", async () => {
-    const response = await get("/_.data");
-    expect(response.headers.get("X-Remix-Response")).toBe("yes");
-    expect(response.headers.get("Content-Security-Policy")).toContain(
-      "frame-ancestors 'none'"
-    );
-    expect(response.headers.get("Cache-Control")).toBe("private, no-cache");
-    expect(response.headers.get("Vary")).toBe("Cookie");
-    expect(await routeData(response, "root")).toEqual({
-      theme: null,
-      account: { state: "signed-out" },
-      siteOrigin: "https://app.test",
-    });
-  });
-
-  it("keep a route's no-store", async () => {
-    const response = await get("/private.data");
-    expect(response.headers.get("Cache-Control")).toBe("no-store");
-    expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
   });
 });

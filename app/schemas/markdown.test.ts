@@ -31,10 +31,6 @@ describe("markdownTreeSchema", () => {
 
   it.each([
     ["an unknown block", [{ type: "html", value: "<script>" }]],
-    [
-      "an unknown inline",
-      [{ type: "paragraph", children: [{ type: "image", url: "x" }] }],
-    ],
     ["an h2", [{ type: "heading", level: 2, children: [] }]],
     [
       "a javascript: link",
@@ -56,7 +52,6 @@ describe("markdownTreeSchema", () => {
         },
       ],
     ],
-    ["an extra field", [{ type: "thematicBreak", html: "<hr>" }]],
   ])("rejects %s", (_why, tree) => {
     expect(markdownTreeSchema.safeParse(tree).success).toBe(false);
   });

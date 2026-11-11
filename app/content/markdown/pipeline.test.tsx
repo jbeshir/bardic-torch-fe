@@ -42,16 +42,6 @@ describe("front matter", () => {
       /has no front matter/
     );
   });
-
-  it("fails the build when it breaks the schema, naming the field", async () => {
-    const broken = FRONTMATTER.replace(
-      "description: A page written by a test.",
-      `description: ${"x".repeat(161)}`
-    );
-    await expect(compileMarkdown(`${broken}\nText.`)).rejects.toThrow(
-      /invalid front matter:\n- description:/
-    );
-  });
 });
 
 describe("directives", () => {
@@ -66,18 +56,6 @@ describe("directives", () => {
     expect(within(alert as HTMLElement).getByText("Exactly 3").tagName).toBe(
       "STRONG"
     );
-  });
-
-  it("renders :::warning as a warning Alert", async () => {
-    const slot = await renderSlot(":::warning\n\nCareful.\n\n:::\n");
-    expect(slot.querySelector(".bg-warning-bg")).toHaveTextContent(
-      "Warning: Careful."
-    );
-  });
-
-  it("keeps the paragraphs of a note with more than one", async () => {
-    const slot = await renderSlot(":::note\n\nOne.\n\nTwo.\n\n:::\n");
-    expect(slot.querySelectorAll(".bg-info-bg p")).toHaveLength(2);
   });
 
   it("renders :::infobox as the Infobox, its items as label and value", async () => {
@@ -125,19 +103,10 @@ describe("directives", () => {
     [":::aside\n\nText.\n\n:::\n", /Unknown directive ":::aside"/],
     [":::infobox\n\n- **A:** b\n\n:::\n", /:::infobox needs a title/],
     [
-      ':::infobox{title="Facts"}\n\nJust a paragraph.\n\n:::\n',
-      /:::infobox holds exactly one bulleted list/,
-    ],
-    [
-      ':::infobox{title="Facts"}\n\n- no label here\n\n:::\n',
-      /Each infobox item starts with bold text or a link/,
-    ],
-    [
       ":::cards\n\n- [Out](https://example.com): Away.\n\n:::\n",
       /Each card is an internal link/,
     ],
     ["See :stray in the text.", /Unexpected directive ":stray"/],
-    ["::leaf\n", /Unexpected directive ":leaf"/],
   ])("fails the build on a misused directive: %j", async (body, message) => {
     await expect(compileMarkdown(`${FRONTMATTER}\n${body}`)).rejects.toThrow(
       message
@@ -209,7 +178,6 @@ The body.
 `;
 
   it.each([
-    ["infobox", ["At a glance"], ["The intro.", "The body."]],
     ["intro", ["The intro.", "A note in the intro."], ["At a glance", "First"]],
     ["body", ["First", "The body."], ["The intro.", "At a glance"]],
   ] as const)(

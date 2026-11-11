@@ -3,39 +3,21 @@ import { revisionCredit } from "./revision-credit";
 
 const author = { display_name: "Morwen of the Marches" };
 
-describe("revisionCredit (plan §4.11)", () => {
-  it("names a user's revision by its author", () => {
-    expect(revisionCredit({ source: "user", author, contributors: [] })).toBe(
-      "Morwen of the Marches"
-    );
-  });
-
-  it("says when a revision came through the MCP tool", () => {
-    expect(revisionCredit({ source: "mcp", author, contributors: [] })).toBe(
-      "Morwen of the Marches (edited with an app)"
-    );
-  });
-
+describe("revisionCredit", () => {
   it.each([
-    [[], "Imported from the original wiki"],
-    [["Lorekeeper"], "Imported from the original wiki, by Lorekeeper"],
+    ["user", author, [], "Morwen of the Marches"],
+    ["mcp", author, [], "Morwen of the Marches (edited with an app)"],
+    ["import", null, [], "Imported from the original wiki"],
     [
-      ["Archivist", "Lorekeeper"],
-      "Imported from the original wiki, by Archivist and Lorekeeper",
-    ],
-    [
+      "import",
+      null,
       ["Archivist", "Lorekeeper", "Quill"],
       "Imported from the original wiki, by Archivist, Lorekeeper and Quill",
     ],
-  ])("credits an import's wiki contributors %j", (contributors, credit) => {
+    ["user", null, [], "Unknown"],
+  ] as const)("%s by %o with %j is %s", (source, by, contributors, credit) => {
     expect(
-      revisionCredit({ source: "import", author: null, contributors })
+      revisionCredit({ source, author: by, contributors: [...contributors] })
     ).toBe(credit);
-  });
-
-  it("says Unknown for an author the API doesn't show", () => {
-    expect(
-      revisionCredit({ source: "user", author: null, contributors: [] })
-    ).toBe("Unknown");
   });
 });
