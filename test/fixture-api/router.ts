@@ -8,7 +8,7 @@ import { responseProblems } from "./spec";
  * Routes a request to the fixture API's canned answers: `getHealthz`, the
  * seeded users' `getMe` and `updateMe`, and the catalogue reads
  * (catalogue-operations.ts). A request is signed in by the bearer the app
- * sends for a stub session, exactly `Bearer auth0|fixture:<userId>`;
+ * sends for a stub session, exactly `Bearer fixture:<userId>`;
  * anything else is 401. A renamed user is remembered in the state.
  *
  * Every answer is validated against the spec; a fixture that breaks the
@@ -34,7 +34,7 @@ export function createFixtureState(): FixtureState {
   );
 }
 
-const BEARER = /^Bearer auth0\|fixture:([a-z0-9-]+)$/;
+const BEARER = /^Bearer fixture:([a-z0-9-]+)$/;
 
 function me(state: FixtureState, request: FixtureRequest): FixtureResponse {
   const id = BEARER.exec(request.authorization ?? "")?.[1] ?? "";

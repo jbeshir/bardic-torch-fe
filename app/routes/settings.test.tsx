@@ -156,7 +156,7 @@ function renderSettings() {
 /** The display name the API holds for the contributor. */
 async function storedName() {
   const response = await fetch(`${API_BASE_URL}/v1/me`, {
-    headers: { Authorization: "Bearer auth0|fixture:contributor" },
+    headers: { Authorization: "Bearer fixture:contributor" },
   });
   return ((await response.json()) as { display_name: string }).display_name;
 }

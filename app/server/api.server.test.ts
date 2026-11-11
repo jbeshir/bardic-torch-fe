@@ -89,9 +89,7 @@ describe("authentication", () => {
       loadContext()
     );
     const upstream = seen[0];
-    expect(upstream?.headers.get("Authorization")).toBe(
-      "Bearer auth0|access-token"
-    );
+    expect(upstream?.headers.get("Authorization")).toBe("Bearer access-token");
     expect(upstream?.headers.get("Cookie")).toBeNull();
     expect(upstream?.headers.get("X-Forwarded-For")).toBeNull();
     expect(upstream?.headers.get("Accept")).toBe("application/json");

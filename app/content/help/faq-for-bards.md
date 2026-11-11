@@ -78,7 +78,7 @@ The more places your work lives, the safer it is. See [Conservation status](/hel
 
 ## Will my legal name be shown?
 
-We credit you by the name you publish under. Legal and mundane names brought over from the original wiki stay hidden until a moderator has reviewed each one. We never add private information, only what you’ve published yourself.
+We credit you by the name you publish under. Legal and mundane names brought over from the original wiki are ordinary public aliases, as the wiki showed them. If you want one removed, ask and a moderator will delete it. We never add private information, only what you’ve published yourself.
 
 ## How do I contact you?
 

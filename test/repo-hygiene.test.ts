@@ -34,7 +34,17 @@ describe("repo hygiene", () => {
       .config as {
       vars?: object;
       observability?: object;
-      env?: { preview?: { vars?: object; observability?: object } };
+      workers_dev?: boolean;
+      preview_urls?: boolean;
+      env?: {
+        preview?: {
+          vars?: object;
+          observability?: object;
+          routes?: unknown[];
+          workers_dev?: boolean;
+          preview_urls?: boolean;
+        };
+      };
     };
     const vars = [config.vars, config.env?.preview?.vars].flatMap(v =>
       Object.keys(v ?? {})
@@ -54,6 +64,12 @@ describe("repo hygiene", () => {
     };
     expect(config.observability).toEqual(logging);
     expect(config.env?.preview?.observability).toEqual(logging);
+    // The preview Worker keeps its own routes and, like production, is not on workers.dev.
+    expect(config.env?.preview?.routes).toBeDefined();
+    for (const env of [config, config.env?.preview]) {
+      expect(env?.workers_dev).toBe(false);
+      expect(env?.preview_urls).toBe(false);
+    }
   });
 
   it(".dev.vars.example holds placeholders only", () => {

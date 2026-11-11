@@ -274,7 +274,7 @@ describe("createAuthenticatedFetch", () => {
     role: "contributor",
   };
 
-  it("sends the session's token with the auth0| prefix", async () => {
+  it("sends the session's token as a bearer", async () => {
     const seen: Array<string | null> = [];
     server.use(
       http.get("https://api.test/v1/me", ({ request }) => {
@@ -289,7 +289,7 @@ describe("createAuthenticatedFetch", () => {
     expect(auth.isAuthenticated).toBe(true);
     expect(auth.headers).toBeUndefined();
     await auth.authFetch("https://api.test/v1/me");
-    expect(seen).toEqual(["Bearer auth0|abc"]);
+    expect(seen).toEqual(["Bearer abc"]);
   });
 });
 
