@@ -19,7 +19,7 @@ export function formatPeriod(
 }
 
 /**
- * A piece's meta line under its title (DESIGN §5.4 item 3): its kind, its
+ * A piece's meta line under its title: its kind, its
  * secondary kinds and its period, "Song · Dance music · 1580–1600".
  */
 export function pieceSubtitle(

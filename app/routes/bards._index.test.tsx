@@ -7,7 +7,7 @@ import { renderRoutes } from "~/test/router";
 import BardsRoute, { ErrorBoundary } from "./bards._index";
 
 // The /bards page in the browser, from stubbed loader data: every state of
-// the list and its filters. The loader is bards._index.ssr.test.ts's.
+// the list and its filters.
 
 const person = (
   slug: string,

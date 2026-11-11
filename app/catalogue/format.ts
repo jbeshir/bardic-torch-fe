@@ -1,5 +1,5 @@
 /**
- * How dates and numbers read in copy (DESIGN §11.1). Every count in a
+ * How dates and numbers read in copy. Every count in a
  * sentence goes through `formatCount`, every bare number through
  * `formatNumber`, every API date through `formatDate`.
  */

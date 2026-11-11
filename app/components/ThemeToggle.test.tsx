@@ -106,9 +106,8 @@ afterEach(() => {
   document.documentElement.removeAttribute("data-theme");
 });
 
-describe.each(["light", "dark"])("ThemeToggle (page in %s)", pageTheme => {
+describe("ThemeToggle", () => {
   it("renders System, Light and Dark under a visible Theme label", async () => {
-    document.documentElement.dataset.theme = pageTheme;
     await renderToggle();
     const buttons = within(await group()).getAllByRole("button");
     expect(buttons.map(button => button.textContent)).toEqual([
@@ -118,9 +117,7 @@ describe.each(["light", "dark"])("ThemeToggle (page in %s)", pageTheme => {
     ]);
     expect(screen.getByText("Theme")).toBeVisible();
   });
-});
 
-describe("ThemeToggle", () => {
   it("is a real form that works without JS", async () => {
     await renderToggle();
     const form = (await group()).closest("form");

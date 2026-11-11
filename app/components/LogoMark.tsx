@@ -1,7 +1,7 @@
 import { LOGO_MARK_PATHS } from "./logo-mark-paths";
 
 /**
- * The torch mark (DESIGN §5.9). Always decorative: wherever it stands for
+ * The torch mark. Always decorative: wherever it stands for
  * the site, the Wordmark's text next to it is the accessible name. The
  * handle takes the text colour; the flame uses the accent tokens, so both
  * themes come from CSS. `className` sets the size, e.g. `h-6 w-6` (24 px).
@@ -40,7 +40,7 @@ export function LogoMark({
 }
 
 /**
- * The torch with its flame out (DESIGN §6.15, §6.16): the art for empty and
+ * The torch with its flame out: the art for empty and
  * error states. The handle is `fg-subtle` and the flame a 1.5 px
  * `border-strong` outline with no fill; `dashed` breaks the outline, for
  * error pages. Decorative, like the lit mark: 48 px in empty states, 64 px

@@ -1,13 +1,12 @@
 /**
- * The API's rules for what people type, with their UI copy (DESIGN §10.3,
- * §11.2). The zod form schemas in `api.ts` (proxy routes) and the settings
+ * The API's rules for what people type, with their UI copy. The zod form schemas in `api.ts` (proxy routes) and the settings
  * forms (in the browser) check with these same functions, so both reject
  * the same values with the same words. No zod here: the browser bundle
  * doesn't need it.
  */
 
 /** Longest display name the API keeps, in characters, after normalising. */
-export const DISPLAY_NAME_MAX = 64;
+const DISPLAY_NAME_MAX = 64;
 /** Longest display name the API reads, in characters, before normalising. */
 const DISPLAY_NAME_INPUT_MAX = 256;
 
@@ -23,7 +22,7 @@ const DISPLAY_NAME_TOO_LONG = `Display names can be up to ${DISPLAY_NAME_MAX} ch
 const CONTROL_OR_FORMAT = /[\p{Cc}\p{Cf}]/u;
 
 /** Length in characters (code points), as the API counts it. */
-export function characterCount(value: string): number {
+function characterCount(value: string): number {
   return [...value].length;
 }
 

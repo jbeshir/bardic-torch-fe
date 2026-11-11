@@ -20,7 +20,7 @@ type ThemeChoiceState = {
   readonly choice: ThemeChoice;
   /** Why the last save failed (the choice has reverted), until the next. */
   readonly failure: ProxyError | null;
-  /** Save `choice` (DESIGN §6.24); resolves to the save's result. */
+  /** Save `choice`; resolves to the save's result. */
   readonly save: (choice: ThemeChoice) => Promise<ProxyBody<unknown>>;
 };
 

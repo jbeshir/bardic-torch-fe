@@ -26,7 +26,7 @@ import type {
 } from "~/schemas/catalogue";
 
 /**
- * Display labels for the API's enums (DESIGN §11), one `Record` per enum so
+ * Display labels for the API's enums, one `Record` per enum so
  * a new value is a type error until it has a label.
  */
 

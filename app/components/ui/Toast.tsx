@@ -28,7 +28,7 @@ type ToastEntry = ToastMessage & {
   readonly leaving: boolean;
 };
 
-/** DESIGN §6.23. */
+/** How long a toast stays before it dismisses itself. */
 const AUTO_DISMISS_MS = 6000;
 
 /**
@@ -85,7 +85,7 @@ ShowToastContext.displayName = "ShowToastContext";
 
 /**
  * Shows a toast: brief feedback after something the reader did, raised from
- * a fetcher's result (DESIGN §6.23, §7.4). The page must show the outcome
+ * a fetcher's result. The page must show the outcome
  * too (the saved value, or an inline Alert). Needs the ToastProvider that
  * root.tsx renders around every page.
  */
@@ -142,7 +142,7 @@ export function ToastProvider({ children }: { readonly children: ReactNode }) {
 }
 
 /**
- * The Notifications landmark (DESIGN §6.23): empty in the server render,
+ * The Notifications landmark: empty in the server render,
  * with a polite status list (success, info) and an assertive alert list
  * (danger) that are always mounted, so each new toast is announced. Below
  * sm it sits at the top under the header, so it never covers the bottom

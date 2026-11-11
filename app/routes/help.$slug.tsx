@@ -7,7 +7,7 @@ import { HELP_HREF } from "~/constants/navigation";
 import { findHelpPage } from "~/content/help/pages";
 
 /**
- * A help page (DESIGN §10.2), from app/content/help. An unknown slug is the
+ * A help page, from app/content/help. An unknown slug is the
  * shell's 404 page with a real 404 status, like any unknown address.
  */
 export function loader({ params }: LoaderFunctionArgs) {

@@ -1,4 +1,4 @@
-/* Element defaults and global accessibility rules (DESIGN §2, §3, §6.1, §8). */
+/* Element defaults and global accessibility rules. */
 @layer base {
   html {
     background-color: rgb(var(--bt-canvas));
@@ -177,7 +177,7 @@
   }
 }
 
-/* The wordmark's fixed optical size (DESIGN §3.2). */
+/* The wordmark's fixed optical size (DESIGN §3). */
 @utility opsz-32 {
   font-variation-settings: "opsz" 32;
 }

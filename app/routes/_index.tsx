@@ -122,7 +122,7 @@ function Section({
 }
 
 /**
- * The home page (DESIGN §10.1), its copy adapted from the original wiki's
+ * The home page, its copy adapted from the original wiki's
  * Main Page: what Bardic Torch is (an index, not an archive; links only;
  * keeping works alive; anyone can contribute), the ways into the
  * catalogue and how to contribute.

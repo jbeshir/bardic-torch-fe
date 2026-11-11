@@ -8,7 +8,7 @@ import { AccountMenu, BAR_CELL } from "./AccountMenu";
 import { SearchBox } from "./SearchBox";
 
 /**
- * The control that opens the site menu (DESIGN §6.21): a ghost icon button
+ * The control that opens the site menu: a ghost icon button
  * in the header at md–lg, the Menu cell of the bottom bar below md. Until
  * the page is hydrated (and without JS) it is a link to the site menu after
  * the content; then a button that opens the drawer, which gives focus back
@@ -62,7 +62,7 @@ export function MenuControl({
 }
 
 /**
- * Search in the bottom bar (DESIGN §5.2): with JS, a sheet just above the
+ * Search in the bottom bar: with JS, a sheet just above the
  * bar with the SearchBox, focused, and Cancel; Escape or Cancel close it
  * and return focus here, and a search (any navigation) closes it. Without
  * JS, a link to the site menu, which starts with the SearchBox.
@@ -137,7 +137,7 @@ function SearchCell({
 }
 
 /**
- * The bottom app bar (DESIGN §5.2), below md only: Menu · Search · Account
+ * The bottom app bar, below md only: Menu · Search · Account
  * in three equal cells, fixed to the bottom of the viewport. Its whole
  * box, top border and safe-area inset included, is `h-app-bar` (56 px
  * plus the inset, so the cells are 55 px under the border): the room the

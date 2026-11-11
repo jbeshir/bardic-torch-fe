@@ -6,8 +6,7 @@ import { renderRoutes } from "~/test/router";
 import SearchRoute, { ErrorBoundary } from "./search";
 
 // The /search page from stubbed loader data: the results, a section's
-// failure, the empty search and no results. The loader itself is
-// search.ssr.test.ts's.
+// failure, the empty search and no results.
 
 const PIECES: PieceList = {
   data: [

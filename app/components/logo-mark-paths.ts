@@ -1,5 +1,5 @@
 /**
- * Geometry of the torch mark on a 24 × 24 grid (DESIGN §5.9). LogoMark draws
+ * Geometry of the torch mark on a 24 × 24 grid. LogoMark draws
  * it inline; public/favicon.svg copies the paths by hand, so keep the two
  * in step.
  */

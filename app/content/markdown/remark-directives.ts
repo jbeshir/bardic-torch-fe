@@ -2,7 +2,7 @@ import type { Paragraph, Parent, Root, RootContent } from "mdast";
 import type { ContainerDirective } from "mdast-util-directive";
 
 /**
- * The container directives help pages may use (DESIGN §10.2), each turned
+ * The container directives help pages may use, each turned
  * into the element the component map renders:
  *
  * - `:::note` and `:::warning`: an info or warning Alert;

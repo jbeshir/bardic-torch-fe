@@ -261,55 +261,73 @@ describe("/auth/callback state", () => {
     );
   }
 
-  it("refuses a state containing ;, reading and clearing no cookie under that name", async () => {
-    const { state, cookies } = await startLogin("/help");
-    const response = await runCallback(
-      `code=abc&state=${encodeURIComponent(`${state};x`)}`,
-      cookies
-    );
+  it.each([
+    [
+      "a state containing ;, reading and clearing no cookie under that name",
+      async () => {
+        const { state, cookies } = await startLogin("/help");
+        return {
+          query: `code=abc&state=${encodeURIComponent(`${state};x`)}`,
+          cookies,
+          cleared: [],
+        };
+      },
+    ],
+    [
+      "a state of the wrong length, even with a validly signed cookie for it",
+      async () => {
+        const { cookies } = await startLogin("/help");
+        const short = "A".repeat(42);
+        const forged = await stateCookie(short, {
+          state: short,
+          codeVerifier: "v".repeat(43),
+        });
+        return {
+          query: `code=abc&state=${short}`,
+          cookies: [...cookies, forged],
+          cleared: [],
+        };
+      },
+    ],
+    [
+      "a state whose sign-in this browser didn't start, though it holds another's cookie",
+      async () => {
+        const { cookies } = await startLogin("/help");
+        return {
+          query: `code=abc&state=${OTHER_STATE}`,
+          cookies,
+          cleared: [`${STATE_COOKIE_PREFIX}:${OTHER_STATE}`],
+        };
+      },
+    ],
+    [
+      "a state cookie whose signature was tampered with",
+      async () => {
+        const { state, cookies } = await startLogin("/help");
+        // Change the signed value's first character: the signature no longer fits.
+        const tampered = cookies.map(pair => {
+          if (!pair.startsWith(`${STATE_COOKIE_PREFIX}:`)) return pair;
+          const start = pair.indexOf("=") + 1;
+          const changed = pair[start] === "e" ? "f" : "e";
+          return `${pair.slice(0, start)}${changed}${pair.slice(start + 1)}`;
+        });
+        expect(tampered).not.toEqual(cookies);
+        return {
+          query: `code=abc&state=${state}`,
+          cookies: tampered,
+          cleared: undefined,
+        };
+      },
+    ],
+  ])("refuses %s", async (_why, setup) => {
+    const { query, cookies, cleared } = await setup();
+    const response = await runCallback(query, cookies);
     await expectSignInRefused(response);
-    expect(stateCookiesSet(response)).toEqual([]);
-  });
-
-  it("refuses a state of the wrong length, even with a validly signed cookie for it", async () => {
-    const { cookies } = await startLogin("/help");
-    const short = "A".repeat(42);
-    const forged = await stateCookie(short, {
-      state: short,
-      codeVerifier: "v".repeat(43),
-    });
-    const response = await runCallback(`code=abc&state=${short}`, [
-      ...cookies,
-      forged,
-    ]);
-    await expectSignInRefused(response);
-    expect(stateCookiesSet(response)).toEqual([]);
-  });
-
-  it("refuses a state whose sign-in this browser didn't start, though it holds another's cookie", async () => {
-    const { cookies } = await startLogin("/help");
-    const response = await runCallback(
-      `code=abc&state=${OTHER_STATE}`,
-      cookies
-    );
-    await expectSignInRefused(response);
-    expect(stateCookiesSet(response).map(value => value.split("=")[0])).toEqual(
-      [`${STATE_COOKIE_PREFIX}:${OTHER_STATE}`]
-    );
-  });
-
-  it("refuses a state cookie whose signature was tampered with", async () => {
-    const { state, cookies } = await startLogin("/help");
-    // Change the signed value's first character: the signature no longer fits.
-    const tampered = cookies.map(pair => {
-      if (!pair.startsWith(`${STATE_COOKIE_PREFIX}:`)) return pair;
-      const start = pair.indexOf("=") + 1;
-      const changed = pair[start] === "e" ? "f" : "e";
-      return `${pair.slice(0, start)}${changed}${pair.slice(start + 1)}`;
-    });
-    expect(tampered).not.toEqual(cookies);
-    const response = await runCallback(`code=abc&state=${state}`, tampered);
-    await expectSignInRefused(response);
+    if (cleared) {
+      expect(
+        stateCookiesSet(response).map(value => value.split("=")[0])
+      ).toEqual(cleared);
+    }
   });
 });
 

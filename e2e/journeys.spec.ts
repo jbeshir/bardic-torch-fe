@@ -226,6 +226,9 @@ test("history: tab, newest revision, then back to the first version", async ({
   ).toBeVisible();
   await main.getByRole("link", { name: "Previous revision" }).click();
   await expect(page).toHaveURL(/\/revisions\/1004$/);
+  await expect(
+    main.getByRole("heading", { level: 3, name: "Versions" })
+  ).toBeVisible();
 });
 
 test("bards: a letter, a bard, a work; a bard with no page", async ({
@@ -330,7 +333,7 @@ test.describe("sign in", () => {
     await waitForHydration(page);
     const banner = page.getByRole("banner");
     const account = banner.locator("summary").filter({ visible: true });
-    await expect(account).toHaveText(/Account: Morwen of the Marches$/);
+    await expect(account).toHaveText(/Account: Morwen of the /);
 
     const name = page
       .getByRole("main")

@@ -344,7 +344,7 @@ const PIECE_FIELDS: Fields<Snapshots["piece"]> = {
           ),
         c => [
           text(CREDIT_ROLE_LABELS[c.role]),
-          // A credit names a person exactly when it is `named` (the schema).
+          // A credit names a person exactly when it is `named`.
           c.person
             ? personRef(c.person)
             : c.attribution === "named"

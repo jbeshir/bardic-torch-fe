@@ -6,7 +6,7 @@ import type { ProxyError } from "~/schemas/proxy";
 import { problemMessage } from "./results";
 
 /**
- * A failed settings call, as a danger Alert (DESIGN §10.3, §11.2): what
+ * A failed settings call, as a danger Alert: what
  * happened and what to do. When the session has ended it offers "Log in",
  * which comes back to Settings.
  */

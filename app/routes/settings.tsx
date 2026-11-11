@@ -30,7 +30,7 @@ import type { loader as rootLoader } from "~/root";
 import type { ProxyBody } from "~/schemas/proxy";
 
 /**
- * /settings (DESIGN §10.3, plan §0.7): the display name. Who is reading
+ * /settings: the display name. Who is reading
  * comes from the root loader. Changes need JS: the form's fetcher submits
  * to this route's `clientAction`, which sends it on to the /api proxy
  * route. Nothing here is cached.

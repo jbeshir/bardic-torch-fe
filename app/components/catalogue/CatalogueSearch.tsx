@@ -7,7 +7,7 @@ import { canonicalFormHref } from "~/catalogue/form-href";
 import { HiddenFields, useCanonicalSubmit } from "./canonical-form";
 
 /**
- * A directory's search box (plan §2.5, DESIGN §10.7), the one `/pieces`
+ * A directory's search box (plan §2.5), the one `/pieces`
  * and `/bards` share so they behave and look alike: its own GET form to
  * `action`, a search landmark named `landmark`, a 44 px search field named
  * `label` (no placeholder: the name is the field's, and a hint would only

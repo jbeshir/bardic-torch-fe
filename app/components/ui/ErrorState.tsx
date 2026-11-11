@@ -7,7 +7,7 @@ import { Alert } from "./Alert";
 import { Button, ButtonLink } from "./Button";
 
 /**
- * "Try again" for something that failed to load (DESIGN §6.16). With JS it
+ * "Try again" for something that failed to load. With JS it
  * re-runs the page's loaders in place (busy while they run), which also
  * clears an error boundary once they succeed. Without JS, and before
  * hydration, it is a link that loads the same address again.
@@ -49,7 +49,7 @@ export function TryAgain({
 }
 
 /**
- * A part of the page that failed to load (DESIGN §6.16, §7.3): a danger
+ * A part of the page that failed to load: a danger
  * Alert with a short title, the cause if known and a small "Try again". The
  * rest of the page stays usable.
  */
@@ -82,7 +82,7 @@ export function UnderPageHead({ children }: { readonly children: ReactNode }) {
 }
 
 /**
- * The body of an error page (DESIGN §6.16, §10.4, §10.5): the unlit torch,
+ * The body of an error page: the unlit torch,
  * an h1, what happened and what to do, an optional reference and the
  * actions. Never a stack trace, status text or JSON. When it replaces a
  * page after a client-side navigation, focus moves to the heading, so the

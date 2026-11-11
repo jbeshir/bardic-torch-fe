@@ -1,5 +1,5 @@
 /**
- * The colour theme a reader can choose (DESIGN §6.24). "system" follows the
+ * The colour theme a reader can choose. "system" follows the
  * device setting and is stored as the absence of the theme cookie.
  */
 export const THEME_CHOICES = ["system", "light", "dark"] as const;

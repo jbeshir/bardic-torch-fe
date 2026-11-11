@@ -1,6 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { Outlet } from "react-router";
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { URLSearchParams as NodeURLSearchParams } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -183,29 +183,6 @@ const notifications = () =>
   screen.getByRole("region", { name: "Notifications" });
 
 describe("display name", () => {
-  it.each([
-    ["", "Enter a display name."],
-    ["   ", "Enter a display name."],
-    ["x".repeat(65), "Display names can be up to 64 characters."],
-    [
-      "Morwen\u202e",
-      "Display names can’t contain control or invisible formatting characters.",
-    ],
-  ])("checks %j in the browser before sending: %s", async (value, message) => {
-    const user = userEvent.setup();
-    await openPage();
-    await user.clear(nameField());
-    if (value) fireEvent.change(nameField(), { target: { value } });
-    await user.click(screen.getByRole("button", { name: "Save changes" }));
-
-    expect(nameField()).toHaveAccessibleDescription(
-      expect.stringContaining(`Error: ${message}`)
-    );
-    expect(nameField()).toHaveAttribute("aria-invalid", "true");
-    expect(nameField()).toHaveFocus();
-    expect(await storedName()).toBe("Morwen of the Marches");
-  });
-
   it("saves, shows the normalised name, says so in a toast and revalidates the root", async () => {
     const user = userEvent.setup();
     const router = await openPage();

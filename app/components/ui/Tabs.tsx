@@ -28,7 +28,7 @@ function ViewLabel({
 }
 
 /**
- * The wiki's page views on the title rule (DESIGN §6.9 a and a′): Read /
+ * The wiki's page views on the title rule: Read /
  * Edit / History. With two or more views they are links in a "Page views"
  * nav, the current one `aria-current="page"`. With one view there is
  * nothing to choose, so it is the same shape as plain text: no nav, no

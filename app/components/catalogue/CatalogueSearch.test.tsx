@@ -9,7 +9,7 @@ import { BardSearch } from "./BardSearch";
 import { PieceSearch } from "./PieceSearch";
 
 // The two directory search boxes are one component (CatalogueSearch), so
-// they must behave and look alike (DESIGN §10.7, §10.10): the same field,
+// they must behave and look alike: the same field,
 // button and keyboard, run here against both.
 
 /** A search box that follows the URL, as its route renders it. */

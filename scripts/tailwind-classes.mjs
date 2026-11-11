@@ -1,7 +1,6 @@
 // What may be a Tailwind class in app/** beyond what the theme defines
 // (app/styles/tokens.css): the restricted patterns, which
-// eslint.config.ts (no-restricted-classes) and test/tailwind-classes.test.ts
-// apply, and the component classes the stylesheets define themselves.
+// eslint.config.ts (no-restricted-classes) applies, and the component classes the stylesheets define themselves.
 import { readdirSync, readFileSync } from "node:fs";
 
 // The project's fixed scales for the utilities that Tailwind 4 generates

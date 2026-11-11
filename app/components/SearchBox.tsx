@@ -25,7 +25,7 @@ const SIZES = {
 } as const;
 
 /**
- * Search (DESIGN §6.26): a GET form to the catalogue's search page,
+ * Search: a GET form to the catalogue's search page,
  * `/search?q=`. With JS it goes straight to the canonical URL (the search
  * trimmed, one request); without JS the browser sends `q`, which the page
  * answers the same. The submit button means it works without Enter too.

@@ -75,7 +75,7 @@ function Step({
 }
 
 /**
- * Pages of a long list (DESIGN §6.20): a "Pagination" nav of links to
+ * Pages of a long list: a "Pagination" nav of links to
  * `href(n)`. The current page is not a link (`aria-current="page"`, on the
  * accent fill, never focused, so no ring is drawn on accent). Below sm the
  * numbers give way to "Page 3 of 12". Previous on the first page and Next

@@ -5,7 +5,8 @@ import { test } from "./support/test";
 
 /**
  * One visit per page template (the same list as screenshots.spec.ts): axe at
- * 1280 in the default light theme, and at 360 no sideways scrolling.
+ * 1280 in the default light theme, and at 360 no sideways scrolling. Settings
+ * is visited signed in (stub sign-in, back to /settings).
  */
 const TEMPLATES = [
   "/",
@@ -25,7 +26,7 @@ const TEMPLATES = [
   "/help",
   "/help/conservation-status",
   "/wiki/Northmarch_Rising",
-  "/settings",
+  "/auth/login?as=contributor&returnTo=/settings",
 ];
 
 for (const path of TEMPLATES) {

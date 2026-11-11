@@ -21,7 +21,7 @@ const CARD_CLASSES =
   "group relative h-full rounded-lg border border-border bg-surface p-4 shadow-1 md:p-5";
 
 /**
- * A content card (DESIGN §6.11): a box with a heading. Without `to` it is
+ * A content card: a box with a heading. Without `to` it is
  * the `static` variant: no link, no hover, no focus. With `to` it is the
  * `link` variant: the title is the link and its ::after stretches over the
  * whole card, which takes the hover edge and (on the ::after, since the card
@@ -87,7 +87,7 @@ export function Card({
 }
 
 /**
- * Cards as a list (DESIGN §6.11): `ul role="list"`, each Card its own `li`,
+ * Cards as a list: `ul role="list"`, each Card its own `li`,
  * one column, two from md and (with `columns` 3) three from lg. It is
  * `not-prose`, so inside help prose the list, heading and link styles of
  * `.prose-bt` leave the cards alone.

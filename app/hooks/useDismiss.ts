@@ -4,7 +4,7 @@ import { useBrowserLayoutEffect } from "./useBrowserLayoutEffect";
 
 /**
  * Closing rules for a non-modal popup (the account panel, the search
- * sheet; DESIGN §6.25): Escape closes it and gives focus back to its
+ * sheet): Escape closes it and gives focus back to its
  * trigger; a press or focus anywhere outside `areas` (the trigger and the
  * popup) closes it and leaves focus where it went; so does any navigation.
  */

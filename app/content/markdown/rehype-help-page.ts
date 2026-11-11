@@ -3,7 +3,7 @@ import type { Element, ElementContent, Root, RootContent, Text } from "hast";
 import type { MdxjsEsmHast } from "mdast-util-mdxjs-esm";
 
 /**
- * Shapes a compiled help page for the WikiPage template (DESIGN §10.2):
+ * Shapes a compiled help page for the WikiPage template:
  *
  * - every h2 and h3 gets an id from its text (the same slugs GitHub uses, so
  *   in-page links such as `#how-restricted-works` keep working), and the
@@ -163,7 +163,7 @@ function collectContents(
  * Each body row of a table gets an id from its first cell, slugged like a
  * heading ("Low Risk" → `#low-risk`), so a page can link to one entry of a
  * table: the conservation statuses' rows are the targets of every
- * ConservationBadge link (DESIGN §6.13). Rows and headings share one set of
+ * ConservationBadge link. Rows and headings share one set of
  * ids, so a clash gets a numeric suffix.
  */
 function idTableRows(

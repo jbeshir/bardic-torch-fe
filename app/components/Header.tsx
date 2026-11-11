@@ -28,7 +28,7 @@ function useScrolled() {
 }
 
 /**
- * The site header (DESIGN §5.2), sticky at the top. From md it holds the
+ * The site header, sticky at the top. From md it holds the
  * Menu control (md–lg), the home link, the catalogue search, the theme toggle
  * and the account control. Below md only the home link is up here; the
  * rest lives in `bottomBar`, which is part of this banner in the DOM but

@@ -222,7 +222,7 @@ describe("AppShell", () => {
         .querySelector('[aria-current="page"]')
     ).toHaveTextContent("Licence & attribution");
     // Its toggle is for below md only: from md the header has one, and a
-    // page never shows two (DESIGN §6.24).
+    // page never shows two.
     expect(
       within(dialog)
         .getByRole("group", { name: "Theme" })

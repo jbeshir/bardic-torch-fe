@@ -87,7 +87,7 @@ function LoadingRows() {
 }
 
 /**
- * The facts box at the side of a page (DESIGN §6.10): an aside named by its
+ * The facts box at the side of a page: an aside named by its
  * title. The title is an h2 styled as h3, because the box comes before the
  * page's first prose h2; each section has an h3 and a definition list.
  * Sections with no rows are left out. Floats right from md and stacks full

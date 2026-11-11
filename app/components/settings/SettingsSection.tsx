@@ -1,7 +1,7 @@
 import { useId, type ReactNode, type RefObject } from "react";
 
 /**
- * One part of the settings page (DESIGN §10.3): a section named by its h2,
+ * One part of the settings page: a section named by its h2,
  * with a rule under the heading. `headingRef` makes the heading a focus
  * target (`tabindex="-1"`), for when the control that had focus goes away.
  */

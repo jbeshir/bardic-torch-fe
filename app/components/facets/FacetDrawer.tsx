@@ -3,7 +3,7 @@ import { Button, ButtonLink } from "~/components/ui/Button";
 import { Drawer } from "~/components/ui/Drawer";
 
 /**
- * The piece filters below xl (plan §4.3, DESIGN §6.28), on the Drawer: a
+ * The piece filters below xl (plan §4.3), on the Drawer: a
  * bottom sheet below md, the left edge from md, closed once the viewport
  * reaches xl, where the facet column takes over. Its body is the facet
  * form (`children`, without its own Apply); its footer, in the thumb

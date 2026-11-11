@@ -24,7 +24,7 @@ const TEMPLATES = [
   "/help",
   "/help/conservation-status",
   "/wiki/Northmarch_Rising",
-  "/settings",
+  "/auth/login?as=contributor&returnTo=/settings",
 ];
 
 for (const path of TEMPLATES) {

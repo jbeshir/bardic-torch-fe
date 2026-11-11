@@ -73,7 +73,7 @@ describe("directives", () => {
         .getAllByRole("definition")
         .map(value => value.textContent)
     ).toEqual(["anyone who writes.", "found in at least 4 places."]);
-    // Infobox links are standalone links, not prose links (DESIGN §6.10).
+    // Infobox links are standalone links, not prose links.
     expect(within(aside).getByRole("link", { name: "Low Risk" })).toHaveClass(
       "font-medium",
       "no-underline"

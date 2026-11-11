@@ -54,7 +54,7 @@ function Inline({ node }: { readonly node: MarkdownInline }) {
         </strong>
       );
     case "link":
-      // A reader's address: never followed or credited (DESIGN §6.3).
+      // A reader's address: never followed or credited.
       return isUserUrl(node.href) ? (
         <Link to={node.href} userContent appearance="prose">
           <Inlines nodes={node.children} />

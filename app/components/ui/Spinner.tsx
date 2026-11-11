@@ -1,7 +1,7 @@
 type SpinnerSize = 16 | 20 | 24;
 
 /**
- * A rotating arc (DESIGN §6.17). Always decorative: whatever contains it
+ * A rotating arc. Always decorative: whatever contains it
  * says it is busy (`aria-busy`, or a "Loading…" / "Saving…" status). Under
  * reduced motion the arc pulses instead of turning.
  *

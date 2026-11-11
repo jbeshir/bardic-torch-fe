@@ -2,7 +2,7 @@ import { IconLock } from "@tabler/icons-react";
 import { Alert } from "~/components/ui/Alert";
 import { Link } from "~/components/ui/Link";
 
-/** A statement's address, from the API: a reader's URL (DESIGN §6.3). */
+/** A statement's address, from the API: a reader's URL. */
 type StatementUrl = `http${string}`;
 
 type PageBannerProps =
@@ -33,7 +33,7 @@ function statement(url: StatementUrl | undefined) {
 }
 
 /**
- * A page-level state under the tab row (DESIGN §6.14, §7.5 wording): the
+ * A page-level state under the tab row: the
  * info Banner for a stub, a restricted work (with the lock icon; it
  * replaces every "help preserve" prompt) or a person who prefers no page.
  * The statement link is the creator's own words, so it is shown when the

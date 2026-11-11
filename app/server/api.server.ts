@@ -140,6 +140,9 @@ function upstreamError(
       return { code, message: TRY_AGAIN };
     case "unavailable":
       return UNREACHABLE;
+    default:
+      // A code this build's spec doesn't list: the API is ahead of us.
+      return { code: "internal", message: TRY_AGAIN };
   }
 }
 

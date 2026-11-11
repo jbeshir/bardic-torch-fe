@@ -12,7 +12,7 @@ export const meta: MetaFunction = args =>
     path: HELP_HREF,
   });
 
-/** The help index (DESIGN §10.2): a card for each help page. */
+/** The help index: a card for each help page. */
 export default function HelpIndexRoute() {
   return <HelpPage content={HELP_INDEX} />;
 }

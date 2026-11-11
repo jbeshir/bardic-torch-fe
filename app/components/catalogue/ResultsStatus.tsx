@@ -5,7 +5,7 @@
  * results" after a filter, a letter or a page changes the list. Its text is
  * the loader's, so it changes only when the new list is in.
  *
- * With `visible` (a directory's list with rows, DESIGN §10.7) the count is
+ * With `visible` (a directory's list with rows) the count is
  * shown under the results heading, `body-sm fg-muted`; otherwise, and
  * always for "No results" (the EmptyState says it), it is out of sight. A
  * `note` (left-out filters, which an Alert above already shows) is said

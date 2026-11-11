@@ -61,7 +61,7 @@ const PILL =
   "inline-flex max-w-full items-center whitespace-nowrap rounded-full align-middle";
 
 /**
- * A piece's conservation status (DESIGN §6.13): a pill with the status's
+ * A piece's conservation status: a pill with the status's
  * icon and label, never colour alone. Static by default; as a `link` it
  * goes to the status's entry on the conservation help page, named
  * "Conservation status: Endangered". A static badge has the same hidden

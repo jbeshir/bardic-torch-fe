@@ -21,7 +21,7 @@ import { fixtureAppEnv } from "./dev-fixtures.mjs";
  * - each deploys to its own Worker (bardic-torch-fe, bardic-torch-fe-preview);
  * - neither carries a `.dev.vars` copy or an AUTH_MODE variable;
  * - neither's client build has the Markdown parser (micromark), which runs
- *   in loaders only, or zod, which checks API answers on the server only
+ *   in loaders only, or zod, which checks form input on the server only
  *   (the browser reads enum values from `app/constants/enums.ts`);
  * - `__INDEXABLE__` is true in production only: its server build has the
  *   crawlable robots.txt rules and no X-Robots-Tag, and the preview build

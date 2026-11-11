@@ -7,7 +7,7 @@ import { TagList } from "~/components/ui/TagList";
 import { TableOfContents, type TocEntry } from "./TableOfContents";
 
 /**
- * The wiki page template (DESIGN §5.4–5.6, §10.2), inside the shell's main
+ * The wiki page template, inside the shell's main
  * sheet: breadcrumbs, the h1, the subtitle, the title rule with the page's
  * views (by default the non-interactive "Read" label: a help page has one
  * view) and its meta, the page's banners, then the infobox (first, so it

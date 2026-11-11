@@ -51,7 +51,7 @@ export function isResting(error: unknown): boolean {
 }
 
 /**
- * The 404 page body (DESIGN §10.4): the unlit torch, what happened, the way
+ * The 404 page body: the unlit torch, what happened, the way
  * home, a search of the catalogue for the address's last part (an old
  * wiki address names its page there), and the same search on the original
  * wiki, since its old pages don't redirect here yet. An entity page's 404
@@ -101,7 +101,7 @@ export function NotFound({
 }
 
 /**
- * The page body for anything unexpected (DESIGN §10.5). `reference` is the
+ * The page body for anything unexpected. `reference` is the
  * Sentry event id, when Sentry is set up; without one the request to
  * quote it is left out. "Let us know" is the Contact link in HelpLinks.
  * A route's own boundary may say what failed in `title`.
@@ -135,7 +135,7 @@ export function ServerError({
 }
 
 /**
- * The page body when the catalogue is out of reach (DESIGN §10.5, 503): the
+ * The page body when the catalogue is out of reach: the
  * API is down for upkeep, unreachable or too slow. The art is the unlit
  * torch, not the broken one, and there is no reference: an outage isn't
  * a bug to report (the server has logged it). Try again reloads without JS.

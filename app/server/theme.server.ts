@@ -2,7 +2,7 @@ import type { Theme } from "~/styles/tokens";
 
 /**
  * The `theme` cookie holds an explicit choice, `light` or `dark`. No cookie
- * means "follow the device" (DESIGN §6.24), so choosing System deletes it.
+ * means "follow the device", so choosing System deletes it.
  * It is only a display preference, so it isn't signed.
  */
 

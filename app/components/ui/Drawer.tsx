@@ -13,7 +13,7 @@ import { useModalDialog } from "~/hooks/useModalDialog";
 const CLOSE_FROM_QUERIES = { lg: LG_QUERY, xl: XL_QUERY } as const;
 
 /**
- * The navigation drawer (DESIGN §6.21) on a native modal `<dialog>`, opened
+ * The navigation drawer on a native modal `<dialog>`, opened
  * nearest its trigger: a bottom sheet below md (the bottom app bar), the
  * left edge from md. A visible h2 names it; focus starts on the close
  * button and returns to the opener; a link to the current page in it is

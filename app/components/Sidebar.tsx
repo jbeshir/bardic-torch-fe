@@ -5,8 +5,8 @@ import { LogoMark } from "./LogoMark";
 
 // 44 px rows below lg; 28 px at lg (pointer screens, WCAG 2.5.8), so the
 // whole Help group fits above the fold of an 800 px window, clear of the
-// "more below" fade, with room for labels to wrap in a wider sans
-// (DESIGN §5.3). The rows, headings and gaps don't depend on the font;
+// "more below" fade, with room for labels to wrap in a wider sans.
+// The rows, headings and gaps don't depend on the font;
 // only a label that wraps adds a line to its row.
 const ITEM =
   "flex min-h-11 items-center gap-2 rounded-md px-3 text-body-sm transition-colors focus-visible:-outline-offset-2 lg:min-h-7";
@@ -61,7 +61,7 @@ function isCurrent(
 }
 
 /**
- * The site navigation's contents (DESIGN §5.3), from
+ * The site navigation's contents, from
  * app/constants/navigation.ts: Browse, the facets, Help, then the
  * ContributeCard. The caller wraps it in the "Site"
  * nav: the persistent sidebar from lg, or the drawer below.

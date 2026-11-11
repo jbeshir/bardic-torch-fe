@@ -37,7 +37,7 @@ export function failureTitle(
 }
 
 /**
- * A catalogue page that couldn't load at all (plan §3.3, DESIGN §10.5),
+ * A catalogue page that couldn't load at all (plan §3.3),
  * the route's ErrorBoundary inside the shell, by the failure's kind:
  * `resting` (the API is out of reach, 503) is the Resting page; `server`
  * (500) is "We couldn’t load {what}" with Try again; `bad_gateway` (502,

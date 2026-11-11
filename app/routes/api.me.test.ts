@@ -147,6 +147,23 @@ describe("PATCH /api/me", () => {
     });
   });
 
+  it("gives an upstream code it doesn't know the try-again copy", async () => {
+    upstream(() =>
+      HttpResponse.json(
+        { code: "a_code_from_the_future", message: "x" },
+        { status: 400 }
+      )
+    );
+    const response = await patch({ display_name: "Morwen" });
+    expect(await response.json()).toEqual({
+      ok: false,
+      error: {
+        code: "internal",
+        message: "We couldn’t do that just now. Try again shortly.",
+      },
+    });
+  });
+
   it("maps a malformed upstream response to 502", async () => {
     vi.spyOn(console, "error").mockReturnValue();
     upstream(() => new HttpResponse("not JSON", { status: 200 }));

@@ -19,7 +19,7 @@ const SAVE_FAILED =
   "We couldn’t save your changes. Check your connection and try again.";
 
 /**
- * The display name form (DESIGN §10.3). It checks the name with the API's
+ * The display name form. It checks the name with the API's
  * rule before sending; the fetcher submits to the settings route, whose
  * `clientAction` sends `PATCH /api/me`, and the root loader revalidates
  * after a save, so the account menu shows the new name too. A rejected

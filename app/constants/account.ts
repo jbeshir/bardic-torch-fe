@@ -1,7 +1,7 @@
 import type { User } from "~/schemas/api";
 
 /**
- * Who is reading, as the root loader saw it (DESIGN §6.25). A failed
+ * Who is reading, as the root loader saw it. A failed
  * profile load never stops the page: the account control says so instead.
  */
 export type Account =

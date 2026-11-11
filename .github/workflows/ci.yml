@@ -5,16 +5,15 @@
 # never leaves the runner (see docs/TESTING.md).
 #
 # Every action is pinned to the full commit SHA of a release, with its tag in
-# a trailing comment (test/repo-hygiene.test.ts requires both, and one pin per
-# action across the workflows). These are the actions' Node 24 runtime
+# a trailing comment. These are the actions' Node 24 runtime
 # releases (`runs.using: node24`). To bump one, read the new tag's commit
 # (`gh api repos/actions/<name>/git/ref/tags/<tag>`) and change the SHA and
 # the comment together, in every workflow.
 name: CI
 
 # Pull requests run once, as pull_request; pushes only for the two deployed
-# branches, so a pull request's branch isn't tested twice. The audit runs on
-# every push and pull request instead (audit.yml).
+# branches, so a pull request's branch isn't tested twice. The audit runs
+# weekly and on pull requests to main (audit.yml).
 on:
   push:
     branches: [main, preview]
@@ -71,7 +70,7 @@ jobs:
     # the sandbox's, so layout and screenshots match it. On the bare runner
     # system-ui was DejaVu Sans, not the image's WenQuanYi Zen Hei, and the
     # layout differed. Bump it with @playwright/test: the tag's version must
-    # be the locked one (test/repo-hygiene.test.ts), and the digest is the
+    # be the locked one, and the digest is the
     # tag's multi-arch index: the top-level Digest of `docker buildx
     # imagetools inspect mcr.microsoft.com/playwright:<tag>`.
     # --ipc=host: Chromium's shared memory, as Playwright's Docker docs say.

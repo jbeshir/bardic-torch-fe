@@ -26,7 +26,7 @@ const STUB_CHOICES = [
 ] as const;
 
 /**
- * The piece filters (plan §2.5, DESIGN §6.28): one GET form to `/pieces`
+ * The piece filters (plan §2.5): one GET form to `/pieces`
  * with a fieldset per facet (`FacetGroup`), the "Page state" (`stub`)
  * radios and "Apply filters". `q` and `letter` ride along as hidden inputs
  * when set; the page doesn't, since new filters start at page 1. The sort

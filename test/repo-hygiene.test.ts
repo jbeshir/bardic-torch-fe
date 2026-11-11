@@ -33,7 +33,8 @@ describe("repo hygiene", () => {
     const config = parseConfigFileTextToJson("wrangler.jsonc", source)
       .config as {
       vars?: object;
-      env?: { preview?: { vars?: object } };
+      observability?: object;
+      env?: { preview?: { vars?: object; observability?: object } };
     };
     const vars = [config.vars, config.env?.preview?.vars].flatMap(v =>
       Object.keys(v ?? {})
@@ -45,6 +46,14 @@ describe("repo hygiene", () => {
     );
     expect(assigned).toEqual([]);
     expect(source).not.toContain("AUTH_MODE");
+    // A query string can carry a one-time secret (/auth/callback?code=…).
+    const logging = {
+      enabled: true,
+      redact_query_string: true,
+      logs: { invocation_logs: false },
+    };
+    expect(config.observability).toEqual(logging);
+    expect(config.env?.preview?.observability).toEqual(logging);
   });
 
   it(".dev.vars.example holds placeholders only", () => {

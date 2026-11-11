@@ -1,9 +1,9 @@
 /**
- * Every link out of the site, and the site navigation (DESIGN §5.3). The
+ * Every link out of the site, and the site navigation. The
  * catalogue is on this site: the navigation's entries are internal paths.
  * The original wiki is named only here, for the help pages' attribution
- * (CC BY-SA), the footer's link and the 404 page's secondary link
- * (test/repo-hygiene.test.ts). Links are marked as external from their
+ * (CC BY-SA), the footer's link and the 404 page's secondary link.
+ * Links are marked as external from their
  * address (`externalKind` in components/ui/Link.tsx).
  */
 
@@ -27,7 +27,7 @@ export function wikiSearchUrl(query: string): string {
   return `${WIKI_SEARCH_ACTION}?${new URLSearchParams({ search: query })}`;
 }
 
-/** The catalogue's search (DESIGN §6.26): a GET form to `/search?q=`. */
+/** The catalogue's search: a GET form to `/search?q=`. */
 export const SEARCH = { action: "/search", param: "q" } as const;
 
 /** The original wiki's front page. */
@@ -36,7 +36,7 @@ export const WIKI_HOME_URL = wikiPageUrl("Main Page");
 /** The contact form, until the site has its own (FE4). */
 export const CONTACT_FORM_URL = "https://forms.gle/wUwWnMKtWZSUisWCA";
 
-/** The licence of the site's text (DESIGN §5.7). */
+/** The licence of the site's text. */
 export const LICENCE_URL = "https://creativecommons.org/licenses/by-sa/4.0/";
 
 /** The help index. */

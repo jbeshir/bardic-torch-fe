@@ -18,7 +18,7 @@ const MARK =
   "pointer-events-none absolute inset-0 m-auto hidden text-accent-fg peer-disabled:text-fg-subtle forced-colors:hidden!";
 
 /**
- * A native checkbox drawn from tokens (DESIGN §6.8). The whole row is the
+ * A native checkbox drawn from tokens. The whole row is the
  * label, so it is the hit area; help text sits under the label text and is
  * the box's description. In forced-colours mode the system draws the box
  * (`forced-colors:appearance-auto`; a utility, because base.css can't
@@ -98,7 +98,7 @@ export function Checkbox({
 }
 
 /**
- * Related checkboxes under one label (DESIGN §6.8): a fieldset whose legend
+ * Related checkboxes under one label: a fieldset whose legend
  * looks like a field label, with optional help and one error for the group.
  */
 export function CheckboxGroup({

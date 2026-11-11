@@ -19,10 +19,11 @@ const EMPTY_LIST = {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("what it sends", () => {
-  it("sends only Accept: no Authorization, no cookie", async () => {
+  it("sends Accept, and no Authorization or cookie", async () => {
     const seen: Headers[] = [];
     fixtures.server.use(
       http.get(PIECES, ({ request }) => {
@@ -60,6 +61,17 @@ describe("what it sends", () => {
 });
 
 describe("how an upstream answer reads", () => {
+  // Served through a stubbed fetch, not msw: msw keeps feeding Node's fetch
+  // after the timeout aborted it, and Node fails an internal assertion.
+  const stalled = () =>
+    new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('{"data":'));
+        },
+      }),
+      { headers: { "Content-Type": "application/json" } }
+    );
   const internal = () =>
     contractResponse("listPieces", 500, { code: "internal", message: "x" });
 
@@ -95,6 +107,12 @@ describe("how an upstream answer reads", () => {
       { kind: "resting", retryAfter: 30 },
     ],
     [
+      "a body that stalls after the headers",
+      stalled,
+      {},
+      { kind: "resting", retryAfter: 30 },
+    ],
+    [
       "a body that isn't JSON",
       () => new HttpResponse("not JSON", { status: 200 }),
       {},
@@ -102,7 +120,10 @@ describe("how an upstream answer reads", () => {
     ],
   ])("%s", async (_why, respond, query, failure) => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const timeout = AbortSignal.timeout.bind(AbortSignal);
+    vi.spyOn(AbortSignal, "timeout").mockImplementation(() => timeout(20));
     fixtures.server.use(http.get(PIECES, respond));
+    if (respond === stalled) vi.stubGlobal("fetch", async () => stalled());
     expect(await listPieces(loadContext(), query)).toEqual({
       ok: false,
       failure,

@@ -14,11 +14,11 @@
   // and `observability`, which it overrides explicitly. Never remove
   // `env.preview.routes`: the preview Worker would inherit the production
   // custom domain, and its next deploy would move bardictorch.org to it
-  // (wrangler only warns). test/repo-hygiene.test.ts pins both Workers.
+  // (wrangler only warns).
   "name": "bardic-torch-fe",
   "main": "./workers/app.ts",
-  // Bump with wrangler: it must be a date the bundled workerd supports
-  // (test/repo-hygiene.test.ts). Sentry needs nodejs_compat.
+  // Bump with wrangler: it must be a date the bundled workerd supports.
+  // Sentry needs nodejs_compat.
   "compatibility_date": "2026-11-01",
   "compatibility_flags": ["nodejs_compat"],
   // Requests for a static file (build/client, wired up by the Vite plugin)
