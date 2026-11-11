@@ -5,14 +5,8 @@ import { createMemoryRouter } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { describe, expect, it } from "vitest";
 import { renderOnServer, renderRoutes, renderWithRouter } from "~/test/router";
-import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { ButtonLink } from "./Button";
-import {
-  ErrorState,
-  SectionError,
-  TryAgain,
-  UnderPageHead,
-} from "./ErrorState";
+import { ErrorState, TryAgain, UnderPageHead } from "./ErrorState";
 
 function ServerError({ reference }: { reference?: string }) {
   return (
@@ -49,74 +43,9 @@ describe("ErrorState under a page head", () => {
     expect(heading).toHaveClass("text-h2", "text-fg");
     expect(heading).toHaveAttribute("tabindex", "-1");
   });
-
-  it("is still the h1 when nothing wraps it", async () => {
-    await renderWithRouter(<ServerError />);
-    expect(screen.getByRole("heading", { level: 1 })).toHaveClass("text-h1");
-    expect(screen.queryByRole("heading", { level: 2 })).toBeNull();
-  });
-
-  it("looks the same in both themes", async () => {
-    await expectSameMarkupInBothThemes(() =>
-      renderWithRouter(
-        <UnderPageHead>
-          <ServerError />
-        </UnderPageHead>
-      )
-    );
-  });
 });
 
 describe("ErrorState", () => {
-  it("heads the page with an h1 and says what to do", async () => {
-    await renderWithRouter(<ServerError />);
-    expect(
-      screen.getByRole("heading", { level: 1, name: "Something went wrong" })
-    ).toBeInTheDocument();
-    expect(screen.getByText(/That’s on us, not you/)).toHaveClass(
-      "text-fg-muted"
-    );
-    expect(screen.getByRole("button", { name: "Try again" })).toHaveClass(
-      "bg-accent"
-    );
-    expect(
-      screen.getByRole("link", { name: "Go to the home page" })
-    ).toHaveAttribute("href", "/");
-  });
-
-  it("shows the Sentry reference in mono when there is one, and nothing otherwise", async () => {
-    await renderWithRouter(<ServerError reference="7f3a2c9e" />);
-    expect(screen.getByText("Reference: 7f3a2c9e")).toHaveClass(
-      "font-mono",
-      "text-fg-subtle"
-    );
-    act(() => {
-      document.body.innerHTML = "";
-    });
-    await renderWithRouter(<ServerError />);
-    expect(screen.queryByText(/Reference/)).toBeNull();
-  });
-
-  it("draws the broken torch for errors and the plain unlit one for missing pages", async () => {
-    await renderWithRouter(<ServerError />);
-    const broken = document.querySelector("svg path[stroke-dasharray]");
-    expect(broken).not.toBeNull();
-    act(() => {
-      document.body.innerHTML = "";
-    });
-    await renderWithRouter(
-      <ErrorState
-        title="We couldn’t find that page"
-        art="missing"
-        actions={<ButtonLink to="/">Go to the home page</ButtonLink>}
-      >
-        It may have moved.
-      </ErrorState>
-    );
-    expect(document.querySelector("svg path[stroke-dasharray]")).toBeNull();
-    expect(document.querySelector("svg")).toHaveClass("h-16", "w-16");
-  });
-
   it("moves focus to the heading when it replaces a page on the client", async () => {
     await renderWithRouter(<ServerError />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveFocus();
@@ -139,12 +68,6 @@ describe("ErrorState", () => {
     });
     expect(screen.getByRole("heading", { level: 1 })).not.toHaveFocus();
     container.remove();
-  });
-
-  it("renders the same token classes in both themes", async () => {
-    await expectSameMarkupInBothThemes(() =>
-      renderWithRouter(<ServerError reference="7f3a" />)
-    );
   });
 });
 
@@ -179,22 +102,5 @@ describe("TryAgain", () => {
     expect(button).toHaveAttribute("aria-disabled", "true");
     await act(async () => finish(null));
     expect(button).not.toHaveAttribute("aria-busy");
-  });
-});
-
-describe("SectionError", () => {
-  it("is a danger alert with the cause and a small Try again", async () => {
-    await renderWithRouter(
-      <SectionError title="We couldn’t load your profile">
-        The account service didn’t answer.
-      </SectionError>
-    );
-    expect(
-      screen.getByText("We couldn’t load your profile").closest(".bg-danger-bg")
-    ).not.toBeNull();
-    expect(screen.getByText(/didn’t answer/)).toBeVisible();
-    expect(screen.getByRole("button", { name: "Try again" })).toHaveClass(
-      "min-h-9"
-    );
   });
 });

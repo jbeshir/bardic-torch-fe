@@ -54,7 +54,7 @@ if (typeof document !== "undefined") {
 
 // jsdom has no showModal() or close(). This stand-in keeps the `open` state
 // and fires `close`, so the dialog components can be unit-tested; the real
-// top layer, inert background and Escape are covered by the styleguide e2e.
+// top layer, inert background and Escape are left to the browser.
 if (
   typeof HTMLDialogElement !== "undefined" &&
   !("showModal" in HTMLDialogElement.prototype)

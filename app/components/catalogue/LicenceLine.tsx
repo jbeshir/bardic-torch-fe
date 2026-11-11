@@ -2,8 +2,8 @@ import { Link } from "~/components/ui/Link";
 import { LICENCE_URL } from "~/constants/navigation";
 
 /**
- * The licence meta line at the foot of every entity's Read page (plan §4.0,
- * DESIGN §5.4): the site's own text licence (not a piece's licence) and the
+ * The licence meta line at the foot of every entity's Read page (plan
+ * §4.0): the site's own text licence (not a piece's licence) and the
  * credit for text adapted from the original wiki, whose contributors the
  * page history names. A page with no history to show (a person who asked
  * not to have a page) ends the sentence at the wiki.

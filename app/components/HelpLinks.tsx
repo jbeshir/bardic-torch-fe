@@ -7,7 +7,7 @@ import {
 } from "~/constants/navigation";
 
 /**
- * Where to get help, the same on every page (DESIGN §5.7, WCAG 3.2.6):
+ * Where to get help, the same on every page (WCAG 3.2.6):
  * Contact · Help · Licence & attribution, then the original wiki. Always
  * this order and these targets, in the footer of every template and on the
  * standalone error page. A `separated-list` (base.css): when it wraps, no

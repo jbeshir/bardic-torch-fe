@@ -2,19 +2,8 @@ import type { RouterContextProvider } from "react-router";
 import { z } from "zod";
 import type { operations } from "~/api/schema.gen";
 import { isUnavailable } from "~/catalogue/read-failure";
-import {
-  apiTokenListSchema,
-  createdApiTokenSchema,
-  upstreamErrorSchema,
-  userSchema,
-  type UpstreamErrorCode,
-  type User,
-} from "~/schemas/api";
-import {
-  ACTIVE_TOKEN_LIMIT,
-  DISPLAY_NAME_RULE,
-  TOKEN_NAME_RULE,
-} from "~/schemas/rules";
+import { type UpstreamErrorCode, type User } from "~/schemas/api";
+import { DISPLAY_NAME_RULE } from "~/schemas/rules";
 import {
   UNEXPECTED_ANSWER,
   type ProxyBody,
@@ -40,7 +29,7 @@ import {
 
 /**
  * Server-side client for the Bardic Torch API. Every call is authenticated
- * with the session's bearer token, validates the upstream body with zod and
+ * with the session's bearer token, and
  * resolves to an `ApiResult`; nothing throws. Only the headers built here
  * reach the API, so a client's Cookie or Authorization is never forwarded.
  *
@@ -76,20 +65,16 @@ const MAX_BODY_BYTES = 8 * 1024;
 const ENDPOINTS = {
   getMe: { method: "GET", path: "/v1/me" },
   updateMe: { method: "PATCH", path: "/v1/me" },
-  listAPITokens: { method: "GET", path: "/v1/tokens" },
-  createAPIToken: { method: "POST", path: "/v1/tokens" },
-  revokeAPIToken: { method: "DELETE", path: "/v1/tokens/{token_id}" },
 } as const satisfies {
   readonly [Id in keyof operations]?: EndpointOf<operations[Id]>;
 };
 
 type OperationId = keyof typeof ENDPOINTS;
 
-type ApiRequest<T> = {
+type ApiRequest = {
   readonly operationId: OperationId;
   readonly params?: Readonly<Record<string, string>>;
   readonly body?: unknown;
-  readonly schema: z.ZodType<T>;
 };
 
 const TRY_AGAIN = "We couldn’t do that just now. Try again shortly.";
@@ -122,17 +107,6 @@ function upstreamError(
         message:
           "Your account is blocked, so you can’t make changes. Contact the Bardic Torch team if you think this is a mistake.",
       };
-    case "api_token_not_allowed":
-      return {
-        code,
-        message:
-          "API tokens can’t manage API tokens. Log in on the website to do this.",
-      };
-    case "token_limit_reached":
-      return {
-        code,
-        message: `You already have ${ACTIVE_TOKEN_LIMIT} API tokens, the most allowed. Revoke one before creating another.`,
-      };
     case "moderator_required":
       return { code, message: "Only moderators can do that." };
     case "request_too_large":
@@ -141,9 +115,7 @@ function upstreamError(
       return {
         code,
         message:
-          operationId === "revokeAPIToken"
-            ? "That token no longer exists. Reload the page to see your current tokens."
-            : "We couldn’t find what you asked for. Reload the page and try again.",
+          "We couldn’t find what you asked for. Reload the page and try again.",
       };
     case "conflict":
       return {
@@ -159,13 +131,6 @@ function upstreamError(
           fields: [{ field: "display_name", message: DISPLAY_NAME_RULE }],
         };
       }
-      if (operationId === "createAPIToken") {
-        return {
-          code,
-          message: "Check the token name.",
-          fields: [{ field: "name", message: TOKEN_NAME_RULE }],
-        };
-      }
       return { code, message: TRY_AGAIN };
     case "method_not_allowed":
     case "unsupported_media_type":
@@ -173,6 +138,9 @@ function upstreamError(
       return { code, message: TRY_AGAIN };
     case "unavailable":
       return UNREACHABLE;
+    default:
+      // A code this build's spec doesn't list: the API is ahead of us.
+      return { code: "internal", message: TRY_AGAIN };
   }
 }
 
@@ -187,7 +155,7 @@ function failure(
 async function callApi<T>(
   request: Request,
   context: Readonly<RouterContextProvider>,
-  apiRequest: ApiRequest<T>
+  apiRequest: ApiRequest
 ): Promise<ApiResult<T>> {
   const env = context.get(appEnvContext);
   const auth = await createAuthenticatedFetch(request, context);
@@ -253,20 +221,26 @@ async function callApi<T>(
   }
 
   const payload = parseJson(text);
+  const body =
+    typeof payload === "object" && payload !== null && !Array.isArray(payload)
+      ? (payload as Record<string, unknown>)
+      : undefined;
   if (response.ok) {
-    const parsed = apiRequest.schema.safeParse(payload);
-    if (parsed.success) {
-      return { ok: true, status: response.status, data: parsed.data, headers };
+    if (body) {
+      return { ok: true, status: response.status, data: body as T, headers };
     }
   } else if (response.status >= 400) {
-    const parsed = upstreamErrorSchema.safeParse(payload);
-    if (isUnavailable(response.status, parsed.data?.code)) {
+    const code =
+      typeof body?.code === "string"
+        ? (body.code as UpstreamErrorCode)
+        : undefined;
+    if (isUnavailable(response.status, code)) {
       return failure(response.status, UNREACHABLE, headers);
     }
-    if (parsed.success) {
+    if (code !== undefined) {
       return failure(
         response.status,
-        upstreamError(apiRequest.operationId, parsed.data.code),
+        upstreamError(apiRequest.operationId, code),
         headers
       );
     }
@@ -429,7 +403,6 @@ export function getMe(
 ) {
   return callApi<User>(request, context, {
     operationId: "getMe",
-    schema: userSchema,
   });
 }
 
@@ -438,43 +411,8 @@ export function updateMe(
   context: Readonly<RouterContextProvider>,
   body: RequestBody<"updateMe">
 ) {
-  return callApi(request, context, {
+  return callApi<User>(request, context, {
     operationId: "updateMe",
     body,
-    schema: userSchema,
-  });
-}
-
-export function listApiTokens(
-  request: Request,
-  context: Readonly<RouterContextProvider>
-) {
-  return callApi(request, context, {
-    operationId: "listAPITokens",
-    schema: apiTokenListSchema,
-  });
-}
-
-export function createApiToken(
-  request: Request,
-  context: Readonly<RouterContextProvider>,
-  body: RequestBody<"createAPIToken">
-) {
-  return callApi(request, context, {
-    operationId: "createAPIToken",
-    body,
-    schema: createdApiTokenSchema,
-  });
-}
-
-export function revokeApiToken(
-  request: Request,
-  context: Readonly<RouterContextProvider>,
-  tokenId: string
-) {
-  return callApi(request, context, {
-    operationId: "revokeAPIToken",
-    params: { token_id: tokenId },
-    schema: z.null(),
   });
 }

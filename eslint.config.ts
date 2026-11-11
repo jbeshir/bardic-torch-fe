@@ -97,8 +97,8 @@ export default defineConfig(
     },
   },
 
-  // Tailwind classes: only what the generated theme defines, on the
-  // project's fixed scales (scripts/tailwind-theme.mjs,
+  // Tailwind classes: only what the theme defines, on the
+  // project's fixed scales (the @theme in app/styles/tokens.css,
   // scripts/tailwind-classes.mjs).
   {
     files: ["app/**/*.{ts,tsx}"],

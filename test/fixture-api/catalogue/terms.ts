@@ -5,8 +5,8 @@ import type { components } from "../../../app/api/schema.gen";
  * the facets, the vocabulary and the tree shapes follow the real wiki's
  * categories (PLAN §7.3), nothing else does.
  *
- * Raw means before redaction: `approved: false` terms and their subtree are
- * never served (`visibility.ts`, C1.5).
+ * Listed in tree order (facets in the spec's order, parents before children,
+ * siblings in order), which is the order they are served in.
  */
 
 type Schemas = components["schemas"];
@@ -20,9 +20,6 @@ export type RawTerm = Readonly<
     parent: string | null;
     /** The affiliation this term relates to, by slug. */
     related_affiliation: string | null;
-    /** The order among siblings. */
-    position: number;
-    approved: boolean;
   }
 >;
 
@@ -35,14 +32,12 @@ interface TermOptions {
   readonly description?: string;
   readonly aliases?: readonly string[];
   readonly relatedAffiliation?: string;
-  readonly approved?: boolean;
 }
 
 function term(
   facet: Facet,
   slug: string,
   displayName: string,
-  position: number,
   options: TermOptions = {}
 ): RawTerm {
   return {
@@ -54,124 +49,106 @@ function term(
     aliases: [...(options.aliases ?? [])],
     parent: options.parent ?? null,
     related_affiliation: options.relatedAffiliation ?? null,
-    position,
-    approved: options.approved ?? true,
   };
 }
 
-/** The slug of the one unapproved topic; its child is `DRAFT_CHILD_SLUG`. */
-export const DRAFT_TOPIC_SLUG = "draft-topic";
-export const DRAFT_CHILD_SLUG = "draft-topic-child";
-/** A facet-root term no piece uses: counted nowhere, listed with 0. */
-export const EMPTY_ROOT_SLUG = "miscellany";
-
 export const TERMS: readonly RawTerm[] = [
   // Mood.
-  term("mood", "warlike", "Warlike", 1),
-  term("mood", "comedic", "Comedic", 2, { aliases: ["Funny"] }),
-  term("mood", "sentimental", "Sentimental", 3),
-  term("mood", "joyful", "Joyful", 4),
-  term("mood", "singalong", "Singalong", 5),
-  term("mood", "tragic", "Tragic", 6),
-  term("mood", "story-mood", "Story", 7, { name: "Story (Mood)" }),
-  term("mood", "eerie", "Eerie", 8),
-  term("mood", "relaxed", "Relaxed", 9),
-  term("mood", "rude", "Rude", 10),
-  term("mood", "leaving-songs", "Leaving songs", 11),
-  term("mood", "romantic", "Romantic", 12),
-  term("mood", "comforting", "Comforting", 13),
+  term("mood", "warlike", "Warlike"),
+  term("mood", "comedic", "Comedic", { aliases: ["Funny"] }),
+  term("mood", "sentimental", "Sentimental"),
+  term("mood", "joyful", "Joyful"),
+  term("mood", "singalong", "Singalong"),
+  term("mood", "tragic", "Tragic"),
+  term("mood", "story-mood", "Story", { name: "Story (Mood)" }),
+  term("mood", "eerie", "Eerie"),
+  term("mood", "relaxed", "Relaxed"),
+  term("mood", "rude", "Rude"),
+  term("mood", "leaving-songs", "Leaving songs"),
+  term("mood", "romantic", "Romantic"),
+  term("mood", "comforting", "Comforting"),
 
   // Topic: three deep trees, and a handful of roots.
-  term("topic", "war", "War", 1, {
+  term("topic", "war", "War", {
     aliases: ["Battle"],
     description: "Pieces about fighting, sieges and the people who fought.",
   }),
-  term("topic", "battles", "Battles", 1, { parent: "war" }),
-  term("topic", "swords", "Swords", 1, { parent: "battles" }),
-  term("topic", "sca", "SCA", 2),
-  term("topic", "sca-peerage-pieces", "SCA peerage pieces", 1, {
+  term("topic", "battles", "Battles", { parent: "war" }),
+  term("topic", "swords", "Swords", { parent: "battles" }),
+  term("topic", "sca", "SCA"),
+  term("topic", "sca-peerage-pieces", "SCA peerage pieces", {
     parent: "sca",
     relatedAffiliation: "northmarch",
   }),
-  term("topic", "squires", "Squires", 1, { parent: "sca-peerage-pieces" }),
-  term(
-    "topic",
-    "historical-people-and-events",
-    "Historical people and events",
-    3
-  ),
-  term("topic", "12th-century-topic", "12th Century", 4, {
+  term("topic", "squires", "Squires", { parent: "sca-peerage-pieces" }),
+  term("topic", "historical-people-and-events", "Historical people and events"),
+  term("topic", "12th-century-topic", "12th Century", {
     name: "12th Century (Topic)",
   }),
-  term("topic", "love", "Love", 5),
-  term("topic", "drinking", "Drinking", 6),
-  term("topic", "virtues", "Virtues", 7),
-  term("topic", "death", "Death", 8),
-  term("topic", "wandering", "Wandering", 9),
-  term("topic", DRAFT_TOPIC_SLUG, "Draft topic", 10, { approved: false }),
-  term("topic", DRAFT_CHILD_SLUG, "Draft topic child", 1, {
-    parent: DRAFT_TOPIC_SLUG,
-    approved: false,
-  }),
+  term("topic", "love", "Love"),
+  term("topic", "drinking", "Drinking"),
+  term("topic", "virtues", "Virtues"),
+  term("topic", "death", "Death"),
+  term("topic", "wandering", "Wandering"),
 
   // Culture.
-  term("culture", "english", "English", 1),
-  term("culture", "gaelic", "Gaelic", 2),
-  term("culture", "norse", "Norse", 3),
-  term("culture", "french", "French", 4),
-  term("culture", "welsh", "Welsh", 5, { name: "Welsh (Culture)" }),
-  term("culture", "spanish", "Spanish", 6),
+  term("culture", "english", "English"),
+  term("culture", "gaelic", "Gaelic"),
+  term("culture", "norse", "Norse"),
+  term("culture", "french", "French"),
+  term("culture", "welsh", "Welsh", { name: "Welsh (Culture)" }),
+  term("culture", "spanish", "Spanish"),
 
   // Language.
-  term("language", "middle-english", "Middle English", 1),
-  term("language", "welsh-language", "Welsh", 2, { name: "Welsh (Language)" }),
-  term("language", "portuguese", "Portuguese", 3),
-  term("language", "asl", "ASL", 4, { aliases: ["American Sign Language"] }),
+  term("language", "middle-english", "Middle English"),
+  term("language", "welsh-language", "Welsh", { name: "Welsh (Language)" }),
+  term("language", "portuguese", "Portuguese"),
+  term("language", "asl", "ASL", { aliases: ["American Sign Language"] }),
 
   // Legendaria.
-  term("legendaria", "fenian-cycle", "Fenian Cycle", 1),
-  term("legendaria", "arthuriana", "Arthuriana", 2),
+  term("legendaria", "fenian-cycle", "Fenian Cycle"),
+  term("legendaria", "arthuriana", "Arthuriana"),
 
   // Form.
-  term("form", "ballad", "Ballad", 1),
-  term("form", "round", "Round", 2),
-  term("form", "filk", "Filk", 3),
-  term("form", "story-form", "Story", 4, { name: "Story (Form)" }),
+  term("form", "ballad", "Ballad"),
+  term("form", "round", "Round"),
+  term("form", "filk", "Filk"),
+  term("form", "story-form", "Story", { name: "Story (Form)" }),
 
   // Origin.
-  term("origin", "sca-pieces", "SCA pieces", 1),
-  term("origin", "traditional-and-folk", "Traditional and folk", 2),
-  term("origin", "pre-1600-sources", "Pre-1600 sources", 3),
-  term("origin", "contrafacta", "Contrafacta", 4),
-  term("origin", "contrafacta-modern", "Modern", 1, {
+  term("origin", "sca-pieces", "SCA pieces"),
+  term("origin", "traditional-and-folk", "Traditional and folk"),
+  term("origin", "pre-1600-sources", "Pre-1600 sources"),
+  term("origin", "contrafacta", "Contrafacta"),
+  term("origin", "contrafacta-modern", "Modern", {
     parent: "contrafacta",
     name: "Modern (Contrafacta)",
   }),
-  term("origin", "contrafacta-sca", "SCA", 2, {
+  term("origin", "contrafacta-sca", "SCA", {
     parent: "contrafacta",
     name: "SCA (Contrafacta)",
   }),
-  term("origin", "12th-century", "12th Century", 5, {
+  term("origin", "12th-century", "12th Century", {
     name: "12th Century (Origin)",
   }),
-  term("origin", "13th-century", "13th Century", 6),
-  term("origin", "16th-century", "16th Century", 7),
-  term("origin", "18th-century", "18th Century", 8),
-  term("origin", "20th-century", "20th Century", 9),
+  term("origin", "13th-century", "13th Century"),
+  term("origin", "16th-century", "16th Century"),
+  term("origin", "18th-century", "18th Century"),
+  term("origin", "20th-century", "20th Century"),
 
   // Other: its one root has no pieces.
-  term("other", EMPTY_ROOT_SLUG, "Miscellany", 1),
+  term("other", "miscellany", "Miscellany"),
 
   // Affiliation: invented kingdoms, with children.
-  term("affiliation", "northmarch", "Northmarch", 1),
-  term("affiliation", "barony-of-ashdown", "Barony of Ashdown", 1, {
+  term("affiliation", "northmarch", "Northmarch"),
+  term("affiliation", "barony-of-ashdown", "Barony of Ashdown", {
     parent: "northmarch",
   }),
-  term("affiliation", "westerfell", "Westerfell", 2),
-  term("affiliation", "shire-of-greywater", "Shire of Greywater", 1, {
+  term("affiliation", "westerfell", "Westerfell"),
+  term("affiliation", "shire-of-greywater", "Shire of Greywater", {
     parent: "westerfell",
   }),
-  term("affiliation", "caer-wyn", "Caer Wyn", 3),
+  term("affiliation", "caer-wyn", "Caer Wyn"),
 ];
 
 const BY_SLUG: ReadonlyMap<string, RawTerm> = new Map(

@@ -1,22 +1,16 @@
 import {
-  data,
   isRouteErrorResponse,
-  useLoaderData,
   useRouteError,
   useRouteLoaderData,
 } from "react-router";
 import type {
   ClientActionFunctionArgs,
   HeadersFunction,
-  LoaderFunctionArgs,
   MetaFunction,
-  ShouldRevalidateFunction,
 } from "react-router";
 import { IconLogin } from "@tabler/icons-react";
 import type { ReactNode } from "react";
-import type { components } from "~/api/schema.gen";
 import { ServerError } from "~/components/ErrorPages";
-import { ApiTokens } from "~/components/settings/ApiTokens";
 import { ProfileForm } from "~/components/settings/ProfileForm";
 import { SettingsSection } from "~/components/settings/SettingsSection";
 import { Alert } from "~/components/ui/Alert";
@@ -29,31 +23,18 @@ import {
   ME_ACTION,
   SETTINGS_INTENT,
   SETTINGS_PATH,
-  tokenAction,
-  TOKENS_ACTION,
 } from "~/constants/account";
 import { CONTACT_FORM_URL } from "~/constants/navigation";
 import { useErrorReference } from "~/hooks/useErrorReference";
 import type { loader as rootLoader } from "~/root";
 import type { ProxyBody } from "~/schemas/proxy";
-import { listApiTokens } from "~/server/api.server";
 
 /**
- * /settings (DESIGN §10.3, plan §0.7): the display name and the API
- * tokens. The tokens are loaded here, server-side; who is reading comes
- * from the root loader, so /v1/me is not fetched twice. Changes need JS:
- * the forms' fetchers submit to this route's `clientAction`, which sends
- * them on to the /api proxy routes. Nothing here is cached.
+ * /settings: the display name. Who is reading
+ * comes from the root loader. Changes need JS: the form's fetcher submits
+ * to this route's `clientAction`, which sends it on to the /api proxy
+ * route. Nothing here is cached.
  */
-
-type SettingsData =
-  | { readonly state: "signed-out" }
-  | {
-      readonly state: "ready";
-      readonly tokens: readonly components["schemas"]["APIToken"][];
-    }
-  /** The API refused the token list (403): `message` says why. */
-  | { readonly state: "tokens-refused"; readonly message: string };
 
 export const meta: MetaFunction = () => [
   { title: "Settings · Bardic Torch" },
@@ -67,29 +48,6 @@ const NO_STORE = "no-store";
  * answer the same route headers as the document, so this covers both.
  */
 export const headers: HeadersFunction = () => ({ "Cache-Control": NO_STORE });
-
-/**
- * Signed out (no session, or the API ended it) is a page state, as is a
- * 403; anything else that stops the list loading (a 500, an unreachable or
- * malformed API) is thrown to this route's error boundary. Every answer
- * forwards the API call's headers (a refreshed session cookie); the
- * `headers` export makes each of them `no-store`, so the token list never
- * stays in the browser's cache after logout.
- */
-export async function loader({ request, context }: LoaderFunctionArgs) {
-  const result = await listApiTokens(request, context);
-  const { headers } = result;
-  const answer = (settings: SettingsData) => data(settings, { headers });
-  if (result.ok) return answer({ state: "ready", tokens: result.data.data });
-  if (result.status === 401) return answer({ state: "signed-out" });
-  if (result.status === 403) {
-    return answer({ state: "tokens-refused", message: result.error.message });
-  }
-  throw data(
-    { message: result.error.message },
-    { status: result.status, headers }
-  );
-}
 
 /**
  * A settings form's submission, sent on to its proxy route (`sendForm`).
@@ -111,20 +69,6 @@ export async function clientAction({
         { display_name: field("display_name") },
         request.signal
       );
-    case SETTINGS_INTENT.createToken:
-      return sendForm(
-        TOKENS_ACTION,
-        "POST",
-        { name: field("name") },
-        request.signal
-      );
-    case SETTINGS_INTENT.revokeToken:
-      return sendForm(
-        tokenAction(field("tokenId")),
-        "DELETE",
-        {},
-        request.signal
-      );
     default:
       return {
         ok: false,
@@ -132,42 +76,6 @@ export async function clientAction({
       };
   }
 }
-
-const TOKEN_INTENTS: ReadonlySet<unknown> = new Set([
-  SETTINGS_INTENT.createToken,
-  SETTINGS_INTENT.revokeToken,
-]);
-
-/** Token answers after which the list on the page is known to be out of date. */
-const LIST_OUT_OF_DATE: ReadonlySet<string> = new Set([
-  "not_found",
-  "token_limit_reached",
-]);
-
-/**
- * The list only changes when a token is created or revoked: it is
- * reloaded after a token form succeeds, or finds the list out of date (the
- * token already gone, or the limit reached from another tab, so the page
- * shows the tenth token and the count agrees with the API's answer).
- * After any other outcome nothing changed, and reloading could only fail
- * the same way (into the error boundary). A display-name change or a theme
- * choice leaves it alone.
- */
-export const shouldRevalidate: ShouldRevalidateFunction = ({
-  formMethod,
-  formData,
-  actionResult,
-  defaultShouldRevalidate,
-}) => {
-  if (formMethod) {
-    const result = actionResult as ProxyBody<unknown> | undefined;
-    return (
-      TOKEN_INTENTS.has(formData?.get("intent")) &&
-      (result?.ok === true || LIST_OUT_OF_DATE.has(result?.error.code ?? ""))
-    );
-  }
-  return defaultShouldRevalidate;
-};
 
 function Page({ children }: { readonly children: ReactNode }) {
   return (
@@ -181,9 +89,7 @@ function Page({ children }: { readonly children: ReactNode }) {
 function SignedOut() {
   return (
     <div className="mt-6">
-      <p className="text-body text-fg">
-        Log in to change your display name and manage your API tokens.
-      </p>
+      <p className="text-body text-fg">Log in to change your display name.</p>
       <div className="mt-4">
         <ButtonLink
           to={loginHref(SETTINGS_PATH)}
@@ -199,12 +105,11 @@ function SignedOut() {
 }
 
 export default function Settings() {
-  const settings = useLoaderData<typeof loader>();
   const account = useRouteLoaderData<typeof rootLoader>("root")?.account ?? {
     state: "signed-out",
   };
 
-  if (settings.state === "signed-out" || account.state === "signed-out") {
+  if (account.state === "signed-out") {
     return (
       <Page>
         <SignedOut />
@@ -247,22 +152,10 @@ export default function Settings() {
           </SectionError>
         )}
       </SettingsSection>
-      {settings.state === "ready" ? (
-        <ApiTokens tokens={settings.tokens} />
-      ) : (
-        <SettingsSection title="API tokens">
-          <Alert tone="danger">{settings.message}</Alert>
-        </SettingsSection>
-      )}
     </Page>
   );
 }
 
-/**
- * The token list couldn't load (R27): this boundary replaces the page's
- * content only, so the shell, the account menu and the theme toggle (all
- * from the root) still work. It reports to Sentry like the root boundary.
- */
 /**
  * A form posted to the page itself (only possible without JS, since the
  * settings forms need it) has no server action to answer it: React Router's 405

@@ -96,54 +96,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/tokens": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List API tokens
-     * @description Lists the caller's active (not revoked) API tokens, newest first. Secrets are never included. Requires
-     *     Auth0 authentication: API tokens cannot list tokens.
-     */
-    get: operations["listAPITokens"];
-    put?: never;
-    /**
-     * Create an API token
-     * @description Creates a personal API token for the caller and returns its secret, which is shown only in this response.
-     *     A user may have at most 10 active tokens; the limit is checked before the token is stored, so concurrent
-     *     requests can exceed it. Requires Auth0 authentication: API tokens cannot create tokens.
-     */
-    post: operations["createAPIToken"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/tokens/{token_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Revoke an API token
-     * @description Revokes one of the caller's API tokens, which then no longer authenticates requests. Revoking a token that
-     *     is already revoked succeeds again. Requires Auth0 authentication: API tokens cannot revoke tokens.
-     */
-    delete: operations["revokeAPIToken"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/v1/pieces": {
     parameters: {
       query?: never;
@@ -209,7 +161,7 @@ export interface paths {
      * @description Searches the public persons, returning one page of them with how many match in all and how many sort
      *     under each letter, ignoring the `letter` filter. Every filter given must match. Persons who prefer not to
      *     have a page are listed as stubs: `q` matches them by name only, and they match no `role` or
-     *     `affiliation` filter. Hidden aliases never match. Unapproved persons are never listed or counted.
+     *     `affiliation` filter. Unapproved persons are never listed or counted.
      *     Credentials are ignored.
      */
     get: operations["listPersons"];
@@ -231,8 +183,8 @@ export interface paths {
     /**
      * Get a person
      * @description Returns a public person. A person who prefers not to have a page is shown by identity only: name, kind,
-     *     status and its source, with `is_stub` true and `profile` null. Otherwise the profile has their public
-     *     aliases (hidden aliases never appear), roles, affiliations, relations to other public persons, links,
+     *     status and its source, with `is_stub` true and `profile` null. Otherwise the profile has their
+     *     aliases, roles, affiliations, relations to other public persons, links,
      *     works and performances. Works and performances are capped at 200 each, with totals. An unapproved person
      *     is not found, exactly like an unknown one. Credentials are ignored.
      */
@@ -513,11 +465,10 @@ export interface paths {
      *     its base's (the revision it was based on, if that is an approved revision of the same entity), and the
      *     names of the snapshot's top-level fields that differ from the base's, or that are not empty if there is
      *     no base. A view never shows the stored document as such: each reference to another entity is shown as
-     *     that entity is now, and left out if it is not public now; links are shown by URL, and left out if they
-     *     are hidden now; a person's alias appears only if it is public in the snapshot and is a public alias of
-     *     the person now; credits to, performers and relations of persons who are not public or prefer not to have
-     *     a page now are left out; and of a person who prefers not to have a page, now or in the snapshot, only the
-     *     identity is shown. System fields and preference profiles are never shown. `entity_type` says which of
+     *     that entity is now, and left out if it is not public now; links are shown as the snapshot wrote them,
+     *     and left out if their URL does not normalise or is a hidden link's now; credits to, performers and
+     *     relations of persons who are not public or prefer not to have a page now are left out; and of a person who prefers not to have a page, now or in the snapshot, only the
+     *     identity is shown. System fields are never shown. `entity_type` says which of
      *     the five shapes the revision has. A revision that is not approved, or whose entity is not public, is not
      *     found, exactly like an unknown one. Credentials are ignored.
      */
@@ -577,12 +528,10 @@ export interface components {
         | "request_too_large"
         | "unauthenticated"
         | "user_blocked"
-        | "api_token_not_allowed"
         | "moderator_required"
         | "not_found"
         | "method_not_allowed"
         | "conflict"
-        | "token_limit_reached"
         | "internal"
         | "unavailable";
       /**
@@ -661,101 +610,6 @@ export interface components {
        * @example true
        */
       blocked: boolean;
-    };
-    /**
-     * @description The body of a request to create an API token.
-     * @example {
-     *       "name": "CI runner"
-     *     }
-     */
-    CreateAPITokenRequest: {
-      /**
-       * @description A label to tell the token apart from others. Surrounding whitespace is trimmed, and at most 128
-       *     characters may remain; an empty, whitespace-only, null or missing name means the token has none. The
-       *     characters allowed are those allowed in a display name.
-       * @example CI runner
-       */
-      name?: string | null;
-    };
-    /**
-     * @description An API token. Its secret is never returned after creation.
-     * @example {
-     *       "id": "6f1c1f0e-8a4b-4f43-9a5e-2d7c0b1e3a55",
-     *       "prefix": "0123abcd",
-     *       "name": "CI runner",
-     *       "created_at": "2026-10-31T12:00:00Z",
-     *       "last_used_at": "2026-10-31T12:30:00Z"
-     *     }
-     */
-    APIToken: {
-      /**
-       * @description The token's ID, used to revoke it.
-       * @example 6f1c1f0e-8a4b-4f43-9a5e-2d7c0b1e3a55
-       */
-      id: string;
-      /**
-       * @description The first eight characters of the secret after `user_api|`, to tell tokens apart.
-       * @example 0123abcd
-       */
-      prefix: string;
-      /**
-       * @description The token's label, or null if it has none.
-       * @example CI runner
-       */
-      name: string | null;
-      /**
-       * Format: date-time
-       * @description When the token was created.
-       * @example 2026-10-31T12:00:00Z
-       */
-      created_at: string;
-      /**
-       * Format: date-time
-       * @description When the token last authenticated a request, or null if it never has. Recorded to the nearest minute:
-       *     uses within a minute of the recorded one do not update it.
-       * @example 2026-10-31T12:30:00Z
-       */
-      last_used_at: string | null;
-    };
-    /**
-     * @description A newly created API token, with its secret.
-     * @example {
-     *       "id": "6f1c1f0e-8a4b-4f43-9a5e-2d7c0b1e3a55",
-     *       "prefix": "0123abcd",
-     *       "name": "CI runner",
-     *       "created_at": "2026-10-31T12:00:00Z",
-     *       "last_used_at": null,
-     *       "token": "user_api|0123abcd0123abcd0123abcd0123abcd0123abcd0123abcd0123abcd0123abcd"
-     *     }
-     */
-    CreatedAPIToken: {
-      id: components["schemas"]["APIToken"]["id"];
-      prefix: components["schemas"]["APIToken"]["prefix"];
-      name: components["schemas"]["APIToken"]["name"];
-      created_at: components["schemas"]["APIToken"]["created_at"];
-      last_used_at: components["schemas"]["APIToken"]["last_used_at"];
-      /**
-       * @description The secret, shown only in this response. Send it as `Authorization: Bearer <token>`.
-       * @example user_api|0123abcd0123abcd0123abcd0123abcd0123abcd0123abcd0123abcd0123abcd
-       */
-      token: string;
-    };
-    /**
-     * @description A list of API tokens.
-     * @example {
-     *       "data": [
-     *         {
-     *           "id": "6f1c1f0e-8a4b-4f43-9a5e-2d7c0b1e3a55",
-     *           "prefix": "0123abcd",
-     *           "name": "CI runner",
-     *           "created_at": "2026-10-31T12:00:00Z",
-     *           "last_used_at": "2026-10-31T12:30:00Z"
-     *         }
-     *       ]
-     *     }
-     */
-    APITokenList: {
-      data: components["schemas"]["APIToken"][];
     };
     /**
      * @description A letter of the A–Z index: the upper-case letter a sort key starts with, ignoring accents and leading
@@ -1600,7 +1454,7 @@ export interface components {
        * @example Happy for her songs to be sung anywhere.
        */
       licensing_notes_md: string | null;
-      /** @description The person's public aliases. Hidden aliases never appear. */
+      /** @description The person's aliases. */
       aliases: components["schemas"]["PersonAlias"][];
       /** @description What the person does, in the enum's order. */
       roles: components["schemas"]["PersonRole"][];
@@ -2305,12 +2159,11 @@ export interface components {
      */
     CollectionEnumerable: "unknown" | "yes" | "pdf" | "browser" | "api" | "no";
     /**
-     * @description Where a revision came from: submitted by a `user` through the API or through the `mcp` server, or an
-     *     `import` from the old wiki.
+     * @description Where a revision came from: submitted by a `user` through the API, or an `import` from the old wiki.
      * @example import
      * @enum {string}
      */
-    RevisionSource: "user" | "import" | "mcp";
+    RevisionSource: "user" | "import";
     /**
      * @description The author of a revision, by display name; user IDs are never shown.
      * @example {
@@ -3005,7 +2858,7 @@ export interface components {
       notes_md: components["schemas"]["PersonProfile"]["notes_md"];
       licensing_status: components["schemas"]["LicensingStatus"];
       licensing_notes_md: components["schemas"]["PersonProfile"]["licensing_notes_md"];
-      /** @description The snapshot's public aliases that are public aliases of the person now. */
+      /** @description The snapshot's aliases. */
       aliases: components["schemas"]["PersonAlias"][];
       /** @description What the person does, in the snapshot's order. */
       roles: components["schemas"]["PersonRole"][];
@@ -3316,18 +3169,6 @@ export interface components {
         "application/json": components["schemas"]["Error"];
       };
     };
-    /**
-     * @description The caller is blocked (`user_blocked`), or authenticated with an API token, which this endpoint does not
-     *     accept (`api_token_not_allowed`). Blocking takes precedence.
-     */
-    APITokenForbidden: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        "application/json": components["schemas"]["Error"];
-      };
-    };
     /** @description The request body is larger than 16 KiB; the error code is `request_too_large`. */
     RequestTooLarge: {
       headers: {
@@ -3604,114 +3445,6 @@ export interface operations {
       };
       413: components["responses"]["RequestTooLarge"];
       415: components["responses"]["UnsupportedMediaType"];
-      500: components["responses"]["Internal"];
-    };
-  };
-  listAPITokens: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The caller's active tokens. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["APITokenList"];
-        };
-      };
-      401: components["responses"]["Unauthenticated"];
-      403: components["responses"]["APITokenForbidden"];
-      500: components["responses"]["Internal"];
-    };
-  };
-  createAPIToken: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** @description The token to create. Send `{}` to create a token without a name. */
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateAPITokenRequest"];
-      };
-    };
-    responses: {
-      /** @description The token was created. */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CreatedAPIToken"];
-        };
-      };
-      400: components["responses"]["InvalidRequest"];
-      401: components["responses"]["Unauthenticated"];
-      403: components["responses"]["APITokenForbidden"];
-      /** @description The caller already has 10 active tokens; the error code is `token_limit_reached`. */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "code": "token_limit_reached",
-           *       "message": "user has reached the maximum number of active API tokens"
-           *     }
-           */
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      413: components["responses"]["RequestTooLarge"];
-      415: components["responses"]["UnsupportedMediaType"];
-      500: components["responses"]["Internal"];
-    };
-  };
-  revokeAPIToken: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The token's `id`: a UUID in canonical form, lowercase and hyphenated. Any other value names no token. */
-        token_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The token is revoked. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      401: components["responses"]["Unauthenticated"];
-      403: components["responses"]["APITokenForbidden"];
-      /** @description The caller has no token with this ID, or the ID is not a canonical UUID; the error code is `not_found`. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "code": "not_found",
-           *       "message": "API token not found"
-           *     }
-           */
-          "application/json": components["schemas"]["Error"];
-        };
-      };
       500: components["responses"]["Internal"];
     };
   };

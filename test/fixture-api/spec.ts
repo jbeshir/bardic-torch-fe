@@ -18,37 +18,13 @@ type ResponseObject = {
   $ref?: string;
   content?: Record<string, MediaObject>;
 };
-type Reference = { $ref: string };
-/** A parameter's schema, as far as the fixture's request parser reads it. */
-export type ParameterSchema = {
-  readonly type?: string;
-  readonly format?: string;
-  readonly enum?: readonly string[];
-  readonly pattern?: string;
-  readonly minLength?: number;
-  readonly maxLength?: number;
-  readonly minimum?: number;
-  readonly maximum?: number;
-  readonly maxItems?: number;
-  readonly uniqueItems?: boolean;
-  readonly items?: ParameterSchema;
-};
-type ParameterObject = {
-  name: string;
-  in: string;
-  style?: string;
-  explode?: boolean;
-  schema: ParameterSchema | Reference;
-};
 type OperationObject = {
   operationId: string;
-  parameters?: (ParameterObject | Reference)[];
   responses: Record<string, ResponseObject>;
 };
 type SpecDocument = {
   paths: Record<string, Record<string, OperationObject>>;
   components: {
-    parameters: Record<string, ParameterObject>;
     responses: Record<string, ResponseObject>;
     schemas: Record<string, unknown>;
   };
@@ -87,80 +63,15 @@ function validatorFor(key: string, schema: unknown): ValidateFunction {
   return validate;
 }
 
-const routesById = new Map(
-  Object.entries(spec.paths).flatMap(([path, item]) =>
-    Object.entries(item).map(
-      ([method, operation]) =>
-        [
-          operation.operationId,
-          { method: method.toUpperCase(), path, operation },
-        ] as const
+const operationsById = new Map(
+  Object.values(spec.paths).flatMap(item =>
+    Object.values(item).map(
+      operation => [operation.operationId, operation] as const
     )
   )
 );
-const operationsById = new Map(
-  [...routesById].map(([id, { operation }]) => [id, operation])
-);
 
 const lastSegment = (ref: string) => ref.split("/").pop() ?? "";
-
-function isReference(value: object): value is Reference {
-  return "$ref" in value;
-}
-
-/** A parameter schema with its `$ref`s (and its items' `$ref`s) resolved. */
-function resolveSchema(schema: ParameterSchema | Reference): ParameterSchema {
-  const resolved = isReference(schema)
-    ? (spec.components.schemas[lastSegment(schema.$ref)] as ParameterSchema)
-    : schema;
-  return resolved.items
-    ? { ...resolved, items: resolveSchema(resolved.items) }
-    : resolved;
-}
-
-/** A path or query parameter of an operation, `$ref`s resolved. */
-export type SpecParameter = {
-  readonly name: string;
-  readonly in: "path" | "query";
-  /** Whether the parameter may be repeated (`style: form`, `explode`). */
-  readonly repeatable: boolean;
-  readonly schema: ParameterSchema;
-};
-
-/**
- * An operation's method, path template and parameters, from the spec.
- * Throws for an operationId the spec doesn't have, or a parameter the
- * fixture can't read: one in neither the path nor the query, or an array
- * not sent as repeated `name=value` pairs.
- */
-export function specRoute(operationId: OperationId): {
-  method: string;
-  path: string;
-  parameters: SpecParameter[];
-} {
-  const route = routesById.get(operationId);
-  if (!route) throw new Error(`The spec has no operation ${operationId}`);
-  const parameters = (route.operation.parameters ?? []).map(parameter => {
-    const object = isReference(parameter)
-      ? spec.components.parameters[lastSegment(parameter.$ref)]
-      : parameter;
-    if (!object || (object.in !== "path" && object.in !== "query")) {
-      throw new Error(`${operationId} has a parameter the fixture can't read`);
-    }
-    const schema = resolveSchema(object.schema);
-    const repeatable = schema.type === "array";
-    if (
-      repeatable &&
-      (object.in !== "query" ||
-        (object.style ?? "form") !== "form" ||
-        object.explode === false)
-    ) {
-      throw new Error(`${operationId} ${object.name} isn't form, explode`);
-    }
-    return { name: object.name, in: object.in, repeatable, schema } as const;
-  });
-  return { method: route.method, path: route.path, parameters };
-}
 
 function declaredResponse(
   operationId: string,
@@ -169,13 +80,6 @@ function declaredResponse(
   const response = operationsById.get(operationId)?.responses[String(status)];
   if (!response?.$ref) return response;
   return spec.components.responses[lastSegment(response.$ref)];
-}
-
-/** The error statuses the spec declares for an operation. */
-export function declaredErrorStatuses(operationId: OperationId): number[] {
-  return Object.keys(operationsById.get(operationId)?.responses ?? {})
-    .map(Number)
-    .filter(status => status >= 400);
 }
 
 /**

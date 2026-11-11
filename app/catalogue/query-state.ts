@@ -54,40 +54,22 @@ import type {
 /** The ASCII blanks the API trims and rejects a search of only (A2). */
 const BLANK = /^[ \t\n\f\r]+|[ \t\n\f\r]+$/g;
 
-/** The longest search, in code points (the API's `maxLength`). */
-const SEARCH_MAX = 200;
-
-/** The most `term`s a search takes (the API's `maxItems`). */
-const TERMS_MAX = 20;
-
 /** A decimal page number from 2 to 999,999,999; 1 is the default. */
 const PAGE_PATTERN = /^[1-9][0-9]{0,8}$/;
 
-/** An enum value as the URL may write it: any case, with stray spaces. */
-function normaliseEnum(value: string): string {
-  return value.trim().toLowerCase();
-}
-
-/**
- * A scalar parameter: the first value `read` accepts (a URL may repeat a
- * name, which the API would answer with a 400), or undefined.
- */
+/** A scalar parameter: `read` of its value, or undefined if absent or invalid. */
 function scalar<T>(
   params: URLSearchParams,
   name: string,
   read: (value: string) => T | undefined
 ): T | undefined {
-  for (const value of params.getAll(name)) {
-    const found = read(value);
-    if (found !== undefined) return found;
-  }
-  return undefined;
+  const value = params.get(name);
+  return value === null ? undefined : read(value);
 }
 
 /**
- * A repeatable parameter: each value trimmed and lower-cased, the invalid
- * ones dropped, duplicates removed, then sorted (`order`'s order, or
- * alphabetically when there is none) and cut to `max`.
+ * A repeatable parameter: the invalid values dropped, duplicates removed,
+ * then sorted (`order`'s order, or alphabetically when there is none).
  */
 function repeated<T extends string>(
   params: URLSearchParams,
@@ -95,20 +77,15 @@ function repeated<T extends string>(
   {
     order,
     valid,
-    max,
   }: {
     readonly valid: (value: string) => value is T;
     readonly order?: readonly T[];
-    readonly max?: number;
   }
 ): readonly T[] {
-  const values = [
-    ...new Set(params.getAll(name).map(normaliseEnum).filter(valid)),
-  ];
-  const sorted = order
+  const values = [...new Set(params.getAll(name).filter(valid))];
+  return order
     ? values.sort((a, b) => order.indexOf(a) - order.indexOf(b))
     : values.sort();
-  return max === undefined ? sorted : sorted.slice(0, max);
 }
 
 /** A member test for an enum's values. */
@@ -123,17 +100,11 @@ function slug(value: string): value is string {
 }
 
 /**
- * `q`: trimmed of ASCII blanks; empty is no search; longer than 200 code
- * points is cut to 200 (and trimmed again, so the cut form is stable).
- * Otherwise kept exactly, case and all.
+ * `q`: trimmed of ASCII blanks; empty is no search. Otherwise kept
+ * exactly, case and all.
  */
 function searchText(value: string): string | undefined {
-  const trimmed = value.replace(BLANK, "");
-  const points = [...trimmed];
-  const text =
-    points.length > SEARCH_MAX
-      ? points.slice(0, SEARCH_MAX).join("").replace(BLANK, "")
-      : trimmed;
+  const text = value.replace(BLANK, "");
   return text === "" ? undefined : text;
 }
 
@@ -150,11 +121,10 @@ function pageNumber(value: string): number | undefined {
   return page >= 2 ? page : undefined;
 }
 
-/** `true` or `false`, in any case. */
+/** `true` or `false`. */
 function flag(value: string): boolean | undefined {
-  const normalised = normaliseEnum(value);
-  if (normalised === "true") return true;
-  if (normalised === "false") return false;
+  if (value === "true") return true;
+  if (value === "false") return false;
   return undefined;
 }
 
@@ -180,16 +150,9 @@ function serialise(entries: readonly Entry[]): string {
   return search ? `?${search}` : "";
 }
 
-/**
- * A query string's decoded `[name, value]` pairs, as a sorted multiset,
- * without the empty values of the `blankable` names.
- */
-function decodedPairs(
-  search: string,
-  blankable: readonly string[] = []
-): string[] {
+/** A query string's decoded `[name, value]` pairs, as a sorted multiset. */
+function decodedPairs(search: string): string[] {
   return [...new URLSearchParams(search)]
-    .filter(([name, value]) => value !== "" || !blankable.includes(name))
     .map(pair => JSON.stringify(pair))
     .sort();
 }
@@ -200,12 +163,8 @@ function decodedPairs(
  * `%7E`, `+` or `%20`, the case of percent hex) and order never differ,
  * and a proxy's URL normalisation can't cause a redirect loop.
  */
-function isCanonical(
-  search: string,
-  canonical: string,
-  blankable: readonly string[]
-): boolean {
-  const requested = decodedPairs(search, blankable);
+function isCanonical(search: string, canonical: string): boolean {
+  const requested = decodedPairs(search);
   const wanted = decodedPairs(canonical);
   return (
     requested.length === wanted.length &&
@@ -218,17 +177,10 @@ function isCanonical(
  * with a 301 there (§2.2 rule 10). Order-only differences are not
  * redirected: the page answers 200 and names the ordered form in its
  * canonical link. The target is canonical itself, so it is answered 200.
- *
- * `blankable`: names a filter form sends empty for "no filter" (a radio
- * group's "All" choice, which can't send nothing): the same as leaving
- * them out, so answered 200 too.
+ * A blank field of a no-JS form (`q=`, `sort=`) lands here too.
  */
-export function redirectIfNotCanonical(
-  url: URL,
-  canonical: string,
-  blankable: readonly string[] = []
-): void {
-  if (!isCanonical(url.search, canonical, blankable)) {
+export function redirectIfNotCanonical(url: URL, canonical: string): void {
+  if (!isCanonical(url.search, canonical)) {
     throw redirect(`${url.pathname}${canonical}`, 301);
   }
 }
@@ -262,10 +214,9 @@ function pieceSort(
   params: URLSearchParams,
   q: string | undefined
 ): PieceSort | undefined {
-  const sort = scalar(params, "sort", value => {
-    const normalised = normaliseEnum(value);
-    return oneOf(PIECE_SORTS)(normalised) ? normalised : undefined;
-  });
+  const sort = scalar(params, "sort", value =>
+    oneOf(PIECE_SORTS)(value) ? value : undefined
+  );
   // Without q, title is the default and relevance is refused (400); with
   // q, relevance is the default.
   return q !== undefined && sort === "title" ? "title" : undefined;
@@ -275,7 +226,7 @@ function parsePieces(params: URLSearchParams): PieceQueryState {
   const q = scalar(params, "q", searchText);
   return {
     q,
-    term: repeated(params, "term", { valid: slug, max: TERMS_MAX }),
+    term: repeated(params, "term", { valid: slug }),
     kind: repeated(params, "kind", {
       valid: oneOf(PIECE_KINDS),
       order: PIECE_KINDS,
@@ -307,13 +258,6 @@ function serialisePieces(state: PieceQueryState): string {
 
 /** `/pieces`: the piece browse, search and A–Z (plan §4.2). */
 export const pieceQuery = {
-  /**
-   * What the facet and search forms send empty for their defaults (see
-   * redirectIfNotCanonical): the "All pages" radio, `stub=`, "Best
-   * match", `sort=`, and an empty search box, `q=`.
-   */
-  blankable: ["stub", "sort", "q"],
-
   parse(params: URLSearchParams): {
     readonly state: PieceQueryState;
     readonly canonical: string;
@@ -397,10 +341,9 @@ const BARDS_PATH = "/bards";
 
 function parsePersons(params: URLSearchParams): PersonQueryState {
   const q = scalar(params, "q", searchText);
-  const sort = scalar(params, "sort", value => {
-    const normalised = normaliseEnum(value);
-    return oneOf(PERSON_SORTS)(normalised) ? normalised : undefined;
-  });
+  const sort = scalar(params, "sort", value =>
+    oneOf(PERSON_SORTS)(value) ? value : undefined
+  );
   return {
     q,
     kind: repeated(params, "kind", {
@@ -411,10 +354,9 @@ function parsePersons(params: URLSearchParams): PersonQueryState {
       valid: oneOf(PERSON_ROLES),
       order: PERSON_ROLES,
     }),
-    affiliation: scalar(params, "affiliation", value => {
-      const normalised = normaliseEnum(value);
-      return isSlug(normalised) ? normalised : undefined;
-    }),
+    affiliation: scalar(params, "affiliation", value =>
+      isSlug(value) ? value : undefined
+    ),
     letter: scalar(params, "letter", letter),
     // As for pieces: name is the default without q, relevance with it.
     sort: q !== undefined && sort === "name" ? "name" : undefined,
@@ -436,13 +378,6 @@ function serialisePersons(state: PersonQueryState): string {
 
 /** `/bards`: the bards directory, its search and A–Z (plan §4.7). */
 export const personQuery = {
-  /**
-   * What the filter and search forms send empty for their defaults (see
-   * redirectIfNotCanonical): "Any affiliation", `affiliation=`, and an
-   * empty search box, `q=`.
-   */
-  blankable: ["affiliation", "q"],
-
   parse(params: URLSearchParams): {
     readonly state: PersonQueryState;
     readonly canonical: string;
@@ -509,10 +444,9 @@ export const categoryIndexQuery = {
     readonly canonical: string;
   } {
     const state: CategoryIndexQueryState = {
-      facet: scalar(params, "facet", value => {
-        const normalised = normaliseEnum(value);
-        return oneOf(CATEGORY_FACETS)(normalised) ? normalised : undefined;
-      }),
+      facet: scalar(params, "facet", value =>
+        oneOf(CATEGORY_FACETS)(value) ? value : undefined
+      ),
     };
     return { state, canonical: serialiseCategoryIndex(state) };
   },
@@ -653,10 +587,9 @@ export const eventQuery = {
     readonly canonical: string;
   } {
     const state: EventQueryState = {
-      kind: scalar(params, "kind", value => {
-        const normalised = normaliseEnum(value);
-        return oneOf(EVENT_KINDS)(normalised) ? normalised : undefined;
-      }),
+      kind: scalar(params, "kind", value =>
+        oneOf(EVENT_KINDS)(value) ? value : undefined
+      ),
       page: scalar(params, "page", pageNumber) ?? 1,
     };
     return { state, canonical: serialiseEvents(state) };

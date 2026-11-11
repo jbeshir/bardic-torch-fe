@@ -4,7 +4,6 @@ import { http, HttpResponse } from "msw/http";
 import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll, expect } from "vitest";
 import {
-  addFailure,
   createFixtureState,
   handleFixtureRequest,
   type FixtureState,
@@ -54,8 +53,8 @@ export function serveMocks(...handlers: RequestHandler[]) {
 
 /**
  * msw handlers that answer every request to `baseUrl` from the fixture API's
- * operation table, so loader and action tests see the same behaviour as the
- * e2e fixture server.
+ * canned answers, so loader and action tests see the same data as the e2e
+ * fixture server.
  */
 function fixtureHandlers(state: () => FixtureState, baseUrl = API_BASE_URL) {
   return [
@@ -66,17 +65,10 @@ function fixtureHandlers(state: () => FixtureState, baseUrl = API_BASE_URL) {
         pathname,
         search,
         authorization: request.headers.get("Authorization"),
-        contentType: request.headers.get("Content-Type"),
         body: await request.text(),
       });
       if (result.body === undefined) {
         return new HttpResponse(null, { status: result.status });
-      }
-      if (result.contentType !== undefined) {
-        return new HttpResponse(String(result.body), {
-          status: result.status,
-          headers: { "Content-Type": result.contentType },
-        });
       }
       return HttpResponse.json(result.body, { status: result.status });
     }),
@@ -95,12 +87,5 @@ export function serveFixtureApi() {
     state = createFixtureState();
   });
 
-  return {
-    /** The current test's fixture state. */
-    state: () => state,
-    /** Queue a failure in the current test's state (see `addFailure`). */
-    fail: (failure: Parameters<typeof addFailure>[1]) =>
-      addFailure(state, failure),
-    ...mocks,
-  };
+  return mocks;
 }

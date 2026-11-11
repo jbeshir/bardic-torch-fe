@@ -35,7 +35,7 @@ function Item({
 }
 
 /**
- * A help page's contents (DESIGN §6.27): a numbered list of its h2s and
+ * A help page's contents: a numbered list of its h2s and
  * h3s in a disclosure, inline after the intro. It is open as the server
  * renders it (and without JS); with JS it folds itself below md, once, as
  * it mounts: resizing later leaves it as the reader has it. It is its own

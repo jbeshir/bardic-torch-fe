@@ -8,15 +8,6 @@
 /** Rows per list page: the API's default `limit`. */
 export const PAGE_SIZE = 50;
 
-/** The largest `offset` the API accepts. */
-const MAX_OFFSET = 10_000;
-
-/**
- * The last page a list can show: the one whose offset is still at most
- * `MAX_OFFSET` (page 201 starts at 10,000).
- */
-export const MAX_PAGE = Math.floor(MAX_OFFSET / PAGE_SIZE) + 1;
-
 /** Runs of lower-case ASCII letters and digits joined by single hyphens. */
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 

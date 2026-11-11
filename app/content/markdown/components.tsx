@@ -43,7 +43,7 @@ function contentAlert(tone: "info" | "warning") {
 }
 
 /**
- * The component map (DESIGN §10.2): what each element of a compiled help
+ * The component map: what each element of a compiled help
  * page renders as. The directives (remark-directives.ts) become Alerts, the
  * Infobox and Cards; links become Links. Infobox links are standalone
  * links, as in any infobox (§6.10); prose links are prose links.

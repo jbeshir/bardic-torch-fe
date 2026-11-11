@@ -4,7 +4,7 @@ import { useFieldControl } from "./Field";
 import { textControlClasses } from "./Input";
 
 /**
- * A native select styled like Input (DESIGN §6.7). The options open in the
+ * A native select styled like Input. The options open in the
  * system picker, which follows the page's `color-scheme`, so it matches the
  * theme. Inside a Field it takes its id, descriptions and state from there.
  */

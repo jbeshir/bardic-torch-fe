@@ -44,7 +44,7 @@ function Credited({ credit }: { readonly credit: Credit }) {
       <Link to={`/bards/${credit.person.slug}`}>{credit.person.name}</Link>
     );
   }
-  // The schema holds a credit without a person to an unnamed attribution.
+  // A credit without a person is an unnamed attribution.
   return credit.attribution === "named"
     ? null
     : ATTRIBUTION_LABELS[credit.attribution];

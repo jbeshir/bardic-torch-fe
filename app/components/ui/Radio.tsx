@@ -1,8 +1,8 @@
 import type { InputHTMLAttributes, ReactNode } from "react";
 
 /**
- * A native radio button drawn from tokens, the round sibling of Checkbox
- * (DESIGN §6.8): a 20 px ring that fills with an accent dot when chosen.
+ * A native radio button drawn from tokens, the round sibling of Checkbox:
+ * a 20 px ring that fills with an accent dot when chosen.
  * The whole row is the label, so it is the hit area (44 px below lg, 32 px
  * from lg). Group radios in a `<fieldset>` with a legend, all with one
  * `name`. In forced colours the system draws the control and the dot

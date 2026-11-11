@@ -18,11 +18,10 @@ import { fixtureAppEnv } from "./dev-fixtures.mjs";
  * fail unless:
  * - neither contains stub auth, fixture hosts or any of `npm run
  *   dev:fixtures`' values;
- * - `/styleguide` is excluded from production and present in preview;
  * - each deploys to its own Worker (bardic-torch-fe, bardic-torch-fe-preview);
  * - neither carries a `.dev.vars` copy or an AUTH_MODE variable;
  * - neither's client build has the Markdown parser (micromark), which runs
- *   in loaders only, or zod, which checks API answers on the server only
+ *   in loaders only, or zod, which checks form input on the server only
  *   (the browser reads enum values from `app/constants/enums.ts`);
  * - `__INDEXABLE__` is true in production only: its server build has the
  *   crawlable robots.txt rules and no X-Robots-Tag, and the preview build
@@ -35,7 +34,6 @@ import { fixtureAppEnv } from "./dev-fixtures.mjs";
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const STUB_SOURCE = path.join(ROOT, "app/server/stub-auth.server.ts");
 const FIXTURE_HOSTS = ["fixture.invalid", "127.0.0.1:4010"];
-const STYLEGUIDE_ROUTE_ID = "routes/styleguide";
 /**
  * Strings that survive in a server build only for the `__INDEXABLE__` value
  * they are under (app/server/indexing.server.ts and
@@ -147,13 +145,7 @@ export function inspectBuild({ buildDir, mode, marker }) {
   }
 
   const server = files.filter(({ name }) => name.startsWith("server"));
-  const manifests = files.filter(({ name }) =>
-    /^client[\\/]assets[\\/]manifest-[^\\/]+\.js$/.test(name)
-  );
   if (server.length === 0) problems.push(`${mode}: no server build`);
-  if (manifests.length !== 1) {
-    problems.push(`${mode}: expected one client manifest`);
-  }
   // The code, not its source maps, which hold every source file's text.
   const serverSource = server
     .filter(({ name }) => /\.m?js$/.test(name))
@@ -175,19 +167,6 @@ export function inspectBuild({ buildDir, mode, marker }) {
     problems.push(
       `${mode}: X-Robots-Tag is ${indexable ? "present in" : "missing from"} the server build`
     );
-  }
-  const has = list =>
-    list.some(({ content }) => content.includes(`"${STYLEGUIDE_ROUTE_ID}"`));
-  const wanted = mode === "preview";
-  for (const [where, list] of [
-    ["server build", server],
-    ["client manifest", manifests],
-  ]) {
-    if (has(list) !== wanted) {
-      problems.push(
-        `${mode}: ${STYLEGUIDE_ROUTE_ID} ${wanted ? "missing from" : "present in"} the ${where}`
-      );
-    }
   }
   return problems;
 }
@@ -230,7 +209,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     } else {
       console.log(
         "check:prod-build: production and preview builds are free of stub auth, fixture hosts and local variables, " +
-          `keep the Markdown parser out of the browser, deploy to their own Workers, and ${STYLEGUIDE_ROUTE_ID} is only in preview`
+          `keep the Markdown parser out of the browser, deploy to their own Workers`
       );
     }
   } finally {

@@ -58,7 +58,7 @@ You only need to add what you know. The fullest entries have:
 
 - Credit people by **the name they publish under**, whether that’s an SCA name, a stage name or a legal name. If they already have a page, use the same name it uses.
 - You can credit a bard who doesn’t have a page yet. Their name becomes a **stub** page that anyone can help complete.
-- Only add a legal or mundane name if the bard publishes it themselves. Even then, it stays hidden until a moderator has checked it.
+- Only add a legal or mundane name if the bard publishes it themselves. It is shown as an ordinary alias, as on the old wiki. If someone wants a name removed, they can ask and a moderator will delete it.
 
 ## Categories and naming
 

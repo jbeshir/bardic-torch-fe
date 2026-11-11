@@ -21,11 +21,7 @@ import { ViewTabs } from "~/components/ui/Tabs";
 import { TagList } from "~/components/ui/TagList";
 import { formatCount } from "~/catalogue/format";
 import { catalogueHeaders } from "~/catalogue/headers";
-import {
-  isBeyondApi,
-  redirectPastTheEnd,
-  showingText,
-} from "~/catalogue/paging";
+import { redirectPastTheEnd, showingText } from "~/catalogue/paging";
 import {
   eventQuery,
   redirectIfNotCanonical,
@@ -68,14 +64,6 @@ export async function loader({
   const { state, canonical } = eventQuery.parse(url.searchParams);
   redirectIfNotCanonical(url, canonical);
   const pageHref = (page: number) => eventQuery.href(state, { page });
-  if (isBeyondApi(state.page)) {
-    const first = await listEvents(context, {
-      ...eventQuery.toApi({ ...state, page: 1 }),
-      limit: 1,
-    });
-    if (!first.ok) throwPageFailure(asPageFailure(first.failure));
-    redirectPastTheEnd(state.page, first.data.total, pageHref);
-  }
   const result = await listEvents(context, eventQuery.toApi(state));
   if (!result.ok) throwPageFailure(asPageFailure(result.failure));
   redirectPastTheEnd(state.page, result.data.total, pageHref);

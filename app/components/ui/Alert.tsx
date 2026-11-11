@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
 
 export type AlertTone = "info" | "success" | "warning" | "danger" | "pending";
 
-/** Each tone's icon shape (DESIGN §6.14), shared with Toast. */
+/** Each tone's icon shape, shared with Toast. */
 export const TONE_GLYPHS: Record<AlertTone, Icon> = {
   info: IconInfoCircle,
   success: IconCircleCheck,
@@ -53,7 +53,7 @@ const TONES: Record<AlertTone, { box: string; icon: string }> = {
 };
 
 /**
- * A status message (DESIGN §6.14): icon, title, body and actions on the
+ * A status message: icon, title, body and actions on the
  * tone's tinted background. Every tone has its own icon shape and a hidden
  * "Warning: " (etc.) before the words, so state never rests on colour.
  *
@@ -120,7 +120,7 @@ export function Alert({
 }
 
 /**
- * A live region for alerts that appear after an action (DESIGN §6.14). It is
+ * A live region for alerts that appear after an action. It is
  * always mounted (empty at first), so adding an Alert inside is announced:
  * politely by default (info, success, pending), at once when `urgent`
  * (errors, and warnings that block).

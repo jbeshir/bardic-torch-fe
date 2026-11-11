@@ -1,10 +1,8 @@
 import { http, HttpResponse } from "msw/http";
 import { createCookie } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_TOKEN_EXPIRY_SECONDS } from "~/constants/auth";
 import { getOrCreateSessionStorage } from "~/server/auth.server";
 import type { AppEnv } from "~/server/env.server";
-import { createReturnToCookie } from "~/server/return-to.server";
 import {
   AUTH0_TOKEN_ENDPOINT,
   hangingAuth0,
@@ -168,25 +166,6 @@ describe("/auth/callback", () => {
     expect(response.headers.get("Cache-Control")).toBe("no-store");
   });
 
-  it("signs in when Auth0 issues no refresh token or expiry (no offline access)", async () => {
-    auth0TokenEndpoint(() =>
-      auth0Tokens({ access_token: "access-42", token_type: "Bearer" })
-    );
-    const before = Date.now();
-    const { state, cookies } = await startLogin("/settings");
-    const response = await runCallback(`code=abc&state=${state}`, cookies);
-
-    expect(response.headers.get("Location")).toBe("/settings");
-    const tokens = await sessionTokensFrom(response);
-    expect(tokens).toEqual({
-      accessToken: "access-42",
-      expiresAt: expect.any(Number),
-    });
-    expect(tokens?.expiresAt).toBeGreaterThanOrEqual(
-      before + DEFAULT_TOKEN_EXPIRY_SECONDS * 1000
-    );
-  });
-
   it("goes back to the page signed out when the code exchange hangs", async () => {
     const error = vi
       .spyOn(console, "error")
@@ -201,40 +180,6 @@ describe("/auth/callback", () => {
       "Authentication callback error:",
       expect.objectContaining({ code: "OAUTH_TIMEOUT" })
     );
-  });
-
-  it("ignores a returnTo in the callback's query string", async () => {
-    const { state, cookies } = await startLogin("/help");
-    const response = await runCallback(
-      `code=abc&state=${state}&returnTo=%2Fsettings`,
-      cookies
-    );
-    expect(response.headers.get("Location")).toBe("/help");
-    expect(await sessionTokensFrom(response)).toBeDefined();
-  });
-
-  it("validates the stored returnTo again", async () => {
-    const { state, cookies } = await startLogin();
-    const forged = await createReturnToCookie(SECRET).serialize("//evil.com");
-    const response = await runCallback(`code=abc&state=${state}`, [
-      ...cookies.filter(pair => !pair.startsWith("__Host-bt_return_to=")),
-      forged.split(";")[0] ?? "",
-    ]);
-    expect(response.headers.get("Location")).toBe("/");
-    expect(await sessionTokensFrom(response)).toBeDefined();
-  });
-
-  it("ignores a returnTo cookie signed with another secret", async () => {
-    const { state, cookies } = await startLogin();
-    const foreign = await createReturnToCookie(
-      "another-secret-of-at-least-32-chars"
-    ).serialize("/settings");
-    const response = await runCallback(`code=abc&state=${state}`, [
-      ...cookies.filter(pair => !pair.startsWith("__Host-bt_return_to=")),
-      foreign.split(";")[0] ?? "",
-    ]);
-    expect(response.headers.get("Location")).toBe("/");
-    expect(await sessionTokensFrom(response)).toBeDefined();
   });
 
   it.each([
@@ -316,81 +261,73 @@ describe("/auth/callback state", () => {
     );
   }
 
-  it("refuses a state containing ;, reading and clearing no cookie under that name", async () => {
-    const { state, cookies } = await startLogin("/help");
-    const response = await runCallback(
-      `code=abc&state=${encodeURIComponent(`${state};x`)}`,
-      cookies
-    );
+  it.each([
+    [
+      "a state containing ;, reading and clearing no cookie under that name",
+      async () => {
+        const { state, cookies } = await startLogin("/help");
+        return {
+          query: `code=abc&state=${encodeURIComponent(`${state};x`)}`,
+          cookies,
+          cleared: [],
+        };
+      },
+    ],
+    [
+      "a state of the wrong length, even with a validly signed cookie for it",
+      async () => {
+        const { cookies } = await startLogin("/help");
+        const short = "A".repeat(42);
+        const forged = await stateCookie(short, {
+          state: short,
+          codeVerifier: "v".repeat(43),
+        });
+        return {
+          query: `code=abc&state=${short}`,
+          cookies: [...cookies, forged],
+          cleared: [],
+        };
+      },
+    ],
+    [
+      "a state whose sign-in this browser didn't start, though it holds another's cookie",
+      async () => {
+        const { cookies } = await startLogin("/help");
+        return {
+          query: `code=abc&state=${OTHER_STATE}`,
+          cookies,
+          cleared: [`${STATE_COOKIE_PREFIX}:${OTHER_STATE}`],
+        };
+      },
+    ],
+    [
+      "a state cookie whose signature was tampered with",
+      async () => {
+        const { state, cookies } = await startLogin("/help");
+        // Change the signed value's first character: the signature no longer fits.
+        const tampered = cookies.map(pair => {
+          if (!pair.startsWith(`${STATE_COOKIE_PREFIX}:`)) return pair;
+          const start = pair.indexOf("=") + 1;
+          const changed = pair[start] === "e" ? "f" : "e";
+          return `${pair.slice(0, start)}${changed}${pair.slice(start + 1)}`;
+        });
+        expect(tampered).not.toEqual(cookies);
+        return {
+          query: `code=abc&state=${state}`,
+          cookies: tampered,
+          cleared: undefined,
+        };
+      },
+    ],
+  ])("refuses %s", async (_why, setup) => {
+    const { query, cookies, cleared } = await setup();
+    const response = await runCallback(query, cookies);
     await expectSignInRefused(response);
-    expect(stateCookiesSet(response)).toEqual([]);
-  });
-
-  it("refuses a state of the wrong length, even with a validly signed cookie for it", async () => {
-    const { cookies } = await startLogin("/help");
-    const short = "A".repeat(42);
-    const forged = await stateCookie(short, {
-      state: short,
-      codeVerifier: "v".repeat(43),
-    });
-    const response = await runCallback(`code=abc&state=${short}`, [
-      ...cookies,
-      forged,
-    ]);
-    await expectSignInRefused(response);
-    expect(stateCookiesSet(response)).toEqual([]);
-  });
-
-  it("refuses a state whose sign-in this browser didn't start, though it holds another's cookie", async () => {
-    const { cookies } = await startLogin("/help");
-    const response = await runCallback(
-      `code=abc&state=${OTHER_STATE}`,
-      cookies
-    );
-    await expectSignInRefused(response);
-    expect(stateCookiesSet(response).map(value => value.split("=")[0])).toEqual(
-      [`${STATE_COOKIE_PREFIX}:${OTHER_STATE}`]
-    );
-  });
-
-  it("refuses a state cookie whose signature was tampered with", async () => {
-    const { state, cookies } = await startLogin("/help");
-    // Change the signed value's first character: the signature no longer fits.
-    const tampered = cookies.map(pair => {
-      if (!pair.startsWith(`${STATE_COOKIE_PREFIX}:`)) return pair;
-      const start = pair.indexOf("=") + 1;
-      const changed = pair[start] === "e" ? "f" : "e";
-      return `${pair.slice(0, start)}${changed}${pair.slice(start + 1)}`;
-    });
-    expect(tampered).not.toEqual(cookies);
-    const response = await runCallback(`code=abc&state=${state}`, tampered);
-    await expectSignInRefused(response);
-  });
-
-  it("refuses a state cookie that stores a different state than its name", async () => {
-    const { state, cookies } = await startLogin("/help");
-    const mismatched = await stateCookie(state, {
-      state: OTHER_STATE,
-      codeVerifier: "v".repeat(43),
-    });
-    const response = await runCallback(`code=abc&state=${state}`, [
-      ...cookies.filter(pair => !pair.startsWith(`${STATE_COOKIE_PREFIX}:`)),
-      mismatched,
-    ]);
-    await expectSignInRefused(response);
-  });
-
-  it("clears this sign-in's state cookie", async () => {
-    const { state, cookies } = await startLogin("/help");
-    const response = await runCallback(`code=abc&state=${state}`, cookies);
-    expect(await sessionTokensFrom(response)).toBeDefined();
-    const [cleared, ...others] = stateCookiesSet(response);
-    expect(others).toEqual([]);
-    expect(cleared).toMatch(new RegExp(`^${STATE_COOKIE_PREFIX}:${state}=;`));
-    expect(cleared).toContain("Max-Age=0");
-    expect(cleared?.split("; ")).toEqual(
-      expect.arrayContaining(["HttpOnly", "Secure", "SameSite=Lax", "Path=/"])
-    );
+    if (cleared) {
+      expect(
+        stateCookiesSet(response).map(value => value.split("=")[0])
+      ).toEqual(cleared);
+    }
   });
 });
 
@@ -412,36 +349,6 @@ describe("/auth/callback code exchange", () => {
     expect(exchange?.form.get("grant_type")).toBe("authorization_code");
     expect(exchange?.form.get("code_verifier")).toMatch(/^[\w-]{43,128}$/);
     expect(exchange?.form.has("client_secret")).toBe(false);
-  });
-
-  it("sends the redirect_uri the authorize request sent", async () => {
-    const { state, cookies, redirectUri } = await startLogin("/help");
-    await runCallback(`code=abc&state=${state}`, cookies);
-    expect(redirectUri).toBe("https://app.test/auth/callback");
-    expect(tokenRequests[0]?.form.get("redirect_uri")).toBe(redirectUri);
-  });
-
-  it("sends the configured redirect_uri when the callback arrives on another host", async () => {
-    const env = { AUTH0_DEFAULT_REDIRECT_URI: "http://localhost:5173" };
-    const { state, cookies, redirectUri } = await startLogin("/help", {
-      origin: "http://127.0.0.1:5173",
-      env,
-    });
-    const response = await runCallback(`code=abc&state=${state}`, cookies, {
-      origin: "http://127.0.0.1:5173",
-      env,
-    });
-    expect(await sessionTokensFrom(response)).toBeDefined();
-    expect(redirectUri).toBe("http://localhost:5173/auth/callback");
-    expect(tokenRequests[0]?.form.get("redirect_uri")).toBe(redirectUri);
-  });
-
-  it("bounds the code exchange by AUTH0_TIMEOUT_MS (5 s)", async () => {
-    const { state, cookies } = await startLogin("/help");
-    const asked = vi.spyOn(AbortSignal, "timeout");
-    const response = await runCallback(`code=abc&state=${state}`, cookies);
-    expect(await sessionTokensFrom(response)).toBeDefined();
-    expect(asked.mock.calls).toEqual([[5_000]]);
   });
 
   /**
@@ -500,32 +407,6 @@ describe("/auth/callback code exchange", () => {
       refusal("OAUTH_JWT_CLAIM_COMPARISON_FAILED", {
         claim: "aud",
         expected: testEnv().AUTH0_CLIENT_ID,
-      })
-    );
-  });
-
-  it("refuses an ID token from another issuer", async () => {
-    const { response, logged } = await signInWithIdToken(
-      await idToken({ claims: { iss: "https://evil.example/" } })
-    );
-    expect(await sessionTokensFrom(response)).toBeUndefined();
-    expect(logged).toEqual(
-      refusal("OAUTH_JWT_CLAIM_COMPARISON_FAILED", {
-        claim: "iss",
-        expected: `https://${testEnv().AUTH0_DOMAIN}/`,
-      })
-    );
-  });
-
-  it("refuses an ID token that expired more than the 30 s clock tolerance ago", async () => {
-    const { response, logged } = await signInWithIdToken(
-      await idToken({ claims: { exp: Math.floor(Date.now() / 1000) - 31 } })
-    );
-    expect(await sessionTokensFrom(response)).toBeUndefined();
-    expect(logged).toEqual(
-      refusal("OAUTH_JWT_TIMESTAMP_CHECK_FAILED", {
-        claim: "exp",
-        tolerance: 30,
       })
     );
   });

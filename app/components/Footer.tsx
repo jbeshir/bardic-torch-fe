@@ -4,7 +4,7 @@ import { HelpLinks } from "./HelpLinks";
 import { LogoMark } from "./LogoMark";
 
 /**
- * The site footer (DESIGN §5.7): what Bardic Torch is, the text licence,
+ * The site footer: what Bardic Torch is, the text licence,
  * the non-affiliation statement (§11.4) and the help links.
  */
 export function Footer() {

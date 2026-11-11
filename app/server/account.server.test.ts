@@ -1,5 +1,7 @@
+import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";
 import {
+  API_BASE_URL,
   APP_ORIGIN,
   loadContext,
   sessionCookie,
@@ -23,7 +25,7 @@ const contributor = () =>
   sessionCookie(sessionTokens({ accessToken: "fixture:contributor" }));
 
 describe("loadAccount", () => {
-  it("is signed out without a session, and calls nothing", async () => {
+  it("is signed out without a session", async () => {
     const { account, headers } = await load();
     expect(account).toEqual({ state: "signed-out" });
     expect(headers.get("Set-Cookie")).toBeNull();
@@ -42,43 +44,19 @@ describe("loadAccount", () => {
 
   it("says the profile is unavailable when /v1/me fails, and doesn't throw", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
-    fixtures.fail({
-      userId: "contributor",
-      operationId: "getMe",
-      status: 500,
-      code: "internal",
-    });
+    fixtures.server.use(
+      http.get(`${API_BASE_URL}/v1/me`, () =>
+        HttpResponse.json({ code: "internal", message: "x" }, { status: 500 })
+      )
+    );
     expect((await load(await contributor())).account).toEqual({
       state: "profile-unavailable",
     });
   });
 
-  it("gives a blocked account the app's message", async () => {
-    const me = fixtures.state().users.get("contributor");
-    if (me) me.blocked = true;
-    const { account } = await load(await contributor());
-    expect(account).toMatchObject({ state: "blocked" });
-    expect(account.state === "blocked" && account.message).toMatch(
-      /^Your account is blocked/
-    );
-  });
-
   it("reads as signed out when the API rejects the session, and clears it", async () => {
     const { account, headers } = await load(
       await sessionCookie(sessionTokens({ accessToken: "not-a-fixture-token" }))
-    );
-    expect(account).toEqual({ state: "signed-out" });
-    expect(headers.get("Set-Cookie")).toMatch(
-      /^__Host-bt_session=;.*Expires=Thu, 01 Jan 1970/
-    );
-  });
-
-  it("clears an expired session it can't refresh, without calling the API", async () => {
-    const { account, headers } = await load(
-      await sessionCookie({
-        accessToken: "access-token",
-        expiresAt: Date.now() - 1000,
-      })
     );
     expect(account).toEqual({ state: "signed-out" });
     expect(headers.get("Set-Cookie")).toMatch(

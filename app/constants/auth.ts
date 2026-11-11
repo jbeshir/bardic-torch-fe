@@ -1,7 +1,3 @@
-// Prefix added to Auth0 tokens when sending to the backend API.
-// The backend expects tokens in the format: "auth0|<token>"
-const AUTH0_TOKEN_PREFIX = "auth0|";
-
 // Session cookie duration in seconds (7 days).
 // Token expiry is checked separately via shouldRefreshToken.
 export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
@@ -18,5 +14,5 @@ export const DEFAULT_TOKEN_EXPIRY_SECONDS = 86400;
 export const AUTH0_TIMEOUT_MS = 5_000;
 
 export function buildAuthorizationHeader(accessToken: string): string {
-  return `Bearer ${AUTH0_TOKEN_PREFIX}${accessToken}`;
+  return `Bearer ${accessToken}`;
 }

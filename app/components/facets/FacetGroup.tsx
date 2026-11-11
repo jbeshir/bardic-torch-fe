@@ -57,7 +57,7 @@ function Option({
 }
 
 /**
- * A facet's checkboxes (plan §2.3, DESIGN §6.28): a fieldset with its
+ * A facet's checkboxes (plan §2.3): a fieldset with its
  * legend, the options in tree order (indented by depth), and past the
  * first 8 a "Show all {n}" disclosure, a native `<details>` that works
  * without JS. A ticked option is always shown; an option nothing would

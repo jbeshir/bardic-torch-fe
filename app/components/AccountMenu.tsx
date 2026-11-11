@@ -31,7 +31,7 @@ function initialsOf(name: string): string {
 
 /**
  * The trigger's disc: the initials when the name is known; otherwise a
- * glyph that tells the two other states apart (DESIGN §6.25): a person with
+ * glyph that tells the two other states apart: a person with
  * a question mark when the profile couldn't load, a struck-out person when
  * the account is blocked. A `border-strong` edge keeps the disc visible on
  * the light canvas and the bar's sunken cell.
@@ -61,7 +61,7 @@ function Avatar({
   );
 }
 
-/** A bottom-bar cell: a 24 px icon above its visible caption (DESIGN §5.2). */
+/** A bottom-bar cell: a 24 px icon above its visible caption. */
 export const BAR_CELL =
   "flex h-full min-h-11 w-full flex-col items-center justify-center gap-0.5 text-caption text-fg-muted transition-colors hover:bg-surface-sunken hover:text-fg focus-visible:-outline-offset-2 forced-colors:border-0";
 
@@ -123,7 +123,7 @@ function AccountPanel({
 }
 
 /**
- * The account control (DESIGN §6.25), in the header from md and as the
+ * The account control, in the header from md and as the
  * bottom bar's Account cell below. Signed out it is a "Log in" link that
  * comes back here. Signed in it is a disclosure (not an ARIA menu) built on
  * `<details>`, so it opens without JS; with JS, Escape, a press or focus

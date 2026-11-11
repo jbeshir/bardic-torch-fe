@@ -20,7 +20,7 @@ function SourceList({ titles }: { readonly titles: readonly string[] }) {
 }
 
 /**
- * The licence and credit line at the foot of a help page (DESIGN §10.2):
+ * The licence and credit line at the foot of a help page:
  * CC BY-SA 4.0, and, for text adapted from the original wiki, which pages
  * it came from and that its contributors wrote them.
  */
@@ -54,7 +54,7 @@ function LicenceLine({
 }
 
 /**
- * A help page in the wiki page template (DESIGN §10.2): breadcrumbs, the
+ * A help page in the wiki page template: breadcrumbs, the
  * source link on the title rule, the infobox, the intro, the contents from
  * four h2s, the prose and the licence line. The index (/help) has no
  * breadcrumbs or source, and its summary is its intro.

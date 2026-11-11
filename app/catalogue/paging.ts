@@ -1,38 +1,18 @@
 import { redirect } from "react-router";
-import { MAX_PAGE, PAGE_SIZE } from "~/schemas/address";
+import { PAGE_SIZE } from "~/schemas/address";
 import { formatCount, formatNumber } from "./format";
 
 /**
  * Paging past the data (plan §2.2 rule 8), the same on every paged route.
  * Whether a page exists depends on the list's `total`, so it is settled
- * after the fetch, in one 302 hop:
- *
- * - `page > MAX_PAGE` would be an offset the API refuses, so the loader
- *   first asks for the total (`isBeyondApi`), then redirects to the last
- *   page;
- * - a page past the last (`offset >= total > 0`) goes to the last page;
- * - any page of an empty list goes to the first (the URL without `page`).
- *
- * The page count is capped at `MAX_PAGE`, so Pagination never offers a
- * page the API would refuse; a list longer than that says so (`isCapped`).
+ * after the fetch, in one 302 hop: a page past the last (`offset >= total
+ * > 0`) goes to the last page, and any page of an empty list goes to the
+ * first (the URL without `page`).
  */
 
-/** How many pages `total` rows fill, from 1, at most `MAX_PAGE`. */
+/** How many pages `total` rows fill, from 1. */
 export function pageCount(total: number): number {
-  return Math.max(1, Math.min(Math.ceil(total / PAGE_SIZE), MAX_PAGE));
-}
-
-/** How many rows the pages can show: "Showing the first 10,050." */
-export const SHOWN_MAX = MAX_PAGE * PAGE_SIZE;
-
-/** Whether some of `total` rows are beyond the last page the API serves. */
-export function isCapped(total: number): boolean {
-  return total > SHOWN_MAX;
-}
-
-/** Whether `page` is beyond the offsets the API accepts. */
-export function isBeyondApi(page: number): boolean {
-  return page > MAX_PAGE;
+  return Math.max(1, Math.ceil(total / PAGE_SIZE));
 }
 
 /**

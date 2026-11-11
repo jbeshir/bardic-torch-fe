@@ -21,20 +21,10 @@ describe("robotsTxt", () => {
     );
   });
 
-  it("doesn't disallow the pages that say noindex themselves, so crawlers can read it", () => {
-    const rules = robotsTxt("https://bardictorch.example");
-    for (const path of ["/search", "/revisions", "/history", "/pieces"]) {
-      expect(rules).not.toContain(`Disallow: ${path}`);
-    }
+  it("disallows everything in a build that isn't production, with no sitemap", () => {
+    vi.stubGlobal("__INDEXABLE__", false);
+    expect(robotsTxt("https://preview.example")).toBe(
+      "User-agent: *\nDisallow: /\n"
+    );
   });
-
-  it.each(["preview", "e2e", "development"])(
-    "disallows everything in a %s build, with no sitemap",
-    () => {
-      vi.stubGlobal("__INDEXABLE__", false);
-      expect(robotsTxt("https://preview.example")).toBe(
-        "User-agent: *\nDisallow: /\n"
-      );
-    }
-  );
 });

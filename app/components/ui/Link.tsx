@@ -23,7 +23,7 @@ export function externalKind(to: string): ExternalKind | null {
 }
 
 /**
- * The marks every external link carries (DESIGN §6.3): a decorative icon and
+ * The marks every external link carries: a decorative icon and
  * a hidden suffix that tells screen-reader users where it goes (§11.4).
  */
 export function ExternalMark({
@@ -59,14 +59,14 @@ const APPEARANCES: Readonly<Record<Appearance, string>> = {
     "text-link no-underline underline-offset-prose hover:text-link-hover hover:underline focus-visible:underline active:text-link-hover",
   muted:
     "text-fg-muted underline decoration-fg-subtle-50 underline-offset-prose hover:text-link-hover hover:decoration-2 active:text-link-hover",
-  // Links inside alerts take the alert's own text colour (DESIGN §6.14).
+  // Links inside alerts take the alert's own text colour.
   inherit:
     "text-inherit underline underline-offset-prose hover:decoration-2 active:decoration-2",
 };
 
 const CURRENT = "font-semibold text-fg no-underline";
 
-/** A link's look (DESIGN §6.3), for an anchor that can't be a `Link`. */
+/** A link's look, for an anchor that can't be a `Link`. */
 export function linkClasses(appearance: Appearance): string {
   return `rounded-sm ${APPEARANCES[appearance]}`;
 }
@@ -102,7 +102,7 @@ function withMark(children: ReactNode, mark: ReactNode) {
 /**
  * Where a link goes. A URL that came from the API (a reader added it) is
  * `userContent`: an absolute URL only, which search engines are told not
- * to follow or credit to us (`rel="nofollow ugc"`, DESIGN §6.3).
+ * to follow or credit to us (`rel="nofollow ugc"`).
  */
 type Target =
   | {
@@ -116,7 +116,7 @@ type Target =
     };
 
 /**
- * A text link (DESIGN §6.3). Internal paths go through React Router with intent
+ * A text link. Internal paths go through React Router with intent
  * prefetch; absolute URLs are plain anchors marked as external, in the same
  * tab. There is no disabled link: render plain text instead.
  */

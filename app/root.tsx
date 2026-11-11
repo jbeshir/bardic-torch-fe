@@ -33,7 +33,7 @@ import {
 import { HelpLinks } from "~/components/HelpLinks";
 import { Wordmark } from "~/components/Wordmark";
 import stylesheet from "~/styles/app.css?url";
-import { THEME_COLOURS } from "~/styles/theme-colour.gen";
+import { THEME_COLOURS } from "~/styles/theme-colour";
 import { readTheme } from "~/server/theme.server";
 import type { Theme } from "~/styles/tokens";
 import { useErrorReference } from "~/hooks/useErrorReference";

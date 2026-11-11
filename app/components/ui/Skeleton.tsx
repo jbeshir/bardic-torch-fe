@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 type SkeletonShape = "line" | "heading" | "chip";
 
-/** DESIGN §6.18: full, 92 % and 60 % (the last line of a paragraph). */
+/** Widths: full, 92 % and 60 % (the last line of a paragraph). */
 const LINE_WIDTHS = {
   full: "w-full",
   most: "w-11/12",
@@ -15,7 +15,7 @@ const SHAPES: Record<Exclude<SkeletonShape, "line">, string> = {
 };
 
 /**
- * One placeholder block (DESIGN §6.18). A `line` takes the line height of the
+ * One placeholder block. A `line` takes the line height of the
  * text style it sits in, so swapping in the real text doesn't shift the
  * layout. Always hidden from assistive tech: the SkeletonRegion around it
  * says what is loading.

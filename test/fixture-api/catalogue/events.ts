@@ -12,7 +12,7 @@ export type RawEvent = Readonly<
 export const MUSTER_FIELD_SLUG = "muster-field";
 export const MIDWINTER_REVEL_SLUG = "midwinter-revel";
 /** An event nothing was performed at. */
-export const QUIET_HALL_SLUG = "quiet-hall";
+const QUIET_HALL_SLUG = "quiet-hall";
 
 function event(
   slug: string,

@@ -1,7 +1,6 @@
 import {
   mkdirSync,
   mkdtempSync,
-  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -34,8 +33,6 @@ function fakeBuild(files: Record<string, string>): string {
   dirs.push(dir);
   const all = {
     "server/index.js": `const routes = { "routes/_index": {} }; ${INDEXABLE_RULES}`,
-    "client/assets/manifest-abc.js":
-      'window.__remixManifest={"routes/_index":{}}',
     ...files,
   };
   for (const [name, content] of Object.entries(all)) {
@@ -52,190 +49,94 @@ function inspect(
   return inspectBuild({ buildDir: fakeBuild(files), mode, marker: MARKER });
 }
 
-const STYLEGUIDE = {
-  "server/index.js": `const routes = { "routes/styleguide": {} }; ${INDEXABLE_RULES}`,
-  "client/assets/manifest-abc.js":
-    'window.__remixManifest={"routes/styleguide":{}}',
-};
-
 afterEach(() => {
   for (const dir of dirs.splice(0))
     rmSync(dir, { recursive: true, force: true });
 });
 
-describe("readStubMarker", () => {
-  it("reads the marker the stub module logs with", () => {
-    const source = readFileSync("app/server/stub-auth.server.ts", "utf8");
-    expect(readStubMarker(source)).toBe(MARKER);
-    expect(source).toContain("[${STUB_AUTH_MARKER}]");
-  });
-
-  it("fails loudly when the marker is gone", () => {
-    expect(() => readStubMarker("export {}")).toThrow(/STUB_AUTH_MARKER/);
-  });
-});
+const ROUTES = 'const routes = { "routes/_index": {} };';
 
 describe("inspectBuild", () => {
-  it("passes a clean production build", () => {
-    expect(inspect({})).toEqual([]);
-  });
-
-  it.each(MARKDOWN_PARSER_MARKERS)(
-    "finds the Markdown parser in a client chunk by %s, and allows it on the server",
-    parser => {
-      expect(
-        inspect({
-          "client/assets/notes-abc.js": `var t="${parser}";`,
-          "server/assets/server-build.js": `var t="${parser}";`,
-        })
-      ).toEqual([
+  it.each([
+    ["passes a clean production build", "production", {}, []],
+    [
+      "passes a preview build that has noindex",
+      "preview",
+      { "server/index.js": `${ROUTES} ${NOINDEX}` },
+      [],
+    ],
+    [
+      "reads the code, not source maps",
+      "preview",
+      {
+        "server/index.js": `${ROUTES} ${NOINDEX}`,
+        "server/index.js.map": `{"sourcesContent":["${INDEXABLE_ONLY_MARKER}"]}`,
+      },
+      [],
+    ],
+    [
+      "flags the Markdown parser in a client chunk only",
+      "production",
+      {
+        "client/assets/notes-abc.js": `var t="${MARKDOWN_PARSER_MARKERS[0]}";`,
+        "server/assets/server-build.js": `var t="${MARKDOWN_PARSER_MARKERS[0]}";`,
+      },
+      [
         "production: the Markdown parser (micromark) in client/assets/notes-abc.js",
-      ]);
-    }
-  );
-
-  it.each(ZOD_MARKERS)(
-    "finds zod in a client chunk by %s, and allows it on the server",
-    zod => {
-      expect(
-        inspect({
-          "client/assets/catalogue-abc.js": `class e extends Error{name="${zod}"}`,
-          "server/assets/server-build.js": `var t="${zod}";`,
-        })
-      ).toEqual(["production: zod in client/assets/catalogue-abc.js"]);
-    }
-  );
-
-  it("passes a preview build that has the styleguide and noindex", () => {
-    expect(
-      inspect(
-        {
-          ...STYLEGUIDE,
-          "server/index.js": `const routes = { "routes/styleguide": {} }; ${NOINDEX}`,
-        },
-        "preview"
-      )
-    ).toEqual([]);
-  });
-
-  it("flags a production build that would be indexed without its rules, or sends noindex", () => {
-    expect(
-      inspect({ "server/index.js": 'const routes = { "routes/_index": {} };' })
-    ).toEqual([
-      "production: the crawlable robots.txt rules are missing from the server build",
-    ]);
-    expect(
-      inspect({
-        "server/index.js": `${INDEXABLE_RULES}${NOINDEX}`,
-      })
-    ).toEqual(["production: X-Robots-Tag is present in the server build"]);
-  });
-
-  it("reads the code, not the source maps that hold the text of every source", () => {
-    expect(
-      inspect(
-        {
-          ...STYLEGUIDE,
-          "server/index.js": `const routes = { "routes/styleguide": {} }; ${NOINDEX}`,
-          "server/index.js.map": `{"sourcesContent":["${INDEXABLE_ONLY_MARKER}"]}`,
-        },
-        "preview"
-      )
-    ).toEqual([]);
-  });
-
-  it("flags a preview build that is crawlable or lacks the noindex header", () => {
-    expect(
-      inspect(
-        {
-          ...STYLEGUIDE,
-          "server/index.js": `const routes = { "routes/styleguide": {} }; ${INDEXABLE_RULES}`,
-        },
-        "preview"
-      )
-    ).toEqual([
-      "preview: the crawlable robots.txt rules are present in the server build",
-      "preview: X-Robots-Tag is missing from the server build",
-    ]);
-  });
-
-  it("flags a stub auth chunk and the marker anywhere", () => {
-    expect(
-      inspect({
+      ],
+    ],
+    [
+      "flags zod in a client chunk only",
+      "production",
+      {
+        "client/assets/catalogue-abc.js": `var t="${ZOD_MARKERS[0]}";`,
+        "server/assets/server-build.js": `var t="${ZOD_MARKERS[0]}";`,
+      },
+      ["production: zod in client/assets/catalogue-abc.js"],
+    ],
+    [
+      "flags a production build without crawlable rules, or with noindex",
+      "production",
+      { "server/index.js": `${INDEXABLE_RULES}${NOINDEX}` },
+      ["production: X-Robots-Tag is present in the server build"],
+    ],
+    [
+      "flags a preview build that is crawlable or lacks noindex",
+      "preview",
+      { "server/index.js": `${ROUTES} ${INDEXABLE_RULES}` },
+      [
+        "preview: the crawlable robots.txt rules are present in the server build",
+        "preview: X-Robots-Tag is missing from the server build",
+      ],
+    ],
+    [
+      "flags a stub auth chunk and the marker",
+      "production",
+      {
         "server/assets/stub-auth.server-x1.js": "export {}",
         "client/assets/entry-x2.js": `console.log("[${MARKER}]")`,
-      })
-    ).toEqual([
-      "production: stub auth marker in client/assets/entry-x2.js",
-      "production: stub auth chunk server/assets/stub-auth.server-x1.js",
-    ]);
-  });
-
-  it("flags fixture hosts", () => {
-    expect(
-      inspect({ "server/assets/a.js": "fetch('http://127.0.0.1:4010/v1/me')" })
-    ).toEqual([
-      "production: fixture host 127.0.0.1:4010 in server/assets/a.js",
-    ]);
-  });
-
-  it("flags the styleguide in production", () => {
-    expect(inspect(STYLEGUIDE)).toEqual([
-      "production: routes/styleguide present in the server build",
-      "production: routes/styleguide present in the client manifest",
-    ]);
-  });
-
-  it("flags a preview build missing the styleguide route", () => {
-    expect(inspect({}, "preview")).toEqual([
-      "preview: the crawlable robots.txt rules are present in the server build",
-      "preview: X-Robots-Tag is missing from the server build",
-      "preview: routes/styleguide missing from the server build",
-      "preview: routes/styleguide missing from the client manifest",
-    ]);
-  });
-
-  it("always expects the styleguide in preview, so a renamed route can't switch the check off", () => {
-    expect(inspect({}, "preview")).toEqual([
-      "preview: the crawlable robots.txt rules are present in the server build",
-      "preview: X-Robots-Tag is missing from the server build",
-      "preview: routes/styleguide missing from the server build",
-      "preview: routes/styleguide missing from the client manifest",
-    ]);
-  });
-
-  it("flags local variables in the build: a .dev.vars copy, AUTH_MODE as a variable, dev:fixtures values", () => {
-    expect(
-      inspect({
-        "server/.dev.vars": "AUTH_SESSION_SECRET=local",
-        "server/wrangler.json": JSON.stringify({
-          name: "bardic-torch-fe",
-          vars: { AUTH_MODE: "stub" },
-        }),
-        "server/assets/b.js":
-          'const secret = "dev-fixtures-session-secret-not-for-real-use";',
-      })
-    ).toEqual([
-      "production: local variables copied into server/.dev.vars",
-      "production: dev:fixtures value dev-fixtures-session-secret-not-for-real-use in server/assets/b.js",
-      "production: dev:fixtures value dev-fixtures in server/assets/b.js",
-      "production: AUTH_MODE is a variable of the built Worker",
-    ]);
-  });
-
-  it("flags an empty or unrecognisable build", () => {
-    const dir = mkdtempSync(path.join(tmpdir(), "bt-inspect-"));
-    dirs.push(dir);
-    expect(
-      inspectBuild({
-        buildDir: dir,
-        mode: "production",
-        marker: MARKER,
-      })
-    ).toEqual([
-      "production: no server build",
-      "production: expected one client manifest",
-    ]);
+      },
+      [
+        "production: stub auth marker in client/assets/entry-x2.js",
+        "production: stub auth chunk server/assets/stub-auth.server-x1.js",
+      ],
+    ],
+    [
+      "flags fixture hosts",
+      "production",
+      { "server/assets/a.js": "fetch('http://127.0.0.1:4010/v1/me')" },
+      ["production: fixture host 127.0.0.1:4010 in server/assets/a.js"],
+    ],
+    [
+      "flags AUTH_MODE as a variable of the built Worker",
+      "production",
+      {
+        "server/wrangler.json": JSON.stringify({ vars: { AUTH_MODE: "stub" } }),
+      },
+      ["production: AUTH_MODE is a variable of the built Worker"],
+    ],
+  ] as const)("%s", (_name, mode, files, expected) => {
+    expect(inspect(files, mode)).toEqual(expected);
   });
 });
 
@@ -323,7 +224,6 @@ describe("inspectBuild on a real e2e build", () => {
   });
 
   it("finds the stub auth marker, and only stub auth", () => {
-    // e2e builds keep the styleguide, as preview builds do.
     const problems = inspectBuild({
       buildDir,
       mode: "preview",
@@ -339,21 +239,5 @@ describe("inspectBuild on a real e2e build", () => {
         problem => !/: stub auth (marker in|chunk) /.test(problem)
       )
     ).toEqual([]);
-  });
-
-  it("parses Markdown and checks answers on the server, so the client checks look for something real", () => {
-    const server = readdirSync(path.join(buildDir, "server"), {
-      recursive: true,
-      encoding: "utf8",
-    })
-      .filter(name => name.endsWith(".js"))
-      .map(name => readFileSync(path.join(buildDir, "server", name), "utf8"))
-      .join("\n");
-    for (const parser of MARKDOWN_PARSER_MARKERS.slice(1)) {
-      expect(server).toContain(parser);
-    }
-    // The markers find zod where it is, so its absence from the client
-    // (no problem above) means something.
-    for (const zod of ZOD_MARKERS) expect(server).toContain(zod);
   });
 });

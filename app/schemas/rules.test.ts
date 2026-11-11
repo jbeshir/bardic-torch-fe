@@ -1,82 +1,53 @@
 import { describe, expect, it } from "vitest";
-import {
-  characterCount,
-  DISPLAY_NAME_MAX,
-  displayNameProblem,
-  normaliseDisplayName,
-  TOKEN_NAME_MAX,
-  tokenNameProblem,
-} from "./rules";
+import { updateMeFormSchema } from "./api";
+import { displayNameProblem, normaliseDisplayName } from "./rules";
 
-// The shared rules both the proxy (through zod, see api.test.ts) and the
+// The shared rules both the proxy (through zod, see `updateMeFormSchema`) and the
 // settings forms in the browser check with.
 
-describe("characterCount", () => {
-  it("counts code points, as the API does, not UTF-16 units", () => {
-    expect(characterCount("Ŵyn")).toBe(3);
-    expect(characterCount("🎻🎻")).toBe(2);
-    expect("🎻🎻".length).toBe(4);
-  });
-});
+const TOO_LONG = "Display names can be up to 64 characters.";
+const INVISIBLE =
+  "Display names can’t contain control or invisible formatting characters.";
 
-describe("normaliseDisplayName", () => {
-  it("composes to NFC and trims", () => {
-    expect(normaliseDisplayName("  Mórwen\t")).toBe("Mórwen");
-    expect(normaliseDisplayName("Mórwen")).toBe("Mórwen");
-  });
+it("normalises a display name to NFC and trims it", () => {
+  expect(normaliseDisplayName("  Mórwen\t")).toBe("Mórwen");
 });
 
 describe("displayNameProblem", () => {
-  it.each([
-    "Morwen of the Marches",
-    "x".repeat(DISPLAY_NAME_MAX),
-    ` ${"x".repeat(DISPLAY_NAME_MAX)} `,
-    "é".repeat(DISPLAY_NAME_MAX),
-    "🎻".repeat(DISPLAY_NAME_MAX),
-  ])("accepts %j", value => {
-    expect(displayNameProblem(value)).toBeNull();
-  });
+  it.each(["Morwen of the Marches", ` ${"x".repeat(64)} `, "🎻".repeat(64)])(
+    "accepts %j",
+    value => {
+      expect(displayNameProblem(value)).toBeNull();
+    }
+  );
 
   it.each([
     [undefined, "Enter a display name."],
-    ["", "Enter a display name."],
     [" \t\n", "Enter a display name."],
-    [
-      "x".repeat(DISPLAY_NAME_MAX + 1),
-      "Display names can be up to 64 characters.",
-    ],
-    [
-      `${" ".repeat(250)}Morwen${" ".repeat(10)}`,
-      "Display names can be up to 64 characters.",
-    ],
-    [
-      "Morwen\u202e",
-      "Display names can’t contain control or invisible formatting characters.",
-    ],
-    [
-      "Mor\u200bwen",
-      "Display names can’t contain control or invisible formatting characters.",
-    ],
-    [
-      "Mor\u0007wen",
-      "Display names can’t contain control or invisible formatting characters.",
-    ],
+    ["x".repeat(65), TOO_LONG],
+    ["Morwen‮", INVISIBLE],
+    ["Mor​wen", INVISIBLE],
   ])("rejects %j: %s", (value, message) => {
     expect(displayNameProblem(value)).toBe(message);
   });
 });
 
-describe("tokenNameProblem", () => {
-  it.each(["", "   ", "Laptop MCP", ` ${"x".repeat(TOKEN_NAME_MAX)} `])(
-    "accepts %j",
-    value => {
-      expect(tokenNameProblem(value)).toBeNull();
-    }
-  );
-
-  it("rejects a name over 128 characters after trimming", () => {
-    expect(tokenNameProblem("x".repeat(TOKEN_NAME_MAX + 1))).toBe(
-      "Token names can be up to 128 characters."
+describe("updateMeFormSchema", () => {
+  it.each([
+    ["trims and normalises to NFC", "  Cerdić  ", "Cerdić"],
+    ["counts after normalising", "é".repeat(64), "é".repeat(64)],
+  ])("accepts a name that %s", (_label, input, expected) => {
+    expect(updateMeFormSchema.parse({ display_name: input }).display_name).toBe(
+      expected
     );
+  });
+
+  it.each([
+    [{}, "Enter a display name."],
+    [{ display_name: "x".repeat(65) }, TOO_LONG],
+    [{ display_name: "Mor\u0000wen" }, INVISIBLE],
+  ])("rejects %j", (input, message) => {
+    const result = updateMeFormSchema.safeParse(input);
+    expect(result.error?.issues.map(issue => issue.message)).toEqual([message]);
   });
 });

@@ -1,4 +1,4 @@
-/* Element defaults and global accessibility rules (DESIGN §2, §3, §6.1, §8). */
+/* Element defaults and global accessibility rules. */
 @layer base {
   html {
     background-color: rgb(var(--bt-canvas));
@@ -94,7 +94,7 @@
   }
 
   /* Below md the bottom app bar is fixed over the end of the viewport: its
-     whole box is APP_BAR_BOX in scripts/tailwind-theme.mjs. */
+     whole box is `--bt-app-bar-h` plus the safe-area inset (tokens.css). */
   @media not all and (min-width: 768px) {
     html {
       scroll-padding-bottom: calc(
@@ -177,7 +177,7 @@
   }
 }
 
-/* The wordmark's fixed optical size (DESIGN §3.2). */
+/* The wordmark's fixed optical size (DESIGN §3). */
 @utility opsz-32 {
   font-variation-settings: "opsz" 32;
 }

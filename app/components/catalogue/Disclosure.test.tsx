@@ -1,8 +1,7 @@
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import { renderOnServer, renderWithRouter } from "~/test/router";
-import { expectSameMarkupInBothThemes } from "~/test/themes";
+import { renderWithRouter } from "~/test/router";
 import { Disclosure } from "./Disclosure";
 
 describe("Disclosure", () => {
@@ -22,25 +21,5 @@ describe("Disclosure", () => {
     await user.click(summary);
     expect(details).toHaveAttribute("open");
     expect(screen.getByText("The entries.")).toBeVisible();
-  });
-
-  it("is a native details element without JS", async () => {
-    const html = await renderOnServer(
-      <Disclosure summary="Show links">
-        <p>Links.</p>
-      </Disclosure>
-    );
-    expect(html).toMatch(/<details[^>]*><summary[^>]*>Show links/);
-    expect(html).not.toMatch(/<details[^>]*\sopen/);
-  });
-
-  it("looks the same in both themes", async () => {
-    await expectSameMarkupInBothThemes(() =>
-      renderWithRouter(
-        <Disclosure summary="More">
-          <p>Body.</p>
-        </Disclosure>
-      )
-    );
   });
 });

@@ -6,7 +6,7 @@ import type { Letter } from "~/schemas/catalogue";
 const CELL =
   "inline-flex min-h-9 min-w-9 items-center justify-center rounded-md px-2 text-body-sm lg:min-h-8 lg:min-w-8";
 // A dense row (gap-1): the ring is inset, on the link's own canvas or its
-// surface-sunken hover, so it never overlaps a neighbour (DESIGN §6.1).
+// surface-sunken hover, so it never overlaps a neighbour.
 const LINK = `${CELL} font-medium text-link transition-colors hover:bg-surface-sunken hover:text-link-hover focus-visible:-outline-offset-2`;
 const CURRENT = `${CELL} bg-accent font-semibold text-accent-fg`;
 // The links' weight, with no fill and no hover: lighter than a link, as
@@ -28,7 +28,7 @@ function CellText({ letter }: { readonly letter: Letter | undefined }) {
 }
 
 /**
- * The A–Z index of a list (plan §2.3, DESIGN §6.29): "All", then `0`
+ * The A–Z index of a list (plan §2.3): "All", then `0`
  * ("0–9 and others") and A to Z, each a link to the list under that letter.
  * A letter with no entries is plain text (`aria-disabled`), not a link. The
  * current cell is `aria-current="page"` on the accent fill and, like

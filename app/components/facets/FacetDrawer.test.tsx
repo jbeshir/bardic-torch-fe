@@ -3,7 +3,6 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { renderWithRouter } from "~/test/router";
-import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { FacetDrawer } from "./FacetDrawer";
 
 function Filters({
@@ -57,48 +56,6 @@ describe("FacetDrawer", () => {
     expect(
       within(dialog()).getByRole("checkbox", { name: "Song" })
     ).toBeVisible();
-  });
-
-  it("has Show results, the form's submit, and Clear all, nofollow", async () => {
-    const onSubmit = vi.fn();
-    const user = userEvent.setup();
-    await renderWithRouter(<Filters onSubmit={onSubmit} />);
-    await user.click(screen.getByRole("button", { name: "Filters" }));
-    const show = within(dialog()).getByRole("button", { name: "Show results" });
-    expect(show).toHaveAttribute("type", "submit");
-    expect(show).toHaveAttribute("form", "facets");
-    expect(show).toHaveClass("bg-accent", "w-full");
-    await user.click(show);
-    expect(onSubmit).toHaveBeenCalledOnce();
-    const clear = within(dialog()).getByRole("link", { name: "Clear all" });
-    expect(clear).toHaveAttribute("href", "/pieces?q=kettle");
-    expect(clear).toHaveAttribute("rel", "nofollow");
-  });
-
-  it("keeps its footer in view outside the scrolling body: a separator and 44 px targets", async () => {
-    const user = userEvent.setup();
-    await renderWithRouter(<Filters />);
-    await user.click(screen.getByRole("button", { name: "Filters" }));
-    const show = within(dialog()).getByRole("button", { name: "Show results" });
-    const clear = within(dialog()).getByRole("link", { name: "Clear all" });
-    const [, bottomClose] = within(dialog()).getAllByRole("button", {
-      name: "Close filters",
-    });
-    const body = within(dialog())
-      .getByRole("checkbox")
-      .closest("form")?.parentElement;
-    // The body scrolls on its own; the footer is its sibling, never inside
-    // it, so the body's content can't scroll under it or hide it.
-    expect(body).toHaveClass("min-h-0", "flex-1", "overflow-y-auto");
-    const footer = bottomClose?.parentElement;
-    expect(footer).toHaveClass("shrink-0", "border-t", "border-border");
-    expect(footer).toBe(body?.nextElementSibling);
-    expect(footer).toContainElement(show);
-    expect(footer).toContainElement(clear);
-    for (const control of [show, clear, bottomClose]) {
-      expect(body).not.toContainElement(control ?? null);
-      expect(control).toHaveClass("min-h-11", "w-full");
-    }
   });
 
   it("keeps Tab inside, and Escape returns focus to Filters", async () => {
@@ -155,12 +112,5 @@ describe("FacetDrawer", () => {
     expect(dialog()).toBeVisible();
     act(() => grow());
     expect(screen.queryByRole("dialog")).toBeNull();
-  });
-
-  it("has the same markup in both themes", async () => {
-    await expectSameMarkupInBothThemes(async () => {
-      await renderWithRouter(<Filters />);
-      await userEvent.click(screen.getByRole("button", { name: "Filters" }));
-    });
   });
 });

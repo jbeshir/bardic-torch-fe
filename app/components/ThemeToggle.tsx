@@ -50,7 +50,7 @@ const PLACEMENTS = {
 } as const;
 
 /**
- * System / Light / Dark (DESIGN §6.24): in the header from md, in the
+ * System / Light / Dark: in the header from md, in the
  * drawer below. Without JS it is a plain form that posts the choice and
  * comes back to this page. With JS the choice is saved in the background
  * (ThemeChoiceContext) and the page switches before the answer; a failed

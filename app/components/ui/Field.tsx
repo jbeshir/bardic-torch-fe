@@ -60,7 +60,7 @@ export function FieldHelp({
   );
 }
 
-/** The error line under a control: icon plus plain words (DESIGN §6.4). */
+/** The error line under a control: icon plus plain words. */
 export function FieldError({
   id,
   children,
@@ -88,7 +88,7 @@ export function FieldError({
 }
 
 /**
- * Label, help, control and error, wired together (DESIGN §6.4). The control
+ * Label, help, control and error, wired together. The control
  * is one Input, Textarea or Select inside; it picks up the ids from here.
  * Fields are required unless marked `optional`.
  */

@@ -1,4 +1,4 @@
-/* Long-form content: help pages (DESIGN §3.3). */
+/* Long-form content: help pages (DESIGN §3). */
 @layer components {
   .prose-bt {
     @apply max-w-prose text-body-lg;

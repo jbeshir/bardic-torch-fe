@@ -1,5 +1,5 @@
 /*
- * Fraunces (DESIGN §3.1): the wght + opsz files from the pinned
+ * Fraunces (DESIGN §3): the wght + opsz files from the pinned
  * @fontsource-variable/fraunces package, with `font-display: optional` so a
  * late font never swaps in and shifts the layout. unicode-range values are
  * copied from the package's opsz.css.

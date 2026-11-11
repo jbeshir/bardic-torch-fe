@@ -61,7 +61,7 @@ type Look = {
 };
 
 /**
- * Destructive buttons always carry an icon as well as a verb (DESIGN §2.4);
+ * Destructive buttons always carry an icon as well as a verb;
  * icon-only buttons need a label; a busy button swaps its leading icon for
  * the spinner, so it must have one and never changes width.
  */
@@ -155,7 +155,7 @@ type ButtonProps = Look &
   > & { readonly ref?: Ref<HTMLButtonElement> };
 
 /**
- * DESIGN §6.2. A real `<button>` (type "button" unless you say "submit").
+ * A real `<button>` (type "button" unless you say "submit").
  * While `loading` it stays focusable but is `aria-disabled` and ignores
  * clicks, so a repeat submit can't happen; announce "Saving…" from the
  * form's own status region, not from here.
@@ -222,7 +222,7 @@ type ButtonLinkProps = Look &
   };
 
 /**
- * A link that looks like a Button, for actions that navigate (DESIGN §6.2):
+ * A link that looks like a Button, for actions that navigate:
  * "Go to the home page", "Start contributing". It has no disabled or busy
  * state; a link that can't be followed is plain text instead.
  */

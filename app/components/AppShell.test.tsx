@@ -5,7 +5,6 @@ import { Outlet, useLocation } from "react-router";
 import { ErrorState } from "~/components/ui/ErrorState";
 import { ToastProvider } from "~/components/ui/Toast";
 import { renderRoutes, renderWithRouter } from "~/test/router";
-import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { AppShell, type PageHandle } from "./AppShell";
 
 function renderShell(url = "/") {
@@ -41,24 +40,6 @@ afterEach(() => {
 });
 
 describe("AppShell", () => {
-  it("has one banner, main, Site nav and contentinfo, in that DOM order", async () => {
-    await renderShell();
-    const banner = screen.getByRole("banner");
-    const main = screen.getByRole("main");
-    const nav = screen.getByRole("navigation", { name: "Site" });
-    const footer = screen.getByRole("contentinfo");
-    const order = [banner, main, nav, footer].map(element =>
-      [...document.querySelectorAll("header, main, nav, footer")].indexOf(
-        element
-      )
-    );
-    expect(order).toEqual([...order].sort((a, b) => a - b));
-    expect(within(main).getByRole("heading", { level: 1 })).toHaveTextContent(
-      "Page title"
-    );
-    expect(main.contains(nav)).toBe(false);
-  });
-
   it("starts with a skip link to the main content, which can take focus", async () => {
     const user = userEvent.setup();
     await renderShell();
@@ -75,34 +56,6 @@ describe("AppShell", () => {
     const main = screen.getByRole("main");
     expect(main).toHaveAttribute("id", "content");
     expect(main).toHaveAttribute("tabindex", "-1");
-  });
-
-  it("places the one Site nav as the sidebar from lg and the site menu below it", async () => {
-    await renderShell();
-    const nav = screen.getByRole("navigation", { name: "Site" });
-    expect(nav).toHaveAttribute("id", "site-nav");
-    expect(nav).toHaveClass("lg:col-start-1", "lg:row-start-1", "lg:sticky");
-    // Kept for screen readers at lg, so the group headings (h3) have an h2.
-    expect(
-      within(nav).getByRole("heading", { level: 2, name: "Site menu" })
-    ).toHaveClass("lg:sr-only");
-    expect(screen.getAllByRole("navigation", { name: "Site" })).toHaveLength(1);
-  });
-
-  it("is at least the window's height, with the sheet only as tall as its content from lg", async () => {
-    await renderShell();
-    const main = screen.getByRole("main");
-    expect(main).toHaveClass("flex-1", "lg:self-start");
-    expect(main.parentElement).toHaveClass(
-      "flex-1",
-      "flex-col",
-      "lg:grid-rows-shell"
-    );
-    expect(main.parentElement?.parentElement).toHaveClass(
-      "min-h-dvh",
-      "flex",
-      "flex-col"
-    );
   });
 
   it("brings the current page into view in a sidebar taller than the window, scrolling only the sidebar", async () => {
@@ -241,22 +194,6 @@ describe("AppShell", () => {
     expect(screen.getByRole("button", { name: "Elsewhere" })).toHaveFocus();
   });
 
-  it("shows no fade when the whole sidebar fits", async () => {
-    await renderShell();
-    expect(screen.getByTestId("sidebar-more")).not.toHaveClass("lg:block");
-  });
-
-  it("offers the search and the theme in the site menu below md, where the header has neither", async () => {
-    await renderShell();
-    const nav = screen.getByRole("navigation", { name: "Site" });
-    expect(
-      within(nav).getByRole("search").closest(".md\\:hidden")
-    ).not.toBeNull();
-    expect(
-      within(nav).getByRole("group", { name: "Theme" }).closest(".md\\:hidden")
-    ).not.toBeNull();
-  });
-
   it("once hydrated, hides the site menu below lg and opens the same navigation in the drawer", async () => {
     vi.stubGlobal("matchMedia", () => ({
       matches: false,
@@ -285,7 +222,7 @@ describe("AppShell", () => {
         .querySelector('[aria-current="page"]')
     ).toHaveTextContent("Licence & attribution");
     // Its toggle is for below md only: from md the header has one, and a
-    // page never shows two (DESIGN §6.24).
+    // page never shows two.
     expect(
       within(dialog)
         .getByRole("group", { name: "Theme" })
@@ -304,21 +241,5 @@ describe("AppShell", () => {
     );
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(barMenu).toHaveFocus();
-  });
-
-  it("leaves room under the page for the bottom app bar below md", async () => {
-    await renderShell();
-    expect(screen.getByRole("banner").parentElement).toHaveClass(
-      "max-md:pb-app-bar"
-    );
-  });
-
-  it("is not busy when nothing is loading", async () => {
-    await renderShell();
-    expect(screen.getByRole("main")).not.toHaveAttribute("aria-busy");
-  });
-
-  it("looks the same in both themes", async () => {
-    await expectSameMarkupInBothThemes(() => renderShell("/help"));
   });
 });

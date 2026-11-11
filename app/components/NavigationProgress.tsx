@@ -6,7 +6,7 @@ const PROGRESS_DELAY_MS = 300;
 
 /**
  * Whether a client-side navigation has been running for longer than
- * PROGRESS_DELAY_MS (DESIGN §7.1). Fetcher submissions aren't navigations
+ * PROGRESS_DELAY_MS. Fetcher submissions aren't navigations
  * and don't count.
  */
 export function useSlowNavigation(): boolean {
@@ -24,7 +24,7 @@ export function useSlowNavigation(): boolean {
 }
 
 /**
- * The page-loading bar (DESIGN §7.1): 3 px of accent across the top of the
+ * The page-loading bar: 3 px of accent across the top of the
  * viewport, above the header. Decorative: `<main aria-busy>` is what tells
  * assistive tech. It sweeps when motion is allowed and stands still,
  * full width, when it isn't.

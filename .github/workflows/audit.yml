@@ -9,22 +9,20 @@
 # tag in a trailing comment.
 name: Audit
 
-# Every push to any branch, and every pull request, like the backend's
-# govulncheck job. The advisory database changes without any commit, so a
-# branch is re-checked on each push, and a pull request's merge result is
-# checked too. This is a workflow of its own because ci.yml limits pushes to
-# the deployed branches: there, a job skipped on the other pushes would still
-# report a passing check under a required name.
+# Weekly, because the advisory database changes without any commit, and on
+# every pull request to main, so a merge result is checked too. No push
+# trigger: ci.yml limits pushes to the deployed branches, and the weekly run
+# covers them.
 on:
-  push:
+  schedule:
+    - cron: "0 6 * * 1"
   pull_request:
+    branches: [main]
 
 permissions:
   contents: read
 
-# Pull requests: a new push cancels the run it replaces. Pushes to a branch
-# (main and preview deploy theirs) all run to the end, so every deployed
-# commit keeps its own result.
+# Pull requests: a new push cancels the run it replaces.
 concurrency:
   group: audit-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}

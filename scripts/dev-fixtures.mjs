@@ -5,9 +5,8 @@ import { fileURLToPath } from "node:url";
 /**
  * `npm run dev:fixtures`: the fixture API plus `react-router dev` (the
  * development build mode) pointed at it with stub auth on, so the app runs
- * without Auth0 or a backend. "Log in" opens a chooser of fixture users
- * (the seeded contributor and moderator, or the id of a user created with
- * `POST /__fixtures/users`); or go straight to
+ * without Auth0 or a backend. "Log in" opens a chooser of the fixture's two
+ * users (the seeded contributor and moderator); or go straight to
  * http://localhost:5173/auth/login?as=contributor.
  *
  * Ports: DEV_PORT (default 5173) and FIXTURE_API_PORT (default 4010). Ctrl-C
@@ -51,7 +50,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       env: {
         ...process.env,
         ...fixtureAppEnv(devPort, fixturePort),
-        BT_BUILD_MODE: "development",
       },
     }),
   ];

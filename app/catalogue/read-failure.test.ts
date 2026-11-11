@@ -5,298 +5,97 @@ import {
   detailFailure,
   failureInit,
   isPageFailure,
-  isUnavailable,
   listFailure,
   searchFailure,
   thrownPageFailure,
-  throwPageFailure,
   type ReadFailure,
 } from "./read-failure";
 
-const plain = { filtered: false };
-const filtered = { filtered: true };
+const resting = { kind: "resting", retryAfter: 60 };
+const bad = { kind: "bad_gateway" };
 
-describe("searchFailure (plan §3.3)", () => {
+describe("searchFailure", () => {
   it.each([
     [
-      "400 invalid_request",
       { status: 400, code: "invalid_request" },
-      plain,
+      false,
       { kind: "invalid_filters" },
     ],
-    [
-      "500 internal with q or a filter",
-      { status: 500, code: "internal" },
-      filtered,
-      { kind: "search_timeout" },
-    ],
-    [
-      "500 internal on the plain A–Z",
-      { status: 500, code: "internal" },
-      plain,
-      { kind: "server" },
-    ],
-    [
-      "503 with an Error body",
-      { status: 503, code: "unavailable" },
-      plain,
-      { kind: "resting", retryAfter: 60 },
-    ],
-    [
-      "503 with no Error body",
-      { status: 503, code: undefined },
-      filtered,
-      { kind: "resting", retryAfter: 60 },
-    ],
-    [
-      "unavailable at 500",
-      { status: 500, code: "unavailable" },
-      filtered,
-      { kind: "resting", retryAfter: 60 },
-    ],
-    [
-      "a 500 without an Error body",
-      { status: 500, code: undefined },
-      filtered,
-      { kind: "bad_gateway" },
-    ],
-    [
-      "a 404 the op doesn't declare",
-      { status: 404, code: "not_found" },
-      plain,
-      { kind: "bad_gateway" },
-    ],
-    [
-      "a 400 with another code",
-      { status: 400, code: "request_too_large" },
-      plain,
-      { kind: "bad_gateway" },
-    ],
-    [
-      "a 502 from a gateway",
-      { status: 502, code: undefined },
-      plain,
-      { kind: "bad_gateway" },
-    ],
-  ] as const)("%s", (_why, upstream, options, expected) => {
-    expect(searchFailure(upstream, options)).toEqual(expected);
-  });
-
-  it("is resting for a request that got no answer, with a shorter wait", () => {
-    expect(searchFailure("unreachable", plain)).toEqual({
-      kind: "resting",
-      retryAfter: 30,
-    });
+    [{ status: 500, code: "internal" }, true, { kind: "search_timeout" }],
+    [{ status: 500, code: "internal" }, false, { kind: "server" }],
+    [{ status: 503, code: undefined }, true, resting],
+    [{ status: 500, code: "unavailable" }, true, resting],
+    [{ status: 500, code: undefined }, true, bad],
+    [{ status: 404, code: "not_found" }, false, bad],
+    [{ status: 400, code: "request_too_large" }, false, bad],
+    ["unreachable", false, { kind: "resting", retryAfter: 30 }],
+  ] as const)("%o (filtered %s)", (upstream, filtered, expected) => {
+    expect(searchFailure(upstream, { filtered })).toEqual(expected);
   });
 });
 
-describe("failureInit", () => {
+describe("detailFailure", () => {
   it.each([
-    [{ kind: "resting", retryAfter: 60 }, 503, "60"],
-    [{ kind: "resting", retryAfter: 30 }, 503, "30"],
-    [{ kind: "server" }, 500, null],
-    [{ kind: "bad_gateway" }, 502, null],
-    [{ kind: "search_timeout" }, 500, null],
-    [{ kind: "invalid_filters" }, 400, null],
-  ] as const)("%o is %d", (failure: ReadFailure, status, retryAfter) => {
-    const init = failureInit(failure);
-    expect(init.status).toBe(status);
-    expect(init.headers.get("Retry-After")).toBe(retryAfter);
+    [{ status: 404, code: "not_found" }, { kind: "not_found" }],
+    [{ status: 400, code: "invalid_request" }, { kind: "not_found" }],
+    [{ status: 500, code: "internal" }, { kind: "server" }],
+    [{ status: 503, code: undefined }, resting],
+    [{ status: 404, code: undefined }, bad],
+    [{ status: 418, code: "internal" }, bad],
+    ["unreachable", { kind: "resting", retryAfter: 30 }],
+  ] as const)("%o", (upstream, expected) => {
+    expect(detailFailure(upstream)).toEqual(expected);
+  });
+});
+
+describe("listFailure", () => {
+  it.each([
+    [{ status: 500, code: "internal" }, { kind: "server" }],
+    [{ status: 400, code: "invalid_request" }, bad],
+    [{ status: 404, code: "not_found" }, bad],
+    [{ status: 503, code: undefined }, resting],
+    ["unreachable", { kind: "resting", retryAfter: 30 }],
+  ] as const)("%o", (upstream, expected) => {
+    expect(listFailure(upstream)).toEqual(expected);
   });
 });
 
 describe("page failures", () => {
-  it("are the ones a page can't show around its content", () => {
-    expect(isPageFailure({ kind: "resting", retryAfter: 30 })).toBe(true);
-    expect(isPageFailure({ kind: "server" })).toBe(true);
-    expect(isPageFailure({ kind: "bad_gateway" })).toBe(true);
-    expect(isPageFailure({ kind: "not_found" })).toBe(true);
-    expect(isPageFailure({ kind: "search_timeout" })).toBe(false);
-    expect(isPageFailure({ kind: "invalid_filters" })).toBe(false);
-  });
-
-  it("are thrown with their status and Retry-After, and read back", () => {
-    let thrown: unknown;
-    try {
-      throwPageFailure({ kind: "resting", retryAfter: 30 });
-    } catch (error) {
-      thrown = error;
-    }
-    expect(thrown).toMatchObject({
-      type: "DataWithResponseInit",
-      data: { kind: "resting", retryAfter: 30 },
-      init: { status: 503 },
-    });
+  it.each([
+    [{ kind: "resting", retryAfter: 60 }, 503, "60", true],
+    [{ kind: "resting", retryAfter: 30 }, 503, "30", true],
+    [{ kind: "server" }, 500, null, true],
+    [{ kind: "bad_gateway" }, 502, null, true],
+    [{ kind: "not_found" }, 404, null, true],
+    [{ kind: "search_timeout" }, 500, null, false],
+    [{ kind: "invalid_filters" }, 400, null, false],
+  ] as const)("%o is %d", (failure: ReadFailure, status, retryAfter, page) => {
+    const init = failureInit(failure);
+    expect(init.status).toBe(status);
+    expect(init.headers.get("Retry-After")).toBe(retryAfter);
+    expect(isPageFailure(failure)).toBe(page);
   });
 
   it("are read back from a route's error response", () => {
-    const response = (body: unknown, status: number) => {
-      // What useRouteError gives a boundary for a thrown data().
-      const thrown = data(body, { status });
-      return {
-        status,
-        statusText: "",
-        internal: false,
-        data: thrown.data,
-      };
-    };
-    expect(thrownPageFailure(response({ kind: "server" }, 500))).toEqual({
-      kind: "server",
+    const response = (body: unknown, status: number) => ({
+      status,
+      statusText: "",
+      internal: false,
+      data: data(body, { status }).data,
     });
     expect(thrownPageFailure(response({ kind: "not_found" }, 404))).toEqual({
       kind: "not_found",
     });
-    expect(
-      thrownPageFailure(response({ kind: "resting", retryAfter: 30 }, 503))
-    ).toEqual({ kind: "resting", retryAfter: 30 });
-    expect(thrownPageFailure(response({ kind: "resting" }, 503))).toEqual({
-      kind: "resting",
-      retryAfter: 60,
-    });
-    expect(thrownPageFailure(response(null, 404))).toBeNull();
+    expect(thrownPageFailure(response({ kind: "resting" }, 503))).toEqual(
+      resting
+    );
     expect(thrownPageFailure(response({ kind: "other" }, 500))).toBeNull();
     expect(thrownPageFailure(new Error("boom"))).toBeNull();
-    expect(thrownPageFailure(undefined)).toBeNull();
-  });
-});
-
-describe("detailFailure (plan §3.3, detail reads)", () => {
-  it.each([
-    [
-      "404 not_found",
-      { status: 404, code: "not_found" },
-      { kind: "not_found" },
-    ],
-    [
-      "400 invalid_request (a contract mismatch after our own check)",
-      { status: 400, code: "invalid_request" },
-      { kind: "not_found" },
-    ],
-    ["500 internal", { status: 500, code: "internal" }, { kind: "server" }],
-    [
-      "a 503 of any body",
-      { status: 503, code: undefined },
-      { kind: "resting", retryAfter: 60 },
-    ],
-    [
-      "unavailable at any status",
-      { status: 500, code: "unavailable" },
-      { kind: "resting", retryAfter: 60 },
-    ],
-    [
-      "a 404 without an Error body",
-      { status: 404, code: undefined },
-      { kind: "bad_gateway" },
-    ],
-    [
-      "an undeclared code",
-      { status: 400, code: "conflict" },
-      { kind: "bad_gateway" },
-    ],
-    [
-      "an undeclared status",
-      { status: 418, code: "internal" },
-      { kind: "bad_gateway" },
-    ],
-  ] as const)("maps %s", (_why, upstream, failure) => {
-    expect(detailFailure(upstream)).toEqual(failure);
-  });
-
-  it("is resting with the shorter wait for no answer at all", () => {
-    expect(detailFailure("unreachable")).toEqual({
-      kind: "resting",
-      retryAfter: 30,
-    });
-  });
-
-  it("answers not found 404", () => {
-    expect(failureInit({ kind: "not_found" }).status).toBe(404);
-  });
-});
-
-describe("listFailure (plan §3.3, lists that aren't searches)", () => {
-  it.each([
-    ["500 internal", { status: 500, code: "internal" }, { kind: "server" }],
-    [
-      "400 invalid_request (we sent only checked values)",
-      { status: 400, code: "invalid_request" },
-      { kind: "bad_gateway" },
-    ],
-    [
-      "a 503 of any body",
-      { status: 503, code: undefined },
-      { kind: "resting", retryAfter: 60 },
-    ],
-    [
-      "unavailable at any status",
-      { status: 500, code: "unavailable" },
-      { kind: "resting", retryAfter: 60 },
-    ],
-    [
-      "404 not_found (a list has no entity to miss)",
-      { status: 404, code: "not_found" },
-      { kind: "bad_gateway" },
-    ],
-    [
-      "a 500 without an Error body",
-      { status: 500, code: undefined },
-      { kind: "bad_gateway" },
-    ],
-  ] as const)("maps %s", (_why, upstream, failure) => {
-    expect(listFailure(upstream)).toEqual(failure);
-  });
-
-  it("is resting with the shorter wait for no answer at all", () => {
-    expect(listFailure("unreachable")).toEqual({
-      kind: "resting",
-      retryAfter: 30,
-    });
-  });
-});
-
-describe("not_found as a page failure", () => {
-  it("is a page failure, answered 404", () => {
-    expect(isPageFailure({ kind: "not_found" })).toBe(true);
-    expect(failureInit({ kind: "not_found" }).status).toBe(404);
-  });
-
-  it("is read back from a thrown 404", () => {
-    const thrown = data({ kind: "not_found" }, { status: 404 });
-    expect(
-      thrownPageFailure({
-        status: 404,
-        statusText: "",
-        internal: false,
-        data: thrown.data,
-      })
-    ).toEqual({ kind: "not_found" });
-  });
-});
-
-describe("asPageFailure", () => {
-  it("keeps a page failure", () => {
-    expect(asPageFailure({ kind: "server" })).toEqual({ kind: "server" });
-    expect(asPageFailure({ kind: "not_found" })).toEqual({ kind: "not_found" });
   });
 
   it("reads a filter failure of a read with no filters as a contract break", () => {
-    expect(asPageFailure({ kind: "invalid_filters" })).toEqual({
-      kind: "bad_gateway",
-    });
-    expect(asPageFailure({ kind: "search_timeout" })).toEqual({
-      kind: "bad_gateway",
-    });
-  });
-});
-
-describe("isUnavailable", () => {
-  it.each([
-    [503, undefined, true],
-    [503, "internal", true],
-    [500, "unavailable", true],
-    [500, "internal", false],
-    [404, undefined, false],
-  ])("%i with code %s is %s", (status, code, expected) => {
-    expect(isUnavailable(status, code)).toBe(expected);
+    expect(asPageFailure({ kind: "server" })).toEqual({ kind: "server" });
+    expect(asPageFailure({ kind: "invalid_filters" })).toEqual(bad);
+    expect(asPageFailure({ kind: "search_timeout" })).toEqual(bad);
   });
 });

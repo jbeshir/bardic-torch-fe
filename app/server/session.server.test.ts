@@ -18,16 +18,19 @@ async function commit(secret = SECRET) {
 }
 
 describe("createSessionStorage", () => {
-  it("sets a __Host- cookie that is HttpOnly, Secure, SameSite=Lax and site-wide", async () => {
+  it("sets a signed __Host- cookie that is HttpOnly, Secure, SameSite=Lax and lasts the session lifetime", async () => {
     const { setCookie } = await commit();
     const attributes = setCookie.split("; ").slice(1);
     expect(setCookie).toMatch(/^__Host-bt_session=[^;]+;/);
-    expect(attributes).toContain("HttpOnly");
-    expect(attributes).toContain("Secure");
-    expect(attributes).toContain("SameSite=Lax");
-    expect(attributes).toContain("Path=/");
-    expect(attributes.some(attribute => /^Domain=/i.test(attribute))).toBe(
-      false
+    expect(setCookie).not.toContain(tokens.accessToken);
+    expect(attributes).toEqual(
+      expect.arrayContaining([
+        "HttpOnly",
+        "Secure",
+        "SameSite=Lax",
+        "Path=/",
+        `Max-Age=${SESSION_MAX_AGE_SECONDS}`,
+      ])
     );
   });
 
@@ -43,34 +46,16 @@ describe("createSessionStorage", () => {
     expect(new TextEncoder().encode(setCookie).byteLength).toBeLessThan(4096);
   });
 
-  it("expires the cookie after the session lifetime", async () => {
-    const { setCookie } = await commit();
-    expect(setCookie).toContain(`Max-Age=${SESSION_MAX_AGE_SECONDS}`);
-  });
-
-  it("round-trips the tokens through the cookie", async () => {
+  it("round-trips the tokens, rejects another secret, and expires on destroy", async () => {
     const { storage, setCookie } = await commit();
-    const session = await storage.getSession(setCookie.split(";")[0]);
+    const cookie = setCookie.split(";")[0];
+    const session = await storage.getSession(cookie);
     expect(session.get("tokens")).toEqual(tokens);
-  });
 
-  it("does not store the token in plain text", async () => {
-    const { setCookie } = await commit();
-    expect(setCookie).not.toContain(tokens.accessToken);
-  });
-
-  it("rejects a cookie signed with a different secret", async () => {
-    const { setCookie } = await commit();
     const other = createSessionStorage("another-secret-of-at-least-32-chars");
-    const session = await other.getSession(setCookie.split(";")[0]);
-    expect(session.get("tokens")).toBeUndefined();
-  });
+    expect((await other.getSession(cookie)).get("tokens")).toBeUndefined();
 
-  it("destroying the session expires the cookie", async () => {
-    const { storage, setCookie } = await commit();
-    const session = await storage.getSession(setCookie.split(";")[0]);
     const destroyed = await storage.destroySession(session);
-    expect(destroyed).toMatch(/^__Host-bt_session=;/);
-    expect(destroyed).toMatch(/Expires=Thu, 01 Jan 1970/);
+    expect(destroyed).toMatch(/^__Host-bt_session=;.*Expires=Thu, 01 Jan 1970/);
   });
 });

@@ -24,7 +24,7 @@ type OperationId = keyof operations;
  * Why an answer is in the wrong helper, if it is: a declared answer that
  * the contract forbids, or an off-contract one that it actually allows.
  */
-export function contractMisuse(
+function contractMisuse(
   expected: "declared" | "off-contract",
   operationId: OperationId,
   status: number,

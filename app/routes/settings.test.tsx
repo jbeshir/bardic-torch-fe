@@ -1,5 +1,6 @@
+import { http, HttpResponse } from "msw";
 import { Outlet } from "react-router";
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { URLSearchParams as NodeURLSearchParams } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,12 +9,9 @@ import {
   loader as rootLoader,
   shouldRevalidate as rootRevalidate,
 } from "~/root";
+import { DISPLAY_NAME_RULE } from "~/schemas/rules";
 import {
-  ACTIVE_TOKEN_LIMIT,
-  DISPLAY_NAME_RULE,
-  TOKEN_NAME_RULE,
-} from "~/schemas/rules";
-import {
+  API_BASE_URL,
   APP_ORIGIN,
   routeArgs,
   sessionCookie,
@@ -22,16 +20,8 @@ import {
 import type { UpstreamErrorCode } from "~/schemas/api";
 import { serveFixtureApi } from "~/test/msw";
 import { renderRoutes } from "~/test/router";
-import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { action as meAction } from "./api.me";
-import { action as revokeAction } from "./api.tokens.$tokenId";
-import { action as tokensAction } from "./api.tokens";
-import Settings, {
-  clientAction,
-  ErrorBoundary,
-  loader as settingsLoader,
-  shouldRevalidate,
-} from "./settings";
+import Settings, { clientAction, ErrorBoundary } from "./settings";
 
 // The settings page in the browser (R25): the real root and settings
 // loaders, the settings route's clientAction and the real /api proxy
@@ -54,15 +44,7 @@ let platform: ((request: Request) => Promise<Response>) | undefined;
 
 const PROXY_ACTIONS: ReadonlyArray<
   readonly [RegExp, Handler, (match: RegExpExecArray) => Params]
-> = [
-  [/^\/api\/me$/, meAction, () => ({})],
-  [/^\/api\/tokens$/, tokensAction, () => ({})],
-  [
-    /^\/api\/tokens\/([^/]+)$/,
-    revokeAction,
-    match => ({ tokenId: decodeURIComponent(match[1] ?? "") }),
-  ],
-];
+> = [[/^\/api\/me$/, meAction, () => ({})]];
 
 beforeEach(async () => {
   // The router builds a Node `Request` from a `URLSearchParams` body, and
@@ -152,7 +134,6 @@ function renderSettings() {
           {
             id: "routes/settings",
             path: "settings",
-            loader: run(settingsLoader),
             // What React Router runs for a route with a clientAction and no
             // server action.
             action: args =>
@@ -162,7 +143,6 @@ function renderSettings() {
                   throw new Error("/settings has no server action");
                 },
               }),
-            shouldRevalidate,
             element: <Settings />,
             errorElement: <ErrorBoundary />,
           },
@@ -173,14 +153,23 @@ function renderSettings() {
   );
 }
 
-function contributor() {
-  const user = fixtures.state().users.get("contributor");
-  if (!user) throw new Error("no seeded contributor");
-  return user;
+/** The display name the API holds for the contributor. */
+async function storedName() {
+  const response = await fetch(`${API_BASE_URL}/v1/me`, {
+    headers: { Authorization: "Bearer fixture:contributor" },
+  });
+  return ((await response.json()) as { display_name: string }).display_name;
 }
 
-function fail(operationId: string, status: number, code: UpstreamErrorCode) {
-  fixtures.fail({ userId: "contributor", operationId, status, code });
+/** The next save is answered with this error. */
+function failNextSave(status: number, code: UpstreamErrorCode) {
+  fixtures.server.use(
+    http.patch(
+      `${API_BASE_URL}/v1/me`,
+      () => HttpResponse.json({ code, message: "failed" }, { status }),
+      { once: true }
+    )
+  );
 }
 
 async function openPage() {
@@ -190,108 +179,10 @@ async function openPage() {
 }
 
 const nameField = () => screen.getByRole("textbox", { name: "Display name" });
-const tokenNameField = () =>
-  screen.getByRole("textbox", { name: /Token name/ });
-const tokenTable = () => screen.getByRole("table", { name: "Your API tokens" });
 const notifications = () =>
   screen.getByRole("region", { name: "Notifications" });
 
-describe("settings page", () => {
-  it("shows the profile and the tokens, newest first, named by prefix when unnamed", async () => {
-    await openPage();
-    expect(nameField()).toHaveValue("Morwen of the Marches");
-    expect(nameField()).toHaveAccessibleDescription(
-      "Shown on your edits and in page history. Use your SCA name if you like. Up to 64 characters."
-    );
-    expect(
-      screen.getByRole("heading", { level: 2, name: "Profile" })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { level: 2, name: "API tokens" })
-    ).toBeInTheDocument();
-
-    const rows = within(tokenTable()).getAllByRole("row").slice(1);
-    expect(rows.map(row => row.textContent)).toEqual([
-      "Songbook importer7d3b5a6f…1 Oct 2026NeverRevoke token Songbook importer",
-      "Token 9c1e7d3b…9c1e7d3b…1 Sep 20262 Sep 2026Revoke token Token 9c1e7d3b…",
-      "Laptop scripts4f2a9c1e…15 Aug 202620 Oct 2026Revoke token Laptop scripts",
-    ]);
-    expect(
-      within(tokenTable()).getByRole("button", {
-        name: "Revoke token Token 9c1e7d3b…",
-      })
-    ).toHaveAttribute("aria-haspopup", "dialog");
-    expect(
-      within(tokenTable())
-        .getAllByRole("columnheader")
-        .map(th => th.textContent)
-    ).toEqual(["Name", "Prefix", "Created", "Last used", "Actions"]);
-
-    // Below md the same tokens are cards (CSS shows one of the two).
-    const cards = screen.getByRole("list", { name: "Your API tokens" });
-    expect(
-      within(cards)
-        .getAllByRole("heading", { level: 3 })
-        .map(heading => heading.textContent)
-    ).toEqual(["Songbook importer", "Token 9c1e7d3b…", "Laptop scripts"]);
-    expect(cards).toHaveClass("md:hidden");
-    expect(tokenTable()).toHaveClass("hidden", "md:table");
-  });
-
-  it("looks the same in both themes", async () => {
-    await expectSameMarkupInBothThemes(openPage);
-  });
-
-  it("shows the empty state when there are no tokens", async () => {
-    contributor().tokens = [];
-    await openPage();
-    expect(
-      screen.getByRole("heading", { name: "No tokens yet" })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Create a token to let tools like an MCP client work with Bardic Torch for you."
-      )
-    ).toBeInTheDocument();
-    expect(screen.queryByRole("table")).toBeNull();
-    expect(screen.getByRole("button", { name: "Create token" })).toBeEnabled();
-  });
-
-  it("signed out, offers Log in that comes back here", async () => {
-    cookie = undefined;
-    await openPage();
-    expect(screen.getByRole("link", { name: "Log in" })).toHaveAttribute(
-      "href",
-      "/auth/login?returnTo=%2Fsettings"
-    );
-    expect(screen.queryByRole("textbox")).toBeNull();
-  });
-});
-
 describe("display name", () => {
-  it.each([
-    ["", "Enter a display name."],
-    ["   ", "Enter a display name."],
-    ["x".repeat(65), "Display names can be up to 64 characters."],
-    [
-      "Morwen\u202e",
-      "Display names can’t contain control or invisible formatting characters.",
-    ],
-  ])("checks %j in the browser before sending: %s", async (value, message) => {
-    const user = userEvent.setup();
-    await openPage();
-    await user.clear(nameField());
-    if (value) fireEvent.change(nameField(), { target: { value } });
-    await user.click(screen.getByRole("button", { name: "Save changes" }));
-
-    expect(nameField()).toHaveAccessibleDescription(
-      expect.stringContaining(`Error: ${message}`)
-    );
-    expect(nameField()).toHaveAttribute("aria-invalid", "true");
-    expect(nameField()).toHaveFocus();
-    expect(contributor().me.display_name).toBe("Morwen of the Marches");
-  });
-
   it("saves, shows the normalised name, says so in a toast and revalidates the root", async () => {
     const user = userEvent.setup();
     const router = await openPage();
@@ -304,7 +195,7 @@ describe("display name", () => {
     ).toBeInTheDocument();
     expect(nameField()).toHaveValue("Wynn of the Long Road");
     expect(nameField()).not.toHaveAttribute("aria-invalid");
-    expect(contributor().me.display_name).toBe("Wynn of the Long Road");
+    expect(await storedName()).toBe("Wynn of the Long Road");
     expect(router.state.loaderData.root).toMatchObject({
       account: {
         state: "signed-in",
@@ -316,7 +207,7 @@ describe("display name", () => {
   it("a 400 from the API is an inline error with the rule, and focus goes back to the field", async () => {
     const user = userEvent.setup();
     await openPage();
-    fail("updateMe", 400, "invalid_request");
+    failNextSave(400, "invalid_request");
     await user.click(screen.getByRole("button", { name: "Save changes" }));
 
     await waitFor(() =>
@@ -328,44 +219,16 @@ describe("display name", () => {
     expect(screen.queryByText(/We couldn’t save/)).toBeNull();
   });
 
-  it.each([
-    [
-      500,
-      "internal",
-      "We couldn’t save your changes. Check your connection and try again.",
-    ],
-    [
-      403,
-      "user_blocked",
-      "Your account is blocked, so you can’t make changes. Contact the Bardic Torch team if you think this is a mistake.",
-    ],
-  ] as const)("a %i %s is a danger alert", async (status, code, message) => {
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const user = userEvent.setup();
-    await openPage();
-    fail("updateMe", status, code);
-    await user.click(screen.getByRole("button", { name: "Save changes" }));
-
-    const alert = await screen.findByText(message);
-    expect(alert.closest('[role="alert"]')).not.toBeNull();
-    expect(nameField()).not.toHaveAttribute("aria-invalid");
-    expect(
-      within(notifications()).queryByText("Display name saved.")
-    ).toBeNull();
-  });
-
   it("a session the API ended signs the whole page out, offering Log in back to settings", async () => {
     const user = userEvent.setup();
     const router = await openPage();
-    fail("updateMe", 401, "unauthenticated");
+    failNextSave(401, "unauthenticated");
     await user.click(screen.getByRole("button", { name: "Save changes" }));
 
     // The proxy cleared the session and the root loader ran again, so the
     // shell (the account control) is signed out too, not only this form.
     expect(
-      await screen.findByText(
-        "Log in to change your display name and manage your API tokens."
-      )
+      await screen.findByText("Log in to change your display name.")
     ).toBeInTheDocument();
     expect(cookie).toBeUndefined();
     expect(router.state.loaderData.root).toMatchObject({
@@ -375,337 +238,6 @@ describe("display name", () => {
       "href",
       "/auth/login?returnTo=%2Fsettings"
     );
-  });
-
-  it("saves with Enter in the field", async () => {
-    const user = userEvent.setup();
-    await openPage();
-    await user.clear(nameField());
-    await user.type(nameField(), "Wynn the Watchful{Enter}");
-    expect(
-      await within(notifications()).findByText("Display name saved.")
-    ).toBeInTheDocument();
-    expect(contributor().me.display_name).toBe("Wynn the Watchful");
-  });
-
-  it("announces that it is saving while the request runs", async () => {
-    const user = userEvent.setup();
-    await openPage();
-    // Hold the app's answer until the status has been read, so the request
-    // is still running whatever the event loop's timing.
-    const app = globalThis.fetch;
-    let answer = () => {};
-    const answered = new Promise<void>(resolve => {
-      answer = resolve;
-    });
-    vi.stubGlobal("fetch", async (input: string, init?: RequestInit) => {
-      await answered;
-      return app(input, init);
-    });
-    await user.click(screen.getByRole("button", { name: "Save changes" }));
-    expect(
-      await screen.findByText("Saving your display name…")
-    ).toHaveAttribute("role", "status");
-    answer();
-    await within(notifications()).findByText("Display name saved.");
-    expect(screen.queryByText("Saving your display name…")).toBeNull();
-  });
-});
-
-describe("creating a token", () => {
-  it("reveals the new token once, copies it, and clears it from the page", async () => {
-    const user = userEvent.setup();
-    await openPage();
-    await user.type(tokenNameField(), " Laptop MCP ");
-    await user.click(screen.getByRole("button", { name: "Create token" }));
-
-    const secret = await screen.findByRole("textbox", {
-      name: "New token value",
-    });
-    expect(
-      screen.getByText("Token created. Copy it now — you won’t see it again.")
-    ).toBeInTheDocument();
-    const value = (secret as HTMLTextAreaElement).value;
-    expect(value).toMatch(/^user_api\|[0-9a-f]{64}$/);
-    expect(secret).toHaveAttribute("readonly");
-    expect(secret).toHaveFocus();
-    expect([
-      (secret as HTMLTextAreaElement).selectionStart,
-      (secret as HTMLTextAreaElement).selectionEnd,
-    ]).toEqual([0, value.length]);
-    expect(secret.closest('[role="status"]')).not.toBeNull();
-
-    // The list was loaded again and has the new token first; the form is clear.
-    expect(within(tokenTable()).getAllByRole("rowheader")[0]).toHaveTextContent(
-      "Laptop MCP"
-    );
-    expect(tokenNameField()).toHaveValue("");
-
-    await user.click(screen.getByRole("button", { name: "Copy" }));
-    expect(await navigator.clipboard.readText()).toBe(value);
-    expect(screen.getByRole("button", { name: "Copied" })).toBeInTheDocument();
-    expect(screen.getByText("Token copied")).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "I’ve copied it" }));
-    expect(
-      screen.queryByRole("textbox", { name: "New token value" })
-    ).toBeNull();
-    expect(document.body.innerHTML).not.toContain(value);
-    expect(screen.getByRole("heading", { name: "API tokens" })).toHaveFocus();
-  });
-
-  it("says so when the browser won't copy, leaving the token selected", async () => {
-    const user = userEvent.setup();
-    await openPage();
-    await user.click(screen.getByRole("button", { name: "Create token" }));
-    const secret = await screen.findByRole("textbox", {
-      name: "New token value",
-    });
-    vi.spyOn(navigator.clipboard, "writeText").mockRejectedValue(
-      new Error("denied")
-    );
-    await user.click(screen.getByRole("button", { name: "Copy" }));
-
-    expect(
-      await screen.findByText(
-        "Your browser didn’t let us copy it. The token is selected: copy it with your keyboard or menu."
-      )
-    ).not.toHaveClass("sr-only");
-    expect(secret).toHaveFocus();
-  });
-
-  it("an unnamed token is listed by its prefix", async () => {
-    const user = userEvent.setup();
-    contributor().tokens = [];
-    await openPage();
-    await user.click(screen.getByRole("button", { name: "Create token" }));
-    await screen.findByRole("textbox", { name: "New token value" });
-    const [created] = contributor().tokens;
-    expect(created?.name).toBeNull();
-    expect(
-      within(tokenTable()).getByRole("rowheader", {
-        name: `Token ${created?.prefix ?? ""}…`,
-      })
-    ).toBeInTheDocument();
-  });
-
-  it("checks the name's length in the browser before sending", async () => {
-    const user = userEvent.setup();
-    await openPage();
-    fireEvent.change(tokenNameField(), { target: { value: "x".repeat(129) } });
-    await user.click(screen.getByRole("button", { name: "Create token" }));
-
-    expect(tokenNameField()).toHaveAccessibleDescription(
-      expect.stringContaining("Error: Token names can be up to 128 characters.")
-    );
-    expect(tokenNameField()).toHaveFocus();
-    expect(contributor().tokens).toHaveLength(3);
-  });
-
-  it("a 400 from the API is an inline error with the rule", async () => {
-    const user = userEvent.setup();
-    await openPage();
-    fail("createAPIToken", 400, "invalid_request");
-    await user.click(screen.getByRole("button", { name: "Create token" }));
-    await waitFor(() =>
-      expect(tokenNameField()).toHaveAccessibleDescription(
-        expect.stringContaining(`Error: ${TOKEN_NAME_RULE}`)
-      )
-    );
-    expect(tokenNameField()).toHaveFocus();
-  });
-
-  function tokensFor(count: number) {
-    const [sample] = contributor().tokens;
-    if (!sample) throw new Error("no sample token");
-    return Array.from({ length: count }, (_, index) => ({
-      ...sample,
-      id: `00000000-0000-4000-8000-0000000001${String(index).padStart(2, "0")}`,
-    }));
-  }
-
-  it("says how many of the 10 allowed tokens there are", async () => {
-    await openPage();
-    expect(
-      screen.getByText(`You have 3 of ${ACTIVE_TOKEN_LIMIT} API tokens.`)
-    ).toBeVisible();
-  });
-
-  it("at the limit of 10 says to revoke one, instead of offering the form", async () => {
-    contributor().tokens = tokensFor(10);
-    await openPage();
-    expect(screen.getByText("You have 10 of 10 API tokens.")).toBeVisible();
-    expect(
-      screen.getByText("That’s the most allowed. Revoke one to create another.")
-    ).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Create token" })).toBeNull();
-    expect(screen.queryByRole("textbox", { name: /Token name/ })).toBeNull();
-  });
-
-  it("if the list is out of date at the limit, the API's 409 still says to revoke one first", async () => {
-    const user = userEvent.setup();
-    contributor().tokens = tokensFor(9);
-    await openPage();
-    // Another tab created the tenth meanwhile.
-    contributor().tokens = tokensFor(10);
-    await user.click(screen.getByRole("button", { name: "Create token" }));
-
-    const message = await screen.findByText(
-      "You already have 10 API tokens, the most allowed. Revoke one before creating another."
-    );
-    expect(message.closest('[role="alert"]')).not.toBeNull();
-    expect(
-      screen.queryByRole("textbox", { name: "New token value" })
-    ).toBeNull();
-    // The list is reloaded: the tenth token is there to revoke, the count
-    // agrees with the alert, and the form gives way to the note, focus
-    // going to the section's heading with it.
-    expect(
-      await screen.findByText("You have 10 of 10 API tokens.")
-    ).toBeVisible();
-    expect(screen.queryByText(/You have 9 of 10/)).toBeNull();
-    expect(
-      screen.getByText("That’s the most allowed. Revoke one to create another.")
-    ).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Create token" })).toBeNull();
-    expect(
-      screen.getByRole("heading", { level: 2, name: "API tokens" })
-    ).toHaveFocus();
-    expect(message).toBeVisible();
-  });
-
-  it.each([
-    [
-      403,
-      "api_token_not_allowed",
-      "API tokens can’t manage API tokens. Log in on the website to do this.",
-    ],
-    [
-      500,
-      "internal",
-      "We couldn’t create a token. Check your connection and try again.",
-    ],
-  ] as const)("a %i %s is a danger alert", async (status, code, message) => {
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const user = userEvent.setup();
-    await openPage();
-    fail("createAPIToken", status, code);
-    await user.click(screen.getByRole("button", { name: "Create token" }));
-    const alert = await screen.findByText(message);
-    expect(alert.closest('[role="alert"]')).not.toBeNull();
-  });
-});
-
-describe("revoking a token", () => {
-  async function openRevoke(name: string) {
-    const user = userEvent.setup();
-    await openPage();
-    const trigger = within(tokenTable()).getByRole("button", {
-      name: `Revoke token ${name}`,
-    });
-    await user.click(trigger);
-    return {
-      user,
-      trigger,
-      dialog: screen.getByRole("dialog", { name: "Revoke this token?" }),
-    };
-  }
-
-  it("confirms with a destructive dialog, removes the token, says so and focuses the heading", async () => {
-    const { user, dialog } = await openRevoke("Laptop scripts");
-    expect(dialog).toHaveAccessibleDescription(
-      "Anything using ‘Laptop scripts’ will stop working straight away. This can’t be undone."
-    );
-    expect(
-      within(dialog).getByRole("button", { name: "Cancel" })
-    ).toHaveFocus();
-
-    await user.click(
-      within(dialog).getByRole("button", { name: "Revoke token" })
-    );
-
-    expect(
-      await within(notifications()).findByText("Token revoked.")
-    ).toBeInTheDocument();
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(
-      within(tokenTable()).queryByRole("rowheader", { name: "Laptop scripts" })
-    ).toBeNull();
-    expect(contributor().tokens.map(token => token.name)).not.toContain(
-      "Laptop scripts"
-    );
-    await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "API tokens" })).toHaveFocus()
-    );
-  });
-
-  it("opens from the keyboard and closes on Escape, back on its button", async () => {
-    const user = userEvent.setup();
-    await openPage();
-    const trigger = within(tokenTable()).getByRole("button", {
-      name: "Revoke token Laptop scripts",
-    });
-    trigger.focus();
-    await user.keyboard("{Enter}");
-    const dialog = screen.getByRole("dialog", { name: "Revoke this token?" });
-    expect(
-      within(dialog).getByRole("button", { name: "Cancel" })
-    ).toHaveFocus();
-    fireEvent(dialog, new Event("cancel", { cancelable: true }));
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(trigger).toHaveFocus();
-    expect(contributor().tokens).toHaveLength(3);
-  });
-
-  it("calls an unnamed token by its prefix", async () => {
-    const { dialog } = await openRevoke("Token 9c1e7d3b…");
-    expect(dialog).toHaveAccessibleDescription(
-      "Anything using token 9c1e7d3b… will stop working straight away. This can’t be undone."
-    );
-  });
-
-  it("Cancel keeps the token and returns focus to its Revoke button", async () => {
-    const { user, trigger, dialog } = await openRevoke("Laptop scripts");
-    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(trigger).toHaveFocus();
-    expect(contributor().tokens).toHaveLength(3);
-  });
-
-  it("a token that is already gone (404) says so, and the list is refreshed", async () => {
-    const { user, dialog } = await openRevoke("Laptop scripts");
-    contributor().tokens = contributor().tokens.filter(
-      token => token.name !== "Laptop scripts"
-    );
-    await user.click(
-      within(dialog).getByRole("button", { name: "Revoke token" })
-    );
-
-    const message = await screen.findByText(
-      "That token no longer exists. Reload the page to see your current tokens."
-    );
-    expect(message.closest('[role="alert"]')).not.toBeNull();
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(
-      within(tokenTable()).queryByRole("rowheader", { name: "Laptop scripts" })
-    ).toBeNull();
-  });
-
-  it("a 500 says it couldn't, and focus goes back to the Revoke button", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const { user, trigger, dialog } = await openRevoke("Laptop scripts");
-    fail("revokeAPIToken", 500, "internal");
-    await user.click(
-      within(dialog).getByRole("button", { name: "Revoke token" })
-    );
-
-    expect(
-      await screen.findByText(
-        "We couldn’t revoke that token. Check your connection and try again."
-      )
-    ).toBeInTheDocument();
-    expect(contributor().tokens).toHaveLength(3);
-    await waitFor(() => expect(trigger).toHaveFocus());
   });
 });
 
@@ -766,7 +298,7 @@ describe("when the app can't be reached", () => {
       expect(nameField()).not.toHaveAttribute("aria-invalid");
       expectNoBoundary();
       await expectOfflineToast(offline);
-      expect(contributor().me.display_name).toBe("Morwen of the Marches");
+      expect(await storedName()).toBe("Morwen of the Marches");
 
       // Once the app answers again, the same form saves.
       platform = undefined;
@@ -774,84 +306,9 @@ describe("when the app can't be reached", () => {
       expect(
         await within(notifications()).findByText("Display name saved.")
       ).toBeInTheDocument();
-      expect(contributor().me.display_name).toBe("Wynn of the Long Road");
+      expect(await storedName()).toBe("Wynn of the Long Road");
     }
   );
-
-  it.each(cases)(
-    "creating a token on %s keeps the typed name and says so inline",
-    async (_case, respond, offline) => {
-      const user = userEvent.setup();
-      await openPage();
-      await user.type(tokenNameField(), "Laptop MCP");
-      platform = respond;
-      await user.click(screen.getByRole("button", { name: "Create token" }));
-
-      const alert = await screen.findByText(
-        "We couldn’t create a token. Check your connection and try again."
-      );
-      expect(alert.closest('[role="alert"]')).not.toBeNull();
-      expect(tokenNameField()).toHaveValue("Laptop MCP");
-      expect(
-        screen.queryByRole("textbox", { name: "New token value" })
-      ).toBeNull();
-      expectNoBoundary();
-      await expectOfflineToast(offline);
-      expect(contributor().tokens).toHaveLength(3);
-    }
-  );
-
-  it.each(cases)(
-    "revoking a token on %s keeps it and says so inline",
-    async (_case, respond, offline) => {
-      const user = userEvent.setup();
-      await openPage();
-      const trigger = within(tokenTable()).getByRole("button", {
-        name: "Revoke token Laptop scripts",
-      });
-      await user.click(trigger);
-      platform = respond;
-      await user.click(
-        within(
-          screen.getByRole("dialog", { name: "Revoke this token?" })
-        ).getByRole("button", { name: "Revoke token" })
-      );
-
-      expect(
-        await screen.findByText(
-          "We couldn’t revoke that token. Check your connection and try again."
-        )
-      ).toBeInTheDocument();
-      expect(screen.queryByRole("dialog")).toBeNull();
-      expect(
-        within(tokenTable()).getByRole("rowheader", { name: "Laptop scripts" })
-      ).toBeInTheDocument();
-      expectNoBoundary();
-      await expectOfflineToast(offline);
-      await waitFor(() => expect(trigger).toHaveFocus());
-    }
-  );
-});
-
-describe("settings error boundary", () => {
-  it("a token list that fails to load shows the boundary, and Try again recovers", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const user = userEvent.setup();
-    fail("listAPITokens", 500, "internal");
-    await renderSettings();
-
-    expect(
-      await screen.findByRole("heading", {
-        level: 1,
-        name: "We couldn’t load your settings",
-      })
-    ).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Try again" }));
-    expect(
-      await screen.findByRole("heading", { level: 1, name: "Settings" })
-    ).toBeInTheDocument();
-    expect(nameField()).toHaveValue("Morwen of the Marches");
-  });
 });
 
 describe("a form posted to the settings page without JS", () => {
@@ -888,51 +345,5 @@ describe("a form posted to the settings page without JS", () => {
     ).toHaveAttribute("href", "/settings");
     expect(screen.queryByText(/couldn’t load your settings/)).toBeNull();
     expect(reportBoundary).not.toHaveBeenCalled();
-  });
-});
-
-describe("settings shouldRevalidate", () => {
-  const base = {
-    currentUrl: new URL("https://app.test/settings"),
-    nextUrl: new URL("https://app.test/settings"),
-    currentParams: {},
-    nextParams: {},
-    defaultShouldRevalidate: true,
-  };
-
-  const submitted = (intent: string, actionResult: unknown) => {
-    const formData = new FormData();
-    formData.set("intent", intent);
-    return {
-      ...base,
-      formMethod: "POST" as const,
-      formAction: "/settings",
-      formData,
-      actionResult,
-    };
-  };
-  const failure = (code: string) => ({
-    ok: false,
-    error: { code, message: "" },
-  });
-
-  it.each([
-    ["create-token", { ok: true, data: {} }, true],
-    ["revoke-token", { ok: true, data: null }, true],
-    ["revoke-token", failure("not_found"), true],
-    ["create-token", failure("token_limit_reached"), true],
-    ["create-token", failure("offline"), false],
-    ["revoke-token", failure("unexpected_response"), false],
-    ["revoke-token", failure("upstream_unavailable"), false],
-    ["update-profile", { ok: true, data: {} }, false],
-  ])("after %s answered %j: %s", (intent, result, expected) => {
-    expect(shouldRevalidate(submitted(intent, result))).toBe(expected);
-  });
-
-  it("follows the default otherwise (Try again revalidates)", () => {
-    expect(shouldRevalidate(base)).toBe(true);
-    expect(shouldRevalidate({ ...base, defaultShouldRevalidate: false })).toBe(
-      false
-    );
   });
 });

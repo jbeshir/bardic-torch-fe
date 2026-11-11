@@ -8,14 +8,10 @@ import { rawTerm, termSummary } from "./terms";
 
 /**
  * The raw revisions of the fixture catalogue, as the backend stores them
- * (before the redaction of `visibility.ts`). For each of the five entity
+ * . For each of the five entity
  * types there is an `import` revision (no author, base null) and a `user`
  * revision based on it. Ids start at 1001; 1003 is the piece diff the e2e
- * uses. Two revisions are traps for the redaction: the restricted piece's
- * base snapshot predates its restriction (1005), and the last Copper Kettle
- * revision (1014) snapshots a link that is hidden now and a credit to a
- * person who now has no page. `UNAPPROVED_REVISIONS` holds one that is
- * still pending, so it is never served.
+ * uses. Every revision here is approved: only those are served.
  */
 
 type Schemas = components["schemas"];
@@ -35,7 +31,7 @@ function isEmpty(value: unknown): boolean {
 }
 
 /** The spec's rule: fields that differ from the base's or, with no base, aren't empty. */
-export function changedFields<K extends string>(
+function changedFields<K extends string>(
   snapshot: Readonly<Record<K, unknown>>,
   base: Readonly<Record<K, unknown>> | null
 ): K[] {
@@ -64,8 +60,6 @@ function snapshotLink(raw: RawLink): Schemas["SnapshotPieceLink"] {
 }
 
 interface PieceSnapshotOptions {
-  readonly includeHiddenLinks?: boolean;
-  readonly extraCredits?: readonly Schemas["PieceCredit"][];
   readonly overrides?: Partial<Schemas["PieceSnapshot"]>;
 }
 
@@ -96,24 +90,16 @@ function pieceSnapshot(
       is_primary: t.is_primary,
       part: t.part,
     })),
-    credits: [
-      ...raw.credits
-        .filter(c => c.person !== "hollis-fenn")
-        .map(c => ({
-          ...c,
-          person: c.person === null ? null : personSummary(c.person),
-        })),
-      ...(options.extraCredits ?? []),
-    ],
+    credits: raw.credits.map(c => ({
+      ...c,
+      person: c.person === null ? null : personSummary(c.person),
+    })),
     relations: PIECE_RELATIONS.filter(r => r.from === slug).map(r => ({
       type: r.type,
       piece: pieceSummary(r.to),
     })),
     links: LINKS.filter(
-      l =>
-        l.owner.kind === "piece" &&
-        l.owner.slug === slug &&
-        (options.includeHiddenLinks === true || !l.hidden)
+      l => l.owner.kind === "piece" && l.owner.slug === slug
     ).map(snapshotLink),
     ...options.overrides,
   };
@@ -141,9 +127,7 @@ function personSnapshot(
             notes_md: profile.notes_md,
             licensing_status: profile.licensing_status,
             licensing_notes_md: profile.licensing_notes_md,
-            aliases: profile.aliases
-              .filter(a => !a.hidden)
-              .map(({ name, kind }) => ({ name, kind })),
+            aliases: profile.aliases.map(({ name, kind }) => ({ name, kind })),
             roles: [...profile.roles],
             affiliations: profile.affiliations.map(termSummary),
             relations: PERSON_RELATIONS.filter(r => r.from === slug).map(r => ({
@@ -179,15 +163,11 @@ function importMeta(id: number) {
   };
 }
 
-function userMeta(
-  meta: Meta,
-  base: number,
-  source: Schemas["RevisionSource"] = "user"
-) {
+function userMeta(meta: Meta, base: number) {
   return {
     id: meta.id,
     base_revision_id: base,
-    source,
+    source: "user" as const,
     summary: meta.summary ?? "",
     author: { display_name: "Morwen of the Marches" },
     contributors: [],
@@ -249,7 +229,7 @@ const KETTLE_USER = pieceSnapshot("the-copper-kettle", {
   overrides: { version_notes_md: null },
 });
 
-const KETTLE_MCP = pieceSnapshot("the-copper-kettle");
+const KETTLE_CURRENT = pieceSnapshot("the-copper-kettle");
 
 const HOARD_AT_IMPORT = pieceSnapshot("the-dragons-hoard", {
   overrides: {
@@ -260,25 +240,11 @@ const HOARD_AT_IMPORT = pieceSnapshot("the-dragons-hoard", {
   },
 });
 
-const KETTLE_WITH_HIDDEN = pieceSnapshot("the-copper-kettle", {
-  includeHiddenLinks: true,
-  extraCredits: [
-    {
-      role: "lyrics",
-      attribution: "named",
-      certainty: "possible",
-      part: "words",
-      note: "Credited before the request for no page.",
-      person: personSummary("hollis-fenn"),
-    },
-  ],
-});
-
 // Person, term, collection and event revisions ------------------------------
 
 const WREN_AT_IMPORT = personSnapshot(
   "wren-of-the-vale",
-  { name: "Wren Vale" },
+  {},
   {
     pronouns: null,
     notes_md: "A singer.",
@@ -314,32 +280,25 @@ const WREN_USER = personSnapshot(
   }
 );
 
-function termSnapshot(
-  slug: string,
+function warSnapshot(
   overrides: Partial<Schemas["TermSnapshot"]> = {}
 ): Schemas["TermSnapshot"] {
-  const raw = rawTerm(slug);
+  const raw = rawTerm("war");
   return {
     facet: raw.facet,
     name: raw.name,
     display_name: raw.display_name,
-    parent: raw.parent === null ? null : termSummary(raw.parent),
-    related_affiliation:
-      raw.related_affiliation === null
-        ? null
-        : termSummary(raw.related_affiliation),
+    parent: null,
+    related_affiliation: null,
     description_md: raw.description_md,
-    position: raw.position,
+    position: 1,
     aliases: [...raw.aliases],
     ...overrides,
   };
 }
 
-const WAR_AT_IMPORT = termSnapshot("war", {
-  description_md: null,
-  aliases: [],
-});
-const WAR_USER = termSnapshot("war");
+const WAR_AT_IMPORT = warSnapshot({ description_md: null, aliases: [] });
+const WAR_USER = warSnapshot();
 
 function collectionSnapshot(
   id: number,
@@ -395,8 +354,8 @@ export const REVISIONS: readonly Revision[] = [
   ),
   pieceRevision(
     "the-copper-kettle",
-    userMeta({ id: 1004, createdAt: "2026-02-20T12:00:00Z" }, 1003, "mcp"),
-    KETTLE_MCP,
+    userMeta({ id: 1004, createdAt: "2026-02-20T12:00:00Z" }, 1003),
+    KETTLE_CURRENT,
     KETTLE_USER
   ),
   pieceRevision(
@@ -514,29 +473,7 @@ export const REVISIONS: readonly Revision[] = [
       },
       1004
     ),
-    KETTLE_WITH_HIDDEN,
-    KETTLE_MCP
-  ),
-];
-
-/** The text of the pending revision, which must never appear in a served body. */
-const HIDDEN_PENDING_SUMMARY = "HIDDEN-pending-summary";
-
-/** Revisions not approved (yet): never listed, and 404 by id. */
-export const UNAPPROVED_REVISIONS: readonly Revision[] = [
-  pieceRevision(
-    "the-copper-kettle",
-    userMeta(
-      {
-        id: 1015,
-        createdAt: "2026-04-01T12:00:00Z",
-        summary: HIDDEN_PENDING_SUMMARY,
-      },
-      1014
-    ),
-    pieceSnapshot("the-copper-kettle", {
-      overrides: { title: "HIDDEN-pending-title" },
-    }),
-    KETTLE_WITH_HIDDEN
+    KETTLE_CURRENT,
+    KETTLE_CURRENT
   ),
 ];

@@ -5,7 +5,7 @@ import { WikiPage } from "./WikiPage";
 type WikiPageProps = ComponentProps<typeof WikiPage>;
 
 /**
- * A catalogue entity's page (plan §4.5, §4.6; DESIGN §5.4): the wiki page
+ * A catalogue entity's page (plan §4.5, §4.6): the wiki page
  * template with the entity's two views on the title rule, Read (`path`) and
  * History (`{path}/history`), and its banners under it. Editing is FE3, so
  * there is no Edit view. `history: false` leaves the History view out (a

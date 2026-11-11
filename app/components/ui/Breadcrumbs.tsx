@@ -20,7 +20,7 @@ function Chevron() {
 const MAX_UNCOLLAPSED = 3;
 
 /**
- * Where a page sits (DESIGN §6.19): a "Breadcrumb" nav with an ordered list
+ * Where a page sits: a "Breadcrumb" nav with an ordered list
  * of links to the ancestors, then the page itself as plain text with
  * `aria-current="page"`. The chevrons between are decorative. Each link has
  * a 24 px tall target (WCAG 2.5.8), and the trail wraps at narrow widths:

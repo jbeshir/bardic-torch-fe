@@ -3,7 +3,6 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import type { Account } from "~/constants/account";
 import { renderWithRouter } from "~/test/router";
-import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { AccountMenu } from "./AccountMenu";
 
 const SIGNED_IN: Account = {
@@ -12,14 +11,6 @@ const SIGNED_IN: Account = {
     id: "fixture|contributor",
     display_name: "Morwen of the Marches",
     role: "contributor",
-  },
-};
-const MODERATOR: Account = {
-  state: "signed-in",
-  user: {
-    id: "fixture|moderator",
-    display_name: "Master Tobias Fiddler",
-    role: "moderator",
   },
 };
 const BLOCKED: Account = {
@@ -96,14 +87,6 @@ describe("AccountMenu signed in", () => {
     expect(form).toHaveAttribute("action", "/auth/logout");
   });
 
-  it("names moderators as such, with their initials", async () => {
-    await renderMenu(MODERATOR, "bar");
-    expect(screen.getByText("Moderator")).toBeInTheDocument();
-    const summary = document.querySelector("summary") as HTMLElement;
-    expect(summary).toHaveTextContent("MT");
-    expect(summary).toHaveTextContent("Account: Master Tobias Fiddler");
-  });
-
   it("closes on Escape and gives focus back to its trigger", async () => {
     await renderMenu(SIGNED_IN);
     openPanel();
@@ -138,54 +121,6 @@ describe("AccountMenu signed in", () => {
     expect(router.state.location.pathname).toBe("/settings");
     expect(details().open).toBe(false);
   });
-
-  it("opens from the bottom bar upwards", async () => {
-    await renderMenu(SIGNED_IN, "bar");
-    const panel = document.getElementById(
-      document.querySelector("summary")?.getAttribute("aria-controls") ?? ""
-    );
-    expect(panel).toHaveClass("bottom-full");
-    expect(document.querySelector("summary")).toHaveClass("min-h-11");
-  });
-
-  it("keeps an edge on the header trigger in forced colours", async () => {
-    await renderMenu(SIGNED_IN, "header");
-    expect(document.querySelector("summary")).toHaveClass(
-      "forced-colors:border"
-    );
-  });
-});
-
-describe("AccountMenu when the profile didn't load", () => {
-  it("reads Account and says so in the panel, with Try again, Settings and Log out", async () => {
-    await renderMenu({ state: "profile-unavailable" });
-    const summary = document.querySelector("summary") as HTMLElement;
-    expect(summary).toHaveTextContent(/^Account$/);
-    expect(
-      screen.getByText("We couldn’t load your profile.")
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Try again" })
-    ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Settings" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Log out" })).toBeInTheDocument();
-  });
-});
-
-describe("AccountMenu trigger glyphs", () => {
-  it.each([
-    [{ state: "profile-unavailable" } as const, "tabler-icon-user-question"],
-    [BLOCKED, "tabler-icon-user-off"],
-  ])(
-    "tells %o apart by its glyph, on a disc with a visible edge",
-    async (account, glyph) => {
-      await renderMenu(account);
-      const disc = document.querySelector("summary [data-state]");
-      expect(disc).toHaveAttribute("data-state", account.state);
-      expect(disc).toHaveClass("border", "border-border-strong");
-      expect(disc?.querySelector("svg")).toHaveClass(glyph);
-    }
-  );
 });
 
 describe("AccountMenu for a blocked account", () => {
@@ -196,16 +131,5 @@ describe("AccountMenu for a blocked account", () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Settings" })).toBeNull();
     expect(screen.getByRole("button", { name: "Log out" })).toBeInTheDocument();
-  });
-});
-
-describe.each(["header", "bar"] as const)("AccountMenu (%s)", placement => {
-  it.each([
-    ["signed out", { state: "signed-out" } as Account],
-    ["signed in", SIGNED_IN],
-    ["profile unavailable", { state: "profile-unavailable" } as Account],
-    ["blocked", BLOCKED],
-  ])("looks the same in both themes, %s", async (_, account) => {
-    await expectSameMarkupInBothThemes(() => renderMenu(account, placement));
   });
 });

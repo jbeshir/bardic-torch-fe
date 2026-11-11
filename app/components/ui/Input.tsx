@@ -3,7 +3,7 @@ import type { InputHTMLAttributes, Ref } from "react";
 import { useFieldControl } from "./Field";
 
 /**
- * The text-control look shared by Input, Textarea and Select (DESIGN §6.5).
+ * The text-control look shared by Input, Textarea and Select.
  * The error state adds an inset 1 px ring inside the border, so the edge is
  * 2 px without the content moving. Read-only and disabled fields take the
  * `input-bg-locked` fill, which differs from an editable field's in both
@@ -38,7 +38,7 @@ type InputProps = Omit<
 };
 
 /**
- * A single-line text control (DESIGN §6.5). Inside a Field it takes its id,
+ * A single-line text control. Inside a Field it takes its id,
  * descriptions and state from there; on its own it needs an `aria-label`.
  */
 export function Input({

@@ -18,7 +18,6 @@ import {
 } from "~/catalogue/read-failure";
 import { withoutRestrictedRecording } from "~/catalogue/restricted";
 import { pageMeta } from "~/catalogue/seo";
-import { personStructuredData } from "~/catalogue/structured-data";
 import { useErrorReference } from "~/hooks/useErrorReference";
 import { isSlug } from "~/schemas/address";
 import type { Person } from "~/schemas/catalogue";
@@ -88,7 +87,6 @@ export const meta: MetaFunction = args => {
     path: `/bards/${person.slug}`,
     type: "profile",
     robots: noPage ? "noindex, nofollow" : undefined,
-    structuredData: noPage ? undefined : personStructuredData(person),
   });
 };
 

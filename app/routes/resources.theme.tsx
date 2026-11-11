@@ -9,7 +9,7 @@ import { safeReturnTo } from "~/server/return-to.server";
 import { themeCookie } from "~/server/theme.server";
 
 /**
- * Saves the reader's theme choice (DESIGN §6.24). The no-JS form sends a
+ * Saves the reader's theme choice. The no-JS form sends a
  * `returnTo` and gets a 303 back to that page; the ThemeToggle's script
  * sends none and gets a proxy body (`{ok, data | error}`) as JSON.
  */

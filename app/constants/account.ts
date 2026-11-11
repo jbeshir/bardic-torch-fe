@@ -1,7 +1,7 @@
 import type { User } from "~/schemas/api";
 
 /**
- * Who is reading, as the root loader saw it (DESIGN §6.25). A failed
+ * Who is reading, as the root loader saw it. A failed
  * profile load never stops the page: the account control says so instead.
  */
 export type Account =
@@ -38,14 +38,4 @@ export const SETTINGS_PATH = "/settings";
 /** The `intent` field of each settings form. */
 export const SETTINGS_INTENT = {
   updateProfile: "update-profile",
-  createToken: "create-token",
-  revokeToken: "revoke-token",
 } as const;
-
-/** The proxy route that creates API tokens. */
-export const TOKENS_ACTION = "/api/tokens";
-
-/** The proxy route that revokes the API token `tokenId`. */
-export function tokenAction(tokenId: string): string {
-  return `${TOKENS_ACTION}/${encodeURIComponent(tokenId)}`;
-}

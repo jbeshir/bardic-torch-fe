@@ -10,8 +10,7 @@ import { personSummary } from "./persons";
 
 /**
  * The raw link records of the fixture catalogue, for pieces and for persons,
- * with their performances. A link belongs to one owner. Hidden links are in
- * here on purpose: they are never served.
+ * with their performances. A link belongs to one owner.
  */
 
 type Schemas = components["schemas"];
@@ -20,7 +19,7 @@ export type RawPerformance = Readonly<
   Omit<Schemas["PiecePerformance"], "event" | "performers"> & {
     /** An event or venue slug, or null. */
     event: string | null;
-    /** Person slugs; a no-page performer is dropped when served. */
+    /** Person slugs. */
     performers: readonly string[];
   }
 >;
@@ -32,28 +31,22 @@ interface LinkOwner {
 
 export type RawLink = Readonly<
   Omit<Schemas["PieceLink"], "collection" | "performances"> & {
-    id: number;
     owner: LinkOwner;
     /** A collection id, or null. */
     collection: number | null;
-    /** Hidden links are never served. */
-    hidden: boolean;
     performances: readonly RawPerformance[];
   }
 >;
 
-/** The marker in the hidden link's URL and title. */
-export const HIDDEN_LINK_MARKER = "HIDDEN-link";
 /** Where the restricted piece's links point (the e2e asserts none renders). */
-export const RESTRICTED_HOST = "private-recordings.example";
+const RESTRICTED_HOST = "private-recordings.example";
 
 function link(
   owner: LinkOwner,
   url: string,
-  overrides: Partial<Omit<RawLink, "id" | "owner" | "url">> = {}
+  overrides: Partial<Omit<RawLink, "owner" | "url">> = {}
 ): RawLink {
   return {
-    id: 0,
     owner,
     url,
     title: null,
@@ -66,7 +59,6 @@ function link(
     last_checked_at: null,
     archived_url: null,
     roles: ["other"],
-    hidden: false,
     performances: [],
     ...overrides,
   };
@@ -94,7 +86,7 @@ const CHECKED = "2026-10-01T09:30:00Z";
 
 const HAND_LINKS: readonly RawLink[] = [
   // The Copper Kettle: three roles, a collection locator, performances,
-  // a dead link with an archive and a hidden link.
+  // and a dead link with an archive.
   link(
     piece("the-copper-kettle"),
     "https://video.example/watch/kettle-hearth",
@@ -126,23 +118,6 @@ const HAND_LINKS: readonly RawLink[] = [
     last_checked_at: CHECKED,
     roles: ["lyrics", "sheet_music", "text"],
   }),
-  link(
-    piece("the-copper-kettle"),
-    `https://hidden.example/${HIDDEN_LINK_MARKER}-copper-kettle`,
-    {
-      title: `${HIDDEN_LINK_MARKER}-title`,
-      description: `${HIDDEN_LINK_MARKER}-description`,
-      liveness: "ok",
-      last_checked_at: CHECKED,
-      roles: ["text"],
-      hidden: true,
-      performances: [
-        performance(2024, `${HIDDEN_LINK_MARKER}-performance`, {
-          performers: ["wren-of-the-vale"],
-        }),
-      ],
-    }
-  ),
   link(piece("the-copper-kettle"), "https://old-archive.example/kettle.html", {
     title: "An old copy of the words",
     place_type: "community_archive",
@@ -186,7 +161,7 @@ const HAND_LINKS: readonly RawLink[] = [
         performance(2024, "Sung round the barony hall.", {
           uploader: "Ferrant of the Hall",
           event: "ashdown-twelfth-night",
-          performers: ["hollis-fenn", "aldith-of-ashdown"],
+          performers: ["aldith-of-ashdown"],
         }),
       ],
     }
@@ -280,7 +255,7 @@ const HAND_LINKS: readonly RawLink[] = [
     performances: [
       performance(2023, "Opened the revel.", {
         event: MIDWINTER_REVEL_SLUG,
-        performers: ["corwin-ashgrove"],
+        performers: [],
       }),
     ],
   }),
@@ -345,8 +320,5 @@ export function performanceSummary(
   };
 }
 
-/** Every link: the hand-written ones (ids 1 up), then the generated ones. */
-export const LINKS: readonly RawLink[] = [
-  ...HAND_LINKS.map((l, index) => ({ ...l, id: index + 1 })),
-  ...DRILL_LINKS,
-];
+/** Every link: the hand-written ones, then the generated ones. */
+export const LINKS: readonly RawLink[] = [...HAND_LINKS, ...DRILL_LINKS];

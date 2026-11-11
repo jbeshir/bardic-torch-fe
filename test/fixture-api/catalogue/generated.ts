@@ -10,17 +10,16 @@ import type { RawPiece } from "./pieces";
  * randomness and no clock, so two runs give identical records.
  */
 
-export const DRILL_COUNT = 205;
+const DRILL_COUNT = 205;
 /** The practice pieces with a performance at Muster Field. */
-export const DRILL_PERFORMANCE_COUNT = 202;
-export const DRILL_BARD_SLUG = "brannoc-the-drillmaster";
-const FIRST_LINK_ID = 10001;
+const DRILL_PERFORMANCE_COUNT = 202;
+const DRILL_BARD_SLUG = "brannoc-the-drillmaster";
 
 function pad(n: number): string {
   return String(n).padStart(3, "0");
 }
 
-export function generateDrillSongs(): {
+function generateDrillSongs(): {
   readonly pieces: readonly RawPiece[];
   readonly links: readonly RawLink[];
 } {
@@ -62,7 +61,6 @@ export function generateDrillSongs(): {
       conservation_history: [],
     });
     links.push({
-      id: FIRST_LINK_ID + n - 1,
       owner: { kind: "piece", slug },
       url: `https://drill.example/${pad(n)}`,
       title: `${title}, practice notes`,
@@ -75,7 +73,6 @@ export function generateDrillSongs(): {
       last_checked_at: null,
       archived_url: null,
       roles: ["text"],
-      hidden: false,
       performances:
         n <= DRILL_PERFORMANCE_COUNT
           ? [

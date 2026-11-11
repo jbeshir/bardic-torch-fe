@@ -64,11 +64,11 @@ function Chip({
   );
 }
 
-/** More chips than this collapse behind "Show all {n}" (DESIGN §6.12). */
+/** More chips than this collapse behind "Show all {n}". */
 const VISIBLE_CHIPS = 12;
 
 /**
- * Category and facet chips (DESIGN §6.12): a wrapping list of link chips.
+ * Category and facet chips: a wrapping list of link chips.
  * A chip to another site is marked as external. With no
  * tags it says so in a caption instead of leaving a gap.
  *

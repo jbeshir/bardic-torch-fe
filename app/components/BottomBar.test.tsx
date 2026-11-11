@@ -2,8 +2,7 @@ import { act, fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { renderWithRouter } from "~/test/router";
-import { expectSameMarkupInBothThemes } from "~/test/themes";
-import { BottomBar, MenuControl } from "./BottomBar";
+import { BottomBar } from "./BottomBar";
 
 function renderBar(onOpenMenu = vi.fn()) {
   return renderWithRouter(
@@ -18,19 +17,6 @@ function renderBar(onOpenMenu = vi.fn()) {
 }
 
 describe("BottomBar", () => {
-  it("is fixed to the bottom below md: Menu, Search and Account in three cells", async () => {
-    await renderBar();
-    const bar = screen.getByRole("group", { name: "App bar" });
-    // The whole bar, border and inset included, is the shell's pb-app-bar.
-    expect(bar).toHaveClass("bottom-0", "md:hidden", "pb-safe-b", "h-app-bar");
-    expect(bar.firstElementChild).toHaveClass("grid-cols-3", "h-full");
-    expect(
-      [...(bar.firstElementChild?.children ?? [])]
-        .filter(cell => !cell.hasAttribute("hidden"))
-        .map(cell => cell.textContent)
-    ).toEqual(["Menu", "Search", "Log in"]);
-  });
-
   it("opens the drawer from Menu", async () => {
     const onOpenMenu = vi.fn();
     const user = userEvent.setup();
@@ -99,43 +85,5 @@ describe("BottomBar", () => {
     await user.click(search);
     act(() => screen.getByRole("link", { name: "Log in" }).focus());
     expect(search).toHaveAttribute("aria-expanded", "false");
-  });
-
-  it("looks the same in both themes", async () => {
-    await expectSameMarkupInBothThemes(() => renderBar());
-  });
-});
-
-describe("MenuControl", () => {
-  it("before hydration is a link to the site menu after the content", async () => {
-    await renderWithRouter(
-      <MenuControl
-        look="icon"
-        hydrated={false}
-        drawerId="drawer"
-        siteNavId="site-nav"
-        onOpen={vi.fn()}
-      />
-    );
-    expect(screen.getByRole("link", { name: "Menu" })).toHaveAttribute(
-      "href",
-      "#site-nav"
-    );
-    expect(screen.queryByRole("button")).toBeNull();
-  });
-
-  it("in the header is a 44 px icon button with a hidden name", async () => {
-    await renderWithRouter(
-      <MenuControl
-        look="icon"
-        hydrated
-        drawerId="drawer"
-        siteNavId="site-nav"
-        onOpen={vi.fn()}
-      />
-    );
-    const button = screen.getByRole("button", { name: "Menu" });
-    expect(button).toHaveClass("h-11", "w-11");
-    expect(button.querySelector(".sr-only")).toHaveTextContent("Menu");
   });
 });

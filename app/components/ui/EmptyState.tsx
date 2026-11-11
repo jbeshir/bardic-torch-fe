@@ -2,7 +2,7 @@ import { useId, type ReactNode } from "react";
 import { UnlitMark } from "~/components/LogoMark";
 
 /**
- * "Nothing here yet" (DESIGN §6.15): the unlit torch, a heading, at most two
+ * "Nothing here yet": the unlit torch, a heading, at most two
  * sentences and one action, centred in its container. A plain section named
  * by its heading; it is not a live region.
  */

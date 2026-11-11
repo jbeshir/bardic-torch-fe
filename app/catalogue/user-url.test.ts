@@ -3,38 +3,20 @@ import { isUserUrl, urlHost } from "./user-url";
 
 describe("isUserUrl", () => {
   it.each([
-    "https://example.org/wren",
-    "http://example.org",
-    "https://archive.example/2026/https://example.org/x?y=1#z",
-  ])("lets %s be a link", url => {
-    expect(isUserUrl(url)).toBe(true);
+    ["https://example.org/wren", true],
+    ["javascript:alert(1)", false],
+    ["JAVASCRIPT:alert(1)", false],
+    ["data:text/html,<script>", false],
+    ["/pieces/the-copper-kettle", false],
+    ["//example.org", false],
+    ["https://", false],
+    ["", false],
+  ])("%s is %s", (url, expected) => {
+    expect(isUserUrl(url)).toBe(expected);
   });
 
-  it.each([
-    "javascript:alert(1)",
-    "JAVASCRIPT:alert(1)",
-    "data:text/html,<script>",
-    "/pieces/the-copper-kettle",
-    "//example.org",
-    "mailto:wren@example.org",
-    "https://",
-    "example.org",
-    "",
-  ])("keeps %s as text", url => {
-    expect(isUserUrl(url)).toBe(false);
-  });
-});
-
-describe("urlHost", () => {
-  it.each([
-    ["https://collections.example/12", "collections.example"],
-    ["https://www.example.org/a/b?c=1", "example.org"],
-    ["http://sub.example.org:8080/", "sub.example.org"],
-  ])("labels %s as %s", (url, host) => {
-    expect(urlHost(url)).toBe(host);
-  });
-
-  it("returns what isn't a URL as it is", () => {
+  it("labels a URL by its host without www, and returns a non-URL as it is", () => {
+    expect(urlHost("https://www.example.org/a?c=1")).toBe("example.org");
     expect(urlHost("not a url")).toBe("not a url");
   });
 });

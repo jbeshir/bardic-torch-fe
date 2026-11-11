@@ -1,7 +1,7 @@
 import { useRef, type RefObject } from "react";
 import { useBrowserLayoutEffect } from "./useBrowserLayoutEffect";
 
-/** The page can't scroll behind an open modal (DESIGN §6.21). */
+/** The page can't scroll behind an open modal. */
 const SCROLL_LOCK = "overflow-hidden";
 
 const FOCUSABLE =
@@ -18,7 +18,7 @@ function focusableIn(container: HTMLElement): HTMLElement[] {
  * Tab and Shift+Tab wrap around inside the dialog. A native modal already
  * makes the page inert, but Tab off its last control would still leave for
  * the browser's own UI; this keeps focus in the dialog, and also covers a
- * browser without `inert` (DESIGN §6.22).
+ * browser without `inert`.
  */
 function trapTab(dialog: HTMLDialogElement, event: KeyboardEvent) {
   if (event.key !== "Tab") return;
