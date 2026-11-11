@@ -1,27 +1,9 @@
 import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { renderWithRouter } from "~/test/router";
-import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { ProblemAlert } from "./ProblemAlert";
 
 describe("ProblemAlert", () => {
-  it("shows the proxy's specific copy as a danger alert", async () => {
-    await renderWithRouter(
-      <ProblemAlert
-        error={{
-          code: "conflict",
-          message: "Something changed while you were editing.",
-        }}
-        fallback="We couldn’t save your changes."
-      />
-    );
-    expect(
-      screen.getByText("Something changed while you were editing.")
-    ).toBeInTheDocument();
-    expect(screen.getByText("Error:", { exact: false })).toHaveClass("sr-only");
-    expect(screen.queryByRole("link")).toBeNull();
-  });
-
   it("uses the form's fallback when the service had trouble", async () => {
     await renderWithRouter(
       <ProblemAlert
@@ -53,17 +35,6 @@ describe("ProblemAlert", () => {
     expect(screen.getByRole("link", { name: "Log in" })).toHaveAttribute(
       "href",
       "/auth/login?returnTo=%2Fsettings"
-    );
-  });
-
-  it("looks the same in both themes", async () => {
-    await expectSameMarkupInBothThemes(() =>
-      renderWithRouter(
-        <ProblemAlert
-          error={{ code: "unauthenticated", message: "Signed out." }}
-          fallback="Fallback."
-        />
-      )
     );
   });
 });

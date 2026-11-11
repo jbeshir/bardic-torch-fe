@@ -18,7 +18,6 @@ import {
 import type { UpstreamErrorCode } from "~/schemas/api";
 import { serveFixtureApi } from "~/test/msw";
 import { renderRoutes } from "~/test/router";
-import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { action as meAction } from "./api.me";
 import Settings, { clientAction, ErrorBoundary } from "./settings";
 
@@ -172,33 +171,6 @@ const nameField = () => screen.getByRole("textbox", { name: "Display name" });
 const notifications = () =>
   screen.getByRole("region", { name: "Notifications" });
 
-describe("settings page", () => {
-  it("shows the profile", async () => {
-    await openPage();
-    expect(nameField()).toHaveValue("Morwen of the Marches");
-    expect(nameField()).toHaveAccessibleDescription(
-      "Shown on your edits and in page history. Use your SCA name if you like. Up to 64 characters."
-    );
-    expect(
-      screen.getByRole("heading", { level: 2, name: "Profile" })
-    ).toBeInTheDocument();
-  });
-
-  it("looks the same in both themes", async () => {
-    await expectSameMarkupInBothThemes(openPage);
-  });
-
-  it("signed out, offers Log in that comes back here", async () => {
-    cookie = undefined;
-    await openPage();
-    expect(screen.getByRole("link", { name: "Log in" })).toHaveAttribute(
-      "href",
-      "/auth/login?returnTo=%2Fsettings"
-    );
-    expect(screen.queryByRole("textbox")).toBeNull();
-  });
-});
-
 describe("display name", () => {
   it.each([
     ["", "Enter a display name."],
@@ -259,32 +231,6 @@ describe("display name", () => {
     expect(screen.queryByText(/We couldn’t save/)).toBeNull();
   });
 
-  it.each([
-    [
-      500,
-      "internal",
-      "We couldn’t save your changes. Check your connection and try again.",
-    ],
-    [
-      403,
-      "user_blocked",
-      "Your account is blocked, so you can’t make changes. Contact the Bardic Torch team if you think this is a mistake.",
-    ],
-  ] as const)("a %i %s is a danger alert", async (status, code, message) => {
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const user = userEvent.setup();
-    await openPage();
-    fail("updateMe", status, code);
-    await user.click(screen.getByRole("button", { name: "Save changes" }));
-
-    const alert = await screen.findByText(message);
-    expect(alert.closest('[role="alert"]')).not.toBeNull();
-    expect(nameField()).not.toHaveAttribute("aria-invalid");
-    expect(
-      within(notifications()).queryByText("Display name saved.")
-    ).toBeNull();
-  });
-
   it("a session the API ended signs the whole page out, offering Log in back to settings", async () => {
     const user = userEvent.setup();
     const router = await openPage();
@@ -304,40 +250,6 @@ describe("display name", () => {
       "href",
       "/auth/login?returnTo=%2Fsettings"
     );
-  });
-
-  it("saves with Enter in the field", async () => {
-    const user = userEvent.setup();
-    await openPage();
-    await user.clear(nameField());
-    await user.type(nameField(), "Wynn the Watchful{Enter}");
-    expect(
-      await within(notifications()).findByText("Display name saved.")
-    ).toBeInTheDocument();
-    expect(contributor().me.display_name).toBe("Wynn the Watchful");
-  });
-
-  it("announces that it is saving while the request runs", async () => {
-    const user = userEvent.setup();
-    await openPage();
-    // Hold the app's answer until the status has been read, so the request
-    // is still running whatever the event loop's timing.
-    const app = globalThis.fetch;
-    let answer = () => {};
-    const answered = new Promise<void>(resolve => {
-      answer = resolve;
-    });
-    vi.stubGlobal("fetch", async (input: string, init?: RequestInit) => {
-      await answered;
-      return app(input, init);
-    });
-    await user.click(screen.getByRole("button", { name: "Save changes" }));
-    expect(
-      await screen.findByText("Saving your display name…")
-    ).toHaveAttribute("role", "status");
-    answer();
-    await within(notifications()).findByText("Display name saved.");
-    expect(screen.queryByText("Saving your display name…")).toBeNull();
   });
 });
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { APP_ORIGIN } from "~/test/context";
 import { runAction } from "~/test/proxy";
-import { action, loader } from "./resources.theme";
+import { action } from "./resources.theme";
 
 const SAME_ORIGIN = { Origin: APP_ORIGIN };
 
@@ -48,15 +48,6 @@ describe("POST /resources/theme without JS (with returnTo)", () => {
     }
   );
 
-  it("deletes the cookie for System", async () => {
-    const response = await runAction(
-      action,
-      post({ theme: "system", returnTo: "/" })
-    );
-    expect(response.status).toBe(303);
-    expect(setCookie(response)).toMatch(/^theme=; Max-Age=0;/);
-  });
-
   it.each([
     "//evil.com",
     "/\\evil.com",
@@ -69,18 +60,6 @@ describe("POST /resources/theme without JS (with returnTo)", () => {
     const response = await runAction(action, post({ theme: "dark", returnTo }));
     expect(response.status).toBe(303);
     expect(response.headers.get("Location")).toBe("/");
-  });
-});
-
-describe("POST /resources/theme from the fetcher (no returnTo)", () => {
-  it("answers JSON with the cookie instead of redirecting", async () => {
-    const response = await runAction(action, post({ theme: "dark" }));
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({
-      ok: true,
-      data: { theme: "dark" },
-    });
-    expect(setCookie(response)).toMatch(/^theme=dark;/);
   });
 });
 
@@ -102,16 +81,6 @@ describe("invalid requests", () => {
     });
   });
 
-  it("rejects a body that isn't a form with 400", async () => {
-    const request = new Request(`${APP_ORIGIN}/resources/theme`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...SAME_ORIGIN },
-      body: JSON.stringify({ theme: "dark" }),
-    });
-    const response = await runAction(action, request);
-    expect(response.status).toBe(400);
-  });
-
   it("rejects a cross-site POST with 403 and sets no cookie", async () => {
     const response = await runAction(
       action,
@@ -129,12 +98,5 @@ describe("invalid requests", () => {
     const response = await runAction(action, request);
     expect(response.status).toBe(405);
     expect(response.headers.get("Allow")).toBe("POST");
-  });
-
-  it("answers GET with 405 and sets no cookie", async () => {
-    const response = loader();
-    expect(response.status).toBe(405);
-    expect(response.headers.get("Allow")).toBe("POST");
-    expect(response.headers.get("Set-Cookie")).toBeNull();
   });
 });

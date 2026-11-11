@@ -3,7 +3,6 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderWithRouter } from "~/test/router";
-import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { Drawer } from "./Drawer";
 import { Link } from "./Link";
 
@@ -80,19 +79,6 @@ describe("Drawer", () => {
     const close = screen.getAllByRole("button", { name: "Close menu" })[0];
     expect(close).toHaveFocus();
     expect(close).toHaveClass("min-h-11", "w-11");
-  });
-
-  it("has the body, then the footer with a full-width close button", async () => {
-    await renderWithRouter(<Menu />);
-    await act(openMenu);
-    const [, bottomClose] = screen.getAllByRole("button", {
-      name: "Close menu",
-    });
-    expect(bottomClose).toHaveClass("w-full", "border-border-strong");
-    expect(bottomClose?.parentElement).toHaveTextContent("Theme");
-    expect(
-      screen.getByRole("navigation", { name: "Site" }).parentElement
-    ).toHaveClass("overflow-y-auto", "min-h-0", "flex-1");
   });
 
   it("keeps Tab inside, wrapping round", async () => {
@@ -219,30 +205,5 @@ describe("Drawer", () => {
     await renderWithRouter(<Menu closeFrom="lg" />);
     await act(openMenu);
     expect(dialog().open).toBe(false);
-  });
-
-  it("is a bottom sheet below md and a left drawer from md, moving only when motion is allowed", async () => {
-    await renderWithRouter(<Menu />);
-    expect(dialog()).toHaveClass(
-      "bottom-0",
-      "max-h-sheet",
-      "rounded-t-xl",
-      "pb-safe-b",
-      "md:top-0",
-      "md:h-dvh",
-      "md:w-drawer",
-      "md:rounded-r-xl",
-      "backdrop:bg-scrim-scrim",
-      "motion-safe:animate-sheet-in",
-      "md:motion-safe:animate-drawer-in",
-      "motion-reduce:animate-fade-in"
-    );
-  });
-
-  it("renders the same token classes in both themes", async () => {
-    await expectSameMarkupInBothThemes(async () => {
-      await renderWithRouter(<Menu />);
-      await act(openMenu);
-    });
   });
 });

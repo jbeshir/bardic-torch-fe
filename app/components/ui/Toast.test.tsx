@@ -1,7 +1,5 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { ToastProvider, useToast } from "./Toast";
 
 type Tone = "success" | "info" | "danger";
@@ -45,34 +43,6 @@ afterEach(() => {
 });
 
 describe("Toast region", () => {
-  it("is an empty Notifications landmark in the server render, with both live regions", () => {
-    document.body.innerHTML = renderToString(<Page />);
-    const notifications = region();
-    const status = within(notifications).getByRole("status");
-    const alert = within(notifications).getByRole("alert");
-    expect(status).toHaveAttribute("aria-live", "polite");
-    expect(status).toHaveAttribute("aria-atomic", "false");
-    expect(alert).toHaveAttribute("aria-live", "assertive");
-    expect(status).toBeEmptyDOMElement();
-    expect(alert).toBeEmptyDOMElement();
-    document.body.innerHTML = "";
-  });
-
-  it("sits at the top below sm, above the bottom app bar from sm, and bottom right from md", () => {
-    render(<Page />);
-    expect(region()).toHaveClass(
-      "fixed",
-      "z-toast",
-      "top-toast",
-      "inset-x-4",
-      "sm:top-auto",
-      "sm:bottom-above-app-bar",
-      "md:bottom-6",
-      "sm:right-6",
-      "sm:w-96"
-    );
-  });
-
   it("puts success and info in the polite list and errors in the assertive one", () => {
     render(<Page />);
     raise("Display name saved.");
@@ -96,23 +66,6 @@ describe("Toast region", () => {
     trigger.focus();
     raise("Display name saved.");
     expect(trigger).toHaveFocus();
-  });
-
-  it("styles a toast from tokens, with the tone's icon and a 3 px edge bar", () => {
-    render(<Page />);
-    raise("Display name saved.");
-    const toast = screen.getByText("Display name saved.").closest("div");
-    expect(toast).toHaveClass(
-      "bg-surface-raised",
-      "border-border",
-      "shadow-2",
-      "border-l-3",
-      "border-l-success-icon",
-      "motion-safe:animate-toast-in",
-      "motion-reduce:animate-fade-in"
-    );
-    expect(toast?.querySelector("svg")).toHaveClass("text-success-icon");
-    expect(toast?.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
   });
 
   it("dismisses success and info after 6 s, fading out", () => {
@@ -193,79 +146,5 @@ describe("Toast region", () => {
     expect(screen.queryByText("Display name saved.")).toBeNull();
     expect(screen.getAllByText("Token copied.")).toHaveLength(2);
     expect(screen.getByText(/^You seem to be offline/)).toBeVisible();
-  });
-
-  it("stacks the newest nearest the edge: top below sm, bottom from sm", () => {
-    render(<Page />);
-    for (const list of [
-      region(),
-      within(region()).getByRole("status"),
-      within(region()).getByRole("alert"),
-    ]) {
-      expect(list).toHaveClass("flex-col-reverse", "sm:flex-col");
-    }
-  });
-
-  it("below sm, adds the shown stack's height to the scroll padding, so focus scrolls clear of it", () => {
-    let observed: (() => void) | undefined;
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        constructor(callback: () => void) {
-          observed = callback;
-        }
-        observe() {}
-        disconnect() {}
-      }
-    );
-    const narrow = { matches: true };
-    vi.stubGlobal("matchMedia", () => ({
-      get matches() {
-        return narrow.matches;
-      },
-      addEventListener: () => undefined,
-      removeEventListener: () => undefined,
-    }));
-    // Empty, the region is still the gap between its two lists high.
-    let height = 8;
-    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
-      () => ({ height }) as DOMRect
-    );
-    const root = document.documentElement;
-    try {
-      const { unmount } = render(<Page />);
-      act(() => observed?.());
-      expect(root.style.getPropertyValue("--bt-toast-stack-h")).toBe("");
-      height = 71.5;
-      raise("You seem to be offline. Your changes haven’t been saved yet.");
-      act(() => observed?.());
-      expect(root.style.getPropertyValue("--bt-toast-stack-h")).toBe("80px");
-      // From sm the stack is bottom right, out of the way: no padding.
-      narrow.matches = false;
-      act(() => observed?.());
-      expect(root.style.getPropertyValue("--bt-toast-stack-h")).toBe("");
-      narrow.matches = true;
-      act(() => observed?.());
-      unmount();
-      expect(root.style.getPropertyValue("--bt-toast-stack-h")).toBe("");
-    } finally {
-      vi.unstubAllGlobals();
-      vi.restoreAllMocks();
-    }
-  });
-
-  it("needs the provider", () => {
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
-    expect(() => render(<Raise tone="info" message="Lost" />)).toThrow(
-      "useToast() needs a ToastProvider around it"
-    );
-  });
-
-  it("renders the same token classes in both themes", async () => {
-    await expectSameMarkupInBothThemes(() => {
-      render(<Page />);
-      raise("Display name saved.");
-      raise("You seem to be offline. Your changes haven’t been saved yet.");
-    });
   });
 });

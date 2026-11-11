@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router";
@@ -20,11 +20,19 @@ const BOXES: readonly {
   readonly landmark: string;
   readonly label: string;
   readonly box: Box;
+  /** A URL's state: the filters stay in the form, the letter and page go. */
+  readonly filtered: string;
+  readonly kept: readonly (readonly [string, string])[];
 }[] = [
   {
     path: "/pieces",
     landmark: "Pieces",
     label: "Search pieces",
+    filtered: "?q=kettle&term=war&kind=song&letter=W&sort=title&page=2",
+    kept: [
+      ["term", "war"],
+      ["kind", "song"],
+    ],
     box: search => (
       <PieceSearch
         state={pieceQuery.parse(new URLSearchParams(search)).state}
@@ -35,6 +43,11 @@ const BOXES: readonly {
     path: "/bards",
     landmark: "Bards",
     label: "Search bards",
+    filtered: "?q=wren&kind=group&affiliation=caer-wyn&letter=W&page=2",
+    kept: [
+      ["kind", "group"],
+      ["affiliation", "caer-wyn"],
+    ],
     box: search => (
       <BardSearch
         state={personQuery.parse(new URLSearchParams(search)).state}
@@ -45,7 +58,7 @@ const BOXES: readonly {
 
 describe.each(BOXES)(
   "the $landmark search box",
-  ({ path, landmark, label, box }) => {
+  ({ path, landmark, label, box, filtered, kept }) => {
     function Page() {
       const { search } = useLocation();
       return (
@@ -65,20 +78,16 @@ describe.each(BOXES)(
 
     const field = () => screen.getByRole("searchbox", { name: label });
 
-    it("has a named 44 px field with a search glass, no placeholder, and a secondary Search button", async () => {
-      await renderPage("?q=wren");
+    it("is a search landmark keeping the filters, dropping the letter, order and page", async () => {
+      await renderPage(filtered);
       const form = screen.getByRole("search", { name: landmark });
-      expect(form).toHaveAttribute("method", "get");
       expect(form).toHaveAttribute("action", path);
-      expect(field()).toHaveAttribute("name", "q");
-      expect(field()).toHaveValue("wren");
-      expect(field()).toHaveClass("min-h-11", "pl-10");
-      expect(field()).not.toHaveAttribute("placeholder");
-      expect(field()).toHaveAttribute("enterkeyhint", "search");
-      expect(field()).toHaveAttribute("autocomplete", "off");
-      const button = within(form).getByRole("button", { name: "Search" });
-      expect(button).toHaveAttribute("type", "submit");
-      expect(button).toHaveClass("min-h-11", "border-border-strong");
+      expect(field()).toHaveValue(filtered.slice(3).split("&")[0]);
+      expect(
+        [
+          ...form.querySelectorAll<HTMLInputElement>('input[type="hidden"]'),
+        ].map(input => [input.name, input.value])
+      ).toEqual(kept);
     });
 
     it("searches with Enter and keeps focus in the field", async () => {

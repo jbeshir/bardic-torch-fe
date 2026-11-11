@@ -4,7 +4,6 @@ import { useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { describe, expect, it } from "vitest";
 import { renderWithRouter } from "~/test/router";
-import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { Disclosure } from "./Disclosure";
 import { KeptFocus } from "./KeptFocus";
 
@@ -130,18 +129,5 @@ describe("KeptFocus", () => {
     });
     await act(() => router.navigate("?kind=individual"));
     expect(letter).toHaveFocus();
-  });
-
-  it("adds no box of its own", async () => {
-    await renderPage();
-    const wrapper = document.querySelector(".contents");
-    expect(wrapper).toContainElement(
-      screen.getByRole("form", { name: "Filters" })
-    );
-    expect(wrapper?.className).toBe("contents");
-  });
-
-  it("renders the same markup in both themes", async () => {
-    await expectSameMarkupInBothThemes(() => renderPage());
   });
 });

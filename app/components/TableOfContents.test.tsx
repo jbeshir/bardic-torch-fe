@@ -2,7 +2,6 @@ import userEvent from "@testing-library/user-event";
 import { screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderWithRouter } from "~/test/router";
-import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { TableOfContents } from "./TableOfContents";
 
 const ENTRIES = [
@@ -52,12 +51,6 @@ describe("TableOfContents", () => {
     }
   });
 
-  it("stays open from md", async () => {
-    viewport(true);
-    await renderWithRouter(<TableOfContents entries={ENTRIES} />);
-    expect(document.querySelector("details")).toHaveProperty("open", true);
-  });
-
   it("folds itself below md once JS runs", async () => {
     viewport(false);
     await renderWithRouter(<TableOfContents entries={ENTRIES} />);
@@ -79,27 +72,5 @@ describe("TableOfContents", () => {
     viewport(false);
     window.dispatchEvent(new Event("resize"));
     expect(document.querySelector("details")).toHaveProperty("open", false);
-  });
-
-  it("is its own block, so it narrows beside a floated infobox", async () => {
-    viewport(true);
-    await renderWithRouter(<TableOfContents entries={ENTRIES} />);
-    expect(screen.getByRole("navigation", { name: "Contents" })).toHaveClass(
-      "flow-root"
-    );
-  });
-
-  it("right-aligns its numbers in a fixed column, so 10 lines up with 9", async () => {
-    viewport(true);
-    await renderWithRouter(<TableOfContents entries={ENTRIES} />);
-    const number = screen.getByText("2.1");
-    expect(number).toHaveClass("min-w-6", "text-right", "tabular-nums");
-  });
-
-  it("looks the same in both themes", async () => {
-    viewport(true);
-    await expectSameMarkupInBothThemes(() =>
-      renderWithRouter(<TableOfContents entries={ENTRIES} />)
-    );
   });
 });

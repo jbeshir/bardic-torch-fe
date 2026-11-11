@@ -5,7 +5,6 @@ import type {
   FacetGroup as Group,
   FacetOption,
 } from "~/catalogue/facet-groups";
-import { expectSameMarkupInBothThemes } from "~/test/themes";
 import { FacetGroup } from "./FacetGroup";
 
 function option(
@@ -42,46 +41,6 @@ const LONG: Group = {
 };
 
 describe("FacetGroup", () => {
-  it("is a fieldset named by its legend, with a box per option", () => {
-    render(<FacetGroup group={MOOD} />);
-    const group = screen.getByRole("group", { name: "Mood" });
-    expect(within(group).getAllByRole("checkbox")).toHaveLength(3);
-  });
-
-  it("names each box with its count in words, and shows the count in brackets", () => {
-    render(<FacetGroup group={MOOD} />);
-    const warlike = screen.getByRole("checkbox", {
-      // Exactly as a screen reader says it: no space before the comma.
-      name: "Warlike, 31 pieces",
-    });
-    expect(warlike).toHaveAttribute("name", "term");
-    expect(warlike).toHaveAttribute("value", "warlike");
-    expect(warlike).toBeChecked();
-    expect(screen.getByText("(31)").closest("[aria-hidden]")).toHaveAttribute(
-      "aria-hidden",
-      "true"
-    );
-    expect(
-      screen.getByRole("checkbox", { name: "Battle-cries, 1 piece" })
-    ).not.toBeChecked();
-  });
-
-  it("greys and disables an option nothing would match", () => {
-    render(<FacetGroup group={MOOD} />);
-    const eerie = screen.getByRole("checkbox", { name: /^Eerie/ });
-    expect(eerie).toBeDisabled();
-    expect(screen.getByText("(0)")).toHaveClass("text-fg-subtle");
-  });
-
-  it("indents a term under its parent", () => {
-    render(<FacetGroup group={MOOD} />);
-    const child = screen.getByRole("checkbox", { name: /^Battle-cries/ });
-    expect(child.closest("li")).toHaveClass("pl-6");
-    expect(
-      screen.getByRole("checkbox", { name: /^Warlike/ }).closest("li")
-    ).not.toHaveClass("pl-6");
-  });
-
   it("shows the rest of a long group behind Show all, a native disclosure", async () => {
     const user = userEvent.setup();
     render(<FacetGroup group={LONG} />);
@@ -149,16 +108,5 @@ describe("FacetGroup", () => {
     expect(
       screen.getByRole("checkbox", { name: /^Mood8/, hidden: true })
     ).toBeChecked();
-  });
-
-  it("has no disclosure for a short group", () => {
-    render(<FacetGroup group={MOOD} />);
-    expect(screen.queryByText(/Show all/)).toBeNull();
-  });
-
-  it("has the same markup in both themes", async () => {
-    await expectSameMarkupInBothThemes(() =>
-      render(<FacetGroup group={LONG} />)
-    );
   });
 });

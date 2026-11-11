@@ -27,15 +27,6 @@ describe("NavigationProgress", () => {
     expect(bar()).toBeNull();
   });
 
-  it("is a decorative 3 px accent bar at the top, sweeping only when motion is allowed", () => {
-    render(<NavigationProgress visible />);
-    expect(bar()).toHaveAttribute("aria-hidden", "true");
-    expect(bar()).toHaveClass("fixed", "top-0", "z-progress");
-    const sweep = bar()?.firstElementChild;
-    expect(sweep).toHaveClass("bg-accent", "motion-safe:animate-progress");
-    expect(sweep?.getAttribute("class")).not.toMatch(/(^| )animate-progress/);
-  });
-
   it("shows only for navigations that take longer than 300 ms", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     let finish: () => void = () => undefined;

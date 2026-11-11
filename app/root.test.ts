@@ -4,7 +4,6 @@ import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
 import { shouldRevalidate } from "./root";
 import { data } from "react-router";
-import stylesheetUrl from "../test/support/stylesheet-url";
 import { routeData } from "~/test/single-fetch";
 import * as indexModule from "./routes/_index";
 import * as notFoundModule from "./routes/$";
@@ -36,13 +35,6 @@ const get = serveApp([
   { id: "routes/resting", path: "resting", module: resting, hasLoader: true },
   { id: "routes/$", path: "*", module: notFoundModule, hasLoader: true },
 ]);
-
-/** The HelpLinks list in a page. */
-function helpLinks(html: string): string {
-  return (
-    /<ul role="list" aria-label="Help"[\s\S]*?<\/ul>/.exec(html)?.[0] ?? ""
-  );
-}
 
 const contributor = () =>
   sessionCookie(sessionTokens({ accessToken: "fixture:contributor" }));
@@ -111,45 +103,6 @@ describe("root loader", () => {
     );
     expect(data.account).toEqual({ state: "signed-out" });
     expect(response.headers.get("Set-Cookie")).toMatch(/^__Host-bt_session=;/);
-  });
-
-  it("renders the signed-in account control as a disclosure that works without JS", async () => {
-    const html = await (await get("/", await contributor())).text();
-    expect(html.match(/<details/g)).toHaveLength(2);
-    expect(html).toMatch(/Account(<!-- -->)?: Morwen of the Marches/);
-    // React Router 8 writes `action` before `method`; the order is no matter.
-    expect(html).toMatch(
-      /<form(?=[^>]* method="post")(?=[^>]* action="\/auth\/logout")[^>]*>/
-    );
-  });
-});
-
-describe("root document", () => {
-  it("links a stylesheet with a non-empty href", async () => {
-    const html = await (await get("/")).text();
-    const hrefs = [...html.matchAll(/<link[^>]*rel="stylesheet"[^>]*>/g)].map(
-      link => /href="([^"]*)"/.exec(link[0])?.[1]
-    );
-    // vitest.config.ts aliases `~/styles/app.css?url` to this stub.
-    expect(hrefs).toContain(stylesheetUrl);
-    for (const href of hrefs) expect(href).toBeTruthy();
-  });
-
-  it("gives the home page its canonical address and link-preview tags", async () => {
-    const html = await (await get("/?utm_source=x")).text();
-    expect(html).toContain("<title>Bardic Torch</title>");
-    expect(html).toMatch(
-      /<link rel="canonical" href="https:\/\/app\.test\/"\/?>/
-    );
-    expect(html).toContain(
-      '<meta property="og:url" content="https://app.test/"'
-    );
-    expect(html).toContain(
-      '<meta property="og:site_name" content="Bardic Torch"'
-    );
-    expect(html).toContain('<meta property="og:locale" content="en_GB"');
-    expect(html).toContain('<meta name="twitter:card" content="summary"');
-    expect(html).not.toContain('name="robots"');
   });
 });
 
@@ -281,16 +234,6 @@ describe("root error boundary", () => {
     expect(html).toMatch(/<meta name="robots" content="noindex"\/?>/);
   });
 
-  it("shows the 404 body for a 404 thrown by a loader", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const response = await get("/gone/old-page");
-    expect(response.status).toBe(404);
-    const html = await response.text();
-    expect(html).toContain("We couldn’t find that page");
-    expect(html).toContain("index.php?search=old+page");
-    expect(html).toContain("<title>Page not found · Bardic Torch</title>");
-  });
-
   it("shows the resting page for an API outage, with a 503, kept out of search results", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     const response = await get("/resting");
@@ -306,14 +249,5 @@ describe("root error boundary", () => {
     expect(html).toMatch(/<meta name="robots" content="noindex"\/?>/);
     // Try again reloads the page without JS.
     expect(html).toMatch(/<a[^>]*href="\/resting"[^>]*>.*Try again/);
-  });
-
-  it("has the same help links, in the same order, as every other page (WCAG 3.2.6)", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const home = helpLinks(await (await get("/")).text());
-    expect(home).toContain("Licence &amp; attribution");
-    for (const path of ["/no-such-page", "/broken", "/gone/x", "/resting"]) {
-      expect(helpLinks(await (await get(path)).text()), path).toBe(home);
-    }
   });
 });

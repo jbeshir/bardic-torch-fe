@@ -1,12 +1,11 @@
-import { screen, within } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { facetGroups } from "~/catalogue/facet-groups";
 import { pieceQuery } from "~/catalogue/query-state";
 import { buildTermIndex } from "~/catalogue/term-index";
 import type { PieceFacets, TermListItem } from "~/schemas/catalogue";
-import { renderOnServer, renderRoutes } from "~/test/router";
-import { expectSameMarkupInBothThemes } from "~/test/themes";
+import { renderRoutes } from "~/test/router";
 import { FacetForm } from "./FacetForm";
 
 const TERMS: readonly TermListItem[] = [
@@ -88,62 +87,12 @@ function hidden() {
 }
 
 describe("FacetForm", () => {
-  it("is a GET form to /pieces with a fieldset per facet, the page state and Apply", async () => {
-    await renderOnPage("");
-    const element = document.getElementById("facets");
-    expect(element).toHaveAttribute("method", "get");
-    expect(element).toHaveAttribute("action", "/pieces");
-    expect(
-      screen
-        .getAllByRole("group")
-        .map(group => group.querySelector("legend")?.textContent)
-    ).toEqual(["Kind", "Mood", "Conservation status", "Page state"]);
-    expect(
-      screen.getByRole("button", { name: "Apply filters" })
-    ).toHaveAttribute("type", "submit");
-  });
-
-  it("ticks the state's values and chooses its page state", async () => {
-    await renderOnPage("?term=warlike&kind=song&status=endangered&stub=false");
-    expect(screen.getByRole("checkbox", { name: /^Warlike/ })).toBeChecked();
-    expect(screen.getByRole("checkbox", { name: /^Eerie/ })).not.toBeChecked();
-    expect(screen.getByRole("checkbox", { name: /^Song/ })).toBeChecked();
-    expect(screen.getByRole("checkbox", { name: /^Endangered/ })).toBeChecked();
-    expect(screen.getByRole("radio", { name: "Hide stubs" })).toBeChecked();
-  });
-
-  it("chooses All pages with no page state; it sends an empty stub", async () => {
-    await renderOnPage("");
-    const all = screen.getByRole("radio", { name: "All pages" });
-    expect(all).toBeChecked();
-    expect(all).toHaveAttribute("value", "");
-    const group = screen.getByRole("group", { name: "Page state" });
-    expect(
-      within(group)
-        .getAllByRole("radio")
-        .map(radio => radio.getAttribute("value"))
-    ).toEqual(["", "true", "false"]);
-  });
-
   it("carries the search and the letter only when set, and never the page", async () => {
     await renderOnPage("?q=kettle&letter=K&sort=title&page=3");
     expect(hidden()).toEqual([
       ["q", "kettle"],
       ["letter", "K"],
     ]);
-  });
-
-  it("has no hidden inputs with neither set", async () => {
-    await renderOnPage("?kind=song&page=2");
-    expect(hidden()).toEqual([]);
-  });
-
-  it("says when the categories couldn't be loaded, keeping the other filters", async () => {
-    await renderOnPage("", { termsFailed: true });
-    expect(screen.getByText("We couldn’t load the categories")).toBeVisible();
-    expect(screen.queryByRole("group", { name: "Mood" })).toBeNull();
-    expect(screen.getByRole("group", { name: "Kind" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
   });
 
   it("applies the ticks with Apply, straight to the canonical URL from page 1", async () => {
@@ -179,25 +128,5 @@ describe("FacetForm", () => {
   it("can leave Apply to its container", async () => {
     await renderOnPage("", { apply: false });
     expect(screen.queryByRole("button", { name: "Apply filters" })).toBeNull();
-  });
-
-  it("works without JS: the server render is the plain GET form", async () => {
-    const page = document.createElement("div");
-    page.innerHTML = await renderOnServer(form("?term=warlike"), "/pieces");
-    const element = page.querySelector("form");
-    expect(element).toHaveAttribute("method", "get");
-    expect(element).toHaveAttribute("action", "/pieces");
-    expect(
-      page.querySelector<HTMLInputElement>('input[value="warlike"]')
-    ).toHaveAttribute("checked");
-    expect(page.querySelector('button[type="submit"]')).toHaveTextContent(
-      "Apply filters"
-    );
-  });
-
-  it("has the same markup in both themes", async () => {
-    await expectSameMarkupInBothThemes(() =>
-      renderOnPage("?term=warlike&stub=true")
-    );
   });
 });

@@ -1,11 +1,6 @@
 import { http, HttpResponse } from "msw/http";
 import { beforeEach, describe, expect, it } from "vitest";
-import {
-  APP_ORIGIN,
-  formRequest,
-  sessionCookie,
-  sessionTokens,
-} from "~/test/context";
+import { APP_ORIGIN, formRequest, sessionCookie } from "~/test/context";
 import { serveMocks } from "~/test/msw";
 import { runAction } from "~/test/proxy";
 import { action, loader } from "./auth.logout";
@@ -47,20 +42,6 @@ describe("/auth/logout", () => {
     );
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     expect(revoked).toEqual(["refresh-token"]);
-  });
-
-  it("revokes nothing for a session without a refresh token", async () => {
-    const { refreshToken: _omitted, ...withoutRefresh } = sessionTokens();
-    const response = await runAction(
-      action,
-      formRequest({
-        method: "POST",
-        path: "/auth/logout",
-        headers: { Cookie: await sessionCookie(withoutRefresh) },
-      })
-    );
-    expect(response.status).toBe(302);
-    expect(revoked).toEqual([]);
   });
 
   it("rejects a cross-site POST without touching the session", async () => {

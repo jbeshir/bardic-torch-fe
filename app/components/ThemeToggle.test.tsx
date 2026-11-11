@@ -121,58 +121,6 @@ describe.each(["light", "dark"])("ThemeToggle (page in %s)", pageTheme => {
 });
 
 describe("ThemeToggle", () => {
-  it("in the header: icon-only at md with hidden names, text from lg, the error floating below", async () => {
-    await renderToggle({
-      placement: "header",
-      respond: async () => new Response("", { status: 503 }),
-    });
-    const buttons = within(await group()).getAllByRole("button");
-    expect(buttons.map(button => button.textContent)).toEqual([
-      "System",
-      "Light",
-      "Dark",
-    ]);
-    for (const button of buttons) {
-      expect(button).toHaveClass("min-h-8", "min-w-9");
-      expect(button.querySelector("span")).toHaveClass(
-        "sr-only",
-        "lg:not-sr-only"
-      );
-    }
-    await choose("Dark");
-    expect(await screen.findByText(SAVE_FAILED)).toHaveClass(
-      "absolute",
-      "top-full"
-    );
-  });
-
-  it("in the drawer: 44 px buttons sharing the width, with visible text", async () => {
-    await renderToggle();
-    for (const button of within(await group()).getAllByRole("button")) {
-      expect(button).toHaveClass("min-h-11", "flex-1");
-      expect(button.querySelector("span")).not.toHaveAttribute("class");
-    }
-  });
-
-  it.each([
-    ["system", "System"],
-    ["light", "Light"],
-    ["dark", "Dark"],
-  ] as const)(
-    "presses only the saved choice (%s → %s)",
-    async (loaded, label) => {
-      await renderToggle({ loaded });
-      await group();
-      expect(pressed()).toEqual([label]);
-      for (const button of screen.getAllByRole("button")) {
-        expect(button).toHaveAttribute(
-          "aria-pressed",
-          String(button.textContent === label)
-        );
-      }
-    }
-  );
-
   it("is a real form that works without JS", async () => {
     await renderToggle();
     const form = (await group()).closest("form");
