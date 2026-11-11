@@ -6,90 +6,40 @@ Read [README.md](README.md) first for the concepts. The visual rules are in [doc
 
 1. **Fix problems; never suppress them.** No `eslint-disable`, `@ts-ignore`, `@ts-expect-error`, `@ts-nocheck` or `prettier-ignore`. No new exclusions in the eslint, tsconfig, prettier, vitest or knip configs. (The one entry in `.prettierignore` is the vendored `api/openapi.yaml`.)
 2. **Pin dependencies exactly.** Use `npm install --save-exact`, and commit `package-lock.json`. `npm ci` must work from a clean checkout. A package held below npm's `latest` needs a reason in the README ("Versions held back").
-3. **Colour comes from tokens only.** No raw colours outside `app/styles/tokens.ts` and the files that mirror it (`tokens.css`, `theme-colour.ts`, the favicon, the manifest). No Tailwind `dark:` and no arbitrary `[...]` values: add a named token or `@utility` instead (written by hand in `app/styles/tokens.css`). Every style must work in light and dark.
-4. **No dead code.** No unused exports or re-exports, no TODO/FIXME, no half-wired features and no disabled placeholder UI. Every export is used by app code, not only by tests: `knip` and `knip --production` (`check:unused`) fail on any unused file (stylesheets and scripts included), export or dependency, and on an export only tests use; `test/component-usage.test.ts` double-checks app modules, and holds route modules, the root and the server entry, whose exports knip doesn't check, to the names React Router reads. Names make sense from the current code alone. Data is immutable: readonly types (props too: `test/readonly-props.test.ts`), and never mutate props or loader data.
+3. **Colour comes from tokens only.** No raw colours outside `app/styles/tokens.ts` and the files that mirror it (`tokens.css`, hand-written; `theme-colour.ts`; the favicon; the manifest). No Tailwind `dark:` and no arbitrary `[...]` values: add a named token or `@utility` in `tokens.css` instead. Every style must work in light and dark.
+4. **No dead code.** No unused exports or re-exports, no TODO/FIXME, no half-wired features and no disabled placeholder UI. Every export is used by app code, not only by tests: `knip` (`check:unused`) fails on any unused file, export or dependency. Names make sense from the current code alone. Data is immutable: readonly types, and never mutate props or loader data.
 5. **Every API interaction has visible, meaningful error handling** in the UI. The API's `message` is not for display, so map its `code` (and status) to our own copy in `app/server/api.server.ts`.
-6. **The API contract is vendored.** Never edit `api/openapi.yaml`. Update it with `npm run sync:api -- <path|url>`, which also regenerates `app/api/schema.gen.ts`, then fix the zod schemas and fixtures until `validate` passes.
+6. **The API contract is vendored.** Never edit `api/openapi.yaml`. Update it with `npm run sync:api -- <path|url>`, which also regenerates `app/api/schema.gen.ts`, then fix the types and fixtures until `validate` passes.
 7. **The browser never calls the API directly.** Reads happen in loaders. Writes go through the form-encoded `/api/*` proxy routes, which call `assertSameOrigin`. The browser sends them with `sendForm` (`app/client/send-form.ts`): from a UI route's `clientAction` (Settings) or a plain `fetch` (the theme toggle), never a React Router fetcher aimed straight at a resource route, whose failed requests (a platform 503, no network) React Router throws to an error boundary instead of the form.
 8. **Stub sign-in never reaches a real deployment.** It is reached only through `__STUB_AUTH__` inside `/auth/login`. Don't import `stub-auth.server.ts` anywhere else; `check:prod-build` enforces this.
 9. **WCAG 2.2 AA.** Use semantic HTML and correct ARIA. Everything must be keyboard operable, focus must be visible and never hidden, targets must be at least 24 px (44 px for the primary controls on mobile), and pages must reflow at 320 px.
 10. **Copy.** British spelling, sentence-case labels. **Links only, never lyrics.**
 11. **Privacy.** The repository is public. Never commit anyone's legal name or raw data from the old wiki's dump. Fixture users have invented stage names only.
 12. **Licence.** Help content adapted from the old wiki is CC BY-SA 4.0, and must stay attributed to its contributors (see `/help/licence`).
-13. **Tests come with the change** (vitest + testing-library):
-    - every component, in all its states, in both themes, with the keyboard;
-    - every loader and action, against msw;
-    - every helper.
-
-    New pages and states also get e2e checkpoints (see docs/TESTING.md).
-
-14. **The config files stay loadable by Node.** `vite.config.ts`, `vitest.config.ts` and everything they import use `.ts` import specifiers and relative paths (no `~/` alias), and only erasable TypeScript (no enums or parameter properties), so Vite's native config loader raises no warning (`test/config-imports.test.ts`).
+13. **Tests are proportionate** (docs/TESTING.md): component tests for components with behaviour; loaders and actions against msw with the canned, spec-checked fixture API; the server-render smoke table (one row per page); and the short e2e suite (journeys, axe once per template in the default theme, one 360 px reflow check). Screenshots are on demand: `npm run screenshots`.
+14. **The config files stay loadable by Node.** `vite.config.ts`, `vitest.config.ts` and everything they import use `.ts` import specifiers and relative paths (no `~/` alias), and only erasable TypeScript (no enums or parameter properties), so Vite's native config loader raises no warning .
 
 ## Validation
 
-Run these automated checks before every commit:
+`npm run validate` runs before every commit: `check:types` (the committed `Env` matches `wrangler.jsonc`), `gen:types` (React Router's route types), `format:check`, `lint`, `tsc`, `check:unused` (knip), `check:api` (generated types fresh), `check:contrast` (the contrast table in DESIGN), `test:run` (vitest) and `check:prod-build` (production and preview builds contain no stub sign-in; indexing is on only in production).
 
-- `npm run validate` runs, in order: `check:types` (the committed `Env` in `worker-configuration.d.ts` matches `wrangler.jsonc`), `gen:types` (React Router's route types, which lint and `tsc` read), `format:check`, `lint`, `tsc` (what `npm run typecheck` runs after its own `gen:types`), `check:unused` (knip: no unused files, exports or dependencies), `check:api` (generated types fresh), `check:contrast` (every contrast pair in DESIGN), `test:run` (all vitest: unit, contract and repo scans) and `check:prod-build` (production and preview builds contain no stub sign-in; the styleguide only in preview; indexing, the `__INDEXABLE__` flag, only in production).
-- `npm run test:e2e` runs Playwright: the **prod** phase (`npm run build`), then the **stub** phase (`npm run build:e2e`). Each is served by `wrangler dev` on the built Worker, against the fixture API (`test/fixture-api`, which serves the FE1 and FE2 operations). It is separate from `validate` because it needs Chromium.
-- `npm run audit` runs `npm audit`: it fails on any advisory in a runtime dependency (of any severity, info included), or a high or critical one anywhere. It is outside `validate` because it needs the registry.
-- `npm run audit:signatures` runs `npm audit signatures` after `npm ci`: every installed package's registry signature and provenance attestation must verify. It needs the registry and Sigstore's TUF repository (`tuf-repo-cdn.sigstore.dev`).
+- `npm run test:e2e` builds the e2e build and runs the Playwright journeys and template checks against the fixture API. It is outside `validate` because it needs Chromium. `npm run screenshots` takes the on-demand screenshots.
+- `npm run audit` (`npm audit`) and `npm run audit:signatures` need the registry, so they are outside `validate`.
 
-CI runs the first two as the jobs `validate` and `e2e` (`.github/workflows/ci.yml`: pull requests, and pushes to `main` and `preview`; `e2e` runs in the Playwright image, see below), and `npm run audit` then `npm run audit:signatures` as the `audit` job (`.github/workflows/audit.yml`: every push to any branch, and every pull request, because new advisories appear without a commit). All three are required checks on `main`. Actions are pinned to a release's full commit SHA, with the tag in a trailing comment. Every job installs npm 12.2.1, which `packageManager` names, on the Node in `.nvmrc`. A new check must be added to a `package.json` script, to the `validate` chain (or to `test:e2e`), and to CI if it needs its own step.
+CI (`.github/workflows`): `ci.yml` runs the jobs `validate` and `e2e` on pull requests and on pushes to `main` and `preview` (`e2e` in the Playwright image, pinned by digest); `audit.yml` runs the `audit` job weekly and on pull requests to `main`. All three are required on `main`. Actions are pinned to a full commit SHA with the tag in a trailing comment, and every job installs npm 12.2.1 on the Node in `.nvmrc`. A new check goes in a `package.json` script and in `validate` (or `test:e2e`).
 
-### The e2e recipe
+### Running e2e
 
-- **Where layout is decided: the Playwright image.** CI's `e2e` job runs in the official `mcr.microsoft.com/playwright:v1.61.1-noble` container, pinned by digest in `ci.yml`, the same image as the sandboxes' browser image. Chromium, its libraries and the system fonts (`system-ui` is WenQuanYi Zen Hei there) are the same, so CI's layout and screenshots match a sandbox run. On the bare `ubuntu-24.04` runner `system-ui` was DejaVu Sans, and two layout checks failed there only (docs/TESTING.md, "Fonts"). The image's tag must be the locked `@playwright/test` version (`test/repo-hygiene.test.ts` checks it): bump them together, with the new tag's digest.
-- **Locally:** `npm ci`, then `npx playwright install --with-deps chromium` once, then `npm run test:e2e`. This uses your machine's fonts, so screenshots differ from CI's; the layout checks must still pass (they do with the image's fonts and with Ubuntu's DejaVu Sans, see docs/TESTING.md, "Fonts"), but compare screenshots only from the image.
-- **In sandboxes without browsers** (e.g. demesne), split it across two images on the same checkout:
-  1. the **node** image, with package-manager egress, runs `npm ci`;
-  2. the Playwright **1.61.1 browser** image, with no egress, runs `npm run test:e2e`.
+- **Where layout is decided:** the Playwright image (`mcr.microsoft.com/playwright:v1.61.1-noble`, tag equal to the locked `@playwright/test`). Locally: `npx playwright install --with-deps chromium`, then `npm run test:e2e`; compare screenshots only from the image.
+- **Sandboxes without browsers** use two images on one checkout: the **node** image (package-manager egress) runs `npm ci`; the Playwright **1.61.1 browser** image (no egress) runs `npm run test:e2e`. Neither has `.nvmrc`'s Node 26.13.0: run `sh /workspace/tools/install-node-lts.sh` once in the node image (the script lives outside the repo; it fetches Node 26.13.0 and npm 12.2.1 into `/workspace/tools`), then `. /workspace/tools/node-lts.env` in every shell, in both images.
+- Filtered runs: `npm run test:e2e -- -g "settings"`.
 
-  Neither image has `.nvmrc`'s Node 26.13.0. Run `sh /workspace/tools/install-node-lts.sh` once in the node image (it fetches Node 26.13.0 and npm 12.2.1 from the npm registry into `/workspace/tools`), then `. /workspace/tools/node-lts.env` in every shell, in both images.
+### Manual checks
 
-  The browser image's Playwright version must match the locked `@playwright/test` (1.61.1).
+After `validate` passes, for a change that touches the UI:
 
-- **Filtered runs:** `npm run test:e2e -- <playwright args>` (e.g. `-g "settings"`) runs both phases filtered, and skips the screenshot completeness check.
-- **Workers are fixed at 4.** One `wrangler dev` (a single workerd) serves every worker, and each worker runs axe and full-page screenshots. With the CPU-count default, workerd drops requests and checkpoints time out; four keeps runs stable. Don't raise it without measuring.
-- **Output** (all gitignored): screenshots in `e2e/screenshots/`, reports in `playwright-report/<phase>/`, traces in `test-results/<phase>/`.
-
-### Manual quality checks
-
-After the automated checks pass, review the change for these:
-
-1. **Duplicate code.** Repeated constants, types or helpers that should be one definition, e.g. copy constants from `~/schemas/rules` such as `DISPLAY_NAME_RULE`.
-2. **Incomplete or disconnected logic.**
-   - Legacy mechanisms left in place.
-   - Closures over stale data.
-   - Fields that are never read or written.
-   - Functions that are never called.
-   - Data that never reaches the UI.
-   - Features that aren't wired up.
-3. **Validation coverage.** Any new check is in `package.json`, in `validate` (or `test:e2e`), and in CI.
-4. **Redundant fields or parameters.**
-   - Values that can be derived from other values.
-   - Methods used only by tests.
-   - Re-exports.
-   - Unused exports, which must be fixed, not ignored.
-5. **Theming.**
-   - Check every new style in light and in dark, with an explicit choice and with the system preference.
-   - Token classes only.
-   - Check it in forced colours for controls and states.
-   - Make sure the server-rendered `data-theme` still prevents a flash.
-6. **Error handling.** For every API call or server interaction, trace what happens when it fails:
-   - a 4xx with each code the spec allows;
-   - a 500;
-   - a malformed body (502);
-   - a network failure;
-   - an expired session (401 clears it).
-
-   Does the UI show something meaningful in each case, with a way to recover? Or does it go blank, break, or fail silently?
-
-7. **Accessibility.**
-   - Use the keyboard alone: Tab order, Escape, focus return after dialogs and drawers, focus never hidden by the header or the app bar.
-   - Use a screen reader for names, roles, live regions and `aria-current`.
-   - Check 200% zoom and 320 px reflow, target sizes, reduced motion, and text spacing.
-   - axe in e2e catches only part of this.
-8. **No JavaScript.**
-   - Navigation, the theme toggle, the drawer and the account menu must still work.
-   - Settings must show its notice.
-9. **Copy and privacy.** British spelling, sentence case, links only, no legal names, attribution kept.
+- Both themes, explicit choice and system preference; forced colours for controls and states; no flash of the wrong theme.
+- Keyboard alone: Tab order, Escape, focus return, focus never hidden; 200 % zoom and 320 px reflow; reduced motion.
+- No JavaScript: navigation, the theme toggle, the drawer and the account menu still work.
+- Every API call, when it fails (each 4xx code, 500, malformed body, network failure, expired session): meaningful copy and a way to recover.
+- No duplicate definitions, unused fields or disconnected logic; British spelling, no legal names.

@@ -127,8 +127,8 @@ If Workers Builds refuses the deploy because the deployed config's name (`bardic
 
 `npm run build:ci` (`node scripts/build.mjs --from-branch`) reads the `WORKERS_CI_BRANCH` variable that Workers Builds sets:
 
-- `main` → the **production** build for `bardic-torch-fe`: no styleguide, no stub sign-in.
-- `preview` → the **preview** build for `bardic-torch-fe-preview` (with `CLOUDFLARE_ENV=preview`, so the built config names the preview Worker): includes `/styleguide`, still no stub sign-in.
+- `main` → the **production** build for `bardic-torch-fe`: no stub sign-in.
+- `preview` → the **preview** build for `bardic-torch-fe-preview` (with `CLOUDFLARE_ENV=preview`, so the built config names the preview Worker): still no stub sign-in.
 - Empty or unset → the build **fails** ("WORKERS_CI_BRANCH is empty: refusing to guess a deploy target"): the mode decides which Worker is deployed, so it never guesses.
 - Any other branch → the build **fails** ("Branch … is not deployed"). This catches non-production builds turned on by mistake.
 
@@ -160,11 +160,11 @@ A separate Auth0 application for previews would remove the shared client secret 
   - an `/assets/*` file that doesn't exist (a stale hashed URL) with a plain 404 (`no-store`, security headers), never a rendered page;
   - a cross-origin POST, PUT, PATCH or DELETE to a page or `.data` URL with 400 "Bad Request" (`no-store`). React Router refuses those itself, but would report them to Sentry.
 
-  The resource routes (`/api/*`, `/auth/*`, `/resources/theme`) keep their own same-origin check, a 403; `/robots.txt`, `/sitemap.xml` and `/sitemap/:type` are read-only resource routes with no check to make. Everything else is set per request by the app: the security headers and the nonce CSP on every response the Worker makes (resource routes and redirects included), `Cache-Control: private, no-cache` on documents and `.data` answers while signed out, and `no-store` on every document and `.data` answer while signed in (docs/DESIGN.md §10.3), on `/settings` and its data, on the auth routes and on the proxies.
+  The resource routes (`/api/*`, `/auth/*`, `/resources/theme`) keep their own same-origin check, a 403; `/robots.txt` and `/sitemap.xml` are read-only resource routes with no check to make. Everything else is set per request by the app: the security headers and the nonce CSP on every response the Worker makes (resource routes and redirects included), `Cache-Control: private, no-cache` on documents and `.data` answers while signed out, and `no-store` on every document and `.data` answer while signed in, on `/settings` and its data, on the auth routes and on the proxies.
 
 - **Catalogue reads are anonymous.** The catalogue's pages (every `GET /v1/...` the read UI makes, in loaders: pieces, persons, terms, collections, events, revisions) are sent to the API with no `Authorization` header, whether or not the reader is signed in, so the API must serve them to anyone and the Worker needs no credentials for them. Responses are not cached upstream in FE2 (every page request reads the API again; the Worker's own Cache API waits for the backend's caching, B11). The pages themselves are `private, no-cache` (`no-store` while signed in), with `Vary: Cookie`.
-- **Indexing.** Only the production build is indexable. `robots.txt` on production allows crawling and disallows only `/auth/`, `/api/`, `/resources/` and `/settings`; the pages that say `noindex` themselves (`/search`, histories, revisions, filtered lists) are deliberately not disallowed, so crawlers can read that. The preview Worker (and the e2e and development builds) answer `Disallow: /` **and** send `X-Robots-Tag: noindex` on every response the Worker makes, sitemaps included (static files such as `/assets/*` never reach the Worker; the `Disallow` covers them): the `Disallow` stops crawling, and the header covers a preview URL that is found elsewhere. Both are on purpose. `npm run check:prod-build` checks the build-time `__INDEXABLE__` flag in each build (the crawlable rules only in production, the header only in preview), so a preview can't ship indexable by a wrong build mode.
-- **Sitemaps.** `/sitemap.xml` indexes six sitemaps, `/sitemap/{pages,pieces,bards,categories,collections,events}.xml`, `Cache-Control: public, max-age=3600`. The categories sitemap is one `listTerms` read; the pieces, bards, collections and events sitemaps read the API's lists 100 at a time: the first page gives the total, the rest are fetched in parallel batches of 6, up to offset 10,000, so a sitemap costs at most 101 API calls, which is the Workers subrequest ceiling's reason for the cap (the free plan allows 50 subrequests per request, the paid plan 1,000: on the free plan a catalogue past about 5,000 entries needs the plan changed or the sitemap split, and the Cache API once B11 allows it). Restricted pieces and stub people are left out. Any failed read makes the whole sitemap a 503 with `Retry-After`; no partial sitemap is ever served.
+- **Indexing.** Only the production build is indexable. `robots.txt` on production allows crawling and disallows only `/auth/`, `/api/`, `/resources/` and `/settings`; the pages that say `noindex` themselves (`/search`, histories, revisions, filtered lists) are deliberately not disallowed, so crawlers can read that. The preview Worker (and the e2e and development builds) answer `Disallow: /` **and** send `X-Robots-Tag: noindex` on every response the Worker makes, the sitemap included (static files such as `/assets/*` never reach the Worker; the `Disallow` covers them): the `Disallow` stops crawling, and the header covers a preview URL that is found elsewhere. Both are on purpose. `npm run check:prod-build` checks the build-time `__INDEXABLE__` flag in each build (the crawlable rules only in production, the header only in preview), so a preview can't ship indexable by a wrong build mode.
+- **Sitemap.** `/sitemap.xml` is one `urlset` of the pages and every public catalogue entry, `Cache-Control: public, max-age=3600`. The categories are one `listTerms` read; the pieces, bards, collections and events are read 100 at a time, one page after another, so the sitemap costs about one API call per 100 entries. Workers allow 50 subrequests per request on the free plan and 1,000 on the paid plan, so on the free plan a catalogue past about 5,000 entries needs the plan changed or the sitemap split. Restricted pieces and stub people are left out. Any failed read makes the whole sitemap a 503 with `Retry-After`; no partial sitemap is ever served.
 - **Source maps.** `upload_source_maps` uploads the Worker's source maps with each deploy, so stack traces in Workers Logs are readable. Sentry source-map upload isn't set up.
 
 ### Logs (observability)
@@ -362,7 +362,7 @@ Nothing in FE1 or FE2 reads either key.
 ## 7. Deploying
 
 - **Production:** merge to `main`. The required checks run on the pull request; Workers Builds builds `main` in production mode and deploys it to `bardic-torch-fe`, served on `bardictorch.org`.
-- **Preview:** push to `preview`, e.g. `git push origin HEAD:preview`. Workers Builds builds it in preview mode, with `/styleguide`, and deploys it to `bardic-torch-fe-preview`, served on `https://preview.bardictorch.org`. Sign-in works there against the same Auth0 application and API.
+- **Preview:** push to `preview`, e.g. `git push origin HEAD:preview`. Workers Builds builds it in preview mode, and deploys it to `bardic-torch-fe-preview`, served on `https://preview.bardictorch.org`. Sign-in works there against the same Auth0 application and API.
 - **Other branches** are not deployed (§2). CI still runs on their pull requests, and the `audit` job weekly.
 
 Until production is signed off, deploy to the preview Worker only.
@@ -395,44 +395,40 @@ curl -sI "$SITE/auth/login?as=contributor" | grep -i '^location'
 # 6. A cross-origin form post is refused.
 curl -s -o /dev/null -w '%{http_code}\n' -X POST -H "Origin: https://evil.example" "$SITE/settings"   # 400
 
-# 7. The styleguide: 404 on production, 200 on preview.
-curl -s -o /dev/null -w '%{http_code}\n' "$SITE/styleguide"
-
-# 8. Unknown pages are the app's 404; help pages render.
+# 7. Unknown pages are the app's 404; help pages render.
 curl -s -o /dev/null -w '%{http_code}\n' "$SITE/no-such-page"    # 404
 curl -s -o /dev/null -w '%{http_code}\n' "$SITE/help/licence"    # 200
 
-# 9. www redirects to the apex, keeping path and query (production only).
+# 8. www redirects to the apex, keeping path and query (production only).
 curl -sI "https://www.bardictorch.org/x?y=1" | grep -iE '^(HTTP|location)'
 #    → 301, location: https://bardictorch.org/x?y=1
 
-# 10. No other URL serves a version: the deployment is listed, and workers.dev doesn't serve the app.
+# 9. No other URL serves a version: the deployment is listed, and workers.dev doesn't serve the app.
 npx wrangler deployments list --name bardic-torch-fe            # or bardic-torch-fe-preview
 curl -s -o /dev/null -w '%{http_code}\n' "https://bardic-torch-fe.<account-subdomain>.workers.dev/"
 #    → not the app (a Cloudflare error page, or no route); the same for bardic-torch-fe-preview
 
-# 11. robots.txt: crawlable on production, closed on preview.
+# 10. robots.txt: crawlable on production, closed on preview.
 curl -s "$SITE/robots.txt"
 #    → production: User-agent: * / Disallow: /auth/ /api/ /resources/ /settings / Sitemap: https://bardictorch.org/sitemap.xml
 #      preview:    User-agent: * / Disallow: /
 curl -sI "$SITE/" | grep -i '^x-robots-tag'
-#    → production: nothing; preview: x-robots-tag: noindex (on every response, sitemaps included)
+#    → production: nothing; preview: x-robots-tag: noindex (on every response, the sitemap included)
 
-# 12. The sitemaps: the index, then the pieces (fetched from the API, so this also proves anonymous reads).
-curl -s "$SITE/sitemap.xml"                                      # six <sitemap> entries on $SITE
-curl -sI "$SITE/sitemap/pieces.xml" | grep -iE '^(HTTP|content-type|cache-control)'
+# 11. The sitemap (fetched from the API, so this also proves anonymous reads).
+curl -sI "$SITE/sitemap.xml" | grep -iE '^(HTTP|content-type|cache-control)'
 #    → 200; application/xml; public, max-age=3600
-curl -s "$SITE/sitemap/pieces.xml" | grep -c '<loc>'            # about one per unrestricted piece
+curl -s "$SITE/sitemap.xml" | grep -c '<loc>'                   # the pages, plus about one per unrestricted entry
 
-# 13. A piece page: its canonical address is on this origin, and it has JSON-LD.
-curl -s "$SITE/pieces/$(curl -s "$SITE/sitemap/pieces.xml" | grep -o '/pieces/[^<]*' | head -1 | cut -d/ -f3)" | grep -oE '<link rel="canonical"[^>]*>|application/ld\+json' | head -2
+# 12. A piece page: its canonical address is on this origin.
+curl -s "$SITE/pieces/$(curl -s "$SITE/sitemap.xml" | grep -o '/pieces/[^<]*' | head -1 | cut -d/ -f3)" | grep -oE '<link rel="canonical"[^>]*>' | head -1
 
-# 14. The API is up, and so is its database.
+# 13. The API is up, and so is its database.
 curl -s https://api.bardictorch.org/healthz                      # {"status":"ok"}
 curl -s https://api.bardictorch.org/readyz                       # {"status":"ok"}
 ```
 
-With the API stopped (or `BARDIC_TORCH_API_BASE_URL` pointing at nothing, on preview only), the catalogue's pages are the "Bardic Torch is resting" page: 503 with `Retry-After: 30`, still inside the site shell, and `/sitemap/pieces.xml` is a 503 with `Retry-After` and no partial list. Help pages, the home page (with its counts and categories regions showing their errors) and sign-in keep working.
+With the API stopped (or `BARDIC_TORCH_API_BASE_URL` pointing at nothing, on preview only), the catalogue's pages are the "Bardic Torch is resting" page: 503 with `Retry-After: 30`, still inside the site shell, and `/sitemap.xml` is a 503 with `Retry-After` and no partial list. Help pages, the home page (with its counts and categories regions showing their errors) and sign-in keep working.
 
 In the dashboard, each Worker's Settings → Domains & Routes shows `workers.dev` and Preview URLs **disabled**, and only its custom domains, **Active**.
 
@@ -442,7 +438,7 @@ Then, in a browser:
    - `invalid_client` (Auth0 answers 401 to the code exchange): the application's Authentication Method isn't **Client Secret (Basic)** (§4), or `AUTH0_CLIENT_SECRET` isn't the application's. The client credentials are form-encoded before Base64, as RFC 6749 requires; Auth0 accepts that, so check the setting and the secret first.
    - `OAUTH_JWT_CLAIM_COMPARISON_FAILED` for the claim `iss`: `AUTH0_DOMAIN` isn't the host Auth0 issues tokens from. If the tenant has a custom domain, use that; the issuer must be exactly `https://<AUTH0_DOMAIN>/`. For the claim `aud`, `AUTH0_CLIENT_ID` is wrong.
    - `OAUTH_JWT_TIMESTAMP_CHECK_FAILED` for `iat` or `exp`: the ID token's times are more than 30 seconds off the Worker's clock. That shouldn't happen on Cloudflare; retry, and report it if it persists.
-2. **`/settings`:** rename yourself (a toast confirms it), create an API token (its secret is shown once, and can be copied), then revoke it after confirming.
+2. **`/settings`:** rename yourself (a toast confirms it).
 3. **Log out.** You pass through Auth0 and come back signed out. An Auth0 "invalid returnTo" error means §4's logout URLs are wrong.
 4. **Switch the theme** to dark, reload, and it stays dark, with no flash.
 5. **The console** shows no CSP violations.

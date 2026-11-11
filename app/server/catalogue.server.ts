@@ -41,7 +41,8 @@ import {
  * cookie, never refreshes a token and sets no header on the page's answer.
  * That keeps a catalogue page the same whoever is reading it.
  *
- * Each call validates the body with zod and resolves to a `ReadResult`;
+ * Each call parses the body as the spec's response type (not validated at
+ * runtime; a body that is not JSON is a bad gateway) and resolves to a `ReadResult`;
  * nothing throws. A failed call is a `ReadFailure` (read-failure.ts), with
  * the API's `message` logged, never shown.
  *
