@@ -9,7 +9,6 @@
     // The scripts package.json runs (test/lint-coverage.test.ts keeps this
     // list equal to them)…
     "scripts/build.mjs!",
-    "scripts/build-tokens.mjs!",
     "scripts/check-production-build.mjs!",
     "scripts/contrast.mjs!",
     "scripts/dev-fixtures.mjs!",

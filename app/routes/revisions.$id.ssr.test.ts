@@ -1,7 +1,7 @@
 import { http, HttpResponse } from "msw";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { API_BASE_URL, routeArgs } from "~/test/context";
-import { contractResponse, offContractResponse } from "~/test/contract";
+import { contractResponse } from "~/test/contract";
 import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
 import * as revisionModule from "./revisions.$id";
@@ -106,13 +106,7 @@ describe("/revisions/:id loader", () => {
     ],
     [
       "a malformed body",
-      () =>
-        offContractResponse(
-          "getRevision",
-          200,
-          { entity_type: "song" },
-          "no such entity type"
-        ),
+      () => new HttpResponse("not JSON", { status: 200 }),
       { kind: "bad_gateway" },
       502,
     ],

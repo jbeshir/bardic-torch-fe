@@ -6,7 +6,6 @@ import {
   sessionCookie,
   sessionTokens,
 } from "~/test/context";
-import { offContractResponse } from "~/test/contract";
 import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
 import * as bardsModule from "./bards._index";
@@ -218,15 +217,11 @@ describe("/bards loader", () => {
   it("is bad_gateway (502) for a malformed body, and the terms' malformed body only loses the select", async () => {
     quietErrors();
     fixtures.server.use(
-      http.get(TERMS, () =>
-        offContractResponse("listTerms", 200, { terms: [] }, "no data")
-      )
+      http.get(TERMS, () => new HttpResponse("not JSON", { status: 200 }))
     );
     expect(await load("?letter=W")).toMatchObject({ affiliations: null });
     fixtures.server.use(
-      http.get(PERSONS, () =>
-        offContractResponse("listPersons", 200, { data: [] }, "no total")
-      )
+      http.get(PERSONS, () => new HttpResponse("not JSON", { status: 200 }))
     );
     expect(await load("")).toMatchObject({
       data: { kind: "bad_gateway" },

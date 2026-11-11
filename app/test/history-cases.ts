@@ -1,6 +1,6 @@
 import { HttpResponse } from "msw/http";
 import type { operations } from "~/api/schema.gen";
-import { contractResponse, offContractResponse } from "~/test/contract";
+import { contractResponse } from "~/test/contract";
 
 type HistoryOperation = Extract<keyof operations, `list${string}Revisions`>;
 
@@ -51,7 +51,7 @@ export function historyFailures(operation: HistoryOperation) {
     ],
     [
       "a malformed body",
-      () => offContractResponse(operation, 200, { data: [] }, "no total"),
+      () => new HttpResponse("not JSON", { status: 200 }),
       { kind: "bad_gateway" },
       502,
     ],

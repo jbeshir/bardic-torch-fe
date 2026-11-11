@@ -1,7 +1,7 @@
 import { http, HttpResponse } from "msw";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { API_BASE_URL, routeArgs } from "~/test/context";
-import { contractResponse, offContractResponse } from "~/test/contract";
+import { contractResponse } from "~/test/contract";
 import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
 import * as eventsModule from "./events._index";
@@ -117,7 +117,7 @@ describe("/events loader", () => {
     [
       "a malformed body",
       "",
-      () => offContractResponse("listEvents", 200, { data: [] }, "no total"),
+      () => new HttpResponse("not JSON", { status: 200 }),
       { kind: "bad_gateway" },
       502,
     ],

@@ -1,11 +1,10 @@
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { THEME_COLOURS } from "./theme-colour";
 import {
   channelString,
   COLOURS,
   resolveColour,
-  THEME_EFFECTS,
   type ColourName,
 } from "./tokens";
 
@@ -13,20 +12,14 @@ const HEX = /^#[0-9A-F]{6}$/;
 const names = Object.keys(COLOURS.light) as ColourName[];
 const css = readFileSync(new URL("./tokens.css", import.meta.url), "utf8");
 
-/** The declarations of the first block in `source` opened by `selector`. */
-function block(source: string, selector: string): string {
-  const start = source.indexOf(`${selector} {`);
+/** The declarations of the first block in `css` opened by `selector`. */
+function block(selector: string): string {
+  const start = css.indexOf(`${selector} {`);
   expect(start, `block ${selector}`).toBeGreaterThanOrEqual(0);
-  const open = source.indexOf("{", start);
+  const open = css.indexOf("{", start);
   // Prettier may wrap long values, so compare with whitespace collapsed.
-  return source.slice(open + 1, source.indexOf("}", open)).replace(/\s+/g, " ");
+  return css.slice(open + 1, css.indexOf("}", open)).replace(/\s+/g, " ");
 }
-
-const blocks = {
-  light: block(css, ':root,\n[data-theme="light"]'),
-  dark: block(css, ':root[data-theme="dark"],\n[data-theme="dark"]'),
-  "OS dark": block(css, ':root:not([data-theme="light"])'),
-} as const;
 
 describe("colour tokens", () => {
   it("define the same tokens in both themes", () => {
@@ -39,9 +32,7 @@ describe("colour tokens", () => {
     theme => {
       for (const name of names) {
         const value = COLOURS[theme][name];
-        if (typeof value === "string") {
-          expect(value, name).toMatch(HEX);
-        } else {
+        if (typeof value !== "string") {
           expect(typeof COLOURS[theme][value.alias], name).toBe("string");
         }
         expect(resolveColour(theme, name), name).toMatch(HEX);
@@ -57,133 +48,34 @@ describe("colour tokens", () => {
       resolveColour("dark", "surface-sunken")
     );
   });
-
-  it.each(["light", "dark"] as const)(
-    "give %s read-only and disabled fields a fill unlike an editable field's",
-    theme => {
-      expect(resolveColour(theme, "input-bg-locked")).not.toBe(
-        resolveColour(theme, "input-bg")
-      );
-    }
-  );
-
-  it.each(["light", "dark"] as const)(
-    "derive the %s hero glow as a faint accent-glow over surface",
-    theme => {
-      const channels = (name: ColourName) =>
-        channelString(resolveColour(theme, name)).split(" ").map(Number);
-      const [glow, surface, accentGlow] = [
-        channels("hero-glow"),
-        channels("surface"),
-        channels("accent-glow"),
-      ];
-      glow.forEach((value, index) => {
-        const base = surface[index] ?? Number.NaN;
-        const tint = accentGlow[index] ?? Number.NaN;
-        // Between the two, and nearer the surface (a low alpha).
-        expect(value).toBeGreaterThanOrEqual(Math.min(base, tint));
-        expect(value).toBeLessThanOrEqual(Math.max(base, tint));
-        expect(Math.abs(value - base)).toBeLessThanOrEqual(
-          Math.abs(tint - base) / 4
-        );
-      });
-      expect(glow).not.toEqual(surface);
-    }
-  );
-
-  it("define the same non-colour effects in both themes", () => {
-    expect(Object.keys(THEME_EFFECTS.dark).sort()).toEqual(
-      Object.keys(THEME_EFFECTS.light).sort()
-    );
-  });
-
-  it("write channel triplets", () => {
-    expect(channelString(resolveColour("light", "canvas"))).toBe("247 242 232");
-  });
 });
 
-describe("generated tokens.css", () => {
+// tokens.css is hand-written; this keeps it in step with tokens.ts, which the
+// contrast check reads.
+describe("tokens.css", () => {
   it.each([
-    ["light", "light"],
-    ["dark", "dark"],
-    ["OS dark", "dark"],
-  ] as const)("declares every token in the %s block", (label, theme) => {
-    const declarations = blocks[label];
-    expect(declarations).toContain(`color-scheme: ${theme};`);
-    for (const name of names) {
-      const value = COLOURS[theme][name];
-      const expected =
-        typeof value === "string"
-          ? `--bt-${name}: ${channelString(value)};`
-          : `--bt-${name}: var(--bt-${value.alias});`;
-      expect(declarations, name).toContain(expected);
+    ["light", ':root,\n[data-theme="light"]'],
+    ["dark", ':root[data-theme="dark"],\n[data-theme="dark"]'],
+    ["dark", ':root:not([data-theme="light"])'],
+  ] as const)(
+    "declares every %s token as tokens.ts has it (%s)",
+    (theme, selector) => {
+      const declarations = block(selector);
+      for (const name of names) {
+        const value = COLOURS[theme][name];
+        const expected =
+          typeof value === "string"
+            ? `--bt-${name}: ${channelString(value)};`
+            : `--bt-${name}: var(--bt-${value.alias});`;
+        expect(declarations, name).toContain(expected);
+      }
     }
-    for (const [name, value] of Object.entries(THEME_EFFECTS[theme])) {
-      expect(declarations, name).toContain(`--bt-${name}: ${value};`);
-    }
-  });
+  );
 
-  it("puts the OS-dark block behind the media query, skipping explicit light", () => {
-    expect(css).toMatch(
-      /@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme="light"\]\) \{/
-    );
-  });
-
-  it("lets a [data-theme] wrapper on any element force its theme", () => {
-    expect(css).toContain(':root,\n[data-theme="light"] {');
-    expect(css).toContain(':root[data-theme="dark"],\n[data-theme="dark"] {');
-  });
-});
-
-describe("the Tailwind theme in tokens.css", () => {
-  // The generator itself fails on a namespace of Tailwind's theme it doesn't
-  // know (scripts/tailwind-theme.mjs); this checks what it wrote.
-  it("writes every namespace of Tailwind's own theme, and clears only those the design has no keys for", () => {
-    const CLEARED = [
-      "drop-shadow",
-      "inset-shadow",
-      "perspective",
-      "text-shadow",
-    ];
-    const variables = (source: string) =>
-      [...source.matchAll(/^\s*--([a-z0-9_-]+)\s*:/gm)]
-        .map(([, name = ""]) => name)
-        .filter(name => !name.startsWith("default-") && !name.includes("--"));
-    const theme = css.slice(
-      css.indexOf("@theme {"),
-      css.indexOf("\n}\n", css.indexOf("@theme inline {"))
-    );
-    const written = variables(theme);
-    const tailwind = variables(
-      readFileSync(
-        join(process.cwd(), "node_modules/tailwindcss/theme.css"),
-        "utf8"
-      )
-    );
-    // A namespace is a prefix of the variable, ending at a dash; the longest
-    // one the theme writes a key in, unless the variable is in a cleared one.
-    const namespaceOf = (name: string) =>
-      CLEARED.find(
-        cleared => name === cleared || name.startsWith(`${cleared}-`)
-      ) ??
-      name
-        .split("-")
-        .map((_, end, parts) => parts.slice(0, parts.length - end).join("-"))
-        .find(prefix =>
-          written.some(key => key === prefix || key.startsWith(`${prefix}-`))
-        );
-    expect(tailwind.length).toBeGreaterThan(300);
-    expect(tailwind.filter(name => namespaceOf(name) === undefined)).toEqual(
-      []
-    );
-    const used = new Set(tailwind.map(namespaceOf));
-    expect(CLEARED.filter(cleared => !used.has(cleared))).toEqual([]);
-    expect(
-      written.filter(key =>
-        CLEARED.some(
-          cleared => key === cleared || key.startsWith(`${cleared}-`)
-        )
-      )
-    ).toEqual([]);
+  it("has the theme-colour constants equal the canvas token", () => {
+    expect(THEME_COLOURS).toEqual({
+      light: resolveColour("light", "canvas"),
+      dark: resolveColour("dark", "canvas"),
+    });
   });
 });

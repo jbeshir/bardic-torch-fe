@@ -94,7 +94,7 @@
   }
 
   /* Below md the bottom app bar is fixed over the end of the viewport: its
-     whole box is APP_BAR_BOX in scripts/tailwind-theme.mjs. */
+     whole box is `--bt-app-bar-h` plus the safe-area inset (tokens.css). */
   @media not all and (min-width: 768px) {
     html {
       scroll-padding-bottom: calc(

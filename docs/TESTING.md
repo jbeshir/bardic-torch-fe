@@ -26,7 +26,7 @@ Tests come in three layers:
 
 The scans walk the tree with one helper, `filesUnder` (`test/support/files.ts`), which skips the gitignored e2e screenshots.
 
-It also runs the checks `check:types`, `check:api`, `check:tokens`, `check:contrast` and `check:prod-build`. See CLAUDE.md for what each does.
+It also runs the checks `check:types`, `check:api`, `check:contrast` and `check:prod-build`. See CLAUDE.md for what each does.
 
 ## Deviation from the product plan (PLAN §9)
 

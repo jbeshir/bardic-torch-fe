@@ -6,7 +6,7 @@ import {
   sessionCookie,
   sessionTokens,
 } from "~/test/context";
-import { contractResponse, offContractResponse } from "~/test/contract";
+import { contractResponse } from "~/test/contract";
 import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
 import * as categoriesModule from "./categories._index";
@@ -161,13 +161,7 @@ describe("/categories loader", () => {
     ],
     [
       "a malformed body",
-      () =>
-        offContractResponse(
-          "listTerms",
-          200,
-          { data: [{ slug: 1 }] },
-          "a term without its fields"
-        ),
+      () => new HttpResponse("not JSON", { status: 200 }),
       { kind: "bad_gateway" },
       502,
     ],

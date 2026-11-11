@@ -6,7 +6,7 @@ import {
   sessionCookie,
   sessionTokens,
 } from "~/test/context";
-import { contractResponse, offContractResponse } from "~/test/contract";
+import { contractResponse } from "~/test/contract";
 import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
 import { singleFetchResults } from "~/test/single-fetch";
@@ -259,30 +259,7 @@ describe("/pieces/:slug loader", () => {
   it("throws bad_gateway (502) for a malformed body", async () => {
     quietErrors();
     fixtures.server.use(
-      http.get(PIECE, () =>
-        offContractResponse("getPiece", 200, { slug: "x" }, "no fields")
-      )
-    );
-    expect(await load("the-copper-kettle")).toMatchObject({
-      data: { kind: "bad_gateway" },
-      init: { status: 502 },
-    });
-  });
-
-  it("throws bad_gateway (502) for a named credit without a person", async () => {
-    quietErrors();
-    const answer = await fetch(`${API_BASE_URL}/v1/pieces/the-copper-kettle`);
-    const piece = (await answer.json()) as {
-      credits: { attribution: string; person: unknown }[];
-    };
-    fixtures.server.use(
-      // The spec's schema allows it; its words (and the API docs) don't.
-      http.get(PIECE, () =>
-        contractResponse("getPiece", 200, {
-          ...piece,
-          credits: [{ ...piece.credits[0], attribution: "named" }],
-        })
-      )
+      http.get(PIECE, () => new HttpResponse("not JSON", { status: 200 }))
     );
     expect(await load("the-copper-kettle")).toMatchObject({
       data: { kind: "bad_gateway" },

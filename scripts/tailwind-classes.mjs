@@ -1,5 +1,5 @@
 // What may be a Tailwind class in app/** beyond what the theme defines
-// (scripts/tailwind-theme.mjs): the restricted patterns, which
+// (app/styles/tokens.css): the restricted patterns, which
 // eslint.config.ts (no-restricted-classes) and test/tailwind-classes.test.ts
 // apply, and the component classes the stylesheets define themselves.
 import { readdirSync, readFileSync } from "node:fs";
@@ -165,13 +165,13 @@ export const RESTRICTED_CLASSES = [
   {
     pattern: String.raw`^(?:[a-z-]+:)*-?(?:bg|text|border(?:-[xytrblse])?|ring|ring-offset|outline|fill|stroke|decoration|divide|placeholder|caret|accent|shadow|inset-shadow|inset-ring|drop-shadow|text-shadow)-[a-z][a-z-]*\/`,
     message:
-      "An opacity modifier mixes colours in oklab: use the <utility>-<colour>-<alpha> class (scripts/tailwind-theme.mjs).",
+      "An opacity modifier mixes colours in oklab: use the <utility>-<colour>-<alpha> class (app/styles/tokens.css).",
   },
   {
     pattern:
       "^(?:[a-z-]+:)*(?:bg-(?:gradient|linear|radial|conic)|from|via|to)-",
     message:
-      "Gradient utilities interpolate in oklab: add a named background (scripts/tailwind-theme.mjs).",
+      "Gradient utilities interpolate in oklab: add a named background (app/styles/tokens.css).",
   },
   {
     pattern: "^(?:[a-z-]+:)*-?(?:space|divide)-[xy](?:-|$)",

@@ -258,7 +258,7 @@ describe("Tailwind classes in the app", () => {
   });
 
   it("builds every named utility the theme generates", () => {
-    // tokens.css is the generator's output (check:tokens).
+    // tokens.css holds the named utilities.
     const utilities = [
       ...readFileSync(join(root, "app/styles/tokens.css"), "utf8").matchAll(
         /^@utility ([\w-]+) \{$/gm

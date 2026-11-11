@@ -51,7 +51,7 @@ Editing comes in FE3. The original wiki is linked only for the help pages' attri
 
 - **Fixture API.** `test/fixture-api/` implements the FE1 and FE2 operations (the catalogue's reads and the authenticated ones) from one operation table, with state kept per user and failures injected on request. The same table drives the msw handlers in unit tests, the HTTP server in e2e, and `npm run dev:fixtures`. Every fixture response is validated against the spec.
 - **Design tokens.** All colour comes from `app/styles/tokens.ts`.
-  - `npm run gen:tokens` generates the CSS variables, the favicon and the manifest colours.
+  - `app/styles/tokens.css` is hand-written; a test keeps it in step with `tokens.ts`.
   - Tailwind's palette is replaced by the tokens, so there are no `dark:` classes and no raw colours.
   - The theme (light, dark or system) is a `theme` cookie that the server renders, so the page never flashes.
 - **Security headers.** Every document carries a per-request nonce CSP and the other security headers, set in `app/entry.server.tsx`; `app/server/worker.server.ts` adds the static ones to every other response the Worker makes. `public/_headers` only sets caching for `/assets/*`.
@@ -101,12 +101,12 @@ To try a build as Cloudflare runs it, run `npm run build` (or `build:preview`), 
 
 ## Checks
 
-| command                    | what it runs                                                                                                                                |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run validate`         | check:types, gen:types, format:check, lint, tsc, check:unused, check:api, check:tokens, check:contrast, every vitest test, check:prod-build |
-| `npm run test:e2e`         | Playwright: the prod phase, then the stub phase; needs Chromium                                                                             |
-| `npm run audit`            | `npm audit`: any runtime advisory (info included), or a high or critical one anywhere; needs the registry                                   |
-| `npm run audit:signatures` | `npm audit signatures`: the installed packages' registry signatures and provenance; needs the registry and Sigstore                         |
+| command                    | what it runs                                                                                                                  |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `npm run validate`         | check:types, gen:types, format:check, lint, tsc, check:unused, check:api, check:contrast, every vitest test, check:prod-build |
+| `npm run test:e2e`         | Playwright: the prod phase, then the stub phase; needs Chromium                                                               |
+| `npm run audit`            | `npm audit`: any runtime advisory (info included), or a high or critical one anywhere; needs the registry                     |
+| `npm run audit:signatures` | `npm audit signatures`: the installed packages' registry signatures and provenance; needs the registry and Sigstore           |
 
 CI runs the first two as the `validate` and `e2e` jobs (`.github/workflows/ci.yml`), and both audits as the `audit` job (`.github/workflows/audit.yml`, on every push and pull request): all three are required checks on `main`. [docs/TESTING.md](docs/TESTING.md) explains the layers.
 

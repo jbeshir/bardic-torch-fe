@@ -251,13 +251,7 @@ describe("listPieces: answers", () => {
   it.each([
     [
       "a body that breaks the contract",
-      () =>
-        offContractResponse(
-          "listPieces",
-          200,
-          { ...EMPTY_LIST, next: 2 },
-          "PieceList is closed"
-        ),
+      () => new HttpResponse("not JSON", { status: 200 }),
     ],
     [
       "a body that isn't JSON",
@@ -369,13 +363,7 @@ describe("listTerms", () => {
     ],
     [
       "bad_gateway for a body off the contract",
-      () =>
-        offContractResponse(
-          "listTerms",
-          200,
-          { data: [{ slug: "x" }] },
-          "a term without its fields"
-        ),
+      () => new HttpResponse("not JSON", { status: 200 }),
       { kind: "bad_gateway" },
     ],
   ])("is %s", async (_why, respond, failure) => {
@@ -504,9 +492,7 @@ describe("getPiece (C4.1)", () => {
     });
     fixtures.server.resetHandlers();
     fixtures.server.use(
-      http.get(PIECE, () =>
-        offContractResponse("getPiece", 200, { title: 1 }, "not a piece")
-      )
+      http.get(PIECE, () => new HttpResponse("not JSON", { status: 200 }))
     );
     expect(await getPiece(loadContext(), "the-copper-kettle")).toEqual({
       ok: false,

@@ -6,7 +6,6 @@ import {
   sessionCookie,
   sessionTokens,
 } from "~/test/context";
-import { offContractResponse } from "~/test/contract";
 import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
 import { singleFetchResults } from "~/test/single-fetch";
@@ -237,14 +236,7 @@ describe("/pieces loader: every listPieces failure (plan §3.3)", () => {
   it("throws bad_gateway (502) for a malformed body", async () => {
     quietErrors();
     fixtures.server.use(
-      http.get(PIECES, () =>
-        offContractResponse(
-          "listPieces",
-          200,
-          { data: [] },
-          "no total or facets"
-        )
-      )
+      http.get(PIECES, () => new HttpResponse("not JSON", { status: 200 }))
     );
     expect(await load("")).toMatchObject({
       data: { kind: "bad_gateway" },
@@ -606,8 +598,9 @@ describe("/pieces loader: the terms and stale categories (plan §2.4)", () => {
       "a malformed body",
       () =>
         fixtures.server.use(
-          http.get(`${API_BASE_URL}/v1/terms`, () =>
-            offContractResponse("listTerms", 200, {}, "no data")
+          http.get(
+            `${API_BASE_URL}/v1/terms`,
+            () => new HttpResponse("not JSON", { status: 200 })
           )
         ),
     ],

@@ -9,7 +9,7 @@ import {
 } from "~/test/context";
 import { runAction } from "~/test/proxy";
 import { action } from "./api.me";
-import { contractResponse, offContractResponse } from "~/test/contract";
+import { contractResponse } from "~/test/contract";
 import { serveMocks } from "~/test/msw";
 
 const { server } = serveMocks();
@@ -191,9 +191,7 @@ describe("PATCH /api/me", () => {
 
   it("maps a malformed upstream response to 502", async () => {
     vi.spyOn(console, "error").mockReturnValue();
-    upstream(() =>
-      offContractResponse("updateMe", 200, { nope: true }, "not a User")
-    );
+    upstream(() => new HttpResponse("not JSON", { status: 200 }));
     const response = await patch({ display_name: "Morwen" });
     expect(response.status).toBe(502);
     expect(await response.json()).toMatchObject({

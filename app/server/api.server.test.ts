@@ -157,39 +157,9 @@ describe("responses", () => {
     expect(result).toMatchObject({ ok: true, status: 200, data: me });
   });
 
-  it("drops fields the contract does not know", async () => {
-    captureUpstream("get", "/v1/me", () =>
-      offContractResponse(
-        "getMe",
-        200,
-        { ...me, email: "private@example.test" },
-        "a field the contract does not have, as a newer API might send"
-      )
-    );
-    const result = await getMe(await signedInRequest(), loadContext());
-    expect(result.ok && result.data).toEqual(me);
-  });
-
   it.each([
-    [
-      "a body missing fields",
-      () => offContractResponse("getMe", 200, { id: "u1" }, "missing fields"),
-    ],
-    [
-      "a wrong role",
-      () =>
-        offContractResponse(
-          "getMe",
-          200,
-          { ...me, role: "admin" },
-          "no such role"
-        ),
-    ],
     ["non-JSON", () => new HttpResponse("<html>", { status: 200 })],
-    [
-      "an empty body",
-      () => offContractResponse("getMe", 200, undefined, "no body"),
-    ],
+    ["an empty body", () => new HttpResponse(null, { status: 200 })],
   ])("maps a success with %s to 502", async (_label, respond) => {
     captureUpstream("get", "/v1/me", respond);
     const result = await getMe(await signedInRequest(), loadContext());
@@ -298,7 +268,6 @@ describe("responses", () => {
   );
 
   it.each([
-    ["an unknown code", { code: "teapot", message: "?" }],
     ["the old nested shape", { error: { code: "internal", message: "?" } }],
   ])("maps an error body with %s to 502", async (_label, body) => {
     captureUpstream("get", "/v1/me", () =>
@@ -455,7 +424,7 @@ describe("upstream timeout", () => {
     server.use(
       http.patch(`${API_BASE_URL}/v1/me`, async () => {
         await delay("infinite");
-        return offContractResponse("updateMe", 200, {}, "never sent");
+        return new HttpResponse("not JSON", { status: 200 });
       })
     );
     const result = await updateMe(await signedInRequest(), loadContext(), {

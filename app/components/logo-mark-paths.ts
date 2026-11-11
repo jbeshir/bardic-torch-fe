@@ -1,7 +1,7 @@
 /**
  * Geometry of the torch mark on a 24 × 24 grid (DESIGN §5.9). LogoMark draws
- * it inline and scripts/build-tokens.mjs draws the favicon from it, so the
- * two can't drift apart.
+ * it inline; public/favicon.svg copies the paths by hand, so keep the two
+ * in step.
  */
 export const LOGO_MARK_PATHS = {
   handle:

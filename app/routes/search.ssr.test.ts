@@ -6,7 +6,6 @@ import {
   sessionCookie,
   sessionTokens,
 } from "~/test/context";
-import { offContractResponse } from "~/test/contract";
 import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
 import * as searchModule from "./search";
@@ -174,14 +173,7 @@ describe("/search loader", () => {
       "a malformed body",
       () =>
         fixtures.server.use(
-          http.get(PERSONS, () =>
-            offContractResponse(
-              "listPersons",
-              200,
-              { data: [] },
-              "no total or letters"
-            )
-          )
+          http.get(PERSONS, () => new HttpResponse("not JSON", { status: 200 }))
         ),
       { kind: "bad_gateway" },
     ],
@@ -263,9 +255,7 @@ describe("/search loader", () => {
     quietErrors();
     fixtures.server.use(
       http.get(PIECES, () => new HttpResponse("down", { status: 503 })),
-      http.get(PERSONS, () =>
-        offContractResponse("listPersons", 200, {}, "empty")
-      ),
+      http.get(PERSONS, () => new HttpResponse("not JSON", { status: 200 })),
       http.get(TERMS, () => HttpResponse.error())
     );
     expect(await load("?q=northmarch")).toMatchObject({

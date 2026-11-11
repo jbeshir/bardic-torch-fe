@@ -1,7 +1,7 @@
 import { http, HttpResponse } from "msw";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { API_BASE_URL, routeArgs } from "~/test/context";
-import { contractResponse, offContractResponse } from "~/test/contract";
+import { contractResponse } from "~/test/contract";
 import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
 import * as layoutModule from "./categories.$slug";
@@ -178,13 +178,7 @@ describe("/categories/:slug loaders", () => {
     ],
     [
       "a malformed body",
-      () =>
-        offContractResponse(
-          "getTerm",
-          200,
-          { slug: "swords" },
-          "a Term without its fields"
-        ),
+      () => new HttpResponse("not JSON", { status: 200 }),
       { kind: "bad_gateway" },
       502,
     ],

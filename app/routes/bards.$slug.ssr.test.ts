@@ -6,7 +6,7 @@ import {
   sessionCookie,
   sessionTokens,
 } from "~/test/context";
-import { contractResponse, offContractResponse } from "~/test/contract";
+import { contractResponse } from "~/test/contract";
 import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
 import { singleFetchResults } from "~/test/single-fetch";
@@ -159,32 +159,14 @@ describe("/bards/:slug loader", () => {
     });
   });
 
-  it("throws bad_gateway (502) for a malformed body, or a profile for a person with no page", async () => {
+  it("throws bad_gateway (502) for a malformed body", async () => {
     quietErrors();
     fixtures.server.use(
-      http.get(PERSON, () =>
-        offContractResponse("getPerson", 200, { slug: "x" }, "no fields")
-      )
+      http.get(PERSON, () => new HttpResponse("not JSON", { status: 200 }))
     );
     expect(await load("wren-of-the-vale")).toMatchObject({
       data: { kind: "bad_gateway" },
       init: { status: 502 },
-    });
-    fixtures.server.resetHandlers();
-    const wren = (await (
-      await fetch(`${API_BASE_URL}/v1/persons/wren-of-the-vale`)
-    ).json()) as Record<string, unknown>;
-    fixtures.server.use(
-      // The spec's schema allows it; its words don't.
-      http.get(PERSON, () =>
-        contractResponse("getPerson", 200, {
-          ...wren,
-          status: "prefers_no_page",
-        })
-      )
-    );
-    expect(await load("wren-of-the-vale")).toMatchObject({
-      data: { kind: "bad_gateway" },
     });
   });
 });

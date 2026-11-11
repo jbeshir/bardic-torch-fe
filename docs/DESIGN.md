@@ -37,13 +37,13 @@ A component tagged FE1 or FE2 can still have individual states or variants tagge
 
 ### 2.1 Mechanism (fixed)
 
-- **One source of truth:** `app/styles/tokens.ts` holds every colour for both themes, plus the other token groups (type scale, radii, shadows, motion, layout sizes). It is the only hand-written file in the repo that contains colour literals.
-- `scripts/build-tokens.mjs` (`npm run gen:tokens`) generates, from that module:
+- **Source of truth for colour:** `app/styles/tokens.ts` holds every colour for both themes; `check:contrast` reads it. It is the only TypeScript file that contains colour literals. The type scale, radii, shadows, motion and layout sizes live in `app/styles/tokens.css`.
+- These files are hand-written and mirror it; `app/styles/tokens.test.ts` checks the first two:
   - `app/styles/tokens.css`: the CSS custom properties;
   - `public/favicon.svg` (§5.9);
   - `public/site.webmanifest` (`theme_color` and `background_color` = `canvas`);
-  - `app/styles/theme-colour.gen.ts`: the `<meta name="theme-color">` values, which `root.tsx` imports.
-- Every generated file starts with an `@generated` header naming the generator. `npm run check:tokens` (part of `validate`) fails if any generated file differs from what the generator would write now.
+  - `app/styles/theme-colour.ts`: the `<meta name="theme-color">` values, which `root.tsx` imports.
+- `app/styles/tokens.test.ts` fails if `tokens.css` or `theme-colour.ts` disagrees with `tokens.ts`.
 - Colour tokens are CSS custom properties holding **space-separated RGB channels** (for example, `--bt-fg: 43 33 24`). The generated Tailwind theme reads them as `rgb(var(--bt-fg))`, and a colour at an alpha is a named utility that writes `rgb(var(--bt-fg) / 0.1)` (Appendix A). The variables carry a `--bt-` prefix so they don't clash with Tailwind's own theme variables (`--color-*`, `--text-*`, `--shadow-*`).
 - `tokens.css` has three colour blocks, all generated from the same two maps:
   - `:root, [data-theme="light"]` holds the light values and `color-scheme: light`.
@@ -52,7 +52,7 @@ A component tagged FE1 or FE2 can still have individual states or variants tagge
   - Because the blocks also match `[data-theme]` on any element, a wrapper can force a theme for its subtree (the styleguide previews do this). A `[data-theme="light"]` wrapper under an OS-dark page resolves to the light tokens, because the wrapper declares them itself.
 - Components use semantic classes only, for example `bg-surface`, `text-fg-muted`, `border-border-strong`, `text-link` and `bg-accent`.
 - **Tailwind's palette doesn't exist here.** The generated `@theme` starts with `--*: initial`, which clears every Tailwind default, and then defines `transparent`, `current`, `inherit` and the tokens as colours. So `bg-amber-600` and `text-white` don't compile to anything.
-- **No arbitrary values** (`bg-[#fff]`, `text-[0.875em]`, `w-[min(…)]`). Every value a component needs is a named theme value or utility (Appendix A). If one is missing, add it to `app/styles/tokens.ts` or `scripts/tailwind-theme.mjs` and to this document.
+- **No arbitrary values** (`bg-[#fff]`, `text-[0.875em]`, `w-[min(…)]`). Every value a component needs is a named theme value or utility (Appendix A). If one is missing, add it to `app/styles/tokens.css` (and `tokens.ts` for a colour) and to this document.
 - `test/no-raw-colours.test.ts` scans `app/`, `public/`, `e2e/` and the config files. It fails on hex, `rgb()`/`hsl()` (and similar) literals, CSS named colours, Tailwind palette classes and arbitrary values. Only `app/styles/tokens.ts` and the generated files may contain colour literals, and the test checks that each generated file is exactly the generator's output.
 - **`dark:` is never used.** Tailwind's `dark:` variant would follow the OS setting and ignore the user's explicit choice. Every difference between the themes, including shadows, is a token. The scan test also rejects `dark:` classes.
 
@@ -468,7 +468,7 @@ The app shell has `max-width: 90rem` (1440 px) and is centred. The canvas extend
 **Bottom app bar** (<md only):
 
 - It is part of the `<header>` landmark in the DOM (after the logo link), positioned `fixed inset-x-0 bottom-0`. So the Tab order at 360 px is skip link → logo → Menu → Search → Account → main content, and the bar needs no landmark of its own.
-- Its height is `h-app-bar`: 56 px plus `padding-bottom: env(safe-area-inset-bottom)`, for the whole box, its top border included. It is `bg-surface-raised border-t border-border shadow-2`, with three equal cells: **Menu · Search · Account**. The room the page keeps under its end (`pb-app-bar`) is the same expression (`APP_BAR_BOX` in `scripts/tailwind-theme.mjs`), so the bar never covers the end of the page, whatever the fonts make the page's height come to (an e2e check, which also checks the bar is as tall as that room).
+- Its height is `h-app-bar`: 56 px plus `padding-bottom: env(safe-area-inset-bottom)`, for the whole box, its top border included. It is `bg-surface-raised border-t border-border shadow-2`, with three equal cells: **Menu · Search · Account**. The room the page keeps under its end (`pb-app-bar`) is the same expression (`--bt-app-bar-h` in `app/styles/tokens.css`), so the bar never covers the end of the page, whatever the fonts make the page's height come to (an e2e check, which also checks the bar is as tall as that room).
 - Each cell is a full-height control (at least 44 × 55 px: the bar's 56 px less its top border) with a 24 px icon above a visible `caption` label: "Menu" (`IconMenu2`), "Search" (`IconSearch`), and "Account" (avatar initials) or "Log in" (`IconLogin`). The visible label is the accessible name.
 - `body` has `padding-bottom: calc(56px + env(safe-area-inset-bottom))` below `md`, and `html` has the same `scroll-padding-bottom`, so the bar never covers the end of the page or the focused element.
 - **Menu** opens the drawer as a bottom sheet, nearest its trigger (§6.21).
@@ -680,7 +680,7 @@ Drawer (open, bottom sheet from the bar, max-height 85dvh):
 - `--bt-logo-core` is a decorative token: `#E8A33D` (= accent-glow) in light, where it reads as a bright core inside the burnt-orange outer, and `#F4BA62` (= accent-hover) in dark, a hotter centre inside the bright amber outer.
 - The outer flame meets ≥3:1 on every surface in both themes (rows `accent` on `canvas`/`surface`/`surface-raised`/`surface-sunken`).
 - At 20 px the core may merge visually; that is fine, because the silhouette carries the mark.
-- **Favicon:** `public/favicon.svg` is **generated** by `scripts/build-tokens.mjs` from the same paths and the `tokens.ts` values. Inside the SVG, a `<style>` with a `prefers-color-scheme: dark` block switches the handle between light and dark `fg`, the outer flame between light and dark `accent`, and the core between light and dark `logo-core`. No colour is typed by hand. `site.webmanifest` lists it as the icon (`sizes: "any"`). FE1 ships no raster icons (`favicon.ico`, `apple-touch-icon.png`), because generating them from tokens needs a rasteriser in the toolchain. They are FE2+ work, and browsers without SVG favicon support show their default icon until then.
+- **Favicon:** `public/favicon.svg` is hand-written from the same paths and the `tokens.ts` values. Inside the SVG, a `<style>` with a `prefers-color-scheme: dark` block switches the handle between light and dark `fg`, the outer flame between light and dark `accent`, and the core between light and dark `logo-core`. Its colours are copied from `tokens.ts`. `site.webmanifest` lists it as the icon (`sizes: "any"`). FE1 ships no raster icons (`favicon.ico`, `apple-touch-icon.png`), because generating them from tokens needs a rasteriser in the toolchain. They are FE2+ work, and browsers without SVG favicon support show their default icon until then.
 - Check it on the styleguide at 20, 24, 28 and 32 px on all four surfaces in both themes before you commit.
 - **Motion (FE1, header home link only):** on hover, the outer flame plays `flicker`: `scaleY 1 → 1.04 → 0.98 → 1` with `transform-origin: 50% 90%`, 600 ms, one iteration (`motion-safe:group-hover:animate-flicker`). It is disabled under reduced motion.
 
@@ -1386,7 +1386,7 @@ Dark mode is a separately tuned palette with the same token names:
   - The `@media` path (no cookie) is tested separately in `e2e/prod/theme.spec.ts`: with no cookie, the page follows the emulated scheme; and a `light` cookie under an emulated dark OS renders light. These compare computed token values, not screenshots.
   - **Every component MUST be screenshot-reviewed in both themes** by the UX/accessibility reviewer before the milestone lands.
 - **axe:** `@axe-core/playwright` runs at every checkpoint in both themes at **360 and 1280** px, with zero violations for the WCAG 2.0–2.2 A/AA tags (including `color-contrast`).
-- **Contrast:** `npm run check:contrast` checks every pair in §2.7 and the accent/danger hue gap. `npm run check:tokens` checks the generated files are fresh.
+- **Contrast:** `npm run check:contrast` checks every pair in §2.7 and the accent/danger hue gap.
 - **No-flash test:** the raw HTML for a `theme=dark` request (`request.get`, no browser) already contains `<html … data-theme="dark">` and `<meta name="color-scheme" content="dark">`, and the stylesheet is a render-blocking `<link rel="stylesheet">` in `<head>`. There is no theme script to wait for.
 - **No-JS run** (`javaScriptEnabled: false`): the theme toggle POST works, and so does the drawer's anchor fallback.
 - **Forced colours:** one run with `forcedColors: 'active'` on the styleguide, which must stay usable (focus, pressed and current markers visible; checkboxes visible).
@@ -1728,7 +1728,7 @@ The pattern is: what happened, then what to do. Don't blame the reader, and don'
 
 ## Appendix A: Tailwind theme
 
-`scripts/build-tokens.mjs` writes the Tailwind 4 theme into `app/styles/tokens.css`, after the per-theme variables, from `app/styles/tokens.ts` and the tables in `scripts/tailwind-theme.mjs`; `npm run check:tokens` byte-checks it. The `@theme` block starts with `--*: initial`, which clears every Tailwind default, so only what is listed here exists: no default palette, size scale, radii, shadows, durations or animations.
+The Tailwind 4 theme is written by hand in `app/styles/tokens.css`, after the per-theme variables. The `@theme` block starts with `--*: initial`, which clears every Tailwind default, so only what is listed here exists: no default palette, size scale, radii, shadows, durations or animations.
 
 - **Spacing** is Tailwind 3's default scale plus `13`, written as named keys (`--spacing-4: 1rem`) with no bare `--spacing`, so `p-17` or `mt-13.5` are not classes.
 - **Every other namespace** of Tailwind 4's theme (read from `tailwindcss/theme.css` when the file is generated) gets Tailwind 3.4's default values, which the design was drawn on: `--breakpoint-*` (`sm` 640 px … `2xl` 1536 px), `--font-weight-*`, `--leading-*`, `--tracking-*`, `--container-*` (`max-w-xs` … `max-w-7xl`), `--blur-*`, `--aspect-*`. `--drop-shadow-*` stays empty, because Tailwind 3's drop shadows are raw black (§2.1). `--inset-shadow-*`, `--text-shadow-*` and `--perspective-*` stay empty: Tailwind 3 had none.
@@ -1776,10 +1776,10 @@ In this theme, the colour named `border` gives `border-border`. That is intended
 
 ## Appendix B: Token CSS shape
 
-This is the shape of `app/styles/tokens.css` as `scripts/build-tokens.mjs` writes it from `app/styles/tokens.ts` (the `@theme` and `@utility` rules that follow are Appendix A). Colour values are channel triplets, so a colour can be written at any alpha.
+This is the shape of `app/styles/tokens.css` (the `@theme` and `@utility` rules that follow are Appendix A). Colour values are channel triplets, so a colour can be written at any alpha.
 
 ```css
-/* @generated by scripts/build-tokens.mjs from app/styles/tokens.ts — do not edit. Run `npm run gen:tokens`. */
+/* Hand-written; colours mirror tokens.ts. */
 :root,
 [data-theme="light"] {
   color-scheme: light;

@@ -1,5 +1,4 @@
 import type { RouterContextProvider } from "react-router";
-import type { z } from "zod";
 import type { operations } from "~/api/schema.gen";
 import {
   BAD_GATEWAY,
@@ -9,20 +8,8 @@ import {
   type PageFailure,
   type ReadFailure,
 } from "~/catalogue/read-failure";
-import { upstreamErrorSchema } from "~/schemas/api";
+import type { UpstreamErrorCode } from "~/schemas/api";
 import {
-  collectionListSchema,
-  collectionSchema,
-  eventListSchema,
-  eventSchema,
-  personListSchema,
-  personSchema,
-  pieceListSchema,
-  pieceSchema,
-  revisionHistorySchema,
-  revisionSchema,
-  termListSchema,
-  termSchema,
   type ApiQuery,
   type Collection,
   type CollectionList,
@@ -292,8 +279,7 @@ function callPublicApi<Id extends ReadId, T>(
   request: {
     readonly query?: ApiQuery<Id>;
     readonly path?: Readonly<Record<string, string>>;
-  },
-  schema: z.ZodType<T>
+  }
 ): Promise<ReadResult<T, FailureOf<Id>>>;
 async function callPublicApi<Id extends ReadId, T>(
   context: Readonly<RouterContextProvider>,
@@ -304,8 +290,7 @@ async function callPublicApi<Id extends ReadId, T>(
   }: {
     readonly query?: ApiQuery<Id>;
     readonly path?: Readonly<Record<string, string>>;
-  },
-  schema: z.ZodType<T>
+  }
 ): Promise<ReadResult<T>> {
   const env = context.get(appEnvContext);
   const url = `${upstreamUrl(env.BARDIC_TORCH_API_BASE_URL, ENDPOINTS[operationId].path, path)}${queryString(operationId, query)}`;
@@ -336,31 +321,32 @@ async function callPublicApi<Id extends ReadId, T>(
   }
 
   const payload = parseJson(text);
+  const body =
+    typeof payload === "object" && payload !== null && !Array.isArray(payload)
+      ? (payload as Record<string, unknown>)
+      : undefined;
   if (response.ok) {
-    const parsed = schema.safeParse(payload);
-    if (parsed.success) return { ok: true, data: parsed.data };
-    console.error(
-      `${operationId} answered a body that breaks the contract:`,
-      parsed.error.issues
-    );
+    if (body) return { ok: true, data: body as T };
+    console.error(`${operationId} answered a body that is not a JSON object`);
     return { ok: false, failure: BAD_GATEWAY };
   }
   if (response.status < 400) {
     console.error(`${operationId} answered ${response.status}`);
     return { ok: false, failure: BAD_GATEWAY };
   }
-  const error = upstreamErrorSchema.safeParse(payload);
+  const code =
+    typeof body?.code === "string"
+      ? (body.code as UpstreamErrorCode)
+      : undefined;
   console.error(
     `${operationId} answered ${response.status}:`,
-    error.success
-      ? `${error.data.code}: ${error.data.message}`
-      : "no Error body"
+    code === undefined ? "no Error body" : `${code}: ${String(body?.message)}`
   );
   return {
     ok: false,
     failure: failureOf(
       operationId,
-      { status: response.status, code: error.data?.code },
+      { status: response.status, code },
       filtered
     ),
   };
@@ -371,7 +357,7 @@ export function listPieces(
   context: Readonly<RouterContextProvider>,
   query: ApiQuery<"listPieces">
 ): Promise<ReadResult<PieceList>> {
-  return callPublicApi(context, "listPieces", { query }, pieceListSchema);
+  return callPublicApi(context, "listPieces", { query });
 }
 
 /**
@@ -384,7 +370,7 @@ export function listTerms(
   context: Readonly<RouterContextProvider>,
   query: ApiQuery<"listTerms">
 ): Promise<ReadResult<TermList, PageFailure>> {
-  return callPublicApi(context, "listTerms", { query }, termListSchema);
+  return callPublicApi(context, "listTerms", { query });
 }
 
 /** A page of persons with their letter counts (`GET /v1/persons`). */
@@ -392,7 +378,7 @@ export function listPersons(
   context: Readonly<RouterContextProvider>,
   query: ApiQuery<"listPersons">
 ): Promise<ReadResult<PersonList>> {
-  return callPublicApi(context, "listPersons", { query }, personListSchema);
+  return callPublicApi(context, "listPersons", { query });
 }
 
 /** A piece, with everything its page shows (`GET /v1/pieces/{slug}`). */
@@ -400,7 +386,7 @@ export function getPiece(
   context: Readonly<RouterContextProvider>,
   slug: string
 ): Promise<ReadResult<Piece, PageFailure>> {
-  return callPublicApi(context, "getPiece", { path: { slug } }, pieceSchema);
+  return callPublicApi(context, "getPiece", { path: { slug } });
 }
 
 /** A person, with everything their page shows (`GET /v1/persons/{slug}`). */
@@ -408,7 +394,7 @@ export function getPerson(
   context: Readonly<RouterContextProvider>,
   slug: string
 ): Promise<ReadResult<Person, PageFailure>> {
-  return callPublicApi(context, "getPerson", { path: { slug } }, personSchema);
+  return callPublicApi(context, "getPerson", { path: { slug } });
 }
 
 // ---------------------------------------------------------------------------
@@ -423,12 +409,7 @@ export function getTerm(
   slug: string,
   query: ApiQuery<"getTerm">
 ): Promise<ReadResult<Term, PageFailure>> {
-  return callPublicApi(
-    context,
-    "getTerm",
-    { query, path: { slug } },
-    termSchema
-  );
+  return callPublicApi(context, "getTerm", { query, path: { slug } });
 }
 
 /** A page of collections by sort name (`GET /v1/collections`). */
@@ -436,12 +417,7 @@ export function listCollections(
   context: Readonly<RouterContextProvider>,
   query: ApiQuery<"listCollections">
 ): Promise<ReadResult<CollectionList>> {
-  return callPublicApi(
-    context,
-    "listCollections",
-    { query },
-    collectionListSchema
-  );
+  return callPublicApi(context, "listCollections", { query });
 }
 
 /**
@@ -453,12 +429,9 @@ export function getCollection(
   context: Readonly<RouterContextProvider>,
   id: string
 ): Promise<ReadResult<Collection, PageFailure>> {
-  return callPublicApi(
-    context,
-    "getCollection",
-    { path: { collection_id: id } },
-    collectionSchema
-  );
+  return callPublicApi(context, "getCollection", {
+    path: { collection_id: id },
+  });
 }
 
 /** A page of events and venues by name (`GET /v1/events`). */
@@ -466,7 +439,7 @@ export function listEvents(
   context: Readonly<RouterContextProvider>,
   query: ApiQuery<"listEvents">
 ): Promise<ReadResult<EventList, PageFailure>> {
-  return callPublicApi(context, "listEvents", { query }, eventListSchema);
+  return callPublicApi(context, "listEvents", { query });
 }
 
 /**
@@ -477,7 +450,7 @@ export function getEvent(
   context: Readonly<RouterContextProvider>,
   slug: string
 ): Promise<ReadResult<Event, PageFailure>> {
-  return callPublicApi(context, "getEvent", { path: { slug } }, eventSchema);
+  return callPublicApi(context, "getEvent", { path: { slug } });
 }
 
 /**
@@ -512,12 +485,10 @@ export function listRevisions(
   query: { readonly limit: number; readonly offset: number }
 ): Promise<ReadResult<RevisionHistory, PageFailure>> {
   const { operationId, address: name } = HISTORIES[entity];
-  return callPublicApi(
-    context,
-    operationId,
-    { query, path: { [name]: address } },
-    revisionHistorySchema
-  );
+  return callPublicApi(context, operationId, {
+    query,
+    path: { [name]: address },
+  });
 }
 
 /**
@@ -528,10 +499,5 @@ export function getRevision(
   context: Readonly<RouterContextProvider>,
   id: string
 ): Promise<ReadResult<Revision, PageFailure>> {
-  return callPublicApi(
-    context,
-    "getRevision",
-    { path: { revision_id: id } },
-    revisionSchema
-  );
+  return callPublicApi(context, "getRevision", { path: { revision_id: id } });
 }
