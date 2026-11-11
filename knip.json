@@ -12,7 +12,6 @@
     "scripts/check-production-build.mjs!",
     "scripts/contrast.mjs!",
     "scripts/dev-fixtures.mjs!",
-    "scripts/e2e.mjs!",
     "scripts/gen-api.mjs!",
     "scripts/gen-types.mjs!",
     "scripts/sync-api.mjs!",
