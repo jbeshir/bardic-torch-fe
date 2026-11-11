@@ -79,7 +79,6 @@ describe("problemMessage", () => {
   );
 
   it.each([
-    "token_limit_reached",
     "user_blocked",
     "not_found",
     "unauthenticated",

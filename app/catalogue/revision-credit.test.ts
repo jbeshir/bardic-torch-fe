@@ -6,7 +6,6 @@ const author = { display_name: "Morwen of the Marches" };
 describe("revisionCredit", () => {
   it.each([
     ["user", author, [], "Morwen of the Marches"],
-    ["mcp", author, [], "Morwen of the Marches (edited with an app)"],
     ["import", null, [], "Imported from the original wiki"],
     [
       "import",

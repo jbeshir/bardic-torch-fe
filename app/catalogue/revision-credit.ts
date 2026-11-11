@@ -7,8 +7,7 @@ function joinNames(names: readonly string[]): string {
 }
 
 /**
- * Who made a revision (plan §4.11): its author, "(edited with an app)" for
- * one made through it; for an import, the original wiki and the wiki users
+ * Who made a revision (plan §4.11): its author; for an import, the original wiki and the wiki users
  * who wrote it (CC BY-SA attribution, so always named when the API has
  * them); "Unknown" for an author the API doesn't show.
  */
@@ -20,6 +19,5 @@ export function revisionCredit(
       ? `Imported from the original wiki, by ${joinNames(revision.contributors)}`
       : "Imported from the original wiki";
   }
-  const name = revision.author?.display_name ?? "Unknown";
-  return revision.source === "mcp" ? `${name} (edited with an app)` : name;
+  return revision.author?.display_name ?? "Unknown";
 }

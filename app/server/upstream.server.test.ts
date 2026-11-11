@@ -4,10 +4,10 @@ import { aborted, isTimeout, parseJson, upstreamUrl } from "./upstream.server";
 describe("upstream helpers", () => {
   it("upstreamUrl fills and percent-encodes path parameters", () => {
     expect(
-      upstreamUrl("https://api.test", "/v1/tokens/{token_id}", {
-        token_id: "a/b c",
+      upstreamUrl("https://api.test", "/v1/pieces/{slug}", {
+        slug: "a/b c",
       })
-    ).toBe("https://api.test/v1/tokens/a%2Fb%20c");
+    ).toBe("https://api.test/v1/pieces/a%2Fb%20c");
   });
 
   it.each([

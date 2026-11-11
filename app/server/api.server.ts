@@ -132,8 +132,6 @@ function upstreamError(
         };
       }
       return { code, message: TRY_AGAIN };
-    case "api_token_not_allowed":
-    case "token_limit_reached":
     case "method_not_allowed":
     case "unsupported_media_type":
     case "internal":

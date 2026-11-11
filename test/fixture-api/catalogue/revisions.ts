@@ -163,15 +163,11 @@ function importMeta(id: number) {
   };
 }
 
-function userMeta(
-  meta: Meta,
-  base: number,
-  source: Schemas["RevisionSource"] = "user"
-) {
+function userMeta(meta: Meta, base: number) {
   return {
     id: meta.id,
     base_revision_id: base,
-    source,
+    source: "user" as const,
     summary: meta.summary ?? "",
     author: { display_name: "Morwen of the Marches" },
     contributors: [],
@@ -233,7 +229,7 @@ const KETTLE_USER = pieceSnapshot("the-copper-kettle", {
   overrides: { version_notes_md: null },
 });
 
-const KETTLE_MCP = pieceSnapshot("the-copper-kettle");
+const KETTLE_CURRENT = pieceSnapshot("the-copper-kettle");
 
 const HOARD_AT_IMPORT = pieceSnapshot("the-dragons-hoard", {
   overrides: {
@@ -358,8 +354,8 @@ export const REVISIONS: readonly Revision[] = [
   ),
   pieceRevision(
     "the-copper-kettle",
-    userMeta({ id: 1004, createdAt: "2026-02-20T12:00:00Z" }, 1003, "mcp"),
-    KETTLE_MCP,
+    userMeta({ id: 1004, createdAt: "2026-02-20T12:00:00Z" }, 1003),
+    KETTLE_CURRENT,
     KETTLE_USER
   ),
   pieceRevision(
@@ -477,7 +473,7 @@ export const REVISIONS: readonly Revision[] = [
       },
       1004
     ),
-    KETTLE_MCP,
-    KETTLE_MCP
+    KETTLE_CURRENT,
+    KETTLE_CURRENT
   ),
 ];
