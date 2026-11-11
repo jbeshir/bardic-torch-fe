@@ -1,5 +1,6 @@
+import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";
-import { sessionCookie, sessionTokens } from "~/test/context";
+import { API_BASE_URL, sessionCookie, sessionTokens } from "~/test/context";
 import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
 import { shouldRevalidate } from "./root";
@@ -65,13 +66,14 @@ describe("root loader", () => {
 
   it("still renders the page when /v1/me fails, with the account control saying so", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
-    fixtures.fail({
-      userId: "contributor",
-      operationId: "getMe",
-      status: 500,
-      code: "internal",
-      times: 2,
-    });
+    fixtures.server.use(
+      http.get(`${API_BASE_URL}/v1/me`, () =>
+        HttpResponse.json(
+          { code: "internal", message: "failed" },
+          { status: 500 }
+        )
+      )
+    );
     const { response, data } = await rootData(await contributor());
     expect(response.status).toBe(200);
     expect(data.account).toEqual({ state: "profile-unavailable" });

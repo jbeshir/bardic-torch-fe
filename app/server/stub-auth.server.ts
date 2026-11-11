@@ -45,8 +45,9 @@ function stubLoginHref(userId: string, returnTo: string): string {
 
 /**
  * The page "Log in" opens in a stub build: pick a fixture user. It has no
- * scripts or styles, so it is plain HTML under the site's CSP. Users made
- * with `POST /__fixtures/users` are signed in by typing their id.
+ * scripts or styles, so it is plain HTML under the site's CSP. Any other
+ * fixture user id can be typed in, though the fixture API knows only the
+ * seeded two.
  */
 function chooserPage(returnTo: string, env: AppEnv): Response {
   const links = SEEDED_USERS.map(

@@ -8,13 +8,6 @@ import type { components } from "../../../app/api/schema.gen";
 
 type Schemas = components["schemas"];
 
-type RawPersonAlias = Readonly<
-  Schemas["PersonAlias"] & {
-    /** Hidden aliases (legal names) are never served. */
-    hidden: boolean;
-  }
->;
-
 type RawProfile = Readonly<
   Omit<
     Schemas["PersonProfile"],
@@ -27,7 +20,7 @@ type RawProfile = Readonly<
     | "performances"
     | "performances_total"
   > & {
-    aliases: readonly RawPersonAlias[];
+    aliases: readonly Schemas["PersonAlias"][];
     /** Affiliation term slugs. */
     affiliations: readonly string[];
   }
@@ -43,9 +36,6 @@ export interface RawPersonRelation {
   readonly from: string;
   readonly to: string;
 }
-
-/** Text that must never appear in a served body. */
-export const HIDDEN_LEGAL_ALIAS = "HIDDEN-legal-alias-wren";
 
 function profile(overrides: Partial<RawProfile> = {}): RawProfile {
   return {
@@ -88,9 +78,8 @@ export const PERSONS: readonly RawPerson[] = [
       licensing_status: "known",
       licensing_notes_md: "Happy for songs to be shared with credit.",
       aliases: [
-        { name: "Wren Vale-Singer", kind: "sca", hidden: false },
-        { name: "The Vale Sparrow", kind: "stage", hidden: false },
-        { name: HIDDEN_LEGAL_ALIAS, kind: "legal", hidden: true },
+        { name: "Wren Vale-Singer", kind: "sca" },
+        { name: "The Vale Sparrow", kind: "stage" },
       ],
       roles: ["singer", "songwriter", "storyteller"],
       affiliations: ["barony-of-ashdown"],
@@ -124,7 +113,7 @@ export const PERSONS: readonly RawPerson[] = [
     {
       profile: profile({
         notes_md: "Writes practice pieces for new singers.",
-        roles: ["songwriter", "singer"],
+        roles: ["singer", "songwriter"],
         affiliations: ["northmarch"],
       }),
     }
@@ -135,8 +124,8 @@ export const PERSONS: readonly RawPerson[] = [
       notes_md: "A harper and poet.",
       licensing_status: "known",
       aliases: [
-        { name: "Aldie", kind: "nickname", hidden: false },
-        { name: "Aldith Reedpipe", kind: "former", hidden: false },
+        { name: "Aldie", kind: "nickname" },
+        { name: "Aldith Reedpipe", kind: "former" },
       ],
       roles: ["instrumentalist", "poet"],
       affiliations: ["barony-of-ashdown", "northmarch"],
@@ -145,9 +134,7 @@ export const PERSONS: readonly RawPerson[] = [
   person("dafydd-pennar", "Dafydd Pennar", "community_bard", {
     profile: profile({
       notes_md: "Learned most of their repertoire from **Wren of the Vale**.",
-      aliases: [
-        { name: "Dafydd of the Pennar", kind: "redirect", hidden: false },
-      ],
+      aliases: [{ name: "Dafydd of the Pennar", kind: "redirect" }],
       roles: ["singer", "jester"],
       affiliations: ["caer-wyn"],
     }),
@@ -184,7 +171,7 @@ export const PERSONS: readonly RawPerson[] = [
     status_date: "1544-06-01",
     profile: profile({
       notes_md: "An invented minstrel of the sixteenth century.",
-      roles: ["poet", "singer"],
+      roles: ["singer", "poet"],
     }),
   }),
   person("maelgwn-the-harper", "Maelgwn the Harper", "historical", {
@@ -204,8 +191,8 @@ export const PERSONS: readonly RawPerson[] = [
 ];
 
 export const PERSON_RELATIONS: readonly RawPersonRelation[] = [
-  { type: "member_of", from: "wren-of-the-vale", to: "northmarch-bards" },
   { type: "member_of", from: "aldith-of-ashdown", to: "northmarch-bards" },
+  { type: "member_of", from: "wren-of-the-vale", to: "northmarch-bards" },
   { type: "heir_of", from: "dafydd-pennar", to: "wren-of-the-vale" },
   { type: "same_as", from: "jorund-of-the-north-shore", to: "jorund-skald" },
 ];
@@ -221,7 +208,7 @@ export function rawPerson(slug: string): RawPerson {
   return found;
 }
 
-/** A person as other entities refer to them (`is_stub` is true for no-page). */
+/** A person as other entities refer to them. */
 export function personSummary(slug: string): Schemas["PersonSummary"] {
   const { name, kind, is_stub } = rawPerson(slug);
   return { slug, name, kind, is_stub };

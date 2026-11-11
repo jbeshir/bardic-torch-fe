@@ -1,3 +1,4 @@
+import { http, HttpResponse } from "msw";
 import { Outlet } from "react-router";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -10,6 +11,7 @@ import {
 } from "~/root";
 import { DISPLAY_NAME_RULE } from "~/schemas/rules";
 import {
+  API_BASE_URL,
   APP_ORIGIN,
   routeArgs,
   sessionCookie,
@@ -151,14 +153,23 @@ function renderSettings() {
   );
 }
 
-function contributor() {
-  const user = fixtures.state().users.get("contributor");
-  if (!user) throw new Error("no seeded contributor");
-  return user;
+/** The display name the API holds for the contributor. */
+async function storedName() {
+  const response = await fetch(`${API_BASE_URL}/v1/me`, {
+    headers: { Authorization: "Bearer auth0|fixture:contributor" },
+  });
+  return ((await response.json()) as { display_name: string }).display_name;
 }
 
-function fail(operationId: string, status: number, code: UpstreamErrorCode) {
-  fixtures.fail({ userId: "contributor", operationId, status, code });
+/** The next save is answered with this error. */
+function failNextSave(status: number, code: UpstreamErrorCode) {
+  fixtures.server.use(
+    http.patch(
+      `${API_BASE_URL}/v1/me`,
+      () => HttpResponse.json({ code, message: "failed" }, { status }),
+      { once: true }
+    )
+  );
 }
 
 async function openPage() {
@@ -192,7 +203,7 @@ describe("display name", () => {
     );
     expect(nameField()).toHaveAttribute("aria-invalid", "true");
     expect(nameField()).toHaveFocus();
-    expect(contributor().me.display_name).toBe("Morwen of the Marches");
+    expect(await storedName()).toBe("Morwen of the Marches");
   });
 
   it("saves, shows the normalised name, says so in a toast and revalidates the root", async () => {
@@ -207,7 +218,7 @@ describe("display name", () => {
     ).toBeInTheDocument();
     expect(nameField()).toHaveValue("Wynn of the Long Road");
     expect(nameField()).not.toHaveAttribute("aria-invalid");
-    expect(contributor().me.display_name).toBe("Wynn of the Long Road");
+    expect(await storedName()).toBe("Wynn of the Long Road");
     expect(router.state.loaderData.root).toMatchObject({
       account: {
         state: "signed-in",
@@ -219,7 +230,7 @@ describe("display name", () => {
   it("a 400 from the API is an inline error with the rule, and focus goes back to the field", async () => {
     const user = userEvent.setup();
     await openPage();
-    fail("updateMe", 400, "invalid_request");
+    failNextSave(400, "invalid_request");
     await user.click(screen.getByRole("button", { name: "Save changes" }));
 
     await waitFor(() =>
@@ -234,7 +245,7 @@ describe("display name", () => {
   it("a session the API ended signs the whole page out, offering Log in back to settings", async () => {
     const user = userEvent.setup();
     const router = await openPage();
-    fail("updateMe", 401, "unauthenticated");
+    failNextSave(401, "unauthenticated");
     await user.click(screen.getByRole("button", { name: "Save changes" }));
 
     // The proxy cleared the session and the root loader ran again, so the
@@ -310,7 +321,7 @@ describe("when the app can't be reached", () => {
       expect(nameField()).not.toHaveAttribute("aria-invalid");
       expectNoBoundary();
       await expectOfflineToast(offline);
-      expect(contributor().me.display_name).toBe("Morwen of the Marches");
+      expect(await storedName()).toBe("Morwen of the Marches");
 
       // Once the app answers again, the same form saves.
       platform = undefined;
@@ -318,7 +329,7 @@ describe("when the app can't be reached", () => {
       expect(
         await within(notifications()).findByText("Display name saved.")
       ).toBeInTheDocument();
-      expect(contributor().me.display_name).toBe("Wynn of the Long Road");
+      expect(await storedName()).toBe("Wynn of the Long Road");
     }
   );
 });

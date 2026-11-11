@@ -140,9 +140,6 @@ function piece(
   };
 }
 
-/** Text that must never appear in a served body: a dropped credit's note. */
-export const HIDDEN_CREDIT_NOTE = "HIDDEN-credit-note-hollis";
-
 const HAND_PIECES: readonly RawPiece[] = [
   piece(
     "the-copper-kettle",
@@ -205,13 +202,7 @@ const HAND_PIECES: readonly RawPiece[] = [
       licence: "cc_by",
       notes: "A wassail for the barony’s Twelfth Night.",
       period: [1998, null],
-      credits: [
-        credit("hollis-fenn", "lyrics", {
-          part: "words",
-          note: HIDDEN_CREDIT_NOTE,
-        }),
-        credit(null, "tune", { part: "tune" }),
-      ],
+      credits: [credit(null, "tune", { part: "tune" })],
     }
   ),
   piece(
