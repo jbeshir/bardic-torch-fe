@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 import { UserLink } from "~/components/catalogue/UserLink";
 import { linkName } from "~/components/links/LinkRow";
+import { PersonName } from "~/components/person/PersonName";
 import { Link } from "~/components/ui/Link";
 import type { Piece } from "~/schemas/catalogue";
 
@@ -36,11 +37,9 @@ function Performers({
 }) {
   if (performers.length === 0) return <span className="text-fg-subtle">—</span>;
   return performers.map((person, index) => (
-    <Fragment key={person.slug}>
+    <Fragment key={person.slug ?? person.name}>
       {index === 0 ? "" : index === performers.length - 1 ? " and " : ", "}
-      <Link to={`/bards/${person.slug}`} appearance="plain">
-        {person.name}
-      </Link>
+      <PersonName person={person} appearance="plain" />
     </Fragment>
   ));
 }

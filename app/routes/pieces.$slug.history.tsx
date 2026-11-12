@@ -57,9 +57,9 @@ export const meta: MetaFunction = args => {
 
 export default function PieceHistoryRoute() {
   const { state, history } = useLoaderData<typeof loader>();
-  const { piece } = useOutletContext<PieceView>();
+  const { piece, pending } = useOutletContext<PieceView>();
   return (
-    <EntityPage {...pieceHead(piece)}>
+    <EntityPage {...pieceHead(piece)} pending={pending}>
       <HistoryView
         state={state}
         history={history}
@@ -76,7 +76,7 @@ export function ErrorBoundary() {
   const failure = thrownPageFailure(error);
   const reference = useErrorReference(error, failure === null);
   const body = failure ? (
-    <CatalogueError failure={failure} what="the history" missing={MISSING} />
+    <CatalogueError failure={failure} missing={MISSING} />
   ) : (
     <ServerError title="We couldn’t load the history" reference={reference} />
   );

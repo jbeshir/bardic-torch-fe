@@ -27,7 +27,9 @@ type RawProfile = Readonly<
 >;
 
 export type RawPerson = Readonly<
-  Omit<Schemas["Person"], "profile"> & { profile: RawProfile | null }
+  Omit<Schemas["Person"], "profile" | "updated_at"> & {
+    profile: RawProfile | null;
+  }
 >;
 
 /** One relation edge; both ends see it, with the direction flipped. */
@@ -208,8 +210,16 @@ export function rawPerson(slug: string): RawPerson {
   return found;
 }
 
-/** A person as other entities refer to them. */
-export function personSummary(slug: string): Schemas["PersonSummary"] {
+/** A person as lists of persons, and their own page, show them. */
+export function listedPerson(slug: string) {
   const { name, kind, is_stub } = rawPerson(slug);
   return { slug, name, kind, is_stub };
+}
+
+/** A person as other entities refer to them: no slug if they prefer no page. */
+export function personSummary(slug: string): Schemas["PersonSummary"] {
+  const listed = listedPerson(slug);
+  return rawPerson(slug).status === "prefers_no_page"
+    ? { ...listed, slug: null }
+    : listed;
 }

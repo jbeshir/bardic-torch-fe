@@ -68,11 +68,7 @@ export function ErrorBoundary() {
   return (
     <UnderPageHead>
       {failure ? (
-        <CatalogueError
-          failure={failure}
-          what="the history"
-          missing={MISSING}
-        />
+        <CatalogueError failure={failure} missing={MISSING} />
       ) : (
         <ServerError
           title="We couldn’t load the history"

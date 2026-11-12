@@ -5,7 +5,7 @@ import {
   redirectIfNotCanonical,
   type PageQueryState,
 } from "~/catalogue/query-state";
-import { asPageFailure, throwPageFailure } from "~/catalogue/read-failure";
+import { throwPageFailure } from "~/catalogue/read-failure";
 import type { RevisionHistory } from "~/schemas/catalogue";
 import { listRevisions, type HistoryEntity } from "./catalogue.server";
 
@@ -49,7 +49,7 @@ export async function loadHistory({
     address,
     historyQuery.toApi(state)
   );
-  if (!result.ok) throwPageFailure(asPageFailure(result.failure));
+  if (!result.ok) throwPageFailure(result.failure);
   redirectPastTheEnd(state.page, result.data.total, pageHref);
   return { state, canonical, history: result.data };
 }

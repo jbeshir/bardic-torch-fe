@@ -1,3 +1,4 @@
+import { failureMeta } from "~/catalogue/entity-route";
 import { FACETS } from "~/constants/enums";
 import { IconBook2 } from "@tabler/icons-react";
 import { useId, type ReactNode } from "react";
@@ -7,10 +8,7 @@ import {
   type LoaderFunctionArgs,
   type MetaFunction,
 } from "react-router";
-import {
-  CatalogueError,
-  failureTitle,
-} from "~/components/catalogue/CatalogueError";
+import { CatalogueError } from "~/components/catalogue/CatalogueError";
 import type { PageHandle } from "~/components/AppShell";
 import { SERVER_ERROR_META, ServerError } from "~/components/ErrorPages";
 import { TermTree } from "~/components/TermTree";
@@ -30,11 +28,7 @@ import {
   type CategoryFacet,
   type CategoryIndexQueryState,
 } from "~/catalogue/query-state";
-import {
-  asPageFailure,
-  throwPageFailure,
-  thrownPageFailure,
-} from "~/catalogue/read-failure";
+import { throwPageFailure, thrownPageFailure } from "~/catalogue/read-failure";
 import { pageMeta } from "~/catalogue/seo";
 import { buildTermIndex } from "~/catalogue/term-index";
 import {
@@ -113,9 +107,9 @@ export async function loader({
       : undefined,
     showsCounts ? listPieces(context, { limit: 1 }) : undefined,
   ]);
-  if (terms && !terms.ok) throwPageFailure(asPageFailure(terms.failure));
+  if (terms && !terms.ok) throwPageFailure(terms.failure);
   if (pieces && !pieces.ok && facet !== undefined) {
-    throwPageFailure(asPageFailure(pieces.failure));
+    throwPageFailure(pieces.failure);
   }
   return {
     state,
@@ -147,11 +141,7 @@ function sectionLabel(facet: CategoryFacet): string {
 
 export const meta: MetaFunction = args => {
   if (args.error) {
-    const thrown = thrownPageFailure(args.error) ?? { kind: "server" };
-    return [
-      { title: `${failureTitle(thrown, WHAT)} · Bardic Torch` },
-      { name: "robots", content: "noindex" },
-    ];
+    return failureMeta(args.error, WHAT);
   }
   const loaded = args.loaderData as CategoriesData | undefined;
   if (!loaded) return [...SERVER_ERROR_META];
@@ -289,6 +279,11 @@ export default function CategoriesRoute() {
         </div>
       )}
       <h1 className="text-h1 text-fg">{title}</h1>
+      <p className="mt-2">
+        <Link to="/categories/new" appearance="standalone">
+          Add a category
+        </Link>
+      </p>
       <div className="mt-4">
         <ViewTabs
           views={[
@@ -359,15 +354,14 @@ export default function CategoriesRoute() {
 }
 
 /**
- * The page couldn't load: an outage (the resting page, 503), a server
- * error or an answer we couldn't read, inside the shell.
+ * The page couldn't load (the resting page, 503), inside the shell.
  */
 export function ErrorBoundary() {
   const error = useRouteError();
   const failure = thrownPageFailure(error);
   const reference = useErrorReference(error, failure === null);
   return failure ? (
-    <CatalogueError failure={failure} what={WHAT} />
+    <CatalogueError failure={failure} />
   ) : (
     <ServerError title={`We couldn’t load ${WHAT}`} reference={reference} />
   );

@@ -2,7 +2,7 @@ import { Fragment } from "react";
 import { RowTable } from "~/components/catalogue/RowTable";
 import { PerformedPiece } from "~/components/performances/PerformedPiece";
 import { RecordingCell } from "~/components/performances/RecordingCell";
-import { Link } from "~/components/ui/Link";
+import { PersonName } from "~/components/person/PersonName";
 import { MoreNotListed } from "~/components/catalogue/MoreNotListed";
 import type { EventPerformance } from "~/schemas/catalogue";
 
@@ -15,11 +15,9 @@ function Performers({
     return <span className="text-fg-subtle">—</span>;
   }
   return performance.performers.map((performer, index) => (
-    <Fragment key={performer.slug}>
+    <Fragment key={performer.slug ?? performer.name}>
       {index > 0 ? ", " : null}
-      <Link to={`/bards/${performer.slug}`} appearance="prose">
-        {performer.name}
-      </Link>
+      <PersonName person={performer} appearance="prose" />
     </Fragment>
   ));
 }

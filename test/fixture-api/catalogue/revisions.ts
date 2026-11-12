@@ -81,6 +81,7 @@ function pieceSnapshot(
     licensing_status: raw.licensing_status,
     licensing_notes_md: raw.licensing_notes_md,
     licence: raw.licence,
+    licence_version: raw.licence_version,
     historical_source_md: raw.historical_source_md,
     period_start: raw.period_start,
     period_end: raw.period_end,

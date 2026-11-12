@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Revision } from "~/schemas/catalogue";
-import { revisionChanges, type DiffRow } from "./diff";
+import { revisionChanges } from "./diff";
 
 type PieceRevision = Extract<Revision, { readonly entity_type: "piece" }>;
 type PersonRevision = Extract<Revision, { readonly entity_type: "person" }>;
@@ -41,6 +41,7 @@ const PIECE: PieceSnapshot = {
   licensing_status: "unknown",
   licensing_notes_md: null,
   licence: null,
+  licence_version: null,
   historical_source_md: null,
   period_start: null,
   period_end: null,
@@ -63,6 +64,7 @@ const piece = (
     title: "The Copper Kettle",
     kind: "song",
     secondary_kinds: [],
+    credit_names: [],
     conservation_status: status,
     is_stub: false,
   },
@@ -71,126 +73,6 @@ const piece = (
   snapshot: { ...PIECE, ...snapshot },
   base_snapshot: base,
   changed_fields: changed,
-});
-
-const row = (rows: readonly DiffRow[], field: string) =>
-  rows.find(r => r.field === field);
-
-describe("revisionChanges: a piece", () => {
-  it("lists rows in the page's order, not the API's, with enums labelled", () => {
-    const { rows, first } = revisionChanges(
-      piece({ kind: "poem", licence: "cc_by_sa" }, PIECE, ["licence", "kind"])
-    );
-    expect(first).toBe(false);
-    expect(rows.map(r => r.label)).toEqual(["Kind", "Licence"]);
-    expect(row(rows, "kind")?.diff).toMatchObject({
-      before: [{ text: "Song" }],
-      after: [{ text: "Poem" }],
-    });
-  });
-
-  it("diffs lists by key, and a link by its address", () => {
-    const { rows } = revisionChanges(
-      piece(
-        {
-          aliases: [{ text: "The Kettle Song", kind: "alt_title" }],
-          links: [{ ...LINK, title: "By the hearth" }],
-        },
-        PIECE,
-        ["aliases", "links"]
-      )
-    );
-    expect(row(rows, "aliases")?.diff).toMatchObject({
-      added: [
-        { parts: [{ text: "The Kettle Song" }, { text: "Alternative title" }] },
-      ],
-      removed: [{ parts: [{ text: "Old Copper" }, { text: "Nickname" }] }],
-      changed: [],
-    });
-    expect(row(rows, "links")?.diff).toMatchObject({
-      added: [],
-      changed: [
-        { after: { parts: [{ kind: "external", url: LINK.url }, {}, {}, {}] } },
-      ],
-    });
-  });
-
-  it("diffs a changed text word by word, a first one and an over-long one not at all", () => {
-    const edit = (notes: string, base: string | null) =>
-      revisionChanges(
-        piece(
-          { notes_md: notes },
-          base === null ? null : { ...PIECE, notes_md: base },
-          ["notes_md"]
-        )
-      ).rows[0]?.diff;
-    expect(edit("Old notes, kept.", "Old notes.")).toMatchObject({
-      words: [
-        { kind: "same", text: "Old " },
-        { kind: "removed", text: "notes." },
-        { kind: "added", text: "notes, kept." },
-      ],
-    });
-    expect(edit("New.", null)).toMatchObject({ words: null });
-    const long = (seed: string) =>
-      Array.from({ length: 2000 }, (_, i) => `${seed}${i}`).join(" ");
-    expect(edit(long("b"), long("a"))).toMatchObject({ words: null });
-  });
-
-  it.each([
-    ["restricted now", "restricted", PIECE, {}],
-    [
-      "restricted in its snapshot",
-      "endangered",
-      PIECE,
-      { conservation_status: "restricted" },
-    ],
-    [
-      "restricted in its base",
-      "endangered",
-      { ...PIECE, conservation_status: "restricted" },
-      {},
-    ],
-  ] as const)(
-    "shows every link as text when %s",
-    (_why, status, base, snap) => {
-      const changes = revisionChanges(
-        piece(
-          {
-            ...snap,
-            conservation_source_url: "https://assess.example/hoard",
-            links: [{ ...LINK, url: "https://private.example/k" }],
-          },
-          base,
-          ["conservation_source_url", "links"],
-          status
-        )
-      );
-      expect(changes.linksAsText).toBe(true);
-      expect(JSON.stringify(changes.rows)).not.toContain("external");
-      expect(JSON.stringify(changes.rows)).toContain("private.example");
-    }
-  );
-
-  it("never links an address that isn't http(s)", () => {
-    const { rows } = revisionChanges(
-      piece({ links: [{ ...LINK, url: "ftp://files.example/k" }] }, PIECE, [
-        "links",
-      ])
-    );
-    expect(JSON.stringify(row(rows, "links")?.diff)).toMatch(
-      /"added":\[\{"key":"ftp:[^\]]*"kind":"text"/
-    );
-  });
-
-  it("with no base, gives each changed field's value only", () => {
-    const changes = revisionChanges(piece({}, null, ["title"]));
-    expect(changes.first).toBe(true);
-    expect(row(changes.rows, "title")?.diff).toMatchObject({
-      before: null,
-      after: [{ text: "The Copper Kettle" }],
-    });
-  });
 });
 
 const PROFILE: NonNullable<PersonSnapshot["profile"]> = {
@@ -233,23 +115,116 @@ const person = (
   changed_fields: changed,
 });
 
-describe("revisionChanges: a person", () => {
-  it("expands the profile into the sub-fields that differ", () => {
-    const { rows } = revisionChanges(
-      person({ profile: { ...PROFILE, roles: ["singer", "poet"] } }, PERSON, [
-        "profile",
-      ])
+const rows = (revision: Revision) =>
+  revisionChanges(revision).rows.map(r => ({ ...r }));
+
+describe("revisionChanges", () => {
+  it("shows a scalar and a text field whole, in the page's order, with enums labelled", () => {
+    expect(
+      rows(
+        piece({ kind: "poem", notes_md: "New notes." }, PIECE, [
+          "notes_md",
+          "kind",
+        ])
+      )
+    ).toMatchObject([
+      { label: "Kind", kind: "value", before: "Song", after: "Poem" },
+      {
+        label: "Notes",
+        kind: "value",
+        before: "Old notes.",
+        after: "New notes.",
+      },
+    ]);
+  });
+
+  it("diffs a list by key: added, removed and changed", () => {
+    expect(
+      rows(
+        piece(
+          {
+            aliases: [{ text: "The Kettle Song", kind: "alt_title" }],
+            links: [{ ...LINK, title: "By the hearth" }],
+          },
+          PIECE,
+          ["aliases", "links"]
+        )
+      )
+    ).toMatchObject([
+      {
+        added: ["The Kettle Song · Alternative title"],
+        removed: ["Old Copper · Nickname"],
+        changed: [],
+      },
+      {
+        added: [],
+        removed: [],
+        changed: [
+          {
+            before: expect.stringContaining("At the hearth"),
+            after: expect.stringContaining("By the hearth"),
+          },
+        ],
+      },
+    ]);
+  });
+
+  it("shows a link's title and address, but only its title or host when restricted", () => {
+    const links = [{ ...LINK, url: "https://private.example/k", title: null }];
+    expect(JSON.stringify(rows(piece({ links }, PIECE, ["links"])))).toContain(
+      "https://private.example/k"
     );
-    expect(rows.map(r => r.field)).toEqual(["profile.roles"]);
+    const restricted = revisionChanges(
+      piece({ links }, PIECE, ["links"], "restricted")
+    );
+    expect(restricted.linksAsText).toBe(true);
+    expect(JSON.stringify(restricted.rows)).not.toContain("https://");
+    expect(JSON.stringify(restricted.rows)).toContain("private.example");
+  });
+
+  it("with no base, gives the new value only", () => {
+    const changes = revisionChanges(piece({}, null, ["title"]));
+    expect(changes.first).toBe(true);
+    expect(changes.rows).toMatchObject([
+      { kind: "value", before: null, after: "The Copper Kettle" },
+    ]);
+  });
+
+  it("expands a person's profile into the sub-fields that differ", () => {
+    expect(
+      rows(
+        person({ profile: { ...PROFILE, roles: ["singer", "poet"] } }, PERSON, [
+          "profile",
+        ])
+      )
+    ).toMatchObject([
+      { field: "profile.roles", label: "Profile: Roles", added: ["Poet"] },
+    ]);
   });
 
   it("says Identity only for a side with no profile", () => {
-    const { rows } = revisionChanges(
-      person({ profile: null }, PERSON, ["profile"])
-    );
-    expect(row(rows, "profile")?.diff).toMatchObject({
-      before: [{ text: "A full profile" }],
-      after: [{ text: expect.stringContaining("Identity only") }],
+    expect(
+      rows(person({ profile: null }, PERSON, ["profile"]))[0]
+    ).toMatchObject({
+      field: "profile",
+      before: "A full profile",
+      after: expect.stringContaining("Identity only"),
     });
+  });
+
+  it("hides the address of a person's link that carries performances", () => {
+    const link = {
+      ...LINK,
+      performances: [{ year: 2025, notes: null, piece: null }],
+    };
+    const base = { ...PERSON, profile: { ...PROFILE, links: [] } };
+    const text = JSON.stringify(
+      rows(
+        person({ profile: { ...PROFILE, links: [link] } } as never, base, [
+          "profile",
+        ])
+      )
+    );
+    expect(text).not.toContain("https://");
   });
 });

@@ -17,6 +17,7 @@ const PIECES: PieceList = {
       secondary_kinds: [],
       conservation_status: "low_risk",
       is_stub: false,
+      credit_names: [],
     },
   ],
   total: 31,
@@ -82,13 +83,14 @@ describe("/search page", () => {
     await renderSearch(
       "?q=northmarch",
       found({
-        pieces: { ok: false, failure: { kind: "search_timeout" } },
-        terms: { ok: false, failure: { kind: "resting", retryAfter: 30 } },
+        pieces: { ok: false, failure: { kind: "try_again" } },
+        terms: { ok: false, failure: { kind: "try_again" } },
       })
     );
     const pieces = screen.getByRole("region", { name: "Pieces" });
-    expect(within(pieces).getByText("That search took too long")).toBeVisible();
-    expect(within(pieces).getByText("Try fewer words.")).toBeVisible();
+    expect(
+      within(pieces).getByText("We couldn’t load the pieces")
+    ).toBeVisible();
     expect(
       within(pieces).getByRole("button", { name: "Try again" })
     ).toBeVisible();

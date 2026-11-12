@@ -20,6 +20,7 @@ type ResponseObject = {
 };
 type OperationObject = {
   operationId: string;
+  requestBody?: { content: Record<string, MediaObject> };
   responses: Record<string, ResponseObject>;
 };
 type SpecDocument = {
@@ -80,6 +81,22 @@ function declaredResponse(
   const response = operationsById.get(operationId)?.responses[String(status)];
   if (!response?.$ref) return response;
   return spec.components.responses[lastSegment(response.$ref)];
+}
+
+/** Problems with `body` as `operationId`'s JSON request body; empty means valid. */
+export function requestProblems(
+  operationId: OperationId,
+  body: unknown
+): string[] {
+  const schema =
+    operationsById.get(operationId)?.requestBody?.content["application/json"]
+      ?.schema;
+  if (schema === undefined) return [`${operationId} takes no JSON body`];
+  const validate = validatorFor(`${operationId} request`, schema);
+  if (validate(body)) return [];
+  return (validate.errors ?? []).map(
+    error => `${error.instancePath || "/"} ${error.message ?? error.keyword}`
+  );
 }
 
 /**

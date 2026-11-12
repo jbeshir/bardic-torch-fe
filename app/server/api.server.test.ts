@@ -73,7 +73,7 @@ describe("authentication", () => {
     expect(result).toMatchObject({
       ok: false,
       status: 401,
-      error: { code: "unauthenticated", message: "Log in to continue." },
+      error: { code: "unauthenticated" },
     });
   });
 
@@ -123,6 +123,7 @@ describe("responses", () => {
     ["non-JSON success", () => new HttpResponse("<html>", { status: 200 })],
     ["an empty success", () => new HttpResponse(null, { status: 200 })],
     ["a non-Error 500", () => new HttpResponse("Bad gateway", { status: 500 })],
+    ["a platform 503", () => new HttpResponse("Unavailable", { status: 503 })],
     [
       "a redirect",
       () =>
@@ -131,22 +132,29 @@ describe("responses", () => {
           headers: { Location: "https://evil.example/" },
         }),
     ],
-  ])("maps %s to 502", async (_label, respond) => {
+    [
+      "an Error code no page treats differently",
+      () =>
+        contractResponse("getMe", 500, {
+          code: "internal",
+          message: "upstream detail not meant for users",
+        }),
+    ],
+  ])("maps %s to a 503 try again", async (_label, respond) => {
     captureUpstream("get", "/v1/me", respond);
     const result = await getMe(await signedInRequest(), loadContext());
     expect(result).toMatchObject({
       ok: false,
-      status: 502,
-      error: { code: "bad_gateway" },
+      status: 503,
+      error: { code: "try_again" },
     });
+    expect(JSON.stringify(result)).not.toContain("upstream detail");
   });
 
   it.each([
     ["400 invalid_request", "updateMe", 400, "invalid_request", "declared"],
     ["403 user_blocked", "getMe", 403, "user_blocked", "declared"],
     ["404 not_found", "getMe", 404, "not_found", "undeclared"],
-    ["409 conflict", "updateMe", 409, "conflict", "undeclared"],
-    ["500 internal", "getMe", 500, "internal", "declared"],
   ] as const)(
     "an upstream %s gets the app's own copy and keeps its status",
     async (_name, operationId, status, code, contract) => {
@@ -163,24 +171,7 @@ describe("responses", () => {
     }
   );
 
-  it.each([
-    ["a platform 503 that isn't JSON", 503, "Service Unavailable"],
-    [
-      "the code unavailable at another status",
-      500,
-      JSON.stringify({ code: "unavailable", message: "database unavailable" }),
-    ],
-  ])("maps %s to upstream_unavailable", async (_name, status, body) => {
-    captureUpstream("get", "/v1/me", () => new HttpResponse(body, { status }));
-    const result = await getMe(await signedInRequest(), loadContext());
-    expect(result).toMatchObject({
-      ok: false,
-      status,
-      error: { code: "upstream_unavailable" },
-    });
-  });
-
-  it("gives up on a hung API with a 504", async () => {
+  it("gives up on a hung API with a 503 try again", async () => {
     const timeout = AbortSignal.timeout.bind(AbortSignal);
     const asked = vi
       .spyOn(AbortSignal, "timeout")
@@ -197,8 +188,8 @@ describe("responses", () => {
     expect(asked).toHaveBeenCalledWith(10_000);
     expect(result).toMatchObject({
       ok: false,
-      status: 504,
-      error: { code: "upstream_unavailable" },
+      status: 503,
+      error: { code: "try_again" },
     });
   });
 });

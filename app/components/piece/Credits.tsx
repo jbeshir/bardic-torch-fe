@@ -1,5 +1,5 @@
 import { IconAlertTriangle } from "@tabler/icons-react";
-import { Link } from "~/components/ui/Link";
+import { PersonName } from "~/components/person/PersonName";
 import {
   ATTRIBUTION_LABELS,
   CERTAINTY_QUALIFIERS,
@@ -37,13 +37,9 @@ export function CertaintyQualifier({
   );
 }
 
-/** Who a credit is to: the person's page, or "Traditional" and the like. */
+/** Who a credit is to: the person, or "Traditional" and the like. */
 function Credited({ credit }: { readonly credit: Credit }) {
-  if (credit.person) {
-    return (
-      <Link to={`/bards/${credit.person.slug}`}>{credit.person.name}</Link>
-    );
-  }
+  if (credit.person) return <PersonName person={credit.person} />;
   // A credit without a person is an unnamed attribution.
   return credit.attribution === "named"
     ? null
@@ -63,11 +59,10 @@ export function creditLabel(credit: Pick<Credit, "role" | "part">): string {
 
 /**
  * A piece's credits as infobox rows (plan §4.5), in the API's order: the
- * role as the label; the person (a link to their page) or the attribution,
- * the certainty qualifier and the note as the value. Credits to persons who
- * asked not to have a page never arrive, so the rows are what there is,
- * never padded: with none, one "Credits" row shows the empty value (never
- * "unknown author").
+ * role as the label; the person (a link to their page, if they have one) or
+ * the attribution, the certainty qualifier and the note as the value. The
+ * rows are what there is, never padded: with none, one "Credits" row shows
+ * the empty value (never "unknown author").
  */
 export function creditRows(credits: Piece["credits"]) {
   if (credits.length === 0) return [{ label: "Credits", value: null }];
@@ -76,7 +71,7 @@ export function creditRows(credits: Piece["credits"]) {
     id: [
       credit.role,
       credit.part,
-      credit.person?.slug ?? credit.attribution,
+      credit.person?.slug ?? credit.person?.name ?? credit.attribution,
     ].join(":"),
     label: creditLabel(credit),
     value: (

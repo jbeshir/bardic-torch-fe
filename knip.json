@@ -19,10 +19,7 @@
     "**/*.{ts,tsx,mjs,js,css,mdx}!",
     "!app/test/**!",
     "!test/**!",
-    "!e2e/**!",
-    // Lint's Tailwind tables (eslint.config.ts and the class tests): no
-    // build imports them.
-    "!scripts/tailwind-classes.mjs!"
+    "!e2e/**!"
   ],
   // Vite's plugin would treat vite.config.ts as a development-only config
   // file, and drop the production entry above. React Router's plugin finds

@@ -1,8 +1,6 @@
 import type { Nodes, PhrasingContent, RootContent } from "mdast";
 import { fromMarkdown } from "mdast-util-from-markdown";
 import {
-  LINK_PROTOCOLS,
-  markdownTreeSchema,
   type MarkdownBlock,
   type MarkdownInline,
   type MarkdownTree,
@@ -11,22 +9,23 @@ import {
 /**
  * An API `*_md` field (a reader's Markdown) as the sanitised tree the page
  * renders (plan §0.7). It runs in the loader, so the parser never
- * reaches the browser (`check:prod-build` checks the client build has no
- * micromark).
+ * reaches the browser.
  *
  * CommonMark only. What is kept: paragraphs, emphasis, strong, lists,
  * inline and block code, block quotes, line breaks, thematic breaks,
  * headings (moved down to start at h3, under the page's h2 sections) and
  * links to `http:`, `https:` and `mailto:` addresses. What is dropped: raw
  * HTML, a link to anything else (its words are kept), an image (its alt
- * text is kept) and anything unknown. The result is checked against the
- * tree's schema before it goes out.
+ * text is kept) and anything unknown.
  */
 export function renderMarkdown(source: string | null): MarkdownTree | null {
   if (source === null || source.trim() === "") return null;
   const tree = blocks(fromMarkdown(source).children);
-  return tree.length > 0 ? markdownTreeSchema.parse(tree) : null;
+  return tree.length > 0 ? tree : null;
 }
+
+/** The addresses a link may have. */
+const LINK_PROTOCOLS: readonly string[] = ["http:", "https:", "mailto:"];
 
 /** Markdown's heading depths, moved down to start under the page's h2s. */
 const LEVELS = { 1: 3, 2: 4, 3: 5, 4: 6, 5: 6, 6: 6 } as const;

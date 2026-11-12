@@ -10,7 +10,12 @@ type Schemas = components["schemas"];
 export type RawCollection = Readonly<
   Omit<
     Schemas["Collection"],
-    "region" | "parent" | "children" | "citations" | "citations_total"
+    | "region"
+    | "parent"
+    | "children"
+    | "citations"
+    | "citations_total"
+    | "updated_at"
   > & {
     /** A term slug (an affiliation), or null. */
     region: string | null;

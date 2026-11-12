@@ -1,3 +1,4 @@
+import { IconArrowBackUp } from "@tabler/icons-react";
 import {
   useLoaderData,
   useRouteError,
@@ -15,11 +16,7 @@ import { revisionChanges } from "~/catalogue/diff";
 import { formatDate } from "~/catalogue/format";
 import { failureMeta } from "~/catalogue/entity-route";
 import { catalogueHeaders } from "~/catalogue/headers";
-import {
-  asPageFailure,
-  throwPageFailure,
-  thrownPageFailure,
-} from "~/catalogue/read-failure";
+import { throwPageFailure, thrownPageFailure } from "~/catalogue/read-failure";
 import { revisionHead, type RevisionHead } from "~/catalogue/revision-head";
 import { pageMeta } from "~/catalogue/seo";
 import { useErrorReference } from "~/hooks/useErrorReference";
@@ -43,7 +40,7 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
   const id = params.id ?? "";
   if (!isEntityId(id)) throwPageFailure({ kind: "not_found" });
   const result = await getRevision(context, id);
-  if (!result.ok) throwPageFailure(asPageFailure(result.failure));
+  if (!result.ok) throwPageFailure(result.failure);
   // Only what the page shows: the snapshots stay on the server, so a
   // restricted piece's addresses (which the changes give as text) never
   // reach the data the page hydrates from (§4.0).
@@ -107,6 +104,14 @@ export default function RevisionRoute() {
             View the {entity.noun} as it is now
           </Link>
         </li>
+        <li>
+          <ButtonLink
+            to={`${entity.path}/edit?revert=${revision.id}`}
+            icon={IconArrowBackUp}
+          >
+            Revert to this version
+          </ButtonLink>
+        </li>
         {revision.baseRevisionId === null ? null : (
           <li>
             <ButtonLink to={`/revisions/${revision.baseRevisionId}`}>
@@ -136,7 +141,7 @@ export function ErrorBoundary() {
   const failure = thrownPageFailure(error);
   const reference = useErrorReference(error, failure === null);
   return failure ? (
-    <CatalogueError failure={failure} what={WHAT} missing={MISSING} />
+    <CatalogueError failure={failure} missing={MISSING} />
   ) : (
     <ServerError title={`We couldn’t load ${WHAT}`} reference={reference} />
   );

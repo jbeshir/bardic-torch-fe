@@ -20,7 +20,7 @@ describe("useFetcherResult", () => {
     const first: Body = { ok: true, data: null };
     const second: Body = {
       ok: false,
-      error: { code: "internal", message: "Try again shortly." },
+      error: { code: "try_again", message: "Try again shortly." },
     };
     const { rerender } = renderResult(onResult);
     expect(onResult).not.toHaveBeenCalled();
@@ -57,19 +57,14 @@ describe("fieldMessage", () => {
 
   it("is null for another field, or a failure with no fields", () => {
     expect(fieldMessage(error, "display_name")).toBeNull();
-    expect(fieldMessage({ code: "internal", message: "x" }, "name")).toBeNull();
+    expect(
+      fieldMessage({ code: "try_again", message: "x" }, "name")
+    ).toBeNull();
   });
 });
 
 describe("problemMessage", () => {
-  it.each([
-    "internal",
-    "unavailable",
-    "bad_gateway",
-    "upstream_unavailable",
-    "unexpected_response",
-    "offline",
-  ] satisfies ProxyErrorCode[])(
+  it.each(["try_again", "offline"] satisfies ProxyErrorCode[])(
     "uses the form's own words when the service had trouble (%s)",
     code => {
       expect(problemMessage({ code, message: "Proxy copy" }, "Form copy")).toBe(

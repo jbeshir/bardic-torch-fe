@@ -77,73 +77,41 @@ describe("how an upstream answer reads", () => {
 
   it.each([
     [
-      "400 on a search",
+      "a 400",
       () =>
         contractResponse("listPieces", 400, {
           code: "invalid_request",
-          message: "unknown term: no-such-term",
+          message: "x",
         }),
-      { term: ["no-such-term"] },
-      { kind: "invalid_filters" },
     ],
-    ["500 on a search", internal, { q: "kettle" }, { kind: "search_timeout" }],
-    ["500 on a filter", internal, { stub: false }, { kind: "search_timeout" }],
-    [
-      "500 on the plain A–Z",
-      internal,
-      { letter: "T" as const, limit: 50, offset: 50 },
-      { kind: "server" },
-    ],
+    ["a 500", internal],
     [
       "a proxy's plain-text 503",
       () => new HttpResponse("Service Unavailable", { status: 503 }),
-      {},
-      { kind: "resting", retryAfter: 60 },
     ],
-    [
-      "a network failure",
-      () => HttpResponse.error(),
-      {},
-      { kind: "resting", retryAfter: 30 },
-    ],
-    [
-      "a body that stalls after the headers",
-      stalled,
-      {},
-      { kind: "resting", retryAfter: 30 },
-    ],
+    ["a network failure", () => HttpResponse.error()],
+    ["a body that stalls after the headers", stalled],
     [
       "a body that isn't JSON",
       () => new HttpResponse("not JSON", { status: 200 }),
-      {},
-      { kind: "bad_gateway" },
     ],
-  ])("%s", async (_why, respond, query, failure) => {
+  ])("%s is a read to try again", async (_why, respond) => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     const timeout = AbortSignal.timeout.bind(AbortSignal);
     vi.spyOn(AbortSignal, "timeout").mockImplementation(() => timeout(20));
     fixtures.server.use(http.get(PIECES, respond));
     if (respond === stalled) vi.stubGlobal("fetch", async () => stalled());
-    expect(await listPieces(loadContext(), query)).toEqual({
+    expect(await listPieces(loadContext(), {})).toEqual({
       ok: false,
-      failure,
+      failure: { kind: "try_again" },
     });
   });
 
-  it("a detail read's 404 is not_found, its 500 a server error", async () => {
+  it("a 404 is not_found", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     expect(await getPiece(loadContext(), "no-such-piece")).toEqual({
       ok: false,
       failure: { kind: "not_found" },
-    });
-    fixtures.server.use(
-      http.get(`${PIECES}/:slug`, () =>
-        contractResponse("getPiece", 500, { code: "internal", message: "x" })
-      )
-    );
-    expect(await getPiece(loadContext(), "the-copper-kettle")).toEqual({
-      ok: false,
-      failure: { kind: "server" },
     });
   });
 });

@@ -34,6 +34,7 @@ function entityOf(revision: Revision): RevisionEntity {
         section: { label: "Bards", to: "/bards" },
         noun: "bard",
         title: revision.entity.name,
+        // A revision's own person always has a slug: everyone keeps a page.
         path: `/bards/${revision.entity.slug}`,
       };
     case "term":

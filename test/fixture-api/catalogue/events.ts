@@ -5,7 +5,7 @@ import type { components } from "../../../app/api/schema.gen";
 type Schemas = components["schemas"];
 
 export type RawEvent = Readonly<
-  Omit<Schemas["Event"], "performances" | "performances_total">
+  Omit<Schemas["Event"], "performances" | "performances_total" | "updated_at">
 >;
 
 /** The venue of the 203 capped performances. */

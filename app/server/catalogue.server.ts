@@ -1,11 +1,8 @@
 import type { RouterContextProvider } from "react-router";
 import type { operations } from "~/api/schema.gen";
 import {
-  BAD_GATEWAY,
-  detailFailure,
-  listFailure,
-  searchFailure,
-  type PageFailure,
+  failureForStatus,
+  TRY_AGAIN,
   type ReadFailure,
 } from "~/catalogue/read-failure";
 import type { UpstreamErrorCode } from "~/schemas/api";
@@ -42,42 +39,23 @@ import {
  * That keeps a catalogue page the same whoever is reading it.
  *
  * Each call parses the body as the spec's response type (not validated at
- * runtime; a body that is not JSON is a bad gateway) and resolves to a `ReadResult`;
- * nothing throws. A failed call is a `ReadFailure` (read-failure.ts), with
- * the API's `message` logged, never shown.
+ * runtime; a body that is not JSON is a failure to try again) and resolves to a `ReadResult`;
+ * nothing throws. A failed call is a `ReadFailure` (read-failure.ts): a 404 is
+ * a not found, anything else a read to try again. The API's `message` is
+ * logged, never shown.
  *
  * Add an operation with the page that first calls it: an `ENDPOINTS` entry
- * (checked against the spec), and a typed function below. Each entry says
- * how its error answers read (`reads`): a search's 500 may be a slow
- * search and its 400 a stale filter (`searchFailure`); another list's are
- * a server error and a contract break (`listFailure`); a detail or
- * history read's 404 (or 400) is the entity's 404 (`detailFailure`). Only
- * a search can fail with a `FilterFailure`: every failure of another
- * read is a `PageFailure`.
+ * (checked against the spec), and a typed function below.
  */
 
-export type ReadResult<T, Failure extends ReadFailure = ReadFailure> =
+export type ReadResult<T> =
   | { readonly ok: true; readonly data: T }
-  | { readonly ok: false; readonly failure: Failure };
+  | { readonly ok: false; readonly failure: ReadFailure };
 
 /**
- * Query parameters that only page or order a search, so a 500 for a
- * request with nothing else is a plain server error, not a slow search.
- */
-const NOT_FILTERS: ReadonlySet<string> = new Set([
-  "letter",
-  "sort",
-  "limit",
-  "offset",
-]);
-
-/** How an operation's error answers map to a `ReadFailure`. */
-type Reads = "search" | "list" | "detail";
-
-/**
- * Where each catalogue read lives, its query parameters in the order they
- * are sent (the spec's), and how its failures read. The compiler checks
- * each path against the spec and each name against the operation's query.
+ * Where each catalogue read lives and its query parameters in the order
+ * they are sent (the spec's). The compiler checks each path against the
+ * spec and each name against the operation's query.
  */
 const ENDPOINTS = {
   listPieces: {
@@ -94,7 +72,6 @@ const ENDPOINTS = {
       "limit",
       "offset",
     ],
-    reads: "search",
   },
   // The facet column, search, the bards directory and
   // the categories.
@@ -102,7 +79,6 @@ const ENDPOINTS = {
     method: "GET",
     path: "/v1/terms",
     query: ["facet"],
-    reads: "list",
   },
   listPersons: {
     method: "GET",
@@ -117,105 +93,86 @@ const ENDPOINTS = {
       "limit",
       "offset",
     ],
-    reads: "search",
   },
   // The piece page and the bard page.
   getPiece: {
     method: "GET",
     path: "/v1/pieces/{slug}",
     query: [],
-    reads: "detail",
   },
   getPerson: {
     method: "GET",
     path: "/v1/persons/{slug}",
     query: [],
-    reads: "detail",
   },
   // A category, collections and events.
   getTerm: {
     method: "GET",
     path: "/v1/terms/{slug}",
     query: ["limit", "offset"],
-    reads: "detail",
   },
   listCollections: {
     method: "GET",
     path: "/v1/collections",
     query: ["kind", "letter", "limit", "offset"],
-    reads: "search",
   },
   getCollection: {
     method: "GET",
     path: "/v1/collections/{collection_id}",
     query: [],
-    reads: "detail",
   },
   listEvents: {
     method: "GET",
     path: "/v1/events",
     query: ["kind", "limit", "offset"],
-    reads: "list",
   },
   getEvent: {
     method: "GET",
     path: "/v1/events/{slug}",
     query: [],
-    reads: "detail",
   },
   // Histories and revisions.
   listPieceRevisions: {
     method: "GET",
     path: "/v1/pieces/{slug}/history",
     query: ["limit", "offset"],
-    reads: "detail",
   },
   listPersonRevisions: {
     method: "GET",
     path: "/v1/persons/{slug}/history",
     query: ["limit", "offset"],
-    reads: "detail",
   },
   listTermRevisions: {
     method: "GET",
     path: "/v1/terms/{slug}/history",
     query: ["limit", "offset"],
-    reads: "detail",
   },
   listCollectionRevisions: {
     method: "GET",
     path: "/v1/collections/{collection_id}/history",
     query: ["limit", "offset"],
-    reads: "detail",
   },
   listEventRevisions: {
     method: "GET",
     path: "/v1/events/{slug}/history",
     query: ["limit", "offset"],
-    reads: "detail",
   },
   getRevision: {
     method: "GET",
     path: "/v1/revisions/{revision_id}",
     query: [],
-    reads: "detail",
   },
 } as const satisfies {
   readonly [Id in keyof operations]?: EndpointOf<operations[Id]> & {
     readonly query: readonly (keyof NonNullable<
       operations[Id]["parameters"]["query"]
     >)[];
-    readonly reads: Reads;
   };
 };
 
 type ReadId = keyof typeof ENDPOINTS;
 
 type QueryValue = string | number | boolean | readonly string[] | undefined;
-
-/** What a read of `Id` can fail with: only a search's can be filter failures. */
-type FailureOf<Id extends ReadId> =
-  (typeof ENDPOINTS)[Id]["reads"] extends "search" ? ReadFailure : PageFailure;
 
 /**
  * The query string for `query` (with its "?", or "" when empty), in the
@@ -243,45 +200,10 @@ function queryString<Id extends ReadId>(
   return search ? `?${search}` : "";
 }
 
-/** Whether `query` has `q` or a filter, not only letter, sort and paging. */
-function isFiltered(query: Readonly<Record<string, QueryValue>>): boolean {
-  return Object.entries(query).some(
-    ([name, value]) =>
-      !NOT_FILTERS.has(name) &&
-      value !== undefined &&
-      (typeof value !== "object" || value.length > 0)
-  );
-}
-
-/** The `ReadFailure` for an error answer (or none) of `operationId`. */
-function failureOf(
-  operationId: ReadId,
-  upstream: Parameters<typeof listFailure>[0],
-  filtered: boolean
-): ReadFailure {
-  switch (ENDPOINTS[operationId].reads) {
-    case "search":
-      return searchFailure(upstream, { filtered });
-    case "list":
-      return listFailure(upstream);
-    case "detail":
-      return detailFailure(upstream);
-  }
-}
-
 /**
  * One read: `query` in the operation's order, and `path` filling the
  * path's `{name}`s (already checked by the loader, percent-encoded here).
- * A read that isn't a search fails only with a `PageFailure` (`FailureOf`).
  */
-function callPublicApi<Id extends ReadId, T>(
-  context: Readonly<RouterContextProvider>,
-  operationId: Id,
-  request: {
-    readonly query?: ApiQuery<Id>;
-    readonly path?: Readonly<Record<string, string>>;
-  }
-): Promise<ReadResult<T, FailureOf<Id>>>;
 async function callPublicApi<Id extends ReadId, T>(
   context: Readonly<RouterContextProvider>,
   operationId: Id,
@@ -295,7 +217,6 @@ async function callPublicApi<Id extends ReadId, T>(
 ): Promise<ReadResult<T>> {
   const env = context.get(appEnvContext);
   const url = `${upstreamUrl(env.BARDIC_TORCH_API_BASE_URL, ENDPOINTS[operationId].path, path)}${queryString(operationId, query)}`;
-  const filtered = isFiltered(query ?? {});
 
   // The timeout covers the body too: a body that stalls or breaks off
   // ends like a request that never got an answer.
@@ -315,10 +236,7 @@ async function callPublicApi<Id extends ReadId, T>(
       `${operationId} ${isTimeout(error) ? "timed out" : "failed"}:`,
       error
     );
-    return {
-      ok: false,
-      failure: failureOf(operationId, "unreachable", filtered),
-    };
+    return { ok: false, failure: TRY_AGAIN };
   }
 
   const payload = parseJson(text);
@@ -329,11 +247,11 @@ async function callPublicApi<Id extends ReadId, T>(
   if (response.ok) {
     if (body) return { ok: true, data: body as T };
     console.error(`${operationId} answered a body that is not a JSON object`);
-    return { ok: false, failure: BAD_GATEWAY };
+    return { ok: false, failure: TRY_AGAIN };
   }
   if (response.status < 400) {
     console.error(`${operationId} answered ${response.status}`);
-    return { ok: false, failure: BAD_GATEWAY };
+    return { ok: false, failure: TRY_AGAIN };
   }
   const code =
     typeof body?.code === "string"
@@ -343,14 +261,7 @@ async function callPublicApi<Id extends ReadId, T>(
     `${operationId} answered ${response.status}:`,
     code === undefined ? "no Error body" : `${code}: ${String(body?.message)}`
   );
-  return {
-    ok: false,
-    failure: failureOf(
-      operationId,
-      { status: response.status, code },
-      filtered
-    ),
-  };
+  return { ok: false, failure: failureForStatus(response.status) };
 }
 
 /** A page of pieces with the facet counts (`GET /v1/pieces`). */
@@ -364,13 +275,12 @@ export function listPieces(
 /**
  * The public term tree, or one facet's, in tree order (`GET /v1/terms`):
  * the facet column's labels and tree, search's categories and the bards
- * directory's affiliations, and /categories. Not a search, so a 500 is a
- * plain server error.
+ * directory's affiliations, and /categories.
  */
 export function listTerms(
   context: Readonly<RouterContextProvider>,
   query: ApiQuery<"listTerms">
-): Promise<ReadResult<TermList, PageFailure>> {
+): Promise<ReadResult<TermList>> {
   return callPublicApi(context, "listTerms", { query });
 }
 
@@ -386,7 +296,7 @@ export function listPersons(
 export function getPiece(
   context: Readonly<RouterContextProvider>,
   slug: string
-): Promise<ReadResult<Piece, PageFailure>> {
+): Promise<ReadResult<Piece>> {
   return callPublicApi(context, "getPiece", { path: { slug } });
 }
 
@@ -394,7 +304,7 @@ export function getPiece(
 export function getPerson(
   context: Readonly<RouterContextProvider>,
   slug: string
-): Promise<ReadResult<Person, PageFailure>> {
+): Promise<ReadResult<Person>> {
   return callPublicApi(context, "getPerson", { path: { slug } });
 }
 
@@ -409,7 +319,7 @@ export function getTerm(
   context: Readonly<RouterContextProvider>,
   slug: string,
   query: ApiQuery<"getTerm">
-): Promise<ReadResult<Term, PageFailure>> {
+): Promise<ReadResult<Term>> {
   return callPublicApi(context, "getTerm", { query, path: { slug } });
 }
 
@@ -429,7 +339,7 @@ export function listCollections(
 export function getCollection(
   context: Readonly<RouterContextProvider>,
   id: string
-): Promise<ReadResult<Collection, PageFailure>> {
+): Promise<ReadResult<Collection>> {
   return callPublicApi(context, "getCollection", {
     path: { collection_id: id },
   });
@@ -439,7 +349,7 @@ export function getCollection(
 export function listEvents(
   context: Readonly<RouterContextProvider>,
   query: ApiQuery<"listEvents">
-): Promise<ReadResult<EventList, PageFailure>> {
+): Promise<ReadResult<EventList>> {
   return callPublicApi(context, "listEvents", { query });
 }
 
@@ -450,7 +360,7 @@ export function listEvents(
 export function getEvent(
   context: Readonly<RouterContextProvider>,
   slug: string
-): Promise<ReadResult<Event, PageFailure>> {
+): Promise<ReadResult<Event>> {
   return callPublicApi(context, "getEvent", { path: { slug } });
 }
 
@@ -484,7 +394,7 @@ export function listRevisions(
   entity: HistoryEntity,
   address: string,
   query: { readonly limit: number; readonly offset: number }
-): Promise<ReadResult<RevisionHistory, PageFailure>> {
+): Promise<ReadResult<RevisionHistory>> {
   const { operationId, address: name } = HISTORIES[entity];
   return callPublicApi(context, operationId, {
     query,
@@ -499,6 +409,6 @@ export function listRevisions(
 export function getRevision(
   context: Readonly<RouterContextProvider>,
   id: string
-): Promise<ReadResult<Revision, PageFailure>> {
+): Promise<ReadResult<Revision>> {
   return callPublicApi(context, "getRevision", { path: { revision_id: id } });
 }

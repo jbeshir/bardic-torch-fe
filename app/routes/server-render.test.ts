@@ -1,6 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { API_BASE_URL } from "~/test/context";
+import { API_BASE_URL, sessionCookie, sessionTokens } from "~/test/context";
 import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
 import stylesheetUrl from "../../test/support/stylesheet-url";
@@ -8,26 +8,37 @@ import * as notFound from "./$";
 import * as home from "./_index";
 import * as bardLayout from "./bards.$slug";
 import * as bardRead from "./bards.$slug._index";
+import * as bardEdit from "./bards.$slug.edit";
 import * as bardHistory from "./bards.$slug.history";
 import * as bards from "./bards._index";
+import * as bardNew from "./bards.new";
 import * as categoryLayout from "./categories.$slug";
 import * as categoryRead from "./categories.$slug._index";
+import * as categoryEdit from "./categories.$slug.edit";
 import * as categories from "./categories._index";
+import * as categoryNew from "./categories.new";
 import * as collectionLayout from "./collections.$id";
 import * as collectionRead from "./collections.$id._index";
+import * as collectionEdit from "./collections.$id.edit";
 import * as collections from "./collections._index";
+import * as collectionNew from "./collections.new";
 import * as eventLayout from "./events.$slug";
 import * as eventRead from "./events.$slug._index";
+import * as eventEdit from "./events.$slug.edit";
 import * as events from "./events._index";
+import * as eventNew from "./events.new";
 import * as helpPage from "./help.$slug";
 import * as help from "./help._index";
 import * as pieceLayout from "./pieces.$slug";
 import * as pieceRead from "./pieces.$slug._index";
+import * as pieceEdit from "./pieces.$slug.edit";
 import * as pieceHistory from "./pieces.$slug.history";
 import * as pieces from "./pieces._index";
+import * as pieceNew from "./pieces.new";
 import * as revision from "./revisions.$id";
 import * as robots from "./robots[.]txt";
 import * as search from "./search";
+import * as contributions from "./contributions";
 import * as settings from "./settings";
 import * as sitemap from "./sitemap[.]xml";
 
@@ -45,9 +56,9 @@ const route = (id: string, path: string, module: Module) => ({
   hasLoader: true,
   hasErrorBoundary: true,
 });
-/** The index route, or the history route, under `layout`'s route. */
+/** The index route, or the history or edit route, under `layout`'s route. */
 const child = (layout: string, module: Module, path?: string) => ({
-  id: `routes/${layout}${path ? ".history" : "._index"}`,
+  id: `routes/${layout}${path ? `.${path}` : "._index"}`,
   parentId: `routes/${layout}`,
   module,
   hasLoader: path !== undefined,
@@ -62,21 +73,32 @@ const get = serveApp([
   route("pieces.$slug", "pieces/:slug", pieceLayout),
   child("pieces.$slug", pieceRead),
   child("pieces.$slug", pieceHistory, "history"),
+  child("pieces.$slug", pieceEdit, "edit"),
+  route("pieces.new", "pieces/new", pieceNew),
   route("bards._index", "bards", bards),
   route("bards.$slug", "bards/:slug", bardLayout),
   child("bards.$slug", bardRead),
   child("bards.$slug", bardHistory, "history"),
+  child("bards.$slug", bardEdit, "edit"),
+  route("bards.new", "bards/new", bardNew),
   route("categories._index", "categories", categories),
   route("categories.$slug", "categories/:slug", categoryLayout),
   child("categories.$slug", categoryRead),
+  child("categories.$slug", categoryEdit, "edit"),
+  route("categories.new", "categories/new", categoryNew),
   route("collections._index", "collections", collections),
   route("collections.$id", "collections/:id", collectionLayout),
   child("collections.$id", collectionRead),
+  child("collections.$id", collectionEdit, "edit"),
+  route("collections.new", "collections/new", collectionNew),
   route("events._index", "events", events),
   route("events.$slug", "events/:slug", eventLayout),
   child("events.$slug", eventRead),
+  child("events.$slug", eventEdit, "edit"),
+  route("events.new", "events/new", eventNew),
   route("revisions.$id", "revisions/:id", revision),
   route("search", "search", search),
+  route("contributions", "contributions", contributions),
   route("settings", "settings", settings),
   { ...route("help._index", "help", help), hasLoader: false },
   route("help.$slug", "help/:slug", helpPage),
@@ -119,6 +141,7 @@ const PAGES: readonly (readonly [string, number, Check])[] = [
   ["/collections/12", 200, { h1: "The Northmarch Songbook" }],
   ["/events", 200, { h1: "Events and venues" }],
   ["/events/midwinter-revel", 200, { h1: "Midwinter Revel" }],
+  ["/events/new", 302, { location: "/auth/login?returnTo=%2Fevents%2Fnew" }],
   ["/help", 200, { h1: "Help" }],
   ["/help/conservation-status", 200, { h1: "Conservation status" }],
   ["/settings", 200, { contains: "<title>Settings" }],
@@ -131,6 +154,21 @@ const PAGES: readonly (readonly [string, number, Check])[] = [
   ["/", 200, { contains: `href="${stylesheetUrl}"` }],
   ["/robots.txt", 200, { contains: "Sitemap:" }],
   ["/sitemap.xml", 200, { contains: "<urlset" }],
+];
+
+/** The editors, as the fixture contributor: each edit and new page. */
+const EDITOR_PAGES: readonly (readonly [string, string])[] = [
+  ["/contributions", "My contributions"],
+  ["/events/midwinter-revel/edit", "Midwinter Revel"],
+  ["/events/new", "New event or venue"],
+  ["/collections/12/edit", "The Northmarch Songbook"],
+  ["/collections/new", "New collection"],
+  ["/categories/swords/edit", "Swords"],
+  ["/categories/new", "New category"],
+  ["/pieces/the-copper-kettle/edit", "The Copper Kettle"],
+  ["/pieces/new", "New piece"],
+  ["/bards/wren-of-the-vale/edit", "Wren of the Vale"],
+  ["/bards/new", "New bard or group"],
 ];
 
 describe("server-rendered routes", () => {
@@ -150,6 +188,14 @@ describe("server-rendered routes", () => {
       ).toBe(check.h1);
   });
 
+  it.each(EDITOR_PAGES)("%s answers 200 signed in", async (url, h1) => {
+    const cookie = await sessionCookie(
+      sessionTokens({ accessToken: "fixture:contributor" })
+    );
+    const html = await (await get(url, cookie)).text();
+    expect(/<h1[^>]*>(.*?)<\/h1>/s.exec(html)?.[1]).toBe(h1);
+  });
+
   it("is the resting page (503, Retry-After) when the API is down", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     fixtures.server.use(
@@ -160,10 +206,10 @@ describe("server-rendered routes", () => {
     );
     const response = await get("/pieces");
     expect(response.status).toBe(503);
-    expect(response.headers.get("Retry-After")).toBe("60");
+    expect(response.headers.get("Retry-After")).toBe("30");
   });
 
-  it("is the bad-gateway page (502) when the API's answer can't be read", async () => {
+  it("is the same resting page (503) when the API's answer can't be read", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     fixtures.server.use(
       http.get(
@@ -172,7 +218,7 @@ describe("server-rendered routes", () => {
       )
     );
     const response = await get("/pieces");
-    expect(response.status).toBe(502);
-    expect(await response.text()).toContain("unexpected answer");
+    expect(response.status).toBe(503);
+    expect(await response.text()).toContain("Bardic Torch is resting");
   });
 });

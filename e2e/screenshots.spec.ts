@@ -25,6 +25,13 @@ const TEMPLATES = [
   "/help/conservation-status",
   "/wiki/Northmarch_Rising",
   "/auth/login?as=contributor&returnTo=/settings",
+  "/auth/login?as=contributor&returnTo=/pieces/the-copper-kettle/edit",
+  "/auth/login?as=contributor&returnTo=/pieces/new",
+  "/auth/login?as=contributor&returnTo=/bards/wren-of-the-vale/edit",
+  "/auth/login?as=contributor&returnTo=/categories/swords/edit",
+  "/auth/login?as=contributor&returnTo=/collections/12/edit",
+  "/auth/login?as=contributor&returnTo=/events/midwinter-revel/edit",
+  "/auth/login?as=contributor&returnTo=/contributions",
 ];
 
 for (const path of TEMPLATES) {

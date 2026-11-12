@@ -1,11 +1,10 @@
 import type { RouterContextProvider } from "react-router";
 import { z } from "zod";
-import type { operations } from "~/api/schema.gen";
-import { isUnavailable } from "~/catalogue/read-failure";
+import type { components, operations } from "~/api/schema.gen";
 import { type UpstreamErrorCode, type User } from "~/schemas/api";
 import { DISPLAY_NAME_RULE } from "~/schemas/rules";
 import {
-  UNEXPECTED_ANSWER,
+  TRY_AGAIN_MESSAGE,
   type ProxyBody,
   type ProxyError,
   type ProxyErrorCode,
@@ -34,17 +33,24 @@ import {
  * reach the API, so a client's Cookie or Authorization is never forwarded.
  *
  * Upstream error messages are not meant for end users, so every error the
- * app sees carries copy written here, chosen by the upstream `code`.
+ * app sees carries copy written here, chosen by the upstream `code` for
+ * the few codes a page treats differently; anything else is `try_again`.
  */
 
 /** The codes this module answers with: not the CSRF check's or the browser's. */
-type ErrorCode = Exclude<
-  ProxyErrorCode,
-  "forbidden" | "offline" | "unexpected_response"
->;
+type ErrorCode = Exclude<ProxyErrorCode, "forbidden" | "offline">;
 
-/** An error the app reports, with its own copy (see `upstreamError`). */
-type ApiError = ProxyError & { readonly code: ErrorCode };
+type Schemas = components["schemas"];
+
+/**
+ * An error the app reports, with its own copy (see `upstreamError`). A 422
+ * carries the API's `problems`, and a 409 `possible_duplicate` its matches.
+ */
+type ApiError = ProxyError & {
+  readonly code: ErrorCode;
+  readonly problems?: readonly Schemas["Problem"][];
+  readonly duplicates?: readonly Schemas["DuplicateMatch"][];
+};
 
 type ApiResult<T> = (
   | { readonly ok: true; readonly data: T }
@@ -55,9 +61,6 @@ type ApiResult<T> = (
   readonly headers: Headers;
 };
 
-/** Largest form body the proxy routes accept. */
-const MAX_BODY_BYTES = 8 * 1024;
-
 /**
  * Where each authenticated operation lives; the compiler checks it against
  * the spec.
@@ -65,6 +68,20 @@ const MAX_BODY_BYTES = 8 * 1024;
 const ENDPOINTS = {
   getMe: { method: "GET", path: "/v1/me" },
   updateMe: { method: "PATCH", path: "/v1/me" },
+  getEditablePiece: { method: "GET", path: "/v1/pieces/{slug}/editable" },
+  getEditablePerson: { method: "GET", path: "/v1/persons/{slug}/editable" },
+  getEditableTerm: { method: "GET", path: "/v1/terms/{slug}/editable" },
+  getEditableEvent: { method: "GET", path: "/v1/events/{slug}/editable" },
+  getEditableCollection: {
+    method: "GET",
+    path: "/v1/collections/{collection_id}/editable",
+  },
+  submitRevision: { method: "POST", path: "/v1/revisions" },
+  listMyRevisions: { method: "GET", path: "/v1/me/revisions" },
+  withdrawRevision: {
+    method: "POST",
+    path: "/v1/revisions/{revision_id}/withdraw",
+  },
 } as const satisfies {
   readonly [Id in keyof operations]?: EndpointOf<operations[Id]>;
 };
@@ -74,73 +91,83 @@ type OperationId = keyof typeof ENDPOINTS;
 type ApiRequest = {
   readonly operationId: OperationId;
   readonly params?: Readonly<Record<string, string>>;
+  readonly query?: URLSearchParams;
   readonly body?: unknown;
 };
 
-const TRY_AGAIN = "We couldn’t do that just now. Try again shortly.";
-
-const UNREACHABLE: ApiError = {
-  code: "upstream_unavailable",
-  message: "We couldn’t reach our servers. Try again shortly.",
+const TRY_AGAIN: ApiError = {
+  code: "try_again",
+  message: TRY_AGAIN_MESSAGE,
 };
 
 const SIGNED_OUT: ApiError = {
   code: "unauthenticated",
-  message: "Log in to continue.",
+  message:
+    "You’ve been signed out. Log in again and we’ll bring you back here.",
 };
 
-/** What the user is told for an upstream error, per operation. */
+/**
+ * What the user is told for an upstream error code a page treats
+ * differently; undefined for any other, which is a try again.
+ */
 function upstreamError(
   operationId: OperationId,
   code: UpstreamErrorCode
-): ApiError {
+): ApiError | undefined {
   switch (code) {
-    case "unauthenticated":
-      return {
-        code,
-        message:
-          "You’ve been signed out. Log in again and we’ll bring you back here.",
-      };
     case "user_blocked":
       return {
         code,
         message:
           "Your account is blocked, so you can’t make changes. Contact the Bardic Torch team if you think this is a mistake.",
       };
-    case "moderator_required":
-      return { code, message: "Only moderators can do that." };
-    case "request_too_large":
-      return { code, message: "The form is too large to send." };
     case "not_found":
       return {
         code,
         message:
           "We couldn’t find what you asked for. Reload the page and try again.",
       };
-    case "conflict":
+    case "possible_duplicate":
       return {
         code,
         message:
-          "Something changed while you were editing. Reload the page and try again.",
+          "This may already be in the catalogue. Check the pages below, and submit again if yours is a different one.",
       };
+    case "stale_revision":
+      return {
+        code,
+        message:
+          "This page has changed since you started editing. Check the current version, then save again to replace those changes.",
+      };
+    case "revision_not_pending":
+      return {
+        code,
+        message:
+          "That edit is no longer waiting for review, so it can’t be withdrawn. Reload the page to see where it stands.",
+      };
+    case "pending_limit_reached":
+      return {
+        code,
+        message:
+          "You already have 30 edits waiting for review. Withdraw one, or wait for a moderator to review them, then try again.",
+      };
+    case "request_too_large":
+      return {
+        code: "invalid_request",
+        message: "The form is too large to send.",
+      };
+    case "validation_failed":
+      return { code, message: "Check the highlighted fields." };
     case "invalid_request":
-      if (operationId === "updateMe") {
-        return {
-          code,
-          message: "Check the display name.",
-          fields: [{ field: "display_name", message: DISPLAY_NAME_RULE }],
-        };
-      }
-      return { code, message: TRY_AGAIN };
-    case "method_not_allowed":
-    case "unsupported_media_type":
-    case "internal":
-      return { code, message: TRY_AGAIN };
-    case "unavailable":
-      return UNREACHABLE;
+      return operationId === "updateMe"
+        ? {
+            code,
+            message: "Check the display name.",
+            fields: [{ field: "display_name", message: DISPLAY_NAME_RULE }],
+          }
+        : undefined;
     default:
-      // A code this build's spec doesn't list: the API is ahead of us.
-      return { code: "internal", message: TRY_AGAIN };
+      return undefined;
   }
 }
 
@@ -164,7 +191,7 @@ async function callApi<T>(
   if (!auth.isAuthenticated) return failure(401, SIGNED_OUT, headers);
 
   // The timeout covers the body too: a body that stalls or breaks off
-  // ends in the same 504/502 as a request that never got an answer.
+  // ends like a request that never got an answer.
   const signal = AbortSignal.timeout(UPSTREAM_TIMEOUT_MS);
   let response: Response;
   let text: string;
@@ -174,7 +201,7 @@ async function callApi<T>(
         env.BARDIC_TORCH_API_BASE_URL,
         ENDPOINTS[apiRequest.operationId].path,
         apiRequest.params
-      ),
+      ) + (apiRequest.query ? `?${apiRequest.query}` : ""),
       {
         method: ENDPOINTS[apiRequest.operationId].method,
         headers:
@@ -193,18 +220,11 @@ async function callApi<T>(
     );
     text = await Promise.race([response.text(), aborted(signal)]);
   } catch (error) {
-    console.error(`${apiRequest.operationId} failed:`, error);
-    if (isTimeout(error)) {
-      return failure(
-        504,
-        {
-          code: "upstream_unavailable",
-          message: "Our servers took too long to answer. Try again shortly.",
-        },
-        headers
-      );
-    }
-    return failure(502, UNREACHABLE, headers);
+    console.error(
+      `${apiRequest.operationId} ${isTimeout(error) ? "timed out" : "failed"}:`,
+      error
+    );
+    return failure(503, TRY_AGAIN, headers);
   }
 
   if (response.status === 401) {
@@ -213,11 +233,7 @@ async function callApi<T>(
       request.headers.get("Cookie")
     );
     headers.set("Set-Cookie", await sessionStorage.destroySession(session));
-    return failure(
-      401,
-      upstreamError(apiRequest.operationId, "unauthenticated"),
-      headers
-    );
+    return failure(401, SIGNED_OUT, headers);
   }
 
   const payload = parseJson(text);
@@ -225,6 +241,9 @@ async function callApi<T>(
     typeof payload === "object" && payload !== null && !Array.isArray(payload)
       ? (payload as Record<string, unknown>)
       : undefined;
+  if (response.status === 204) {
+    return { ok: true, status: 204, data: undefined as T, headers };
+  }
   if (response.ok) {
     if (body) {
       return { ok: true, status: response.status, data: body as T, headers };
@@ -234,13 +253,22 @@ async function callApi<T>(
       typeof body?.code === "string"
         ? (body.code as UpstreamErrorCode)
         : undefined;
-    if (isUnavailable(response.status, code)) {
-      return failure(response.status, UNREACHABLE, headers);
-    }
-    if (code !== undefined) {
+    const error =
+      code === undefined
+        ? undefined
+        : upstreamError(apiRequest.operationId, code);
+    if (error) {
+      const { problems, possible_duplicates } = body as {
+        readonly problems?: Schemas["Problem"][];
+        readonly possible_duplicates?: Schemas["DuplicateMatch"][];
+      };
       return failure(
         response.status,
-        upstreamError(apiRequest.operationId, code),
+        code === "validation_failed" && problems
+          ? { ...error, problems }
+          : code === "possible_duplicate" && possible_duplicates
+            ? { ...error, duplicates: possible_duplicates }
+            : error,
         headers
       );
     }
@@ -249,50 +277,12 @@ async function callApi<T>(
   console.error(
     `${apiRequest.operationId} returned an unexpected ${response.status} response`
   );
-  return failure(
-    502,
-    {
-      code: "bad_gateway",
-      message: UNEXPECTED_ANSWER,
-    },
-    headers
-  );
+  return failure(503, TRY_AGAIN, headers);
 }
 
 /**
- * The body as text, read until it ends or passes `limit` bytes (null), so
- * an oversized body is never held in memory, whatever Content-Length says.
- */
-async function readLimited(
-  request: Request,
-  limit: number
-): Promise<string | null> {
-  if (!request.body) return "";
-  const reader = request.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let size = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    size += value.byteLength;
-    if (size > limit) {
-      await reader.cancel();
-      return null;
-    }
-    chunks.push(value);
-  }
-  const bytes = new Uint8Array(size);
-  let offset = 0;
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return new TextDecoder().decode(bytes);
-}
-
-/**
- * Read and validate a proxy route's form-encoded body. Other content types
- * get a 415, bodies over 8 KB a 413 and invalid fields a 400 listing them.
+ * Read and validate a proxy route's form body; an unreadable body or invalid
+ * fields are a 400.
  */
 async function readFormBody<S extends z.ZodType>(
   request: Request,
@@ -300,34 +290,15 @@ async function readFormBody<S extends z.ZodType>(
 ): Promise<
   { readonly ok: true; readonly data: z.output<S> } | ApiResult<never>
 > {
-  const contentType = request.headers.get("Content-Type") ?? "";
-  if (!/^application\/x-www-form-urlencoded\s*(;|$)/i.test(contentType)) {
-    return failure(415, {
-      code: "unsupported_media_type",
-      message: "Send the form as form data.",
-    });
-  }
-  const declaredLength = Number(request.headers.get("Content-Length") ?? 0);
-  const text =
-    declaredLength > MAX_BODY_BYTES
-      ? null
-      : await readLimited(request, MAX_BODY_BYTES).catch(() => undefined);
-  if (text === null) {
-    return failure(413, {
-      code: "request_too_large",
-      message: "The form is too large to send.",
-    });
-  }
-  if (text === undefined) {
+  const form = await request.formData().catch(() => null);
+  if (!form) {
     return failure(400, {
       code: "invalid_request",
       message: "The form didn’t arrive in full. Try again.",
     });
   }
 
-  const parsed = schema.safeParse(
-    Object.fromEntries(new URLSearchParams(text))
-  );
+  const parsed = schema.safeParse(Object.fromEntries(form));
   if (parsed.success) return { ok: true, data: parsed.data };
   return failure(400, {
     code: "invalid_request",
@@ -414,5 +385,64 @@ export function updateMe(
   return callApi<User>(request, context, {
     operationId: "updateMe",
     body,
+  });
+}
+
+const EDITABLE_OPERATIONS = {
+  piece: "getEditablePiece",
+  person: "getEditablePerson",
+  term: "getEditableTerm",
+  event: "getEditableEvent",
+  collection: "getEditableCollection",
+} as const satisfies Record<Schemas["EntityType"], OperationId>;
+
+/**
+ * An entity's editable document (`GET /v1/{type}/{key}/editable`): `key`
+ * is the slug, or a collection's id, already checked by the route.
+ */
+export function getEditable(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  type: Schemas["EntityType"],
+  key: string
+) {
+  return callApi<Schemas["Editable"]>(request, context, {
+    operationId: EDITABLE_OPERATIONS[type],
+    params: type === "collection" ? { collection_id: key } : { slug: key },
+  });
+}
+
+export function submitRevision(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  body: RequestBody<"submitRevision">
+) {
+  return callApi<Schemas["RevisionView"]>(request, context, {
+    operationId: "submitRevision",
+    body,
+  });
+}
+
+/** The caller's own revisions (`GET /v1/me/revisions`), newest first. */
+export function listMyRevisions(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  query: URLSearchParams
+) {
+  return callApi<Schemas["RevisionList"]>(request, context, {
+    operationId: "listMyRevisions",
+    query,
+  });
+}
+
+/** Withdraws one of the caller's pending revisions; `id` is already checked. */
+export function withdrawRevision(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  id: string
+) {
+  return callApi<undefined>(request, context, {
+    operationId: "withdrawRevision",
+    params: { revision_id: id },
   });
 }

@@ -15,11 +15,7 @@ import { Infobox } from "~/components/ui/Infobox";
 import { Link } from "~/components/ui/Link";
 import { TagList } from "~/components/ui/TagList";
 import { catalogueHeaders } from "~/catalogue/headers";
-import {
-  asPageFailure,
-  throwPageFailure,
-  thrownPageFailure,
-} from "~/catalogue/read-failure";
+import { throwPageFailure, thrownPageFailure } from "~/catalogue/read-failure";
 import { withoutRestrictedLink } from "~/catalogue/restricted";
 import { failureMeta, ignoreSearchChanges } from "~/catalogue/entity-route";
 import { pageMeta } from "~/catalogue/seo";
@@ -33,6 +29,7 @@ import { useErrorReference } from "~/hooks/useErrorReference";
 import { isEntityId } from "~/schemas/address";
 import type { Collection } from "~/schemas/catalogue";
 import { getCollection } from "~/server/catalogue.server";
+import { hasPendingRevision } from "~/server/editing.server";
 import { renderMarkdown } from "~/server/markdown.server";
 
 /**
@@ -53,11 +50,15 @@ export const headers = catalogueHeaders;
 
 export const shouldRevalidate = ignoreSearchChanges;
 
-export async function loader({ params, context }: LoaderFunctionArgs) {
+export async function loader(args: LoaderFunctionArgs) {
+  const { params, context } = args;
   const id = params.id ?? "";
   if (!isEntityId(id)) throwPageFailure({ kind: "not_found" });
-  const result = await getCollection(context, id);
-  if (!result.ok) throwPageFailure(asPageFailure(result.failure));
+  const [result, pending] = await Promise.all([
+    getCollection(context, id),
+    hasPendingRevision(args, "collection", id),
+  ]);
+  if (!result.ok) throwPageFailure(result.failure);
   const collection = result.data;
   return {
     collection: {
@@ -66,6 +67,7 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
     },
     // The Markdown is parsed here, on the server: the browser gets the tree.
     description: renderMarkdown(collection.description_md),
+    pending,
   };
 }
 
@@ -158,13 +160,14 @@ function CollectionInfobox({
 }
 
 export default function CollectionLayout() {
-  const { collection } = useLoaderData<typeof loader>();
+  const { collection, pending } = useLoaderData<typeof loader>();
   const { pathname } = useLocation();
   const path = `/collections/${collection.id}`;
   const reading = pathname === path;
   return (
     <EntityPage
       path={path}
+      pending={pending}
       title={collection.name}
       subtitle={collectionMeta(collection)}
       breadcrumbs={{
@@ -202,7 +205,7 @@ export function ErrorBoundary() {
   const failure = thrownPageFailure(error);
   const reference = useErrorReference(error, failure === null);
   return failure ? (
-    <CatalogueError failure={failure} what={WHAT} missing={MISSING} />
+    <CatalogueError failure={failure} missing={MISSING} />
   ) : (
     <ServerError title={`We couldn’t load ${WHAT}`} reference={reference} />
   );

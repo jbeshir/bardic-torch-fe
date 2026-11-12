@@ -18,11 +18,11 @@ const bin = name => path.join(ROOT, "node_modules/.bin", name);
 
 /**
  * The variables vite.config.ts lays over .dev.vars for the dev server
- * (`__DEV_ENV_OVERRIDES__`). check:prod-build proves no build carries them.
+ * (`__DEV_ENV_OVERRIDES__`). check:prod-build proves no build has stub auth.
  * @param {string} devPort
  * @param {string} fixturePort
  */
-export function fixtureAppEnv(devPort, fixturePort) {
+function fixtureAppEnv(devPort, fixturePort) {
   return {
     BARDIC_TORCH_API_BASE_URL: `http://127.0.0.1:${fixturePort}`,
     AUTH_MODE: "stub",

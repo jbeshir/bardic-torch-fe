@@ -58,9 +58,9 @@ export const meta: MetaFunction = args => {
 
 export default function BardHistoryRoute() {
   const { state, history } = useLoaderData<typeof loader>();
-  const { person } = useOutletContext<PersonView>();
+  const { person, pending } = useOutletContext<PersonView>();
   return (
-    <EntityPage {...personHead(person)}>
+    <EntityPage {...personHead(person)} pending={pending}>
       <HistoryView
         state={state}
         history={history}
@@ -77,7 +77,7 @@ export function ErrorBoundary() {
   const failure = thrownPageFailure(error);
   const reference = useErrorReference(error, failure === null);
   const body = failure ? (
-    <CatalogueError failure={failure} what="the history" missing={MISSING} />
+    <CatalogueError failure={failure} missing={MISSING} />
   ) : (
     <ServerError title="We couldn’t load the history" reference={reference} />
   );

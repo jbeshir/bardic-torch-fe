@@ -16,11 +16,7 @@ import { TagList } from "~/components/ui/TagList";
 import { UserMarkdown } from "~/components/UserMarkdown";
 import { catalogueHeaders } from "~/catalogue/headers";
 import { categoryIndexQuery } from "~/catalogue/query-state";
-import {
-  asPageFailure,
-  throwPageFailure,
-  thrownPageFailure,
-} from "~/catalogue/read-failure";
+import { throwPageFailure, thrownPageFailure } from "~/catalogue/read-failure";
 import { failureMeta, ignoreSearchChanges } from "~/catalogue/entity-route";
 import { pageMeta } from "~/catalogue/seo";
 import { categoryMeta, categoryPath, memberCount } from "~/catalogue/term-page";
@@ -29,6 +25,7 @@ import { useErrorReference } from "~/hooks/useErrorReference";
 import { isSlug } from "~/schemas/address";
 import type { Term, TermSummary } from "~/schemas/catalogue";
 import { getTerm } from "~/server/catalogue.server";
+import { hasPendingRevision } from "~/server/editing.server";
 import { renderMarkdown } from "~/server/markdown.server";
 
 /**
@@ -50,14 +47,22 @@ export const headers = catalogueHeaders;
 
 export const shouldRevalidate = ignoreSearchChanges;
 
-export async function loader({ params, context }: LoaderFunctionArgs) {
+export async function loader(args: LoaderFunctionArgs) {
+  const { params, context } = args;
   const slug = params.slug ?? "";
   if (!isSlug(slug)) throwPageFailure({ kind: "not_found" });
-  const result = await getTerm(context, slug, { limit: 1 });
-  if (!result.ok) throwPageFailure(asPageFailure(result.failure));
+  const [result, pending] = await Promise.all([
+    getTerm(context, slug, { limit: 1 }),
+    hasPendingRevision(args, "term", slug),
+  ]);
+  if (!result.ok) throwPageFailure(result.failure);
   const term = result.data;
   // The Markdown is parsed here, on the server: the browser gets the tree.
-  return { term, description: renderMarkdown(term.description_md) };
+  return {
+    term,
+    description: renderMarkdown(term.description_md),
+    pending,
+  };
 }
 
 export const meta: MetaFunction = args => {
@@ -127,7 +132,7 @@ function Subcategories({ term }: { readonly term: Term }) {
 }
 
 export default function CategoryLayout() {
-  const { term, description } = useLoaderData<typeof loader>();
+  const { term, description, pending } = useLoaderData<typeof loader>();
   const { pathname } = useLocation();
   const path = categoryPath(term.slug);
   const reading = pathname === path;
@@ -135,6 +140,7 @@ export default function CategoryLayout() {
   return (
     <EntityPage
       path={path}
+      pending={pending}
       title={term.display_name}
       subtitle={categoryMeta(term)}
       breadcrumbs={{
@@ -184,7 +190,7 @@ export function ErrorBoundary() {
   const failure = thrownPageFailure(error);
   const reference = useErrorReference(error, failure === null);
   return failure ? (
-    <CatalogueError failure={failure} what={WHAT} missing={MISSING} />
+    <CatalogueError failure={failure} missing={MISSING} />
   ) : (
     <ServerError title={`We couldn’t load ${WHAT}`} reference={reference} />
   );

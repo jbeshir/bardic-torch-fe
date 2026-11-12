@@ -22,6 +22,7 @@ import { useErrorReference } from "~/hooks/useErrorReference";
 import { isSlug } from "~/schemas/address";
 import type { Person } from "~/schemas/catalogue";
 import { getPerson } from "~/server/catalogue.server";
+import { hasPendingRevision } from "~/server/editing.server";
 import { renderMarkdown } from "~/server/markdown.server";
 
 /**
@@ -36,10 +37,14 @@ const MISSING = "that bard";
 
 export const headers = catalogueHeaders;
 
-export async function loader({ params, context }: LoaderFunctionArgs) {
+export async function loader(args: LoaderFunctionArgs) {
+  const { params, context } = args;
   const slug = params.slug ?? "";
   if (!isSlug(slug)) throwPageFailure(NOT_FOUND);
-  const result = await getPerson(context, slug);
+  const [result, pending] = await Promise.all([
+    getPerson(context, slug),
+    hasPendingRevision(args, "person", slug),
+  ]);
   if (!result.ok) throwPageFailure(result.failure);
   // A restricted piece's recording is emptied here, so its address never
   // reaches the page, not even in the data it hydrates from (§4.0).
@@ -64,6 +69,7 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
         person.profile?.licensing_notes_md ?? null
       ),
     },
+    pending,
   };
   return view;
 }
@@ -96,8 +102,7 @@ export default function BardLayout() {
 }
 
 /**
- * The person couldn't be shown: not found, an outage (the resting page,
- * 503), a server error or an answer we couldn't read, inside the shell.
+ * The person couldn't be shown: not found, or the resting page (503), inside the shell.
  * Anything else is a bug, reported and shown as "We couldn’t load this
  * bard".
  */
@@ -106,7 +111,7 @@ export function ErrorBoundary() {
   const failure = thrownPageFailure(error);
   const reference = useErrorReference(error, failure === null);
   return failure ? (
-    <CatalogueError failure={failure} what={WHAT} missing={MISSING} />
+    <CatalogueError failure={failure} missing={MISSING} />
   ) : (
     <ServerError title={`We couldn’t load ${WHAT}`} reference={reference} />
   );

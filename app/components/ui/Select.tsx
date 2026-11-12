@@ -6,7 +6,8 @@ import { textControlClasses } from "./Input";
 /**
  * A native select styled like Input. The options open in the
  * system picker, which follows the page's `color-scheme`, so it matches the
- * theme. Inside a Field it takes its id, descriptions and state from there.
+ * theme; a `multiple` one is a list box, without the chevron. Inside a
+ * Field it takes its id, descriptions and state from there.
  */
 export function Select({
   children,
@@ -29,12 +30,14 @@ export function Select({
       >
         {children}
       </select>
-      <IconChevronDown
-        size={18}
-        stroke={1.75}
-        aria-hidden="true"
-        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted"
-      />
+      {rest.multiple ? null : (
+        <IconChevronDown
+          size={18}
+          stroke={1.75}
+          aria-hidden="true"
+          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted"
+        />
+      )}
     </div>
   );
 }

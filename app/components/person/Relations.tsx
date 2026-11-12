@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { Link } from "~/components/ui/Link";
+import { PersonName } from "~/components/person/PersonName";
 import {
   PERSON_KIND_LABELS,
   PERSON_RELATION_LABELS,
@@ -21,8 +21,8 @@ function Group({
       <h3 id={headingId}>{label}</h3>
       <ul role="list" className="not-prose grid gap-2">
         {relations.map(({ person }) => (
-          <li key={person.slug} className="text-body">
-            <Link to={`/bards/${person.slug}`}>{person.name}</Link>{" "}
+          <li key={person.slug ?? person.name} className="text-body">
+            <PersonName person={person} />{" "}
             <span className="text-body-sm text-fg-muted">
               {PERSON_KIND_LABELS[person.kind]}
             </span>
@@ -37,7 +37,7 @@ function Group({
  * A person's relations to other persons (plan §4.6), grouped by how they
  * read from this person: "Member of" a group (outgoing), a group's
  * "Members" (incoming), "Heir of" and "Heirs", and "Also recorded as" both
- * ways. Persons who asked not to have a page never arrive.
+ * ways. A person who asked not to have a page is named without a link.
  */
 export function Relations({
   relations,

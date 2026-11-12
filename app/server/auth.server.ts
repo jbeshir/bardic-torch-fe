@@ -2,15 +2,12 @@ import {
   authorizationCodeGrant,
   buildAuthorizationUrl,
   calculatePKCECodeChallenge,
-  ClientError,
   ClientSecretBasic,
   Configuration,
   randomPKCECodeVerifier,
   randomState,
   refreshTokenGrant,
-  ResponseBodyError,
   tokenRevocation,
-  WWWAuthenticateChallengeError,
   type TokenEndpointResponse,
 } from "openid-client";
 import { createCookie, type RouterContextProvider } from "react-router";
@@ -58,20 +55,16 @@ const auth0StateSchema = z.object({
   codeVerifier: z.string(),
 });
 
-// One session storage and Auth0 client configuration per configuration,
-// built on first use in each isolate.
-const sessionStorageCache = new Map<string, AppSessionStorage>();
-const auth0ConfigCache = new Map<string, Configuration>();
+// The session storage and Auth0 client configuration, built on first use in
+// each isolate.
+let sessionStorage: AppSessionStorage | undefined;
+let auth0Config: Configuration | undefined;
 
 export function getOrCreateSessionStorage(
   env: Pick<AuthEnv, "AUTH_SESSION_SECRET">
 ): AppSessionStorage {
-  const cached = sessionStorageCache.get(env.AUTH_SESSION_SECRET);
-  if (cached) return cached;
-
-  const storage = createSessionStorage(env.AUTH_SESSION_SECRET);
-  sessionStorageCache.set(env.AUTH_SESSION_SECRET, storage);
-  return storage;
+  sessionStorage ??= createSessionStorage(env.AUTH_SESSION_SECRET);
+  return sessionStorage;
 }
 
 /**
@@ -81,9 +74,7 @@ export function getOrCreateSessionStorage(
  * in Auth0), and every call to Auth0 is bounded by AUTH0_TIMEOUT_MS.
  */
 function getAuth0Config(env: AuthEnv): Configuration {
-  const cacheKey = `${env.AUTH0_DOMAIN}:${env.AUTH0_CLIENT_ID}:${env.AUTH0_CLIENT_SECRET}`;
-  const cached = auth0ConfigCache.get(cacheKey);
-  if (cached) return cached;
+  if (auth0Config) return auth0Config;
 
   const origin = `https://${env.AUTH0_DOMAIN}`;
   const config = new Configuration(
@@ -101,7 +92,7 @@ function getAuth0Config(env: AuthEnv): Configuration {
   // In seconds. It can only be set here: openid-client reads no timeout
   // from the client metadata.
   config.timeout = AUTH0_TIMEOUT_MS / 1000;
-  auth0ConfigCache.set(cacheKey, config);
+  auth0Config = config;
   return config;
 }
 
@@ -302,61 +293,17 @@ function shouldRefreshToken(expiresAt: number): boolean {
   return Date.now() > expiresAt - TOKEN_REFRESH_THRESHOLD_MS;
 }
 
-type RefreshOutcome =
-  | { readonly kind: "refreshed"; readonly tokens: SessionTokens }
-  /** Auth0 refused the refresh token (e.g. `invalid_grant`): it is dead. */
-  | { readonly kind: "rejected" }
-  /** Auth0 didn't answer usefully (network, 5xx, timeout): try next time. */
-  | { readonly kind: "unavailable" };
-
-/** A 4xx that refuses the request itself: not a timeout or a rate limit. */
-function isRefusalStatus(status: number): boolean {
-  return status >= 400 && status < 500 && status !== 408 && status !== 429;
-}
-
-/**
- * Whether Auth0 refused the refresh token itself: any client error but a
- * timeout or rate limit, whatever the body (Auth0 answers `invalid_grant`
- * with a 403). openid-client reports an OAuth error body or a
- * `WWW-Authenticate` challenge with its status, and an empty, HTML or
- * error-less body as a `ClientError` whose cause is the response. A 5xx, a
- * network failure or a timeout is not a refusal.
- */
-function isRefusal(error: unknown): boolean {
-  if (
-    error instanceof ResponseBodyError ||
-    error instanceof WWWAuthenticateChallengeError
-  ) {
-    return isRefusalStatus(error.status);
-  }
-  if (
-    error instanceof ClientError &&
-    (error.code === "OAUTH_RESPONSE_IS_NOT_JSON" ||
-      error.code === "OAUTH_RESPONSE_IS_NOT_CONFORM") &&
-    error.cause instanceof Response
-  ) {
-    return isRefusalStatus(error.cause.status);
-  }
-  return false;
-}
-
+/** New tokens for `refreshToken`, or null when Auth0 won't give them. */
 async function refreshTokens(
   refreshToken: string,
   env: AuthEnv
-): Promise<RefreshOutcome> {
+): Promise<SessionTokens | null> {
   try {
     const tokens = await refreshTokenGrant(getAuth0Config(env), refreshToken);
-    return {
-      kind: "refreshed",
-      tokens: sessionTokensFrom(tokens, refreshToken),
-    };
+    return sessionTokensFrom(tokens, refreshToken);
   } catch (error) {
-    if (isRefusal(error)) {
-      console.warn("Auth0 refused the refresh token:", error);
-      return { kind: "rejected" };
-    }
     console.error("Couldn’t refresh the access token:", error);
-    return { kind: "unavailable" };
+    return null;
   }
 }
 
@@ -387,11 +334,9 @@ export async function getServerAuthContext(
 }
 
 /**
- * A session whose refresh token Auth0 refused, or whose token expired with
- * no way to renew it, is ended. When Auth0 is merely unavailable the session
- * is kept: its token is used while it is still valid, and once it has
- * expired the request is signed out without touching the cookie, so the
- * next request tries the refresh again.
+ * A token about to expire is refreshed when the session has a refresh
+ * token. If that fails, the old token is used while it is still valid;
+ * once it has expired the session is ended.
  */
 async function computeServerAuthContext(
   request: Request,
@@ -405,39 +350,35 @@ async function computeServerAuthContext(
 
   if (!stored) return { authContext: SIGNED_OUT };
 
-  const current: AuthContextResult = {
-    authContext: { isAuthenticated: true, accessToken: stored.accessToken },
-  };
-  const stillValid = Date.now() < stored.expiresAt;
-  if (!shouldRefreshToken(stored.expiresAt)) return current;
-
-  const outcome: RefreshOutcome = stored.refreshToken
-    ? await refreshTokens(stored.refreshToken, env)
-    : { kind: stillValid ? "unavailable" : "rejected" };
-
-  switch (outcome.kind) {
-    case "refreshed": {
-      session.set("tokens", outcome.tokens);
-      return {
-        authContext: {
-          isAuthenticated: true,
-          accessToken: outcome.tokens.accessToken,
-        },
-        headers: new Headers({
-          "Set-Cookie": await sessionStorage.commitSession(session),
-        }),
-      };
-    }
-    case "unavailable":
-      return stillValid ? current : { authContext: SIGNED_OUT };
-    case "rejected":
-      return {
-        authContext: SIGNED_OUT,
-        headers: new Headers({
-          "Set-Cookie": await sessionStorage.destroySession(session),
-        }),
-      };
+  if (!shouldRefreshToken(stored.expiresAt)) {
+    return {
+      authContext: { isAuthenticated: true, accessToken: stored.accessToken },
+    };
   }
+
+  const tokens = stored.refreshToken
+    ? await refreshTokens(stored.refreshToken, env)
+    : null;
+  if (tokens) {
+    session.set("tokens", tokens);
+    return {
+      authContext: { isAuthenticated: true, accessToken: tokens.accessToken },
+      headers: new Headers({
+        "Set-Cookie": await sessionStorage.commitSession(session),
+      }),
+    };
+  }
+  if (Date.now() < stored.expiresAt) {
+    return {
+      authContext: { isAuthenticated: true, accessToken: stored.accessToken },
+    };
+  }
+  return {
+    authContext: SIGNED_OUT,
+    headers: new Headers({
+      "Set-Cookie": await sessionStorage.destroySession(session),
+    }),
+  };
 }
 
 type AuthenticatedFetchResult = {

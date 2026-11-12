@@ -1,19 +1,16 @@
+import { failureMeta } from "~/catalogue/entity-route";
 import { XL_QUERY } from "~/constants/breakpoints";
+import { Link } from "~/components/ui/Link";
 import { IconBook2, IconFilter } from "@tabler/icons-react";
 import { useCallback, useId, useMemo, useRef, useState } from "react";
 import {
-  data,
   useLoaderData,
   useNavigation,
   useRouteError,
   type LoaderFunctionArgs,
   type MetaFunction,
 } from "react-router";
-import {
-  CatalogueError,
-  FilterError,
-  failureTitle,
-} from "~/components/catalogue/CatalogueError";
+import { CatalogueError } from "~/components/catalogue/CatalogueError";
 import { LetterBar } from "~/components/catalogue/LetterBar";
 import { KeptFocus } from "~/components/catalogue/KeptFocus";
 import { ListPagination } from "~/components/catalogue/ListPagination";
@@ -26,7 +23,6 @@ import { FacetForm } from "~/components/facets/FacetForm";
 import { SelectedFilters } from "~/components/facets/SelectedFilters";
 import { Alert } from "~/components/ui/Alert";
 import { Button, ButtonLink } from "~/components/ui/Button";
-import { SectionError } from "~/components/ui/ErrorState";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { ViewTabs } from "~/components/ui/Tabs";
 import { facetGroups, termChipLabel } from "~/catalogue/facet-groups";
@@ -38,14 +34,7 @@ import {
   redirectIfNotCanonical,
   type PieceQueryState,
 } from "~/catalogue/query-state";
-import {
-  failureInit,
-  isPageFailure,
-  throwPageFailure,
-  thrownPageFailure,
-  type FilterFailure,
-  type ReadFailure,
-} from "~/catalogue/read-failure";
+import { throwPageFailure, thrownPageFailure } from "~/catalogue/read-failure";
 import { pageMeta } from "~/catalogue/seo";
 import {
   buildTermIndex,
@@ -70,10 +59,7 @@ import { listPieces, listTerms } from "~/server/catalogue.server";
  * URL that means something other than its canonical form is answered with
  * one 301; a page past the data with one 302 to the last page.
  *
- * A failed read is a `ReadFailure`: an outage, a 500 or an unreadable
- * answer is thrown to the ErrorBoundary below (inside the shell); a search
- * too slow or a filter the API refused is returned, so the page keeps its
- * search box and chips to change them.
+ * A failed read is thrown to the ErrorBoundary below (inside the shell).
  */
 
 const WHAT = "the pieces";
@@ -83,7 +69,7 @@ const ALL_PIECES = "/pieces";
 
 export const headers = catalogueHeaders;
 
-/** What the page renders: the list, or the failure of its filters. */
+/** What the page renders. */
 type PiecesData = {
   readonly state: PieceQueryState;
   /** The canonical query string of the URL asked for, for the canonical link. */
@@ -92,19 +78,8 @@ type PiecesData = {
   readonly terms: readonly TermListItem[] | null;
   /** The URL's `term`s that are no categories any more, left out (§2.4). */
   readonly stale: readonly string[];
-} & (
-  | { readonly failure: null; readonly list: PieceList }
-  | { readonly failure: FilterFailure; readonly list: null }
-);
-
-function failed(
-  failure: ReadFailure,
-  page: Omit<PiecesData, "failure" | "list">
-) {
-  if (isPageFailure(failure)) throwPageFailure(failure);
-  const answer: PiecesData = { ...page, failure, list: null };
-  return data(answer, failureInit(failure));
-}
+  readonly list: PieceList;
+};
 
 export async function loader({ url, context }: LoaderFunctionArgs) {
   const asked = pieceQuery.parse(url.searchParams);
@@ -128,7 +103,7 @@ export async function loader({ url, context }: LoaderFunctionArgs) {
   async function readPieces(state: PieceQueryState) {
     const first = await listPieces(context, pieceQuery.toApi(state));
     const unchanged = { state, stale: [], result: first } as const;
-    if (first.ok || first.failure.kind !== "invalid_filters") return unchanged;
+    if (first.ok) return unchanged;
     const terms = await termsRead;
     if (!terms.ok) return unchanged;
     const index = buildTermIndex(terms.data.data);
@@ -152,9 +127,9 @@ export async function loader({ url, context }: LoaderFunctionArgs) {
 
   const { state, stale, result } = await readPieces(asked.state);
   const page = { state, canonical, terms: await termsData(), stale };
-  if (!result.ok) return failed(result.failure, page);
+  if (!result.ok) throwPageFailure(result.failure);
   redirectPastTheEnd(state.page, result.data.total, pageHref);
-  const answer: PiecesData = { ...page, failure: null, list: result.data };
+  const answer: PiecesData = { ...page, list: result.data };
   return answer;
 }
 
@@ -182,22 +157,11 @@ function listTitle(state: PieceQueryState): string {
 
 export const meta: MetaFunction = args => {
   if (args.error) {
-    // Titled like the boundary's h1: anything unexpected is a server error.
-    const thrown = thrownPageFailure(args.error) ?? { kind: "server" };
-    return [
-      { title: `${failureTitle(thrown, WHAT)} · Bardic Torch` },
-      { name: "robots", content: "noindex" },
-    ];
+    return failureMeta(args.error, WHAT);
   }
   // The loader's answer: an error, if any, is handled above.
   const loaded = args.loaderData as PiecesData | undefined;
   if (!loaded) return [...SERVER_ERROR_META];
-  if (loaded.failure) {
-    return [
-      { title: `${failureTitle(loaded.failure, WHAT)} · Bardic Torch` },
-      { name: "robots", content: "noindex" },
-    ];
-  }
   return pageMeta(args, {
     title: listTitle(loaded.state),
     description:
@@ -350,18 +314,6 @@ export default function PiecesRoute() {
     navigation.state === "loading" &&
     navigation.location.pathname === ALL_PIECES;
 
-  if (loaded.failure) {
-    return (
-      <FilterError failure={loaded.failure} clearHref={ALL_PIECES}>
-        <PieceSearch state={state} />
-        <SelectedFilters chips={chips} clearHref={ALL_PIECES} />
-        {loaded.terms ? null : (
-          <SectionError title="We couldn’t load the categories" />
-        )}
-      </FilterError>
-    );
-  }
-
   const { list } = loaded;
   const selected = selectedCount(state);
   const filtersLabel =
@@ -376,6 +328,11 @@ export default function PiecesRoute() {
   return (
     <>
       <h1 className="text-h1 text-fg">Pieces</h1>
+      <p className="mt-2">
+        <Link to="/pieces/new" appearance="standalone">
+          Add a piece
+        </Link>
+      </p>
       {/* Right after the heading, because a hidden link sits where it would
           have been in the flow, and here nothing is within a target's reach
           (WCAG 2.5.8). */}
@@ -526,8 +483,7 @@ export default function PiecesRoute() {
 }
 
 /**
- * The page couldn't load: an outage (the resting page, 503), a server
- * error or an answer we couldn't read, inside the shell. Anything else is
+ * The page couldn't load (the resting page, 503), inside the shell. Anything else is
  * a bug, reported and shown as "We couldn’t load the pieces".
  */
 export function ErrorBoundary() {
@@ -535,7 +491,7 @@ export function ErrorBoundary() {
   const failure = thrownPageFailure(error);
   const reference = useErrorReference(error, failure === null);
   return failure ? (
-    <CatalogueError failure={failure} what={WHAT} />
+    <CatalogueError failure={failure} />
   ) : (
     <ServerError title={`We couldn’t load ${WHAT}`} reference={reference} />
   );

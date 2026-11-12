@@ -8,20 +8,20 @@ Tests are proportionate: a component gets one only when it has behaviour, a load
 | repo checks    | exact pins, CI and ops files, no raw colours, the Worker entry                 | `test/*.test.ts`                                                           | `npm run test:run` (in `validate`) |
 | e2e            | the built Worker in Chromium, served by `wrangler dev` against the fixture API | `e2e/`                                                                     | `npm run test:e2e`                 |
 
-`validate` also runs the checks `check:types`, `check:api`, `check:contrast` and `check:prod-build` (see CLAUDE.md).
+`validate` also runs the checks `check:types`, `check:api` and `check:prod-build` (see CLAUDE.md).
 
 ## Unit and component tests
 
 - **Environment by file name.** `vitest.config.ts` has two projects: `*.test.tsx` runs in jsdom, every other test in node (like Workers). A test that needs a DOM is a `.test.tsx` file, never a per-file pragma. It aliases `virtual:react-router/server-build` to `test/support/server-build-stub.ts`.
 - **Components** get a test only if they have behaviour (state, keyboard handling, focus, a callback): testing-library and `user-event`, through `renderWithRouter` and `renderRoutes` (`app/test/router.tsx`). Presentational components are covered by the smoke table and e2e. Never assert jsdom's lack of a browser behaviour as the behaviour.
-- **The smoke table** (`app/routes/server-render.test.ts`): one row per route, rendered through the real `entry.server` and root against the fixture API, checking the status, the heading and what the browser gets before any JavaScript runs. It includes the outage (503) and malformed-body (502) pages. A new page adds a row here, not a test file.
+- **The smoke table** (`app/routes/server-render.test.ts`): one row per route, rendered through the real `entry.server` and root against the fixture API, checking the status, the heading and what the browser gets before any JavaScript runs. It includes the outage and malformed-body pages (both 503). A new page adds a row here, not a test file.
 - **Loaders and actions** run against msw (`app/test/msw.ts`): `serveFixtureApi()` serves the canned API for a test, and `fixtures.server.use(http.get(url, () => …))` makes one read fail. A request no handler answers is refused and fails the test. Helpers in `app/test/`: `loadContext()` (a validated env, API at `https://api.test`), `formRequest()`, `runAction()` for the `/api/*` proxy routes, `serveApp()` for header and nonce tests.
 - **Helpers, server and theme code** are table-driven: one `it.each` of cases (`query-state.test.ts` lists each canonicalisation rule as `[why, page, query, canonical]`). `cookie-format.golden.test.ts`, the CSRF same-origin table and the Sentry "nothing about the reader is sent" test guard security and privacy: keep them.
 - **Node versions.** The suite runs on `.nvmrc`'s Node 26.13.0. `app/test/setup.ts` gives inline elements a non-inline `display` so jsdom's accessible names keep the browser's word breaks.
 
 ## The canned fixture API
 
-`test/fixture-api/` is the minimum the read pages need, not a re-implementation of the backend. `router.ts` routes a request to a canned answer (`catalogue-operations.ts`, `data.ts`): `getHealthz`, the seeded users' `getMe` and `updateMe`, and the catalogue reads. Two error rules only: an unknown entity is 404, and a `term` or `affiliation` that no listed term has is 400 (the "left out" notice). A request is signed in by the stub session's bearer, `Bearer fixture:<userId>`; anything else is 401.
+`test/fixture-api/` is the minimum the read pages need, not a re-implementation of the backend. `router.ts` routes a request to a canned answer (`catalogue-operations.ts`, `data.ts`): `getHealthz`, the seeded users' `getMe` and `updateMe`, the catalogue reads, and the editing operations (`editing-operations.ts`): the five editables, `submitRevision`, `listMyRevisions` and `withdrawRevision`, with each user's submitted revisions kept in memory. Its error rules are few: an unknown entity is 404; a `term` or `affiliation` that no listed term has is 400 (the "left out" notice); a blank title or name is 422 `required`; a new entity whose name matches a public one is 409 `possible_duplicate` unless acknowledged. A request is signed in by the stub session's bearer, `Bearer fixture:<userId>`; anything else is 401.
 
 - **Every body is checked against `api/openapi.yaml`** (`spec.ts`) before it is served. A fixture that breaks the contract throws instead of answering, so re-vendoring the spec (`npm run sync:api`) surfaces stale fixtures at once.
 - The same router serves msw (unit tests) and HTTP (`npx tsx test/fixture-api/server.ts`: port 4010 or `$PORT`, `/healthz`), which Playwright and `npm run dev:fixtures` start. The data is invented: stage names only, never real people.
@@ -30,7 +30,7 @@ Tests are proportionate: a component gets one only when it has behaviour, a load
 
 e2e and `npm run dev:fixtures` sign in as fixture users without Auth0. `/auth/login?as=<userId>[&returnTo=/path]` sets a real `__Host-bt_session` whose access token is `fixture:<userId>`; without `?as` it shows a chooser. All three locks must open:
 
-1. **Compile flag.** `__STUB_AUTH__` is true only in `e2e` and `development` builds, and `stub-auth.server.ts` is reached only through `if (__STUB_AUTH__) await import(...)` in the `/auth/login` loader. `check:prod-build` builds production and preview and fails if either contains the stub module, its marker or a fixture host.
+1. **Compile flag.** `__STUB_AUTH__` is true only in `e2e` and `development` builds, and `stub-auth.server.ts` is reached only through `if (__STUB_AUTH__) await import(...)` in the `/auth/login` loader. `check:prod-build` builds production and preview and fails if either contains the stub module or its marker.
 2. **`AUTH_MODE=stub`** in the environment.
 3. **A local host:** `localhost` or `127.0.0.1`.
 

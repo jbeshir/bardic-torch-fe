@@ -24,7 +24,7 @@ const gone = {
 };
 const resting = {
   loader: () => {
-    throw data({ kind: "resting" }, { status: 503 });
+    throw data({ kind: "try_again" }, { status: 503 });
   },
   default: () => null,
 };

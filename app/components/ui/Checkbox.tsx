@@ -102,12 +102,15 @@ export function Checkbox({
  * looks like a field label, with optional help and one error for the group.
  */
 export function CheckboxGroup({
+  id: groupId,
   legend,
   help,
   error,
   optional = false,
   children,
 }: {
+  /** The group's id, for a link to it. */
+  readonly id?: string;
   readonly legend: string;
   readonly help?: ReactNode;
   readonly error?: ReactNode;
@@ -116,7 +119,7 @@ export function CheckboxGroup({
 }) {
   const id = useId();
   return (
-    <fieldset aria-describedby={describedBy(id, { help, error })}>
+    <fieldset id={groupId} aria-describedby={describedBy(id, { help, error })}>
       <legend className="text-body-sm font-semibold text-fg">
         {legend}
         {optional ? <OptionalMark /> : null}

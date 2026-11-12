@@ -1,4 +1,4 @@
-/* Hand-written. The colours mirror `tokens.ts`, which the contrast check reads; keep the two in step (tokens.test.ts checks they agree). */
+/* Hand-written. The colours mirror `tokens.ts`; keep the two in step (tokens.test.ts checks they agree). */
 :root,
 [data-theme="light"] {
   color-scheme: light;

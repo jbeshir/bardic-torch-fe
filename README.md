@@ -20,20 +20,20 @@ FE2 adds the catalogue, read-only and anonymous:
 - the directories (`/bards`, `/categories`, `/collections`, `/events`);
 - `robots.txt` and one `sitemap.xml`, and page metadata for search engines (indexed in the production build only).
 
-Editing comes in FE3. The original wiki is linked only for the help pages' attribution, the footer and the 404 page.
+Signed-in readers can edit: an editor for each kind of page (`/pieces/:slug/edit`, `/pieces/new`, and the same for bards, categories, collections and events) and their own revisions (`/contributions`), where a pending edit can be continued or withdrawn. The original wiki is linked only for the help pages' attribution, the footer and the 404 page.
 
 ## Key concepts
 
 - **Contract-first API.** `api/openapi.yaml` is the backend's OpenAPI 3.1 spec, vendored byte for byte with `npm run sync:api -- <path|url>`. Nobody edits it here.
   - `app/api/schema.gen.ts` is generated from it (`npm run gen:api`); `check:api` fails if that file is stale.
   - Response bodies are typed from the generated types and not validated at runtime; zod validates input only (forms, config).
-- **Catalogue reads are anonymous.** The catalogue's pages call the API's public `GET /v1/...` operations from loaders in `app/server/catalogue.server.ts`, with no credentials, whether or not you are signed in. Each failure is mapped to our own page (`app/catalogue/read-failure.ts`): an outage is the "resting" page (503 with `Retry-After`), an error is "something went wrong", and a bad answer is a 502. Pages are not cached upstream in FE2.
+- **Catalogue reads are anonymous.** The catalogue's pages call the API's public `GET /v1/...` operations from loaders in `app/server/catalogue.server.ts`, with no credentials, whether or not you are signed in. Each failure is mapped to our own page (`app/catalogue/read-failure.ts`): a 404 is the not-found page, and anything else (an outage, a 5xx, a timeout, an unreadable answer) is the "resting" page (503 with `Retry-After`). Pages are not cached upstream in FE2.
 - **URLs are the state.** A list's search, filters, letter and page are query parameters, parsed and written canonically by `app/catalogue/query-state.ts`: a non-canonical address gets one 301, and the filter forms are plain GET forms, so they work without JavaScript.
 - **Restricted pieces.** A piece whose creator asks that it isn't shared further never shows its links outside one closed disclosure, and is kept out of the sitemap (`app/server/sitemap.server.ts`) and search engines (`noindex, nofollow`, in the piece route's `meta`). The site's own lists and search still show it, with a Restricted badge and no links (`app/catalogue/restricted.ts`).
-- **Indexing.** Only the production build can be indexed: `__INDEXABLE__` is true in it alone, and the preview, e2e and development builds answer `Disallow: /` and send `X-Robots-Tag: noindex` on every response the Worker makes (static assets get the `Disallow` only). `/robots.txt`, and one `/sitemap.xml` are resource routes; `check:prod-build` proves the flag's value in each build.
-- **The browser never calls the API.** Loaders, and the proxy route `PATCH /api/me`, call it from the Worker through `app/server/api.server.ts`.
+- **Indexing.** Only the production build can be indexed: `__INDEXABLE__` is true in it alone, and the preview, e2e and development builds answer `Disallow: /` and send `X-Robots-Tag: noindex` on every response the Worker makes (static assets get the `Disallow` only). `/robots.txt`, and one `/sitemap.xml` are resource routes.
+- **The browser never calls the API.** Loaders and actions call it from the Worker through `app/server/api.server.ts`. Writes are form posts: the editors and Withdraw are document POSTs to their own route's action (they work without JavaScript), and settings use the proxy route `PATCH /api/me`. Each checks same-origin.
   - The access token lives in the server-side session and is sent as `Authorization: Bearer <jwt>`.
-  - The proxies accept form-encoded bodies, check same-origin (CSRF), validate the input, and map every API error code to the app's own wording.
+  - The proxies and the editors' actions accept form-encoded bodies, check same-origin (CSRF), validate the input, and map every API error code to the app's own wording.
 - **Sessions.** Sign-in is an OpenID Connect authorization-code flow with PKCE (openid-client, configured statically for the Auth0 tenant). The app keeps only the Auth0 tokens in a signed cookie session, `__Host-bt_session` (HttpOnly, Secure, SameSite=Lax), and refreshes the access token before it expires, once per request.
   - Each sign-in's state and PKCE verifier wait for `/auth/callback` in their own signed cookie, `__Host-bt_auth0:<state>`, for 5 minutes. The callback checks the state's format and that it matches the cookie, then clears the cookie.
   - `/auth/login` remembers where to come back to in `__Host-bt_return_to`. `/auth/callback` validates it again with `safeReturnTo`.
@@ -101,13 +101,13 @@ To try a build as Cloudflare runs it, run `npm run build` (or `build:preview`), 
 
 ## Checks
 
-| command                    | what it runs                                                                                                                  |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `npm run validate`         | check:types, gen:types, format:check, lint, tsc, check:unused, check:api, check:contrast, every vitest test, check:prod-build |
-| `npm run test:e2e`         | Playwright: the journeys and the per-template axe and reflow checks; needs Chromium                                           |
-| `npm run screenshots`      | Playwright: on-demand screenshots of every template, light and dark, at 360 and 1280; needs Chromium                          |
-| `npm run audit`            | `npm audit`: any runtime advisory (info included), or a high or critical one anywhere; needs the registry                     |
-| `npm run audit:signatures` | `npm audit signatures`: the installed packages' registry signatures and provenance; needs the registry and Sigstore           |
+| command                    | what it runs                                                                                                        |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `npm run validate`         | check:types, gen:types, format:check, lint, tsc, check:unused, check:api, every vitest test, check:prod-build       |
+| `npm run test:e2e`         | Playwright: the journeys and the per-template axe and reflow checks; needs Chromium                                 |
+| `npm run screenshots`      | Playwright: on-demand screenshots of every template, light and dark, at 360 and 1280; needs Chromium                |
+| `npm run audit`            | `npm audit`: any runtime advisory (info included), or a high or critical one anywhere; needs the registry           |
+| `npm run audit:signatures` | `npm audit signatures`: the installed packages' registry signatures and provenance; needs the registry and Sigstore |
 
 CI runs the first two as the `validate` and `e2e` jobs (`.github/workflows/ci.yml`), and both audits as the `audit` job (`.github/workflows/audit.yml`, weekly and on pull requests to `main`): all three are required checks on `main`. [docs/TESTING.md](docs/TESTING.md) explains the layers.
 

@@ -20,6 +20,7 @@ import { pageMeta } from "~/catalogue/seo";
 import { useErrorReference } from "~/hooks/useErrorReference";
 import { isSlug } from "~/schemas/address";
 import { getPiece } from "~/server/catalogue.server";
+import { hasPendingRevision } from "~/server/editing.server";
 import { renderMarkdown } from "~/server/markdown.server";
 
 /**
@@ -30,8 +31,7 @@ import { renderMarkdown } from "~/server/markdown.server";
  *
  * A slug that can't be one is our own 404, without asking the API. A
  * failed read is thrown to the ErrorBoundary below, inside the shell: not
- * found (404), the resting page (503), a server error (500) or an answer
- * we couldn't read (502).
+ * found (404) or the resting page (503).
  */
 
 const WHAT = "this piece";
@@ -39,10 +39,14 @@ const MISSING = "that piece";
 
 export const headers = catalogueHeaders;
 
-export async function loader({ params, context }: LoaderFunctionArgs) {
+export async function loader(args: LoaderFunctionArgs) {
+  const { params, context } = args;
   const slug = params.slug ?? "";
   if (!isSlug(slug)) throwPageFailure(NOT_FOUND);
-  const result = await getPiece(context, slug);
+  const [result, pending] = await Promise.all([
+    getPiece(context, slug),
+    hasPendingRevision(args, "piece", slug),
+  ]);
   if (!result.ok) throwPageFailure(result.failure);
   const piece = result.data;
   // The Markdown is parsed here, on the server: the browser gets the trees.
@@ -54,6 +58,7 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
       historicalSource: renderMarkdown(piece.historical_source_md),
       licensingNotes: renderMarkdown(piece.licensing_notes_md),
     },
+    pending,
   };
   return view;
 }
@@ -83,8 +88,7 @@ export default function PieceLayout() {
 }
 
 /**
- * The piece couldn't be shown: not found, an outage (the resting page,
- * 503), a server error or an answer we couldn't read, inside the shell.
+ * The piece couldn't be shown: not found, or the resting page (503), inside the shell.
  * Anything else is a bug, reported and shown as "We couldn’t load this
  * piece".
  */
@@ -93,7 +97,7 @@ export function ErrorBoundary() {
   const failure = thrownPageFailure(error);
   const reference = useErrorReference(error, failure === null);
   return failure ? (
-    <CatalogueError failure={failure} what={WHAT} missing={MISSING} />
+    <CatalogueError failure={failure} missing={MISSING} />
   ) : (
     <ServerError title={`We couldn’t load ${WHAT}`} reference={reference} />
   );
