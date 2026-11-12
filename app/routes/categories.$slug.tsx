@@ -16,11 +16,7 @@ import { TagList } from "~/components/ui/TagList";
 import { UserMarkdown } from "~/components/UserMarkdown";
 import { catalogueHeaders } from "~/catalogue/headers";
 import { categoryIndexQuery } from "~/catalogue/query-state";
-import {
-  asPageFailure,
-  throwPageFailure,
-  thrownPageFailure,
-} from "~/catalogue/read-failure";
+import { throwPageFailure, thrownPageFailure } from "~/catalogue/read-failure";
 import { failureMeta, ignoreSearchChanges } from "~/catalogue/entity-route";
 import { pageMeta } from "~/catalogue/seo";
 import { categoryMeta, categoryPath, memberCount } from "~/catalogue/term-page";
@@ -59,7 +55,7 @@ export async function loader(args: LoaderFunctionArgs) {
     getTerm(context, slug, { limit: 1 }),
     hasPendingRevision(args, "term", slug),
   ]);
-  if (!result.ok) throwPageFailure(asPageFailure(result.failure));
+  if (!result.ok) throwPageFailure(result.failure);
   const term = result.data;
   // The Markdown is parsed here, on the server: the browser gets the tree.
   return {
@@ -194,7 +190,7 @@ export function ErrorBoundary() {
   const failure = thrownPageFailure(error);
   const reference = useErrorReference(error, failure === null);
   return failure ? (
-    <CatalogueError failure={failure} what={WHAT} missing={MISSING} />
+    <CatalogueError failure={failure} missing={MISSING} />
   ) : (
     <ServerError title={`We couldn’t load ${WHAT}`} reference={reference} />
   );

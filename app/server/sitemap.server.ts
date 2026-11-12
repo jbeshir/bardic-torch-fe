@@ -62,12 +62,12 @@ async function readAll<T>(
   return { ok: true, data: paths };
 }
 
-function unavailable(retryAfter: number): Response {
+function unavailable(): Response {
   return new Response("The sitemap can’t be built right now.", {
     status: 503,
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
-      "Retry-After": String(retryAfter),
+      "Retry-After": String(RETRY_AFTER_SECONDS),
       "Cache-Control": "no-store",
     },
   });
@@ -114,11 +114,7 @@ export async function sitemap(
   const paths = [...PAGE_PATHS];
   for (const part of parts) {
     if (!part.ok) {
-      return unavailable(
-        part.failure.kind === "resting"
-          ? part.failure.retryAfter
-          : RETRY_AFTER_SECONDS
-      );
+      return unavailable();
     }
     paths.push(...part.data);
   }

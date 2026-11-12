@@ -1,11 +1,10 @@
 import type { RouterContextProvider } from "react-router";
 import { z } from "zod";
 import type { components, operations } from "~/api/schema.gen";
-import { isUnavailable } from "~/catalogue/read-failure";
 import { type UpstreamErrorCode, type User } from "~/schemas/api";
 import { DISPLAY_NAME_RULE } from "~/schemas/rules";
 import {
-  UNEXPECTED_ANSWER,
+  TRY_AGAIN_MESSAGE,
   type ProxyBody,
   type ProxyError,
   type ProxyErrorCode,
@@ -34,14 +33,12 @@ import {
  * reach the API, so a client's Cookie or Authorization is never forwarded.
  *
  * Upstream error messages are not meant for end users, so every error the
- * app sees carries copy written here, chosen by the upstream `code`.
+ * app sees carries copy written here, chosen by the upstream `code` for
+ * the few codes a page treats differently; anything else is `try_again`.
  */
 
 /** The codes this module answers with: not the CSRF check's or the browser's. */
-type ErrorCode = Exclude<
-  ProxyErrorCode,
-  "forbidden" | "offline" | "unexpected_response"
->;
+type ErrorCode = Exclude<ProxyErrorCode, "forbidden" | "offline">;
 
 type Schemas = components["schemas"];
 
@@ -101,51 +98,37 @@ type ApiRequest = {
   readonly body?: unknown;
 };
 
-const TRY_AGAIN = "We couldn’t do that just now. Try again shortly.";
-
-const UNREACHABLE: ApiError = {
-  code: "upstream_unavailable",
-  message: "We couldn’t reach our servers. Try again shortly.",
+const TRY_AGAIN: ApiError = {
+  code: "try_again",
+  message: TRY_AGAIN_MESSAGE,
 };
 
 const SIGNED_OUT: ApiError = {
   code: "unauthenticated",
-  message: "Log in to continue.",
+  message:
+    "You’ve been signed out. Log in again and we’ll bring you back here.",
 };
 
-/** What the user is told for an upstream error, per operation. */
+/**
+ * What the user is told for an upstream error code a page treats
+ * differently; undefined for any other, which is a try again.
+ */
 function upstreamError(
   operationId: OperationId,
   code: UpstreamErrorCode
-): ApiError {
+): ApiError | undefined {
   switch (code) {
-    case "unauthenticated":
-      return {
-        code,
-        message:
-          "You’ve been signed out. Log in again and we’ll bring you back here.",
-      };
     case "user_blocked":
       return {
         code,
         message:
           "Your account is blocked, so you can’t make changes. Contact the Bardic Torch team if you think this is a mistake.",
       };
-    case "moderator_required":
-      return { code, message: "Only moderators can do that." };
-    case "request_too_large":
-      return { code, message: "The form is too large to send." };
     case "not_found":
       return {
         code,
         message:
           "We couldn’t find what you asked for. Reload the page and try again.",
-      };
-    case "conflict":
-      return {
-        code,
-        message:
-          "Something changed while you were editing. Reload the page and try again.",
       };
     case "possible_duplicate":
       return {
@@ -174,23 +157,15 @@ function upstreamError(
     case "validation_failed":
       return { code, message: "Check the highlighted fields." };
     case "invalid_request":
-      if (operationId === "updateMe") {
-        return {
-          code,
-          message: "Check the display name.",
-          fields: [{ field: "display_name", message: DISPLAY_NAME_RULE }],
-        };
-      }
-      return { code, message: TRY_AGAIN };
-    case "method_not_allowed":
-    case "unsupported_media_type":
-    case "internal":
-      return { code, message: TRY_AGAIN };
-    case "unavailable":
-      return UNREACHABLE;
+      return operationId === "updateMe"
+        ? {
+            code,
+            message: "Check the display name.",
+            fields: [{ field: "display_name", message: DISPLAY_NAME_RULE }],
+          }
+        : undefined;
     default:
-      // A code this build's spec doesn't list: the API is ahead of us.
-      return { code: "internal", message: TRY_AGAIN };
+      return undefined;
   }
 }
 
@@ -214,7 +189,7 @@ async function callApi<T>(
   if (!auth.isAuthenticated) return failure(401, SIGNED_OUT, headers);
 
   // The timeout covers the body too: a body that stalls or breaks off
-  // ends in the same 504/502 as a request that never got an answer.
+  // ends like a request that never got an answer.
   const signal = AbortSignal.timeout(UPSTREAM_TIMEOUT_MS);
   let response: Response;
   let text: string;
@@ -243,18 +218,11 @@ async function callApi<T>(
     );
     text = await Promise.race([response.text(), aborted(signal)]);
   } catch (error) {
-    console.error(`${apiRequest.operationId} failed:`, error);
-    if (isTimeout(error)) {
-      return failure(
-        504,
-        {
-          code: "upstream_unavailable",
-          message: "Our servers took too long to answer. Try again shortly.",
-        },
-        headers
-      );
-    }
-    return failure(502, UNREACHABLE, headers);
+    console.error(
+      `${apiRequest.operationId} ${isTimeout(error) ? "timed out" : "failed"}:`,
+      error
+    );
+    return failure(503, TRY_AGAIN, headers);
   }
 
   if (response.status === 401) {
@@ -263,11 +231,7 @@ async function callApi<T>(
       request.headers.get("Cookie")
     );
     headers.set("Set-Cookie", await sessionStorage.destroySession(session));
-    return failure(
-      401,
-      upstreamError(apiRequest.operationId, "unauthenticated"),
-      headers
-    );
+    return failure(401, SIGNED_OUT, headers);
   }
 
   const payload = parseJson(text);
@@ -287,11 +251,11 @@ async function callApi<T>(
       typeof body?.code === "string"
         ? (body.code as UpstreamErrorCode)
         : undefined;
-    if (isUnavailable(response.status, code)) {
-      return failure(response.status, UNREACHABLE, headers);
-    }
-    if (code !== undefined) {
-      const error = upstreamError(apiRequest.operationId, code);
+    const error =
+      code === undefined
+        ? undefined
+        : upstreamError(apiRequest.operationId, code);
+    if (error) {
       const { problems, possible_duplicates } = body as {
         readonly problems?: Schemas["Problem"][];
         readonly possible_duplicates?: Schemas["DuplicateMatch"][];
@@ -311,14 +275,7 @@ async function callApi<T>(
   console.error(
     `${apiRequest.operationId} returned an unexpected ${response.status} response`
   );
-  return failure(
-    502,
-    {
-      code: "bad_gateway",
-      message: UNEXPECTED_ANSWER,
-    },
-    headers
-  );
+  return failure(503, TRY_AGAIN, headers);
 }
 
 /**
@@ -365,7 +322,7 @@ async function readFormBody<S extends z.ZodType>(
   const contentType = request.headers.get("Content-Type") ?? "";
   if (!/^application\/x-www-form-urlencoded\s*(;|$)/i.test(contentType)) {
     return failure(415, {
-      code: "unsupported_media_type",
+      code: "invalid_request",
       message: "Send the form as form data.",
     });
   }
@@ -376,7 +333,7 @@ async function readFormBody<S extends z.ZodType>(
       : await readLimited(request, MAX_BODY_BYTES).catch(() => undefined);
   if (text === null) {
     return failure(413, {
-      code: "request_too_large",
+      code: "invalid_request",
       message: "The form is too large to send.",
     });
   }

@@ -76,7 +76,7 @@ export function ErrorBoundary() {
   const failure = thrownPageFailure(error);
   const reference = useErrorReference(error, failure === null);
   const body = failure ? (
-    <CatalogueError failure={failure} what="the history" missing={MISSING} />
+    <CatalogueError failure={failure} missing={MISSING} />
   ) : (
     <ServerError title="We couldn’t load the history" reference={reference} />
   );

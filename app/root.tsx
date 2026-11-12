@@ -231,7 +231,7 @@ export default function App() {
  * §10.5): the page the shell itself would have failed on. A minimal
  * standalone page with the same stylesheet, the Wordmark home link, the
  * error body and the same HelpLinks as every page. A 404 thrown by a
- * loader gets the 404 body, and the resting answer (`kind: "resting"`, an
+ * loader gets the 404 body, and the try-again answer (`kind: "try_again"`, an
  * API outage) the resting body; neither is reported. Anything else is
  * reported to Sentry (when it is set up) and shows its event id as the
  * reference.

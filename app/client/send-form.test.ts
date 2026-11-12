@@ -4,8 +4,8 @@ import { OFFLINE, sendForm } from "./send-form";
 const UNEXPECTED = {
   ok: false,
   error: {
-    code: "unexpected_response",
-    message: "We got an unexpected answer from our servers. Try again shortly.",
+    code: "try_again",
+    message: "We couldn’t do that just now. Try again shortly.",
   },
 };
 

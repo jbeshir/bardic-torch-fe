@@ -1,3 +1,4 @@
+import { failureMeta } from "~/catalogue/entity-route";
 import {
   useLoaderData,
   useRouteError,
@@ -5,10 +6,7 @@ import {
   type MetaFunction,
 } from "react-router";
 import { useEffect, useId, useRef, type ReactNode } from "react";
-import {
-  CatalogueError,
-  failureTitle,
-} from "~/components/catalogue/CatalogueError";
+import { CatalogueError } from "~/components/catalogue/CatalogueError";
 import { PersonListItem } from "~/components/catalogue/PersonListItem";
 import { PieceListItem } from "~/components/catalogue/PieceListItem";
 import { ResultsStatus } from "~/components/catalogue/ResultsStatus";
@@ -29,7 +27,7 @@ import {
 import {
   throwPageFailure,
   thrownPageFailure,
-  type ReadFailure,
+  TRY_AGAIN,
 } from "~/catalogue/read-failure";
 import { pageMeta } from "~/catalogue/seo";
 import { searchTerms, type TermMatches } from "~/catalogue/term-search";
@@ -55,8 +53,7 @@ const TOP = 10;
 export const headers = catalogueHeaders;
 
 type Section<T> =
-  | { readonly ok: true; readonly data: T }
-  | { readonly ok: false; readonly failure: ReadFailure };
+  { readonly ok: true; readonly data: T } | { readonly ok: false };
 
 type SearchData =
   | { readonly q: undefined }
@@ -66,21 +63,6 @@ type SearchData =
       readonly persons: Section<PersonList>;
       readonly terms: Section<TermMatches>;
     };
-
-/**
- * The page's failure when no section could be read: the resting page when
- * every one was an outage (waiting the longest `Retry-After` asked),
- * otherwise a server error.
- */
-function allFailed(failures: readonly ReadFailure[]): never {
-  const waits = failures.map(failure =>
-    failure.kind === "resting" ? failure.retryAfter : null
-  );
-  if (waits.every(wait => wait !== null)) {
-    throwPageFailure({ kind: "resting", retryAfter: Math.max(...waits) });
-  }
-  throwPageFailure({ kind: "server" });
-}
 
 export async function loader({ url, context }: LoaderFunctionArgs) {
   const { state, canonical } = searchQuery.parse(url.searchParams);
@@ -97,7 +79,7 @@ export async function loader({ url, context }: LoaderFunctionArgs) {
     listTerms(context, {}),
   ]);
   if (!pieces.ok && !persons.ok && !terms.ok) {
-    allFailed([pieces.failure, persons.failure, terms.failure]);
+    throwPageFailure(TRY_AGAIN);
   }
   const answer: SearchData = {
     q,
@@ -112,11 +94,7 @@ export async function loader({ url, context }: LoaderFunctionArgs) {
 
 export const meta: MetaFunction = args => {
   if (args.error) {
-    const thrown = thrownPageFailure(args.error) ?? { kind: "server" };
-    return [
-      { title: `${failureTitle(thrown, WHAT)} · Bardic Torch` },
-      { name: "robots", content: "noindex" },
-    ];
+    return failureMeta(args.error, WHAT);
   }
   const loaded = args.loaderData as SearchData | undefined;
   if (!loaded) return [...SERVER_ERROR_META];
@@ -130,27 +108,11 @@ export const meta: MetaFunction = args => {
   });
 };
 
-/** A section's failure (plan §4.4): a search too slow, or a read that failed. */
-function SectionFailure({
-  failure,
-  what,
-}: {
-  readonly failure: ReadFailure;
-  /** "pieces", "bards", "categories". */
-  readonly what: string;
-}) {
-  if (failure.kind === "search_timeout") {
-    return (
-      <SectionError title="That search took too long">
-        Try fewer words.
-      </SectionError>
-    );
-  }
+/** A section that failed to load (plan §4.4). */
+function SectionFailure({ what }: { readonly what: string }) {
   return (
     <SectionError title={`We couldn’t load the ${what}`}>
-      {failure.kind === "resting"
-        ? "The catalogue is briefly out of reach. Try again in a few minutes."
-        : null}
+      The catalogue is briefly out of reach. Try again in a few minutes.
     </SectionError>
   );
 }
@@ -291,7 +253,7 @@ export default function SearchRoute() {
                 <p className="text-body text-fg-muted">No pieces match.</p>
               )
             ) : (
-              <SectionFailure failure={pieces.failure} what="pieces" />
+              <SectionFailure what="pieces" />
             )}
           </ResultsSection>
           <ResultsSection title="Bards">
@@ -313,7 +275,7 @@ export default function SearchRoute() {
                 <p className="text-body text-fg-muted">No bards match.</p>
               )
             ) : (
-              <SectionFailure failure={persons.failure} what="bards" />
+              <SectionFailure what="bards" />
             )}
           </ResultsSection>
           <ResultsSection title="Categories">
@@ -339,7 +301,7 @@ export default function SearchRoute() {
                 <p className="text-body text-fg-muted">No categories match.</p>
               )
             ) : (
-              <SectionFailure failure={terms.failure} what="categories" />
+              <SectionFailure what="categories" />
             )}
           </ResultsSection>
         </div>
@@ -349,15 +311,14 @@ export default function SearchRoute() {
 }
 
 /**
- * Every section failed: the resting page (503) or a server error (500),
- * inside the shell. Anything else is a bug, reported.
+ * Every section failed: the resting page (503), inside the shell. Anything else is a bug, reported.
  */
 export function ErrorBoundary() {
   const error = useRouteError();
   const failure = thrownPageFailure(error);
   const reference = useErrorReference(error, failure === null);
   return failure ? (
-    <CatalogueError failure={failure} what={WHAT} />
+    <CatalogueError failure={failure} />
   ) : (
     <ServerError title={`We couldn’t load ${WHAT}`} reference={reference} />
   );

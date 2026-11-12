@@ -1,18 +1,14 @@
+import { failureMeta } from "~/catalogue/entity-route";
 import { IconBook2 } from "@tabler/icons-react";
 import { useId, useRef } from "react";
 import {
-  data,
   useLoaderData,
   useNavigation,
   useRouteError,
   type LoaderFunctionArgs,
   type MetaFunction,
 } from "react-router";
-import {
-  CatalogueError,
-  FilterError,
-  failureTitle,
-} from "~/components/catalogue/CatalogueError";
+import { CatalogueError } from "~/components/catalogue/CatalogueError";
 import { CollectionKindFilter } from "~/components/catalogue/CollectionKindFilter";
 import { KeptFocus } from "~/components/catalogue/KeptFocus";
 import { LetterBar } from "~/components/catalogue/LetterBar";
@@ -33,14 +29,7 @@ import {
   redirectIfNotCanonical,
   type CollectionQueryState,
 } from "~/catalogue/query-state";
-import {
-  failureInit,
-  isPageFailure,
-  throwPageFailure,
-  thrownPageFailure,
-  type FilterFailure,
-  type ReadFailure,
-} from "~/catalogue/read-failure";
+import { throwPageFailure, thrownPageFailure } from "~/catalogue/read-failure";
 import { pageMeta } from "~/catalogue/seo";
 import { COLLECTION_KIND_LABELS, letterLabel } from "~/constants/vocabulary";
 import { useErrorReference } from "~/hooks/useErrorReference";
@@ -52,9 +41,7 @@ import { listCollections } from "~/server/catalogue.server";
  * `/collections`: the songbooks, playlists, sites and archives pieces are
  * found in (plan §4.9), by sort name (the API's order, a leading "The" ignored),
  * with the A–Z and a kind filter. The URL is the state (`collectionQuery`).
- * A kind filter's 500 may be a search too slow, and its 400 a kind the API
- * refused: both are shown by the page with the filter kept; any other
- * failure is the route's error.
+ * A failed read is the route's error.
  */
 
 const WHAT = "the collections";
@@ -65,20 +52,8 @@ export const headers = catalogueHeaders;
 type CollectionsData = {
   readonly state: CollectionQueryState;
   readonly canonical: string;
-} & (
-  | { readonly failure: null; readonly list: CollectionList }
-  | { readonly failure: FilterFailure; readonly list: null }
-);
-
-function failed(
-  failure: ReadFailure,
-  state: CollectionQueryState,
-  canonical: string
-) {
-  if (isPageFailure(failure)) throwPageFailure(failure);
-  const page: CollectionsData = { state, canonical, failure, list: null };
-  return data(page, failureInit(failure));
-}
+  readonly list: CollectionList;
+};
 
 export async function loader({ url, context }: LoaderFunctionArgs) {
   const { state, canonical } = collectionQuery.parse(url.searchParams);
@@ -86,12 +61,11 @@ export async function loader({ url, context }: LoaderFunctionArgs) {
   const pageHref = (page: number) => collectionQuery.href(state, { page });
 
   const result = await listCollections(context, collectionQuery.toApi(state));
-  if (!result.ok) return failed(result.failure, state, canonical);
+  if (!result.ok) throwPageFailure(result.failure);
   redirectPastTheEnd(state.page, result.data.total, pageHref);
   const page: CollectionsData = {
     state,
     canonical,
-    failure: null,
     list: result.data,
   };
   return page;
@@ -107,20 +81,10 @@ function listTitle(state: CollectionQueryState): string {
 
 export const meta: MetaFunction = args => {
   if (args.error) {
-    const thrown = thrownPageFailure(args.error) ?? { kind: "server" };
-    return [
-      { title: `${failureTitle(thrown, WHAT)} · Bardic Torch` },
-      { name: "robots", content: "noindex" },
-    ];
+    return failureMeta(args.error, WHAT);
   }
   const loaded = args.loaderData as CollectionsData | undefined;
   if (!loaded) return [...SERVER_ERROR_META];
-  if (loaded.failure) {
-    return [
-      { title: `${failureTitle(loaded.failure, WHAT)} · Bardic Torch` },
-      { name: "robots", content: "noindex" },
-    ];
-  }
   return pageMeta(args, {
     title: listTitle(loaded.state),
     description:
@@ -202,14 +166,6 @@ export default function CollectionsRoute() {
     </KeptFocus>
   );
 
-  if (loaded.failure) {
-    return (
-      <FilterError failure={loaded.failure} clearHref={ALL_COLLECTIONS}>
-        {chips}
-        {filter}
-      </FilterError>
-    );
-  }
   const { list } = loaded;
   const filtered = state.kind.length > 0 || state.letter !== undefined;
   return (
@@ -300,7 +256,7 @@ export function ErrorBoundary() {
   const failure = thrownPageFailure(error);
   const reference = useErrorReference(error, failure === null);
   return failure ? (
-    <CatalogueError failure={failure} what={WHAT} />
+    <CatalogueError failure={failure} />
   ) : (
     <ServerError title={`We couldn’t load ${WHAT}`} reference={reference} />
   );

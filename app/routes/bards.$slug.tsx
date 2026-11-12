@@ -102,8 +102,7 @@ export default function BardLayout() {
 }
 
 /**
- * The person couldn't be shown: not found, an outage (the resting page,
- * 503), a server error or an answer we couldn't read, inside the shell.
+ * The person couldn't be shown: not found, or the resting page (503), inside the shell.
  * Anything else is a bug, reported and shown as "We couldn’t load this
  * bard".
  */
@@ -112,7 +111,7 @@ export function ErrorBoundary() {
   const failure = thrownPageFailure(error);
   const reference = useErrorReference(error, failure === null);
   return failure ? (
-    <CatalogueError failure={failure} what={WHAT} missing={MISSING} />
+    <CatalogueError failure={failure} missing={MISSING} />
   ) : (
     <ServerError title={`We couldn’t load ${WHAT}`} reference={reference} />
   );

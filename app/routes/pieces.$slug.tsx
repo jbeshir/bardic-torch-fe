@@ -31,8 +31,7 @@ import { renderMarkdown } from "~/server/markdown.server";
  *
  * A slug that can't be one is our own 404, without asking the API. A
  * failed read is thrown to the ErrorBoundary below, inside the shell: not
- * found (404), the resting page (503), a server error (500) or an answer
- * we couldn't read (502).
+ * found (404) or the resting page (503).
  */
 
 const WHAT = "this piece";
@@ -89,8 +88,7 @@ export default function PieceLayout() {
 }
 
 /**
- * The piece couldn't be shown: not found, an outage (the resting page,
- * 503), a server error or an answer we couldn't read, inside the shell.
+ * The piece couldn't be shown: not found, or the resting page (503), inside the shell.
  * Anything else is a bug, reported and shown as "We couldn’t load this
  * piece".
  */
@@ -99,7 +97,7 @@ export function ErrorBoundary() {
   const failure = thrownPageFailure(error);
   const reference = useErrorReference(error, failure === null);
   return failure ? (
-    <CatalogueError failure={failure} what={WHAT} missing={MISSING} />
+    <CatalogueError failure={failure} missing={MISSING} />
   ) : (
     <ServerError title={`We couldn’t load ${WHAT}`} reference={reference} />
   );

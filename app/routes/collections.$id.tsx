@@ -15,11 +15,7 @@ import { Infobox } from "~/components/ui/Infobox";
 import { Link } from "~/components/ui/Link";
 import { TagList } from "~/components/ui/TagList";
 import { catalogueHeaders } from "~/catalogue/headers";
-import {
-  asPageFailure,
-  throwPageFailure,
-  thrownPageFailure,
-} from "~/catalogue/read-failure";
+import { throwPageFailure, thrownPageFailure } from "~/catalogue/read-failure";
 import { withoutRestrictedLink } from "~/catalogue/restricted";
 import { failureMeta, ignoreSearchChanges } from "~/catalogue/entity-route";
 import { pageMeta } from "~/catalogue/seo";
@@ -62,7 +58,7 @@ export async function loader(args: LoaderFunctionArgs) {
     getCollection(context, id),
     hasPendingRevision(args, "collection", id),
   ]);
-  if (!result.ok) throwPageFailure(asPageFailure(result.failure));
+  if (!result.ok) throwPageFailure(result.failure);
   const collection = result.data;
   return {
     collection: {
@@ -209,7 +205,7 @@ export function ErrorBoundary() {
   const failure = thrownPageFailure(error);
   const reference = useErrorReference(error, failure === null);
   return failure ? (
-    <CatalogueError failure={failure} what={WHAT} missing={MISSING} />
+    <CatalogueError failure={failure} missing={MISSING} />
   ) : (
     <ServerError title={`We couldn’t load ${WHAT}`} reference={reference} />
   );

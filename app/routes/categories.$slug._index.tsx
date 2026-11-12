@@ -1,3 +1,4 @@
+import { failureMeta } from "~/catalogue/entity-route";
 import { useId } from "react";
 import {
   useLoaderData,
@@ -6,10 +7,7 @@ import {
   type LoaderFunctionArgs,
   type MetaFunction,
 } from "react-router";
-import {
-  CatalogueError,
-  failureTitle,
-} from "~/components/catalogue/CatalogueError";
+import { CatalogueError } from "~/components/catalogue/CatalogueError";
 import { ListPagination } from "~/components/catalogue/ListPagination";
 import { PersonListItem } from "~/components/catalogue/PersonListItem";
 import { PieceListItem } from "~/components/catalogue/PieceListItem";
@@ -26,11 +24,7 @@ import {
   termMembersQuery,
   type PageQueryState,
 } from "~/catalogue/query-state";
-import {
-  asPageFailure,
-  throwPageFailure,
-  thrownPageFailure,
-} from "~/catalogue/read-failure";
+import { throwPageFailure, thrownPageFailure } from "~/catalogue/read-failure";
 import { pageMeta } from "~/catalogue/seo";
 import {
   categoryMeta,
@@ -76,20 +70,14 @@ export async function loader({
     termMembersQuery.href(categoryPath(slug), page);
 
   const result = await getTerm(context, slug, termMembersQuery.toApi(state));
-  if (!result.ok) throwPageFailure(asPageFailure(result.failure));
+  if (!result.ok) throwPageFailure(result.failure);
   redirectPastTheEnd(state.page, memberTotal(result.data), pageHref);
   return { state, canonical, term: result.data };
 }
 
 export const meta: MetaFunction = args => {
   if (args.error) {
-    const thrown = thrownPageFailure(args.error) ?? { kind: "server" };
-    return [
-      {
-        title: `${failureTitle(thrown, WHAT, "that category")} · Bardic Torch`,
-      },
-      { name: "robots", content: "noindex" },
-    ];
+    return failureMeta(args.error, WHAT, "that category");
   }
   // The loader's answer: an error, if any, is handled above.
   const loaded = args.loaderData as MembersData | undefined;
@@ -214,7 +202,7 @@ export function ErrorBoundary() {
   return (
     <UnderPageHead>
       {failure ? (
-        <CatalogueError failure={failure} what={WHAT} missing="that category" />
+        <CatalogueError failure={failure} missing="that category" />
       ) : (
         <ServerError title={`We couldn’t load ${WHAT}`} reference={reference} />
       )}

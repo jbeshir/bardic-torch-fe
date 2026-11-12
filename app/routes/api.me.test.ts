@@ -124,7 +124,11 @@ describe("PATCH /api/me", () => {
     expect(response.status).toBe(401);
     expect(await response.json()).toEqual({
       ok: false,
-      error: { code: "unauthenticated", message: "Log in to continue." },
+      error: {
+        code: "unauthenticated",
+        message:
+          "You’ve been signed out. Log in again and we’ll bring you back here.",
+      },
     });
   });
 
@@ -158,20 +162,20 @@ describe("PATCH /api/me", () => {
     expect(await response.json()).toEqual({
       ok: false,
       error: {
-        code: "internal",
+        code: "try_again",
         message: "We couldn’t do that just now. Try again shortly.",
       },
     });
   });
 
-  it("maps a malformed upstream response to 502", async () => {
+  it("maps a malformed upstream response to a 503 try again", async () => {
     vi.spyOn(console, "error").mockReturnValue();
     upstream(() => new HttpResponse("not JSON", { status: 200 }));
     const response = await patch({ display_name: "Morwen" });
-    expect(response.status).toBe(502);
+    expect(response.status).toBe(503);
     expect(await response.json()).toMatchObject({
       ok: false,
-      error: { code: "bad_gateway" },
+      error: { code: "try_again" },
     });
     expect(sent).toEqual([{ display_name: "Morwen" }]);
   });
@@ -202,7 +206,7 @@ describe("PATCH /api/me", () => {
     const response = await patch({ display_name: "x".repeat(9000) });
     expect(response.status).toBe(413);
     expect(await response.json()).toMatchObject({
-      error: { code: "request_too_large" },
+      error: { code: "invalid_request" },
     });
   });
 });

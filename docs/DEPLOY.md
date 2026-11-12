@@ -302,7 +302,7 @@ How these are used:
 **Refresh tokens** (in the application's settings):
 
 - **Rotation** can be on or off. The app stores the new refresh token whenever Auth0 returns one, and keeps the old one when Auth0 doesn't rotate it. A response without `expires_in` gets a 24-hour lifetime.
-- **Failures.** Only a refused refresh token (Auth0 answers `invalid_grant` or another 4xx) ends the session. When Auth0 is down, slow or answers 5xx, the session is kept: the current access token is used while it is still valid, and once it has expired that request is treated as signed out and the next one retries. Every Auth0 call (code exchange, refresh, revocation) gives up after 5 seconds.
+- **Failures.** When a refresh fails for any reason (a refused token, Auth0 down, slow or answering 5xx), the current access token is used while it is still valid; once it has expired the session is ended and the reader is signed out. Every Auth0 call (code exchange, refresh, revocation) gives up after 5 seconds.
 - **Logout** revokes the session's refresh token at Auth0 (`/oauth/revoke`, best effort) before deleting the cookie, so a copied cookie can't be renewed.
 - All the loaders of one request share a single refresh, so a single-use token is never spent twice within a request.
 - Two _separate_ requests that arrive together near expiry can each try to refresh. With rotation on, give it a **reuse interval** (e.g. 60 seconds) so the second one doesn't fail and sign the reader out.

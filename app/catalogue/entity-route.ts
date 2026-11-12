@@ -26,19 +26,21 @@ export const ignoreSearchChanges: ShouldRevalidateFunction = ({
     : defaultShouldRevalidate;
 
 /**
- * The meta of an entity page (or one of its views) that failed: titled
- * like its boundary's h1 ("We couldn’t find that piece") and kept out of
- * search results; anything unexpected is a server error, "We couldn’t
- * load {what}" as the boundary says.
+ * The meta of a page that failed: titled like its boundary's h1 ("We
+ * couldn’t find that piece") and kept out of search results; anything
+ * unexpected is "We couldn’t load {what}" as the boundary says.
  */
 export function failureMeta(
   error: unknown,
   what: string,
-  missing: string
+  missing?: string
 ): MetaDescriptor[] {
-  const thrown = thrownPageFailure(error) ?? { kind: "server" };
+  const failure = thrownPageFailure(error);
+  const title = failure
+    ? failureTitle(failure, missing)
+    : `We couldn’t load ${what}`;
   return [
-    { title: `${failureTitle(thrown, what, missing)} · Bardic Torch` },
+    { title: `${title} · Bardic Torch` },
     { name: "robots", content: "noindex" },
   ];
 }

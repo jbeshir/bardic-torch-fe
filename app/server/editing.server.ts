@@ -6,11 +6,7 @@ import {
   type RouterContextProvider,
 } from "react-router";
 import type { z } from "zod";
-import {
-  asPageFailure,
-  NOT_FOUND,
-  throwPageFailure,
-} from "~/catalogue/read-failure";
+import { NOT_FOUND, throwPageFailure } from "~/catalogue/read-failure";
 import { CONTRIBUTIONS_PATH, loginHref } from "~/constants/account";
 import { FACET_LABELS } from "~/constants/vocabulary";
 import { DOCUMENT_SCHEMAS, type EntityType } from "~/editing/documents";
@@ -91,7 +87,7 @@ async function pagedOptions<T>(
   const options: Option[] = [];
   for (let offset = 0; ; offset += PAGE) {
     const result = await read({ limit: PAGE, offset });
-    if (!result.ok) throwPageFailure(asPageFailure(result.failure));
+    if (!result.ok) throwPageFailure(result.failure);
     const { data: page, total } = result.data;
     options.push(...page.map(option));
     if (page.length === 0 || offset + PAGE >= total) return options;

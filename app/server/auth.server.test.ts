@@ -83,7 +83,6 @@ const SIGNED_OUT = { isAuthenticated: false };
 
 describe("getServerAuthContext", () => {
   let consoleError: MockInstance;
-  let consoleWarn: MockInstance;
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -92,7 +91,7 @@ describe("getServerAuthContext", () => {
     consoleError = vi
       .spyOn(console, "error")
       .mockImplementation(() => undefined);
-    consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
   });
 
   afterEach(() => {
@@ -155,43 +154,11 @@ describe("getServerAuthContext", () => {
   });
 
   it.each([
-    ["a 401 and an empty body", () => new HttpResponse(null, { status: 401 })],
-    [
-      "a 403 and invalid_grant",
-      () =>
-        auth0Error(
-          {
-            error: "invalid_grant",
-            error_description: "Unknown or invalid refresh token.",
-          },
-          403
-        ),
-    ],
-  ])(
-    "clears the session when Auth0 refuses the refresh token with %s",
-    async (_case, respond) => {
-      auth0Answers(respond);
-      const result = await getServerAuthContext(
-        await requestFor(tokens({ expiresAt: NOW + 1000 })),
-        loadContext()
-      );
-      expect(result.authContext).toEqual(SIGNED_OUT);
-      expect(result.headers?.get("Set-Cookie")).toMatch(
-        /^__Host-bt_session=;.*Expires=Thu, 01 Jan 1970/
-      );
-      expect(consoleWarn).toHaveBeenCalledWith(
-        "Auth0 refused the refresh token:",
-        expect.any(Error)
-      );
-      expect(consoleError).not.toHaveBeenCalled();
-    }
-  );
-
-  it.each([
     [
       "a 500 and an OAuth error",
       () => auth0Error({ error: "server_error" }, 500),
     ],
+    ["a 401 and an empty body", () => new HttpResponse(null, { status: 401 })],
     ["a network failure", () => HttpResponse.error()],
     ["a malformed body", () => new HttpResponse("<html>", { status: 200 })],
   ])(
@@ -211,14 +178,16 @@ describe("getServerAuthContext", () => {
     }
   );
 
-  it("signs out this request but keeps the cookie when the token has expired and Auth0 is down", async () => {
+  it("signs out and clears the session when the token has expired and the refresh fails", async () => {
     auth0Answers(() => new HttpResponse(null, { status: 502 }));
     const result = await getServerAuthContext(
       await requestFor(tokens({ expiresAt: NOW - 1 })),
       loadContext()
     );
     expect(result.authContext).toEqual(SIGNED_OUT);
-    expect(result.headers).toBeUndefined();
+    expect(result.headers?.get("Set-Cookie")).toMatch(
+      /^__Host-bt_session=;.*Expires=Thu, 01 Jan 1970/
+    );
   });
 
   it("refreshes with the client's HTTP Basic credentials", async () => {

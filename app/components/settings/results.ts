@@ -38,11 +38,7 @@ export function fieldMessage(error: ProxyError, field: string): string | null {
 
 /** Failures that are the service's, not the request's. */
 const SERVICE_TROUBLE: ReadonlySet<ProxyErrorCode> = new Set<ProxyErrorCode>([
-  "internal",
-  "unavailable",
-  "bad_gateway",
-  "upstream_unavailable",
-  "unexpected_response",
+  "try_again",
   OFFLINE.code,
 ]);
 

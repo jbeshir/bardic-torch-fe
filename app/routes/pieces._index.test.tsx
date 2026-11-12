@@ -372,7 +372,7 @@ describe("/pieces facet drawer", () => {
     await renderPieces("", () => {
       calls += 1;
       if (calls === 1) return loaded("", listOf(FIFTY, 249))();
-      throw data({ kind: "resting", retryAfter: 60 }, { status: 503 });
+      throw data({ kind: "try_again" }, { status: 503 });
     });
     await user.click(screen.getByRole("button", { name: "Filters" }));
     await user.click(

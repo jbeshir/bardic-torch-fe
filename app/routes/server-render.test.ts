@@ -206,10 +206,10 @@ describe("server-rendered routes", () => {
     );
     const response = await get("/pieces");
     expect(response.status).toBe(503);
-    expect(response.headers.get("Retry-After")).toBe("60");
+    expect(response.headers.get("Retry-After")).toBe("30");
   });
 
-  it("is the bad-gateway page (502) when the API's answer can't be read", async () => {
+  it("is the same resting page (503) when the API's answer can't be read", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     fixtures.server.use(
       http.get(
@@ -218,7 +218,7 @@ describe("server-rendered routes", () => {
       )
     );
     const response = await get("/pieces");
-    expect(response.status).toBe(502);
-    expect(await response.text()).toContain("unexpected answer");
+    expect(response.status).toBe(503);
+    expect(await response.text()).toContain("Bardic Torch is resting");
   });
 });

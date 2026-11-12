@@ -14,7 +14,7 @@ import { API_BASE_URL } from "./context";
  * An msw server for the current test file, listening for the whole file.
  * A request no handler answers is refused (its fetch rejects) **and** fails
  * the test that made it: the code under test usually turns a rejected fetch
- * into a 502, which would otherwise let a test pass for the wrong reason.
+ * into a failure page, which would otherwise let a test pass for the wrong reason.
  * Handlers added with `server.use()` last for one test.
  */
 export function serveMocks(...handlers: RequestHandler[]) {

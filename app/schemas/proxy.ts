@@ -1,5 +1,3 @@
-import type { UpstreamErrorCode } from "./api";
-
 /**
  * The JSON body of every `/api/*` proxy response (`proxyResponse` in
  * api.server.ts), as the settings page's fetchers read it. `message` is
@@ -8,24 +6,31 @@ import type { UpstreamErrorCode } from "./api";
  */
 
 /**
- * Every `code` an error body can carry: the API's own; the proxy's (the
- * API timed out, couldn't be reached or answered something unreadable); the
- * theme route's (a choice it doesn't know);
- * the CSRF check's; and the browser's own
- * (`sendForm`: offline, or an answer the app didn't make).
+ * Every `code` an error body can carry: the API's codes a page treats
+ * differently; `try_again` for every other failure (an outage, a timeout,
+ * a 5xx, an answer nobody can read); the theme route's (a choice it
+ * doesn't know, a method it doesn't take); the CSRF check's; and the
+ * browser's own (`sendForm`: offline).
  */
 export type ProxyErrorCode =
-  | UpstreamErrorCode
-  | "upstream_unavailable"
-  | "bad_gateway"
+  | "unauthenticated"
+  | "user_blocked"
+  | "not_found"
+  | "validation_failed"
+  | "possible_duplicate"
+  | "stale_revision"
+  | "revision_not_pending"
+  | "pending_limit_reached"
+  | "invalid_request"
+  | "try_again"
   | "invalid_theme"
+  | "method_not_allowed"
   | "forbidden"
-  | "offline"
-  | "unexpected_response";
+  | "offline";
 
-/** An answer nobody can read: the proxy's 502 and the browser's alike. */
-export const UNEXPECTED_ANSWER =
-  "We got an unexpected answer from our servers. Try again shortly.";
+/** The copy for `try_again`: whatever went wrong, trying again is the answer. */
+export const TRY_AGAIN_MESSAGE =
+  "We couldn’t do that just now. Try again shortly.";
 
 /** A problem with one field of the submitted form, shown next to it. */
 type ProxyFieldError = {

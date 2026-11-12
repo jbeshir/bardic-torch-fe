@@ -8,7 +8,7 @@ describe("ProblemAlert", () => {
     await renderWithRouter(
       <ProblemAlert
         error={{
-          code: "internal",
+          code: "try_again",
           message: "We couldn’t do that just now.",
         }}
         fallback="We couldn’t save your changes. Check your connection and try again."

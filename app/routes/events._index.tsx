@@ -1,3 +1,4 @@
+import { failureMeta } from "~/catalogue/entity-route";
 import { IconBook2 } from "@tabler/icons-react";
 import { useId } from "react";
 import {
@@ -7,10 +8,7 @@ import {
   type LoaderFunctionArgs,
   type MetaFunction,
 } from "react-router";
-import {
-  CatalogueError,
-  failureTitle,
-} from "~/components/catalogue/CatalogueError";
+import { CatalogueError } from "~/components/catalogue/CatalogueError";
 import { ListPagination } from "~/components/catalogue/ListPagination";
 import { ResultsStatus } from "~/components/catalogue/ResultsStatus";
 import { SERVER_ERROR_META, ServerError } from "~/components/ErrorPages";
@@ -27,11 +25,7 @@ import {
   redirectIfNotCanonical,
   type EventQueryState,
 } from "~/catalogue/query-state";
-import {
-  asPageFailure,
-  throwPageFailure,
-  thrownPageFailure,
-} from "~/catalogue/read-failure";
+import { throwPageFailure, thrownPageFailure } from "~/catalogue/read-failure";
 import { pageMeta } from "~/catalogue/seo";
 import { EVENT_KIND_LABELS } from "~/constants/vocabulary";
 import { useErrorReference } from "~/hooks/useErrorReference";
@@ -65,7 +59,7 @@ export async function loader({
   redirectIfNotCanonical(url, canonical);
   const pageHref = (page: number) => eventQuery.href(state, { page });
   const result = await listEvents(context, eventQuery.toApi(state));
-  if (!result.ok) throwPageFailure(asPageFailure(result.failure));
+  if (!result.ok) throwPageFailure(result.failure);
   redirectPastTheEnd(state.page, result.data.total, pageHref);
   return { state, canonical, list: result.data };
 }
@@ -83,11 +77,7 @@ function listTitle(state: EventQueryState): string {
 
 export const meta: MetaFunction = args => {
   if (args.error) {
-    const thrown = thrownPageFailure(args.error) ?? { kind: "server" };
-    return [
-      { title: `${failureTitle(thrown, WHAT)} · Bardic Torch` },
-      { name: "robots", content: "noindex" },
-    ];
+    return failureMeta(args.error, WHAT);
   }
   const loaded = args.loaderData as EventsData | undefined;
   if (!loaded) return [...SERVER_ERROR_META];
@@ -232,7 +222,7 @@ export function ErrorBoundary() {
   const failure = thrownPageFailure(error);
   const reference = useErrorReference(error, failure === null);
   return failure ? (
-    <CatalogueError failure={failure} what={WHAT} />
+    <CatalogueError failure={failure} />
   ) : (
     <ServerError title={`We couldn’t load ${WHAT}`} reference={reference} />
   );

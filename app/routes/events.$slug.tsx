@@ -11,11 +11,7 @@ import { EntityPage } from "~/components/EntityPage";
 import { SERVER_ERROR_META, ServerError } from "~/components/ErrorPages";
 import { LicenceLine } from "~/components/catalogue/LicenceLine";
 import { catalogueHeaders } from "~/catalogue/headers";
-import {
-  asPageFailure,
-  throwPageFailure,
-  thrownPageFailure,
-} from "~/catalogue/read-failure";
+import { throwPageFailure, thrownPageFailure } from "~/catalogue/read-failure";
 import { withoutRestrictedRecording } from "~/catalogue/restricted";
 import { failureMeta, ignoreSearchChanges } from "~/catalogue/entity-route";
 import { pageMeta } from "~/catalogue/seo";
@@ -51,7 +47,7 @@ export async function loader(args: LoaderFunctionArgs) {
     getEvent(context, slug),
     hasPendingRevision(args, "event", slug),
   ]);
-  if (!result.ok) throwPageFailure(asPageFailure(result.failure));
+  if (!result.ok) throwPageFailure(result.failure);
   const event: Event = {
     ...result.data,
     performances: result.data.performances.map(withoutRestrictedRecording),
@@ -105,7 +101,7 @@ export function ErrorBoundary() {
   const failure = thrownPageFailure(error);
   const reference = useErrorReference(error, failure === null);
   return failure ? (
-    <CatalogueError failure={failure} what={WHAT} missing={MISSING} />
+    <CatalogueError failure={failure} missing={MISSING} />
   ) : (
     <ServerError title={`We couldn’t load ${WHAT}`} reference={reference} />
   );

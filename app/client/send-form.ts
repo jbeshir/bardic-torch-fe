@@ -1,5 +1,5 @@
 import {
-  UNEXPECTED_ANSWER,
+  TRY_AGAIN_MESSAGE,
   type ProxyBody,
   type ProxyError,
 } from "~/schemas/proxy";
@@ -25,8 +25,8 @@ export const OFFLINE: ProxyError = {
  * or one that isn't a proxy body.
  */
 const UNEXPECTED_RESPONSE: ProxyError = {
-  code: "unexpected_response",
-  message: UNEXPECTED_ANSWER,
+  code: "try_again",
+  message: TRY_AGAIN_MESSAGE,
 };
 
 function isProxyBody(value: unknown): value is ProxyBody<unknown> {

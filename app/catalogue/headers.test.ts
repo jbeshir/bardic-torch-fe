@@ -16,15 +16,12 @@ const headersOf = (init: {
   );
 
 describe("catalogueHeaders", () => {
-  it("passes on the root's Cache-Control and a failure's Retry-After, nothing else", () => {
+  it("passes on the root's Cache-Control and a thrown failure's Retry-After, nothing else", () => {
     const headers = headersOf({
       parent: { "Cache-Control": "no-store", "Set-Cookie": "a=b" },
       loader: { "Retry-After": "30", "X-Loader": "1" },
     });
-    expect([...headers.keys()].sort()).toEqual([
-      "cache-control",
-      "retry-after",
-    ]);
+    expect([...headers.keys()]).toEqual(["cache-control"]);
     expect(
       headersOf({ error: { "Retry-After": "60" } }).get("Retry-After")
     ).toBe("60");

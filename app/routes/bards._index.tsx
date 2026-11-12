@@ -1,8 +1,8 @@
+import { failureMeta } from "~/catalogue/entity-route";
 import { IconBook2 } from "@tabler/icons-react";
 import { Link } from "~/components/ui/Link";
 import { useId, useRef } from "react";
 import {
-  data,
   useLoaderData,
   useNavigation,
   useRouteError,
@@ -12,11 +12,7 @@ import {
 import { BardFilters } from "~/components/catalogue/BardFilters";
 import { BardSearch } from "~/components/catalogue/BardSearch";
 import { KeptFocus } from "~/components/catalogue/KeptFocus";
-import {
-  CatalogueError,
-  FilterError,
-  failureTitle,
-} from "~/components/catalogue/CatalogueError";
+import { CatalogueError } from "~/components/catalogue/CatalogueError";
 import { LetterBar } from "~/components/catalogue/LetterBar";
 import { ListPagination } from "~/components/catalogue/ListPagination";
 import { PersonListItem } from "~/components/catalogue/PersonListItem";
@@ -35,14 +31,7 @@ import {
   redirectIfNotCanonical,
   type PersonQueryState,
 } from "~/catalogue/query-state";
-import {
-  failureInit,
-  isPageFailure,
-  throwPageFailure,
-  thrownPageFailure,
-  type FilterFailure,
-  type ReadFailure,
-} from "~/catalogue/read-failure";
+import { throwPageFailure, thrownPageFailure } from "~/catalogue/read-failure";
 import { pageMeta } from "~/catalogue/seo";
 import {
   letterLabel,
@@ -77,27 +66,18 @@ type BardsData = {
   readonly canonical: string;
   /** The affiliation terms in tree order; null when they couldn't load. */
   readonly affiliations: Affiliations | null;
-} & (
-  | {
-      readonly failure: null;
-      readonly list: PersonList;
-      /** The affiliation asked for no longer exists and was left out. */
-      readonly staleAffiliation: boolean;
-    }
-  | {
-      readonly failure: FilterFailure;
-      readonly list: null;
-      readonly staleAffiliation: false;
-    }
-);
+  readonly list: PersonList;
+  /** The affiliation asked for no longer exists and was left out. */
+  readonly staleAffiliation: boolean;
+};
 
 export async function loader({ url, context }: LoaderFunctionArgs) {
   const asked = personQuery.parse(url.searchParams);
   const { canonical } = asked;
   redirectIfNotCanonical(url, canonical);
 
-  // The terms fill the select, and tell a stale affiliation from another
-  // refusal; asked for alongside the list, so the common case is one
+  // The terms fill the select, and tell a stale affiliation
+  // from another failure; asked for alongside the list, so the common case is one
   // round trip.
   const termsRead = listTerms(context, { facet: "affiliation" });
   const affiliationsData = async () => {
@@ -114,13 +94,7 @@ export async function loader({ url, context }: LoaderFunctionArgs) {
   async function readPersons(state: PersonQueryState) {
     const first = await listPersons(context, personQuery.toApi(state));
     const unchanged = { state, staleAffiliation: false, result: first };
-    if (
-      first.ok ||
-      first.failure.kind !== "invalid_filters" ||
-      state.affiliation === undefined
-    ) {
-      return unchanged;
-    }
+    if (first.ok || state.affiliation === undefined) return unchanged;
     const affiliations = await affiliationsData();
     if (
       affiliations === null ||
@@ -136,19 +110,6 @@ export async function loader({ url, context }: LoaderFunctionArgs) {
     };
   }
 
-  const failed = (
-    failure: ReadFailure,
-    page: Omit<BardsData, "failure" | "list" | "staleAffiliation">
-  ) => {
-    if (isPageFailure(failure)) throwPageFailure(failure);
-    const answer: BardsData = {
-      ...page,
-      failure,
-      list: null,
-      staleAffiliation: false,
-    };
-    return data(answer, failureInit(failure));
-  };
   // A past-the-end page goes to the last page of the URL asked for, stale
   // affiliation and all, so the page it lands on still says it was left
   // out.
@@ -156,11 +117,10 @@ export async function loader({ url, context }: LoaderFunctionArgs) {
 
   const { state, staleAffiliation, result } = await readPersons(asked.state);
   const page = { state, canonical, affiliations: await affiliationsData() };
-  if (!result.ok) return failed(result.failure, page);
+  if (!result.ok) throwPageFailure(result.failure);
   redirectPastTheEnd(state.page, result.data.total, pageHref);
   const answer: BardsData = {
     ...page,
-    failure: null,
     list: result.data,
     staleAffiliation,
   };
@@ -188,21 +148,11 @@ function listTitle(state: PersonQueryState): string {
 
 export const meta: MetaFunction = args => {
   if (args.error) {
-    const thrown = thrownPageFailure(args.error) ?? { kind: "server" };
-    return [
-      { title: `${failureTitle(thrown, WHAT)} · Bardic Torch` },
-      { name: "robots", content: "noindex" },
-    ];
+    return failureMeta(args.error, WHAT);
   }
   // The loader's answer: an error, if any, is handled above.
   const loaded = args.loaderData as BardsData | undefined;
   if (!loaded) return [...SERVER_ERROR_META];
-  if (loaded.failure) {
-    return [
-      { title: `${failureTitle(loaded.failure, WHAT)} · Bardic Torch` },
-      { name: "robots", content: "noindex" },
-    ];
-  }
   return pageMeta(args, {
     title: listTitle(loaded.state),
     description:
@@ -319,15 +269,6 @@ export default function BardsRoute() {
     navigation.location.pathname === ALL_BARDS;
   const chips = filterChips(state, affiliations);
 
-  if (loaded.failure) {
-    return (
-      <FilterError failure={loaded.failure} clearHref={ALL_BARDS}>
-        <BardSearch state={state} />
-        <SelectedFilters chips={chips} clearHref={ALL_BARDS} />
-      </FilterError>
-    );
-  }
-
   const { list } = loaded;
   return (
     <>
@@ -421,7 +362,7 @@ export function ErrorBoundary() {
   const failure = thrownPageFailure(error);
   const reference = useErrorReference(error, failure === null);
   return failure ? (
-    <CatalogueError failure={failure} what={WHAT} />
+    <CatalogueError failure={failure} />
   ) : (
     <ServerError title={`We couldn’t load ${WHAT}`} reference={reference} />
   );

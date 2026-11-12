@@ -36,8 +36,8 @@ export const RESTING_META = [
 ] as const;
 
 /**
- * Whether a loader threw the resting answer, `data({kind: "resting"},
- * {status: 503})`: the API was down, unreachable or too slow.
+ * Whether a loader threw the try-again answer, `data({kind: "try_again"},
+ * {status: 503})`: the API was down, unreachable, too slow or unreadable.
  */
 export function isResting(error: unknown): boolean {
   if (!isRouteErrorResponse(error)) return false;
@@ -46,7 +46,7 @@ export function isResting(error: unknown): boolean {
     typeof body === "object" &&
     body !== null &&
     "kind" in body &&
-    body.kind === "resting"
+    body.kind === "try_again"
   );
 }
 
