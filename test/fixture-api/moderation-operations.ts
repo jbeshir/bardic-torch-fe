@@ -248,7 +248,16 @@ export function getModerationRevision(
       author_user_id: userId,
       current_revision_id: current,
       current_snapshot: currentSnapshot,
-      changed_fields_since_current: current === null ? null : r.changed_fields,
+      changed_fields_since_current:
+        currentSnapshot === null
+          ? null
+          : Object.keys(r.snapshot).filter(
+              key =>
+                JSON.stringify(r.snapshot[key as keyof typeof r.snapshot]) !==
+                JSON.stringify(
+                  currentSnapshot[key as keyof typeof currentSnapshot]
+                )
+            ),
       possible_duplicates: [],
     },
   };

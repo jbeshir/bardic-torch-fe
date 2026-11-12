@@ -203,7 +203,7 @@ export default function ContactRoute() {
           {failed.message}
         </Alert>
       ) : null}
-      <Form method="post" reloadDocument className="stack-y-5">
+      <Form method="post" reloadDocument className="grid gap-5">
         <Field label="What it’s about" id="contact-kind">
           <Select name="kind" defaultValue={values.kind}>
             {KINDS.map(kind => (

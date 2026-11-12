@@ -15,6 +15,8 @@ const signIn = (as: "contributor" | "moderator", returnTo: string) =>
 test("moderating: a stale edit approved after the warning, another rejected", async ({
   page,
 }) => {
+  // Five editor pages and their posts: slow when every worker is busy.
+  test.slow();
   const run = Date.now();
   const main = page.getByRole("main");
   const submit = async (path: string, summary: string, button: string) => {
