@@ -24,79 +24,48 @@ import {
 import type { Revision } from "~/schemas/catalogue";
 import { formatDate } from "./format";
 import { isUserUrl } from "./user-url";
-import { categoryPath } from "./term-page";
-import { wordDiff, type WordPart } from "./word-diff";
 
 /**
- * The changes a revision made (plan §4.11), as plain data for the page to
- * render: one row per changed field, in the page's order (the API's
- * `changed_fields` are alphabetical), each labelled from the entity's field map and diffed by
- * the field's kind:
+ * The changes a revision made (plan §4.11), as plain text for the page to
+ * show: one row per changed field, in the page's order (the API's
+ * `changed_fields` are alphabetical), each labelled from the entity's field
+ * map. A field is a string (null for none: a scalar or Markdown text, shown
+ * whole before and after) or a list of keyed items, diffed as the items
+ * added, removed and changed (the same key, other text).
  *
- * - **scalar** (titles, kinds, flags, years, enums, URLs, references): its
- *   value before and after, each null when there is none (shown "—");
- * - **text** (the Markdown fields): before and after as written, and
- *   word by word when both are set and short enough (`wordDiff`);
- * - **list** (aliases, terms, credits, links, relations, kinds, roles,
- *   affiliations): a keyed set diff, the items added, removed and changed
- *   (the same key with other fields different).
+ * A person's `profile` is one field to the API; here it is a row per
+ * sub-field that differs ("Profile: Roles"), with "Identity only" for a
+ * side that has none.
  *
- * A person's `profile` is one field to the API; here it is expanded into
- * a row per sub-field that differs ("Profile: Roles"), with "Identity only"
- * for a side that has none.
+ * Links follow §4.0: in a restricted piece's revision (restricted now or in
+ * either snapshot) every link is its title or host, never an address; so is
+ * a person's link that carries performances (spec issue B14: we can't tell
+ * whether those pieces were restricted).
  *
- * Links follow §4.0: in a restricted piece's revision (restricted now or
- * in either snapshot) every link is its title or host as text, never an
- * address; so is a person's link that carries performances (spec issue
- * B14: we can't tell whether those pieces were restricted).
- *
- * With no base (`base_snapshot: null`), every row has its value only.
+ * With no base (`base_snapshot: null`), a row's values are the new ones only.
  */
 
-/** One part of a value: text, or a link inside the site or out of it. */
-export type DiffValue =
-  | { readonly kind: "text"; readonly text: string }
-  | { readonly kind: "internal"; readonly to: string; readonly text: string }
-  | { readonly kind: "external"; readonly url: string; readonly text: string };
+/** A list item: its key (never shown: a link's is its address) and its text. */
+type Item = { readonly key: string; readonly text: string };
 
-/** A list item: its key, and what it shows, part by part. */
-export type DiffItem = {
-  readonly key: string;
-  readonly parts: readonly DiffValue[];
-};
+type Value = string | null | readonly Item[];
 
-type FieldDiff =
+export type DiffRow = { readonly field: string; readonly label: string } & (
   | {
-      readonly kind: "scalar";
-      readonly before: readonly DiffValue[] | null;
-      readonly after: readonly DiffValue[] | null;
-    }
-  | {
-      readonly kind: "text";
+      readonly kind: "value";
       readonly before: string | null;
       readonly after: string | null;
-      /**
-       * The two word by word (`wordDiff`), when both are set and within
-       * its bounds; null to show them whole.
-       */
-      readonly words: readonly WordPart[] | null;
     }
   | {
       readonly kind: "list";
-      readonly added: readonly DiffItem[];
-      readonly removed: readonly DiffItem[];
+      readonly added: readonly string[];
+      readonly removed: readonly string[];
       readonly changed: readonly {
-        readonly before: DiffItem;
-        readonly after: DiffItem;
+        readonly before: string;
+        readonly after: string;
       }[];
-    };
-
-export type DiffRow = {
-  /** The field's name (and sub-field's), unique in the diff. */
-  readonly field: string;
-  readonly label: string;
-  readonly diff: FieldDiff;
-};
+    }
+);
 
 export type RevisionChanges = {
   /** No approved base: the rows are the values this revision set. */
@@ -106,63 +75,37 @@ export type RevisionChanges = {
   readonly rows: readonly DiffRow[];
 };
 
-// ---------------------------------------------------------------------------
-// Readings: what one snapshot holds for a field
-
-type Reading =
-  | { readonly kind: "scalar"; readonly value: readonly DiffValue[] | null }
-  | { readonly kind: "text"; readonly text: string | null }
-  | { readonly kind: "list"; readonly items: readonly DiffItem[] };
-
-type Context = {
-  /** Every link as text (a restricted piece's revision). */
-  readonly linksAsText: boolean;
-};
-
 type Field<Snapshot> = {
   readonly label: string;
-  readonly read: (snapshot: Snapshot, context: Context) => Reading;
+  /** What the snapshot holds; `asText` is whether links hide their address. */
+  readonly value: (snapshot: Snapshot, asText: boolean) => Value;
 };
 
 type Fields<Snapshot> = { readonly [K in keyof Snapshot]: Field<Snapshot> };
 
-const text = (value: string): DiffValue => ({ kind: "text", text: value });
-
-function scalar(value: DiffValue | null): Reading {
-  return { kind: "scalar", value: value === null ? null : [value] };
-}
-
-function maybe<T>(value: T | null, show: (value: T) => DiffValue): Reading {
-  return scalar(value === null ? null : show(value));
-}
-
-function words(value: string | null): Reading {
-  return { kind: "text", text: value };
-}
-
-function list<T>(
-  values: readonly T[],
-  key: (value: T) => string,
-  parts: (value: T) => readonly (DiffValue | null)[]
-): Reading {
-  return {
-    kind: "list",
-    items: values.map(value => ({
-      key: key(value),
-      parts: parts(value).filter((part): part is DiffValue => part !== null),
-    })),
-  };
-}
+/** The parts that are set, " · " between them. */
+const join = (...parts: readonly (string | null | false)[]) =>
+  parts.filter(Boolean).join(" · ");
 
 /**
- * A label the page uses inside a sentence ("community archive", "alternative
- * title", "probably"), as a value of its own in sentence case: "Community
- * archive".
+ * A label the page uses inside a sentence ("community archive", "probably"),
+ * as a value of its own in sentence case.
  */
 const standalone = (label: string) =>
   `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
 
-const yesNo = (value: boolean) => text(value ? "Yes" : "No");
+const yesNo = (value: boolean) => (value ? "Yes" : "No");
+
+const maybe = <T>(value: T | null, show: (value: T) => string) =>
+  value === null ? null : show(value);
+
+/** A list's items; an item's key is its text unless it has its own. */
+const items = <T>(
+  values: readonly T[],
+  text: (value: T) => string,
+  key: (value: T) => string = text
+): readonly Item[] =>
+  values.map(value => ({ key: key(value), text: text(value) }));
 
 /** The host of `url` ("video.example"), or the URL itself if it has none. */
 function urlHost(url: string): string {
@@ -174,78 +117,34 @@ function urlHost(url: string): string {
 }
 
 /**
- * A link's value: an external link to a web address, or (links as text,
- * or any other scheme) its title or host as text, never the address.
+ * A link: its title and address, or (links as text, or any scheme but
+ * http(s)) its title or host, never the address.
  */
-function link(url: string, title: string | null, asText: boolean): DiffValue {
-  if (asText || !isUserUrl(url)) return text(title ?? urlHost(url));
-  return { kind: "external", url, text: title ?? url };
+function link(url: string, title: string | null, asText: boolean): string {
+  if (asText || !isUserUrl(url)) return title ?? urlHost(url);
+  return title ? `${title} (${url})` : url;
 }
 
-const piecePath = (slug: string) => `/pieces/${slug}`;
-const personPath = (slug: string) => `/bards/${slug}`;
-
-const termRef = (term: {
-  readonly slug: string;
-  readonly display_name: string;
-}): DiffValue => ({
-  kind: "internal",
-  to: categoryPath(term.slug),
-  text: term.display_name,
-});
-
-const pieceRef = (piece: {
-  readonly slug: string;
-  readonly title: string;
-}): DiffValue => ({
-  kind: "internal",
-  to: piecePath(piece.slug),
-  text: piece.title,
-});
-
-/** A person, linked; by name only for one who prefers not to have a page. */
-const personRef = (person: {
-  readonly slug: string | null;
-  readonly name: string;
-}): DiffValue =>
-  person.slug === null
-    ? text(person.name)
-    : { kind: "internal", to: personPath(person.slug), text: person.name };
-
-const count = (n: number, noun: string) =>
-  text(`${n} ${noun}${n === 1 ? "" : "s"}`);
-
 /** What a link holds besides its address: roles, place, locator, collection. */
-function linkDetails(value: {
+const linkDetails = (value: {
   readonly roles: readonly (keyof typeof LINK_ROLE_LABELS)[];
   readonly place_type: keyof typeof LINK_PLACE_TYPE_LABELS | null;
   readonly locator: string | null;
-  readonly collection: { readonly id: number; readonly name: string } | null;
+  readonly collection: { readonly name: string } | null;
   readonly platform: string | null;
   readonly description: string | null;
-}): (DiffValue | null)[] {
-  return [
-    value.roles.length > 0
-      ? text(value.roles.map(role => LINK_ROLE_LABELS[role]).join(", "))
-      : null,
-    value.place_type
-      ? text(standalone(LINK_PLACE_TYPE_LABELS[value.place_type]))
-      : null,
-    value.platform ? text(value.platform) : null,
-    value.collection
-      ? {
-          kind: "internal",
-          to: `/collections/${value.collection.id}`,
-          text: value.collection.name,
-        }
-      : null,
-    value.locator ? text(value.locator) : null,
-    value.description ? text(value.description) : null,
-  ];
-}
+}) =>
+  join(
+    value.roles.map(role => LINK_ROLE_LABELS[role]).join(", "),
+    value.place_type && standalone(LINK_PLACE_TYPE_LABELS[value.place_type]),
+    value.platform,
+    value.collection?.name ?? null,
+    value.locator,
+    value.description
+  );
 
 // ---------------------------------------------------------------------------
-// The fields of each entity type
+// The fields of each entity type, in the page's order
 
 type Snapshots = {
   readonly [E in Revision["entity_type"]]: Extract<
@@ -257,396 +156,298 @@ type Snapshots = {
 type Profile = NonNullable<Snapshots["person"]["profile"]>;
 
 const PIECE_FIELDS: Fields<Snapshots["piece"]> = {
-  title: { label: "Title", read: s => scalar(text(s.title)) },
-  kind: { label: "Kind", read: s => scalar(text(PIECE_KIND_LABELS[s.kind])) },
+  title: { label: "Title", value: s => s.title },
+  kind: { label: "Kind", value: s => PIECE_KIND_LABELS[s.kind] },
   secondary_kinds: {
     label: "Other kinds",
-    read: s =>
-      list(
-        s.secondary_kinds,
-        kind => kind,
-        kind => [text(PIECE_KIND_LABELS[kind])]
-      ),
+    value: s => items(s.secondary_kinds, kind => PIECE_KIND_LABELS[kind]),
   },
   conservation_status: {
     label: "Conservation status",
-    read: s => scalar(text(CONSERVATION_LABELS[s.conservation_status])),
+    value: s => CONSERVATION_LABELS[s.conservation_status],
   },
   conservation_source_url: {
     label: "Conservation source",
-    read: (s, { linksAsText }) =>
-      maybe(s.conservation_source_url, url => link(url, null, linksAsText)),
+    value: (s, asText) =>
+      maybe(s.conservation_source_url, url => link(url, null, asText)),
   },
-  is_stub: { label: "Stub", read: s => scalar(yesNo(s.is_stub)) },
-  notes_md: { label: "Notes", read: s => words(s.notes_md) },
-  version_notes_md: {
-    label: "Versions",
-    read: s => words(s.version_notes_md),
-  },
+  is_stub: { label: "Stub", value: s => yesNo(s.is_stub) },
+  notes_md: { label: "Notes", value: s => s.notes_md },
+  version_notes_md: { label: "Versions", value: s => s.version_notes_md },
   licensing_status: {
     label: "Licensing",
-    read: s => scalar(text(LICENSING_STATUS_LABELS[s.licensing_status])),
+    value: s => LICENSING_STATUS_LABELS[s.licensing_status],
   },
   licensing_notes_md: {
     label: "Licensing notes",
-    read: s => words(s.licensing_notes_md),
+    value: s => s.licensing_notes_md,
   },
   licence: {
     label: "Licence",
-    read: s => maybe(s.licence, licence => text(LICENCE_LABELS[licence])),
+    value: s => maybe(s.licence, licence => LICENCE_LABELS[licence]),
   },
-  licence_version: {
-    label: "Licence version",
-    read: s => maybe(s.licence_version, text),
-  },
+  licence_version: { label: "Licence version", value: s => s.licence_version },
   historical_source_md: {
     label: "Historical source",
-    read: s => words(s.historical_source_md),
+    value: s => s.historical_source_md,
   },
   period_start: {
     label: "Period from",
-    read: s => maybe(s.period_start, year => text(String(year))),
+    value: s => maybe(s.period_start, String),
   },
-  period_end: {
-    label: "Period to",
-    read: s => maybe(s.period_end, year => text(String(year))),
-  },
+  period_end: { label: "Period to", value: s => maybe(s.period_end, String) },
   aliases: {
     label: "Also known as",
-    read: s =>
-      list(
-        s.aliases,
-        alias => `${alias.text}\u0000${alias.kind}`,
-        alias => [
-          text(alias.text),
-          text(standalone(PIECE_ALIAS_KIND_LABELS[alias.kind])),
-        ]
+    value: s =>
+      items(s.aliases, alias =>
+        join(alias.text, standalone(PIECE_ALIAS_KIND_LABELS[alias.kind]))
       ),
   },
   terms: {
     label: "Categories",
-    read: s =>
-      list(
+    value: s =>
+      items(
         s.terms,
-        t => `${t.term.slug}\u0000${t.part ?? ""}`,
-        t => [
-          termRef(t.term),
-          text(FACET_LABELS[t.term.facet]),
-          t.part ? text(PIECE_PART_LABELS[t.part]) : null,
-          t.is_primary ? text("Primary") : null,
-        ]
+        t =>
+          join(
+            t.term.display_name,
+            FACET_LABELS[t.term.facet],
+            t.part && PIECE_PART_LABELS[t.part],
+            t.is_primary && "Primary"
+          ),
+        t => `${t.term.slug}\u0000${t.part ?? ""}`
       ),
   },
   credits: {
     label: "Credits",
-    read: s =>
-      list(
+    value: s =>
+      items(
         s.credits,
+        c =>
+          join(
+            CREDIT_ROLE_LABELS[c.role],
+            // A credit names a person exactly when it is `named`.
+            c.person
+              ? c.person.name
+              : c.attribution !== "named" && ATTRIBUTION_LABELS[c.attribution],
+            c.part && PIECE_PART_LABELS[c.part],
+            c.certainty !== "certain" &&
+              standalone(CERTAINTY_QUALIFIERS[c.certainty]),
+            c.note
+          ),
         c =>
           [
             c.role,
             c.attribution,
             c.person?.slug ?? c.person?.name ?? "",
             c.part ?? "",
-          ].join("\u0000"),
-        c => [
-          text(CREDIT_ROLE_LABELS[c.role]),
-          // A credit names a person exactly when it is `named`.
-          c.person
-            ? personRef(c.person)
-            : c.attribution === "named"
-              ? null
-              : text(ATTRIBUTION_LABELS[c.attribution]),
-          c.part ? text(PIECE_PART_LABELS[c.part]) : null,
-          c.certainty === "certain"
-            ? null
-            : text(standalone(CERTAINTY_QUALIFIERS[c.certainty])),
-          c.note ? text(c.note) : null,
-        ]
+          ].join("\u0000")
       ),
   },
   relations: {
     label: "Related pieces",
-    read: s =>
-      list(
-        s.relations,
-        r => `${r.type}\u0000${r.piece.slug}`,
-        r => [text(PIECE_RELATION_LABELS[r.type].outgoing), pieceRef(r.piece)]
+    value: s =>
+      items(s.relations, r =>
+        join(PIECE_RELATION_LABELS[r.type].outgoing, r.piece.title)
       ),
   },
   links: {
     label: "Links",
-    read: (s, { linksAsText }) =>
-      list(
+    value: (s, asText) =>
+      items(
         s.links,
-        l => l.url,
-        l => [
-          link(l.url, l.title, linksAsText),
-          ...linkDetails(l),
-          l.performances.length > 0
-            ? count(l.performances.length, "performance")
-            : null,
-        ]
+        l =>
+          join(
+            link(l.url, l.title, asText),
+            linkDetails(l),
+            l.performances.length > 0 &&
+              `${l.performances.length} performance${l.performances.length === 1 ? "" : "s"}`
+          ),
+        l => l.url
       ),
   },
 };
 
 const PROFILE_FIELDS: Fields<Profile> = {
-  pronouns: {
-    label: "Pronouns",
-    read: p => maybe(p.pronouns, value => text(value)),
-  },
-  notes_md: { label: "Notes", read: p => words(p.notes_md) },
+  pronouns: { label: "Pronouns", value: p => p.pronouns },
+  notes_md: { label: "Notes", value: p => p.notes_md },
   licensing_status: {
     label: "Licensing",
-    read: p => scalar(text(LICENSING_STATUS_LABELS[p.licensing_status])),
+    value: p => LICENSING_STATUS_LABELS[p.licensing_status],
   },
   licensing_notes_md: {
     label: "Licensing notes",
-    read: p => words(p.licensing_notes_md),
+    value: p => p.licensing_notes_md,
   },
   aliases: {
     label: "Also known as",
-    read: p =>
-      list(
-        p.aliases,
-        alias => `${alias.name}\u0000${alias.kind}`,
-        alias => [text(alias.name), text(PERSON_ALIAS_KIND_LABELS[alias.kind])]
+    value: p =>
+      items(p.aliases, alias =>
+        join(alias.name, PERSON_ALIAS_KIND_LABELS[alias.kind])
       ),
   },
   roles: {
     label: "Roles",
-    read: p =>
-      list(
-        p.roles,
-        role => role,
-        role => [text(PERSON_ROLE_LABELS[role])]
-      ),
+    value: p => items(p.roles, role => PERSON_ROLE_LABELS[role]),
   },
   affiliations: {
     label: "Affiliations",
-    read: p =>
-      list(
-        p.affiliations,
-        term => term.slug,
-        term => [termRef(term)]
-      ),
+    value: p => items(p.affiliations, term => term.display_name),
   },
   relations: {
     label: "Relations",
-    read: p =>
-      list(
-        p.relations,
-        r => `${r.type}\u0000${r.person.slug ?? r.person.name}`,
-        r => [
-          text(PERSON_RELATION_LABELS[r.type].outgoing),
-          personRef(r.person),
-        ]
+    value: p =>
+      items(p.relations, r =>
+        join(PERSON_RELATION_LABELS[r.type].outgoing, r.person.name)
       ),
   },
   links: {
     label: "Links",
-    // A link with performances is text only, whatever its pieces (B14);
-    // the pieces themselves are linked inside the site.
-    read: (p, { linksAsText }) =>
-      list(
+    // A link with performances is text only, whatever its pieces (B14).
+    value: (p, asText) =>
+      items(
         p.links,
-        l => l.url,
-        l => [
-          link(l.url, l.title, linksAsText || l.performances.length > 0),
-          ...linkDetails(l),
-          ...l.performances.map(performance =>
-            performance.piece
-              ? pieceRef(performance.piece)
-              : text("A performance of no particular piece")
+        l =>
+          join(
+            link(l.url, l.title, asText || l.performances.length > 0),
+            linkDetails(l),
+            ...l.performances.map(
+              performance =>
+                performance.piece?.title ??
+                "A performance of no particular piece"
+            )
           ),
-        ]
+        l => l.url
       ),
   },
 };
 
 /** The person fields other than `profile`, which is expanded below. */
 const PERSON_FIELDS: Fields<Omit<Snapshots["person"], "profile">> = {
-  name: { label: "Name", read: s => scalar(text(s.name)) },
-  kind: {
-    label: "Kind",
-    read: s => scalar(text(PERSON_KIND_LABELS[s.kind])),
-  },
-  status: {
-    label: "Status",
-    read: s => scalar(text(PERSON_STATUS_LABELS[s.status])),
-  },
+  name: { label: "Name", value: s => s.name },
+  kind: { label: "Kind", value: s => PERSON_KIND_LABELS[s.kind] },
+  status: { label: "Status", value: s => PERSON_STATUS_LABELS[s.status] },
   status_date: {
     label: "Status date",
-    read: s => maybe(s.status_date, date => text(formatDate(date))),
+    value: s => maybe(s.status_date, formatDate),
   },
   status_source_url: {
     label: "Status source",
-    read: (s, { linksAsText }) =>
-      maybe(s.status_source_url, url => link(url, null, linksAsText)),
+    value: (s, asText) =>
+      maybe(s.status_source_url, url => link(url, null, asText)),
   },
-  is_stub: { label: "Stub", read: s => scalar(yesNo(s.is_stub)) },
+  is_stub: { label: "Stub", value: s => yesNo(s.is_stub) },
 };
 
 const TERM_FIELDS: Fields<Snapshots["term"]> = {
-  facet: {
-    label: "Facet",
-    read: s => scalar(text(FACET_LABELS[s.facet])),
-  },
-  name: { label: "Full name", read: s => scalar(text(s.name)) },
-  display_name: { label: "Name", read: s => scalar(text(s.display_name)) },
-  parent: { label: "Part of", read: s => maybe(s.parent, termRef) },
+  facet: { label: "Facet", value: s => FACET_LABELS[s.facet] },
+  name: { label: "Full name", value: s => s.name },
+  display_name: { label: "Name", value: s => s.display_name },
+  parent: { label: "Part of", value: s => s.parent?.display_name ?? null },
   related_affiliation: {
     label: "Related affiliation",
-    read: s => maybe(s.related_affiliation, termRef),
+    value: s => s.related_affiliation?.display_name ?? null,
   },
-  description_md: { label: "Description", read: s => words(s.description_md) },
-  position: {
-    label: "Position",
-    read: s => scalar(text(String(s.position))),
-  },
+  description_md: { label: "Description", value: s => s.description_md },
+  position: { label: "Position", value: s => String(s.position) },
   aliases: {
     label: "Also called",
-    read: s =>
-      list(
-        s.aliases,
-        alias => alias,
-        alias => [text(alias)]
-      ),
+    value: s => items(s.aliases, alias => alias),
   },
 };
 
 const COLLECTION_FIELDS: Fields<Snapshots["collection"]> = {
-  name: { label: "Name", read: s => scalar(text(s.name)) },
+  name: { label: "Name", value: s => s.name },
   url: {
     label: "Where",
-    read: (s, { linksAsText }) =>
-      maybe(s.url, url => link(url, null, linksAsText)),
+    value: (s, asText) => maybe(s.url, url => link(url, null, asText)),
   },
-  kind: {
-    label: "Kind",
-    read: s => scalar(text(COLLECTION_KIND_LABELS[s.kind])),
-  },
-  description_md: { label: "Description", read: s => words(s.description_md) },
-  region: { label: "Region", read: s => maybe(s.region, termRef) },
-  parent: {
-    label: "Part of",
-    read: s =>
-      maybe(s.parent, parent => ({
-        kind: "internal",
-        to: `/collections/${parent.id}`,
-        text: parent.name,
-      })),
-  },
+  kind: { label: "Kind", value: s => COLLECTION_KIND_LABELS[s.kind] },
+  description_md: { label: "Description", value: s => s.description_md },
+  region: { label: "Region", value: s => s.region?.display_name ?? null },
+  parent: { label: "Part of", value: s => s.parent?.name ?? null },
   is_bardic_resource: {
     label: "Made for bards",
-    read: s => scalar(yesNo(s.is_bardic_resource)),
+    value: s => yesNo(s.is_bardic_resource),
   },
   enumerable: {
     label: "Contents can be listed",
-    read: s => scalar(text(ENUMERABLE_LABELS[s.enumerable])),
+    value: s => ENUMERABLE_LABELS[s.enumerable],
   },
 };
 
 const EVENT_FIELDS: Fields<Snapshots["event"]> = {
-  name: { label: "Name", read: s => scalar(text(s.name)) },
-  kind: { label: "Kind", read: s => scalar(text(EVENT_KIND_LABELS[s.kind])) },
-  description_md: { label: "Description", read: s => words(s.description_md) },
+  name: { label: "Name", value: s => s.name },
+  kind: { label: "Kind", value: s => EVENT_KIND_LABELS[s.kind] },
+  description_md: { label: "Description", value: s => s.description_md },
 };
 
 // ---------------------------------------------------------------------------
-// Diffing two readings
+// Diffing
 
-const same = (a: unknown, b: unknown) =>
-  JSON.stringify(a) === JSON.stringify(b);
-
-/** The diff of a field read from the base (null: none) and the snapshot. */
-function diffReadings(before: Reading | null, after: Reading): FieldDiff {
-  switch (after.kind) {
-    case "scalar":
-      return {
-        kind: "scalar",
-        before: before?.kind === "scalar" ? before.value : null,
-        after: after.value,
-      };
-    case "text": {
-      const was = before?.kind === "text" ? before.text : null;
-      return {
-        kind: "text",
-        before: was,
-        after: after.text,
-        words:
-          was === null || after.text === null
-            ? null
-            : wordDiff(was, after.text),
-      };
-    }
-    case "list": {
-      const old = new Map(
-        (before?.kind === "list" ? before.items : []).map(item => [
-          item.key,
-          item,
-        ])
-      );
-      const added: DiffItem[] = [];
-      const changed: { before: DiffItem; after: DiffItem }[] = [];
-      for (const item of after.items) {
-        const was = old.get(item.key);
-        if (!was) added.push(item);
-        else if (!same(was.parts, item.parts))
-          changed.push({ before: was, after: item });
-        old.delete(item.key);
-      }
-      return { kind: "list", added, removed: [...old.values()], changed };
-    }
-  }
-}
-
-/** Whether a diff shows any change (a sub-field the base had the same). */
-function differs(diff: FieldDiff): boolean {
-  switch (diff.kind) {
-    case "scalar":
-    case "text":
-      return !same(diff.before, diff.after);
-    case "list":
-      return diff.added.length + diff.removed.length + diff.changed.length > 0;
-  }
-}
-
-/**
- * The changed fields in the order the field map lists them, which is the
- * page's order (the title first); a field the map doesn't list (a person's
- * `profile`) goes last.
- */
-function inPageOrder<Field extends string>(
-  fields: Readonly<Record<string, unknown>>,
-  changed: readonly Field[]
-): Field[] {
-  const rank = (field: string) => {
-    const place = Object.keys(fields).indexOf(field);
-    return place === -1 ? Infinity : place;
-  };
-  return [...changed].sort((a, b) => rank(a) - rank(b));
-}
-
-function rowsOf<Snapshot>(
-  fields: Fields<Snapshot>,
-  changed: readonly (keyof Snapshot & string)[],
-  snapshot: Snapshot,
-  base: Snapshot | null,
-  context: Context
-): DiffRow[] {
-  return inPageOrder(fields, changed).map(field => {
-    const { label, read } = fields[field];
+function rowOf(
+  field: string,
+  label: string,
+  before: Value,
+  after: Value
+): DiffRow {
+  if (typeof after === "string" || after === null) {
     return {
       field,
       label,
-      diff: diffReadings(
-        base ? read(base, context) : null,
-        read(snapshot, context)
-      ),
+      kind: "value",
+      before: typeof before === "string" ? before : null,
+      after,
     };
-  });
+  }
+  const old = new Map(
+    (typeof before === "object" && before !== null ? before : []).map(item => [
+      item.key,
+      item,
+    ])
+  );
+  const added: string[] = [];
+  const changed: { before: string; after: string }[] = [];
+  for (const item of after) {
+    const was = old.get(item.key);
+    if (!was) added.push(item.text);
+    else if (was.text !== item.text)
+      changed.push({ before: was.text, after: item.text });
+    old.delete(item.key);
+  }
+  return {
+    field,
+    label,
+    kind: "list",
+    added,
+    removed: [...old.values()].map(item => item.text),
+    changed,
+  };
+}
+
+/**
+ * The rows of the `changed` fields, in the order the field map lists them
+ * (the page's). `profile` marks the sub-fields of a person's profile.
+ */
+function rowsOf<Snapshot>(
+  fields: Fields<Snapshot>,
+  changed: readonly string[],
+  after: Snapshot,
+  before: Snapshot | null,
+  asText: boolean,
+  profile = false
+): DiffRow[] {
+  return (Object.keys(fields) as (keyof Snapshot & string)[])
+    .filter(field => changed.includes(field))
+    .map(field => {
+      const { label, value } = fields[field];
+      return rowOf(
+        profile ? `profile.${field}` : field,
+        profile ? `Profile: ${label}` : label,
+        before && value(before, asText),
+        value(after, asText)
+      );
+    });
 }
 
 const IDENTITY_ONLY = "Identity only (the person prefers not to have a page)";
@@ -664,44 +465,34 @@ const EMPTY_PROFILE: Profile = {
 };
 
 /**
- * The person `profile` row(s): one per sub-field that differs, each named
- * "Profile: {sub-field}"; a side with no profile is "Identity only" in a
- * "Profile" row first, and its sub-fields compare as empty.
+ * The person `profile` rows: a "Profile" row first for a side with no
+ * profile, then one per sub-field that differs (an empty profile standing
+ * in for a side with none, or for no base).
  */
 function profileRows(
   after: Profile | null,
-  before: Profile | null | undefined,
-  context: Context
+  before: Profile | null,
+  first: boolean
 ): DiffRow[] {
-  const first = before === undefined;
-  const rows: DiffRow[] = [];
-  if (after === null || before === null) {
-    rows.push({
-      field: "profile",
-      label: "Profile",
-      diff: {
-        kind: "scalar",
-        before: first
-          ? null
-          : [text(before === null ? IDENTITY_ONLY : "A full profile")],
-        after: [text(after === null ? IDENTITY_ONLY : "A full profile")],
-      },
-    });
-  }
-  const keys = Object.keys(PROFILE_FIELDS) as (keyof Profile)[];
-  for (const key of keys) {
-    const { label, read } = PROFILE_FIELDS[key];
-    const now = read(after ?? EMPTY_PROFILE, context);
-    const was = read(before ?? EMPTY_PROFILE, context);
-    // Only what differs (from an empty profile, for a first version).
-    if (!differs(diffReadings(was, now))) continue;
-    rows.push({
-      field: `profile.${key}`,
-      label: `Profile: ${label}`,
-      diff: diffReadings(first ? null : was, now),
-    });
-  }
-  return rows;
+  const side = (profile: Profile | null) =>
+    profile ? "A full profile" : IDENTITY_ONLY;
+  const sides =
+    after === null || before === null
+      ? [rowOf("profile", "Profile", first ? null : side(before), side(after))]
+      : [];
+  const subs = rowsOf(
+    PROFILE_FIELDS,
+    Object.keys(PROFILE_FIELDS),
+    after ?? EMPTY_PROFILE,
+    before ?? EMPTY_PROFILE,
+    false,
+    true
+  ).filter(row =>
+    row.kind === "value"
+      ? row.before !== row.after
+      : row.added.length + row.removed.length + row.changed.length > 0
+  );
+  return [...sides, ...subs];
 }
 
 /** Whether a piece revision is restricted now or in either snapshot. */
@@ -715,77 +506,51 @@ function isRestrictedPiece(
   ].includes("restricted");
 }
 
-/** The changes `revision` made, ready to render. */
+/** The changes `revision` made, ready to show. */
 export function revisionChanges(revision: Revision): RevisionChanges {
   const first = revision.base_snapshot === null;
+  const rowsIn = <Snapshot>(
+    fields: Fields<Snapshot>,
+    r: {
+      readonly snapshot: Snapshot;
+      readonly base_snapshot: Snapshot | null;
+      readonly changed_fields: readonly string[];
+    },
+    asText = false
+  ) => rowsOf(fields, r.changed_fields, r.snapshot, r.base_snapshot, asText);
   switch (revision.entity_type) {
     case "piece": {
-      const context = { linksAsText: isRestrictedPiece(revision) };
+      const linksAsText = isRestrictedPiece(revision);
       return {
         first,
-        linksAsText: context.linksAsText,
-        rows: rowsOf(
-          PIECE_FIELDS,
-          revision.changed_fields,
-          revision.snapshot,
-          revision.base_snapshot,
-          context
-        ),
+        linksAsText,
+        rows: rowsIn(PIECE_FIELDS, revision, linksAsText),
       };
     }
     case "person": {
-      const context = { linksAsText: false };
       const { snapshot, base_snapshot: base } = revision;
+      const profile = revision.changed_fields.includes("profile")
+        ? profileRows(snapshot.profile, base?.profile ?? null, first)
+        : [];
       return {
         first,
         linksAsText: false,
-        rows: inPageOrder(PERSON_FIELDS, revision.changed_fields).flatMap(
-          field =>
-            field === "profile"
-              ? profileRows(
-                  snapshot.profile,
-                  base === null ? undefined : base.profile,
-                  context
-                )
-              : rowsOf(PERSON_FIELDS, [field], snapshot, base, context)
-        ),
+        rows: [...rowsIn(PERSON_FIELDS, revision), ...profile],
       };
     }
     case "term":
-      return {
-        first,
-        linksAsText: false,
-        rows: rowsOf(
-          TERM_FIELDS,
-          revision.changed_fields,
-          revision.snapshot,
-          revision.base_snapshot,
-          { linksAsText: false }
-        ),
-      };
+      return { first, linksAsText: false, rows: rowsIn(TERM_FIELDS, revision) };
     case "collection":
       return {
         first,
         linksAsText: false,
-        rows: rowsOf(
-          COLLECTION_FIELDS,
-          revision.changed_fields,
-          revision.snapshot,
-          revision.base_snapshot,
-          { linksAsText: false }
-        ),
+        rows: rowsIn(COLLECTION_FIELDS, revision),
       };
     case "event":
       return {
         first,
         linksAsText: false,
-        rows: rowsOf(
-          EVENT_FIELDS,
-          revision.changed_fields,
-          revision.snapshot,
-          revision.base_snapshot,
-          { linksAsText: false }
-        ),
+        rows: rowsIn(EVENT_FIELDS, revision),
       };
   }
 }
