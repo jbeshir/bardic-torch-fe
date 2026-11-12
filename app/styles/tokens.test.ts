@@ -28,8 +28,7 @@ it("defines the same tokens in both themes, each a #RRGGBB value or an alias", (
   }
 });
 
-// tokens.css is hand-written; this keeps it in step with tokens.ts, which the
-// contrast check reads.
+// tokens.css is hand-written; this keeps it in step with tokens.ts.
 describe("tokens.css", () => {
   it.each([
     ["light", ':root,\n[data-theme="light"]'],

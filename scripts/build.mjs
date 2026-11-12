@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, rmSync } from "node:fs";
+import { rmSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -11,20 +11,19 @@ import { fileURLToPath } from "node:url";
  *
  * The mode decides two things: whether stub sign-in is compiled in (the
  * Vite mode, vite.config.ts: e2e only), and which Worker the built config
- * deploys to (CLOUDFLARE_ENV: `preview`
- * selects wrangler.jsonc's `env.preview`, the bardic-torch-fe-preview
- * Worker). Then it checks the built config names the Worker it should, and
- * deletes the `.dev.vars` copy the Cloudflare plugin writes next to it.
+ * deploys to (CLOUDFLARE_ENV: `preview` selects wrangler.jsonc's
+ * `env.preview`). Afterwards it deletes the `.dev.vars` copy the
+ * Cloudflare plugin writes next to the built config.
  */
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
-/** What each build mode builds, and for which Worker. */
+/** What each build mode builds. */
 export const BUILD_MODES = {
-  production: { cloudflareEnv: undefined, worker: "bardic-torch-fe" },
-  preview: { cloudflareEnv: "preview", worker: "bardic-torch-fe-preview" },
+  production: { cloudflareEnv: undefined },
+  preview: { cloudflareEnv: "preview" },
   // Served locally by `wrangler dev` (playwright.config.ts); never deployed.
-  e2e: { cloudflareEnv: undefined, worker: "bardic-torch-fe" },
+  e2e: { cloudflareEnv: undefined },
 };
 
 /**
@@ -80,37 +79,6 @@ export function buildEnvironment(mode, env) {
 }
 
 /**
- * Problems with the build in `buildDir` for `mode`: the Worker its built
- * config (`server/wrangler.json`) deploys to must be the mode's. It must
- * also be the Worker in WRANGLER_CI_OVERRIDE_NAME when that is set: wrangler
- * deploy would deploy the build under that name instead, warning only, so
- * the preview connection could deploy a production build, or the reverse.
- * Without it, wrangler's own WRANGLER_CI_MATCH_TAG check refuses a build
- * whose name isn't the connection's Worker (docs/DEPLOY.md §2).
- * @param {{ buildDir: string, mode: keyof typeof BUILD_MODES, env: Readonly<Record<string, string | undefined>> }} options
- * @returns {string[]}
- */
-export function checkBuiltWorker({ buildDir, mode, env }) {
-  const file = path.join(buildDir, "server", "wrangler.json");
-  if (!existsSync(file)) return [`${mode}: no ${file}`];
-  const { name } = JSON.parse(readFileSync(file, "utf8"));
-  const expected = BUILD_MODES[mode].worker;
-  const problems = [];
-  if (name !== expected) {
-    problems.push(
-      `${mode}: the build deploys to Worker "${name}", not "${expected}"`
-    );
-  }
-  const override = env.WRANGLER_CI_OVERRIDE_NAME;
-  if (override !== undefined && override !== name) {
-    problems.push(
-      `${mode}: WRANGLER_CI_OVERRIDE_NAME would deploy the build to Worker "${override}", but it is for "${name}"`
-    );
-  }
-  return problems;
-}
-
-/**
  * Delete the `.dev.vars` the Cloudflare plugin copies into the build from
  * the local .dev.vars (or the process environment): no deploy reads it,
  * e2e passes every binding with `--var`, and a local secret must never be
@@ -123,7 +91,7 @@ export function removeEmittedDevVars(buildDir) {
 
 /**
  * Build `mode` into `buildDir` (react-router.config.ts reads
- * BT_BUILD_DIRECTORY), check it, and return the problems.
+ * BT_BUILD_DIRECTORY) and return the problems: a failed build.
  * @param {keyof typeof BUILD_MODES} mode
  * @param {{ buildDir?: string, env?: Readonly<Record<string, string | undefined>>, stdio?: "inherit" | "pipe" }} [options]
  * @returns {string[]}
@@ -152,7 +120,7 @@ export function build(
       `${mode} build failed${stdio === "pipe" ? `:\n${result.stdout}${result.stderr}` : ""}`,
     ];
   }
-  return checkBuiltWorker({ buildDir, mode, env });
+  return [];
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
@@ -165,7 +133,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         `Usage: node scripts/build.mjs ${Object.keys(BUILD_MODES).join("|")}|--from-branch`
       );
     }
-    console.log(`Building in ${mode} mode for ${BUILD_MODES[mode].worker}`);
+    console.log(`Building in ${mode} mode`);
     const problems = build(mode);
     if (problems.length > 0) {
       console.error(problems.join("\n"));

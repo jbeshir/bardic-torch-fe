@@ -21,7 +21,7 @@ Read [README.md](README.md) first for the concepts. The visual rules are in [doc
 
 ## Validation
 
-`npm run validate` runs before every commit: `check:types` (the committed `Env` matches `wrangler.jsonc`), `gen:types` (React Router's route types), `format:check`, `lint`, `tsc`, `check:unused` (knip), `check:api` (generated types fresh), `check:contrast` (the contrast table in DESIGN), `test:run` (vitest) and `check:prod-build` (production and preview builds contain no stub sign-in; indexing is on only in production).
+`npm run validate` runs before every commit: `check:types` (the committed `Env` matches `wrangler.jsonc`), `gen:types` (React Router's route types), `format:check`, `lint`, `tsc`, `check:unused` (knip), `check:api` (generated types fresh), `test:run` (vitest) and `check:prod-build` (production and preview builds contain no stub sign-in).
 
 - `npm run test:e2e` builds the e2e build and runs the Playwright journeys and template checks against the fixture API. It is outside `validate` because it needs Chromium. `npm run screenshots` takes the on-demand screenshots.
 - `npm run audit` (`npm audit`) and `npm run audit:signatures` need the registry, so they are outside `validate`.

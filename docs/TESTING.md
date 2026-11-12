@@ -8,7 +8,7 @@ Tests are proportionate: a component gets one only when it has behaviour, a load
 | repo checks    | exact pins, CI and ops files, no raw colours, the Worker entry                 | `test/*.test.ts`                                                           | `npm run test:run` (in `validate`) |
 | e2e            | the built Worker in Chromium, served by `wrangler dev` against the fixture API | `e2e/`                                                                     | `npm run test:e2e`                 |
 
-`validate` also runs the checks `check:types`, `check:api`, `check:contrast` and `check:prod-build` (see CLAUDE.md).
+`validate` also runs the checks `check:types`, `check:api` and `check:prod-build` (see CLAUDE.md).
 
 ## Unit and component tests
 
@@ -30,7 +30,7 @@ Tests are proportionate: a component gets one only when it has behaviour, a load
 
 e2e and `npm run dev:fixtures` sign in as fixture users without Auth0. `/auth/login?as=<userId>[&returnTo=/path]` sets a real `__Host-bt_session` whose access token is `fixture:<userId>`; without `?as` it shows a chooser. All three locks must open:
 
-1. **Compile flag.** `__STUB_AUTH__` is true only in `e2e` and `development` builds, and `stub-auth.server.ts` is reached only through `if (__STUB_AUTH__) await import(...)` in the `/auth/login` loader. `check:prod-build` builds production and preview and fails if either contains the stub module, its marker or a fixture host.
+1. **Compile flag.** `__STUB_AUTH__` is true only in `e2e` and `development` builds, and `stub-auth.server.ts` is reached only through `if (__STUB_AUTH__) await import(...)` in the `/auth/login` loader. `check:prod-build` builds production and preview and fails if either contains the stub module or its marker.
 2. **`AUTH_MODE=stub`** in the environment.
 3. **A local host:** `localhost` or `127.0.0.1`.
 

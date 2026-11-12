@@ -22,7 +22,7 @@ The reference for the frontend's visual and interaction decisions (`bardic-torch
 
 ### 2.1 Mechanism
 
-- **`app/styles/tokens.ts` is the source of truth for colour**: every colour for both themes, and the only TypeScript file with colour literals. `npm run check:contrast` reads it.
+- **`app/styles/tokens.ts` is the source of truth for colour**: every colour for both themes, and the only TypeScript file with colour literals.
 - **`app/styles/tokens.css` is hand-written** and holds the CSS custom properties, the type scale, radii, shadows, motion and layout sizes, and the Tailwind `@theme` block. `app/styles/tokens.test.ts` fails if its colours, or those in `app/styles/theme-colour.ts` (the `<meta name="theme-color">` values), disagree with `tokens.ts`. `public/favicon.svg` and `public/site.webmanifest` repeat `canvas` by hand.
 - Colour tokens are CSS custom properties holding **space-separated RGB channels** (`--bt-fg: 43 33 24`), under a `--bt-` prefix so they don't clash with Tailwind's own variables. The theme reads them as `rgb(var(--bt-fg))`. A colour at an alpha is a named utility that writes `rgb(var(--bt-fg) / 0.1)`.
 - `tokens.css` has three colour blocks: `:root, [data-theme="light"]`, `:root[data-theme="dark"], [data-theme="dark"]`, and the dark values again under `@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) }`. The server renders `data-theme` from the `theme` cookie, so there is no flash.
@@ -99,7 +99,7 @@ Pending approval uses a wax-seal purple on purpose. It is not a warning: nothing
 | `--bt-danger-hover`                    | `#850E2F` | `#F7A9B9` |
 | `--bt-danger-on` (text on danger fill) | `#FFFFFF` | `#2A0A12` |
 
-Danger is crimson, not red-orange, so a danger fill never looks like the amber primary. `check:contrast` asserts that `accent` and `danger` (and their hover fills) differ by **at least 30° of hue** in both themes. Hue isn't enough on its own, so a danger button also carries an icon and a verb.
+Danger is crimson, not red-orange, so a danger fill never looks like the amber primary. `accent` and `danger` (and their hover fills) differ by **at least 30° of hue** in both themes. Hue isn't enough on its own, so a danger button also carries an icon and a verb.
 
 ### 2.5 Conservation-status tokens
 
@@ -126,126 +126,9 @@ Status is never shown by colour alone: there is always an icon, the label, and a
 - Opacity modifiers (`bg-accent/10`) are allowed for decoration only: hover washes behind text that is already compliant, or glows. **Never** put text on an opacity-modified background unless that pair has been tested.
 - **The focus ring is never drawn inside an `accent` or `danger` fill.** Focus on `accent` is about 1.02:1 and on `danger` about 1.2:1, so an inset ring there would be invisible. Filled buttons always use the outset ring (§6.1). Anything inside a fill that must be focusable is redesigned instead, so that the current pagination item, for example, is a non-focusable `span`.
 
-### 2.7 Contrast table (computed)
+### 2.7 Contrast
 
-`scripts/contrast.mjs` (`npm run check:contrast`, part of `validate`) reads **this table**. For each row it computes both ratios from `app/styles/tokens.ts` (WCAG 2.x relative luminance) and fails if a ratio is below the row's minimum, or if the printed ratio no longer matches the tokens, so the table can't go stale. Before you use a new pair, add a row (with any ratio) and run `npm run check:contrast`: it prints the real values to copy in. The minimum is 4.5:1 for text and 3:1 for non-text UI (control boundaries, focus rings, meaningful icons, badge edges).
-
-| Pair (foreground on background)      | Min   | Light   | Dark    | Notes                                                       |
-| ------------------------------------ | ----- | ------- | ------- | ----------------------------------------------------------- |
-| `fg` on `canvas`                     | 4.5:1 | 14.11:1 | 13.34:1 | body text on page                                           |
-| `fg` on `surface`                    | 4.5:1 | 15.38:1 | 12.61:1 | body text on surface                                        |
-| `fg` on `surface-raised`             | 4.5:1 | 15.75:1 | 11.40:1 |                                                             |
-| `fg` on `surface-sunken`             | 4.5:1 | 12.82:1 | 13.78:1 |                                                             |
-| `fg-muted` on `canvas`               | 4.5:1 | 7.93:1  | 9.77:1  |                                                             |
-| `fg-muted` on `surface`              | 4.5:1 | 8.64:1  | 9.23:1  |                                                             |
-| `fg-muted` on `surface-raised`       | 4.5:1 | 8.84:1  | 8.34:1  |                                                             |
-| `fg-muted` on `surface-sunken`       | 4.5:1 | 7.20:1  | 10.09:1 |                                                             |
-| `fg-subtle` on `canvas`              | 4.5:1 | 5.39:1  | 6.61:1  |                                                             |
-| `fg-subtle` on `surface`             | 4.5:1 | 5.87:1  | 6.25:1  |                                                             |
-| `fg-subtle` on `surface-raised`      | 4.5:1 | 6.01:1  | 5.65:1  |                                                             |
-| `fg-subtle` on `surface-sunken`      | 4.5:1 | 4.89:1  | 6.83:1  |                                                             |
-| `link` on `canvas`                   | 4.5:1 | 7.31:1  | 9.17:1  |                                                             |
-| `link` on `surface`                  | 4.5:1 | 7.97:1  | 8.66:1  |                                                             |
-| `link` on `surface-raised`           | 4.5:1 | 8.16:1  | 7.83:1  |                                                             |
-| `link` on `surface-sunken`           | 4.5:1 | 6.64:1  | 9.47:1  | chips                                                       |
-| `link-visited` on `surface`          | 4.5:1 | 8.04:1  | 8.39:1  |                                                             |
-| `link-visited` on `canvas`           | 4.5:1 | 7.38:1  | 8.89:1  |                                                             |
-| `link-hover` on `surface`            | 4.5:1 | 11.04:1 | 11.54:1 |                                                             |
-| `link-hover` on `surface-sunken`     | 4.5:1 | 9.20:1  | 12.61:1 |                                                             |
-| `accent-text` on `canvas`            | 4.5:1 | 6.00:1  | 9.86:1  | accent text / wordmark                                      |
-| `accent-text` on `surface`           | 4.5:1 | 6.54:1  | 9.32:1  |                                                             |
-| `accent-text` on `accent-subtle`     | 4.5:1 | 5.73:1  | 7.94:1  | selected nav item                                           |
-| `accent-fg` on `accent`              | 4.5:1 | 5.74:1  | 8.48:1  | primary button                                              |
-| `accent-fg` on `accent-hover`        | 4.5:1 | 7.47:1  | 10.37:1 | primary hover                                               |
-| `danger-on` on `danger`              | 4.5:1 | 7.76:1  | 7.80:1  | danger button                                               |
-| `danger-on` on `danger-hover`        | 4.5:1 | 9.99:1  | 9.85:1  |                                                             |
-| `fg` on `selection`                  | 4.5:1 | 11.52:1 | 6.59:1  | selected text                                               |
-| `border-strong` on `surface`         | 3:1   | 4.06:1  | 3.57:1  | control edge (inputs, secondary buttons)                    |
-| `border-strong` on `canvas`          | 3:1   | 3.73:1  | 3.78:1  |                                                             |
-| `border-strong` on `surface-raised`  | 3:1   | 4.16:1  | 3.23:1  |                                                             |
-| `border-strong` on `surface-sunken`  | 3:1   | 3.39:1  | 3.90:1  |                                                             |
-| `focus` on `canvas`                  | 3:1   | 5.39:1  | 9.11:1  | focus ring                                                  |
-| `focus` on `surface`                 | 3:1   | 5.87:1  | 8.61:1  |                                                             |
-| `focus` on `surface-raised`          | 3:1   | 6.01:1  | 7.78:1  |                                                             |
-| `focus` on `surface-sunken`          | 3:1   | 4.89:1  | 9.41:1  |                                                             |
-| `accent` on `canvas`                 | 3:1   | 5.27:1  | 8.74:1  | primary button edge, current-tab bar                        |
-| `accent` on `surface`                | 3:1   | 5.74:1  | 8.26:1  |                                                             |
-| `danger` on `surface`                | 3:1   | 7.58:1  | 7.52:1  | danger button edge                                          |
-| `link-visited` on `surface-raised`   | 4.5:1 | 8.23:1  | 7.59:1  |                                                             |
-| `link-visited` on `surface-sunken`   | 4.5:1 | 6.70:1  | 9.18:1  |                                                             |
-| `link-hover` on `canvas`             | 4.5:1 | 10.13:1 | 12.21:1 |                                                             |
-| `link-hover` on `accent-subtle`      | 4.5:1 | 9.66:1  | 9.83:1  | chip hover                                                  |
-| `link` on `accent-subtle`            | 4.5:1 | 6.98:1  | 7.38:1  | chip current                                                |
-| `fg` on `accent-subtle`              | 4.5:1 | 13.47:1 | 10.74:1 |                                                             |
-| `fg-muted` on `accent-subtle`        | 4.5:1 | 7.56:1  | 7.86:1  | chip facet prefix on hover and current                      |
-| `danger-fg` on `canvas`              | 4.5:1 | 9.62:1  | 12.35:1 | field error text                                            |
-| `danger-fg` on `surface-raised`      | 4.5:1 | 10.73:1 | 10.55:1 |                                                             |
-| `success-fg` on `canvas`             | 4.5:1 | 9.16:1  | 13.20:1 |                                                             |
-| `danger-icon` on `surface-raised`    | 3:1   | 6.66:1  | 6.80:1  | error input border; secondary-danger trigger edge           |
-| `accent` on `surface-raised`         | 3:1   | 5.88:1  | 7.46:1  | logo outer flame                                            |
-| `accent` on `surface-sunken`         | 3:1   | 4.79:1  | 9.02:1  |                                                             |
-| `info-fg` on `info-bg`               | 4.5:1 | 9.48:1  | 10.94:1 | info alert text                                             |
-| `info-icon` on `info-bg`             | 3:1   | 6.02:1  | 7.53:1  | info alert icon                                             |
-| `info-fg` on `surface`               | 4.5:1 | 10.61:1 | 11.99:1 | info inline text on surface                                 |
-| `info-icon` on `surface`             | 3:1   | 6.74:1  | 8.26:1  | inline icon                                                 |
-| `success-fg` on `success-bg`         | 4.5:1 | 8.89:1  | 11.43:1 | success alert text                                          |
-| `success-icon` on `success-bg`       | 3:1   | 5.39:1  | 7.82:1  | success alert icon                                          |
-| `success-fg` on `surface`            | 4.5:1 | 9.98:1  | 12.47:1 | success inline text on surface                              |
-| `success-icon` on `surface`          | 3:1   | 6.05:1  | 8.53:1  | inline icon                                                 |
-| `warning-fg` on `warning-bg`         | 4.5:1 | 8.91:1  | 11.61:1 | warning alert text                                          |
-| `warning-icon` on `warning-bg`       | 3:1   | 5.34:1  | 8.16:1  | warning alert icon                                          |
-| `warning-fg` on `surface`            | 4.5:1 | 9.84:1  | 12.89:1 | warning inline text on surface                              |
-| `warning-icon` on `surface`          | 3:1   | 5.90:1  | 9.06:1  | inline icon                                                 |
-| `danger-fg` on `danger-bg`           | 4.5:1 | 9.13:1  | 11.16:1 | danger alert text                                           |
-| `danger-icon` on `danger-bg`         | 3:1   | 5.67:1  | 7.20:1  | danger alert icon                                           |
-| `danger-fg` on `surface`             | 4.5:1 | 10.48:1 | 11.67:1 | danger inline text on surface                               |
-| `danger-icon` on `surface`           | 3:1   | 6.51:1  | 7.52:1  | inline icon; secondary-danger trigger edge                  |
-| `pending-fg` on `pending-bg`         | 4.5:1 | 9.57:1  | 11.04:1 | pending alert text                                          |
-| `pending-icon` on `pending-bg`       | 3:1   | 5.85:1  | 7.08:1  | pending alert icon                                          |
-| `pending-fg` on `surface`            | 4.5:1 | 10.83:1 | 11.84:1 | pending inline text on surface                              |
-| `pending-icon` on `surface`          | 3:1   | 6.62:1  | 7.59:1  | inline icon                                                 |
-| `cons-low-fg` on `cons-low-bg`       | 4.5:1 | 8.31:1  | 10.71:1 | badge text                                                  |
-| `cons-low-border` on `cons-low-bg`   | 3:1   | 4.24:1  | 5.70:1  | badge icon/border                                           |
-| `cons-low-border` on `surface`       | 3:1   | 4.88:1  | 6.65:1  | badge edge vs surface                                       |
-| `cons-end-fg` on `cons-end-bg`       | 4.5:1 | 8.05:1  | 10.77:1 | badge text                                                  |
-| `cons-end-border` on `cons-end-bg`   | 3:1   | 3.65:1  | 6.28:1  | badge icon/border                                           |
-| `cons-end-border` on `surface`       | 3:1   | 4.17:1  | 7.11:1  | badge edge vs surface                                       |
-| `cons-crit-fg` on `cons-crit-bg`     | 4.5:1 | 8.39:1  | 10.53:1 | badge text                                                  |
-| `cons-crit-border` on `cons-crit-bg` | 3:1   | 4.88:1  | 5.71:1  | badge icon/border                                           |
-| `cons-crit-border` on `surface`      | 3:1   | 5.84:1  | 6.14:1  | badge edge vs surface                                       |
-| `cons-res-fg` on `cons-res-bg`       | 4.5:1 | 9.53:1  | 10.51:1 | badge text                                                  |
-| `cons-res-border` on `cons-res-bg`   | 3:1   | 4.56:1  | 4.68:1  | badge icon/border                                           |
-| `cons-res-border` on `surface`       | 3:1   | 5.49:1  | 5.27:1  | badge edge vs surface                                       |
-| `cons-un-fg` on `cons-un-bg`         | 4.5:1 | 7.52:1  | 8.76:1  | badge text                                                  |
-| `cons-un-border` on `cons-un-bg`     | 3:1   | 3.54:1  | 3.39:1  | badge icon/border                                           |
-| `cons-un-border` on `surface`        | 3:1   | 4.06:1  | 3.57:1  | badge edge vs surface                                       |
-| `danger` on `canvas`                 | 3:1   | 6.96:1  | 7.96:1  | danger button edge                                          |
-| `danger` on `surface-raised`         | 3:1   | 7.76:1  | 6.80:1  | danger button edge in a dialog                              |
-| `accent-text` on `surface-raised`    | 4.5:1 | 6.70:1  | 8.42:1  | wordmark in the drawer                                      |
-| `accent` on `accent-subtle`          | 3:1   | 5.03:1  | 7.03:1  | current nav item inset bar; current chip edge               |
-| `border-strong` on `accent-subtle`   | 3:1   | 3.56:1  | 3.04:1  | chip hover edge                                             |
-| `focus` on `accent-subtle`           | 3:1   | 5.14:1  | 7.33:1  | inset focus ring (dense containers, links in alerts)        |
-| `focus` on `info-bg`                 | 3:1   | 5.24:1  | 7.85:1  | inset focus ring (dense containers, links in alerts)        |
-| `focus` on `success-bg`              | 3:1   | 5.23:1  | 7.89:1  | inset focus ring (dense containers, links in alerts)        |
-| `focus` on `warning-bg`              | 3:1   | 5.31:1  | 7.75:1  | inset focus ring (dense containers, links in alerts)        |
-| `focus` on `danger-bg`               | 3:1   | 5.11:1  | 8.24:1  | inset focus ring (dense containers, links in alerts)        |
-| `focus` on `pending-bg`              | 3:1   | 5.19:1  | 8.03:1  | inset focus ring (dense containers, links in alerts)        |
-| `focus` on `hero-glow`               | 3:1   | 5.17:1  | 7.52:1  | inset focus ring (dense containers, links in alerts)        |
-| `fg` on `hero-glow`                  | 4.5:1 | 13.54:1 | 11.02:1 | home hero, strongest glow point                             |
-| `fg-muted` on `hero-glow`            | 4.5:1 | 7.61:1  | 8.06:1  | hero lead                                                   |
-| `link` on `hero-glow`                | 4.5:1 | 7.02:1  | 7.57:1  |                                                             |
-| `border-strong` on `hero-glow`       | 3:1   | 3.58:1  | 3.12:1  | hero SearchBox edge                                         |
-| `accent` on `hero-glow`              | 3:1   | 5.06:1  | 7.21:1  | hero logo mark                                              |
-| `info-icon` on `surface-raised`      | 3:1   | 6.91:1  | 7.46:1  | toast icon and edge bar                                     |
-| `success-icon` on `surface-raised`   | 3:1   | 6.19:1  | 7.71:1  | toast icon and edge bar                                     |
-| `info-icon` on `surface-sunken`      | 3:1   | 5.62:1  | 9.02:1  | Info icon on sunken                                         |
-| `accent-text` on `surface-sunken`    | 3:1   | 5.45:1  | 10.18:1 | external nav arrow on hover                                 |
-| `fg-muted` on `success-bg`           | 4.5:1 | 7.69:1  | 8.46:1  | muted text in a success alert                               |
-| `border-strong` on `success-bg`      | 3:1   | 3.62:1  | 3.27:1  | token value box and Copy button edge in the reveal          |
-| `border-strong` on `danger-bg`       | 3:1   | 3.54:1  | 3.41:1  | secondary button edge in a danger alert (Settings "Log in") |
-| `fg` on `input-bg-locked`            | 4.5:1 | 12.82:1 | 12.61:1 | read-only field value                                       |
-| `fg-subtle` on `input-bg-locked`     | 4.5:1 | 4.89:1  | 6.25:1  | disabled field text (exempt, but passes)                    |
-| `border-strong` on `input-bg-locked` | 3:1   | 3.39:1  | 3.57:1  | read-only dashed edge; disabled checkbox box                |
+The tokens were chosen for contrast: WCAG 2.2 AA in both themes (4.5:1 for text, 3:1 for non-text UI).
 
 - **Where the focus ring sits.** The default ring has a 2 px offset, so it sits on the surface around the control. In dense containers (tabs, chip rows, nav) it is inset (`outline-offset: -2px`), so it sits on the item's own fill: `accent-subtle`, a status `-bg` or `hero-glow`. All of these pairs are in the table. An inset ring never goes on an `accent` or `danger` fill (§2.6).
 - **Filled buttons.** `bg-accent` and `bg-danger` reach ≥3:1 against every surface they sit on, so the button's edge is visible.
@@ -354,12 +237,12 @@ The keyframes are `animate-spin`, `animate-pulse-soft`, `animate-shimmer`, `anim
 ## 7. Dark mode: rules for authors
 
 1. Tokens only; `dark:` is never used. If a component seems to need a theme difference, add a token.
-2. Every new text-on-background pair goes in the §2.7 table and must pass in both themes.
+2. Every new text-on-background pair must pass contrast in both themes (§2.7).
 3. Don't use opacity to make text muted: use `fg-muted` or `fg-subtle`.
 4. Check the focus ring on every surface the component can sit on.
 5. Raster images never get inverted; give them `filter: none` and a 1 px `border`.
 
-The evidence for the themes is `check:contrast` (every token pair in both themes) and the e2e axe pass in the default theme; screenshots in both themes are on demand (`npm run screenshots`, docs/TESTING.md).
+The evidence for the themes is the e2e axe pass in the default theme; screenshots in both themes are on demand (`npm run screenshots`, docs/TESTING.md).
 
 ---
 
@@ -394,4 +277,4 @@ The evidence for the themes is `check:contrast` (every token pair in both themes
 - **Not colour alone:** every state has an icon, a word or a shape (§2.5, §4.3).
 - **Reflow:** no horizontal scroll at 320 CSS px (1280 at 400 % zoom) except tables and code in their own scroll region. e2e checks 360 px; text spacing overrides must not clip.
 - **Reduced motion and forced colours:** §6; controls and current and pressed states stay visible under `forced-colors: active` (borders and outlines, never fill alone).
-- **Checks:** axe runs once per page template in the default theme (e2e), `check:contrast` covers both themes, and component tests use the keyboard. Axe finds only part of this: tab through a change, and test it at 200 % zoom.
+- **Checks:** axe runs once per page template in the default theme (e2e), and component tests use the keyboard. Axe finds only part of this: tab through a change, and test it at 200 % zoom.

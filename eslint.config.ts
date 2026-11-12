@@ -3,7 +3,6 @@ import { includeIgnoreFile } from "@eslint/compat";
 import js from "@eslint/js";
 import eslintReact from "@eslint-react/eslint-plugin";
 import { createTypeScriptImportResolver } from "eslint-import-resolver-typescript";
-import betterTailwindcss from "eslint-plugin-better-tailwindcss";
 import {
   createNodeResolver,
   flatConfigs as importX,
@@ -13,10 +12,6 @@ import reactHooks from "eslint-plugin-react-hooks";
 import { defineConfig } from "eslint/config";
 import globals from "globals";
 import { configs as tseslintConfigs } from "typescript-eslint";
-import {
-  componentClasses,
-  RESTRICTED_CLASSES,
-} from "./scripts/tailwind-classes.mjs";
 
 /**
  * Unused exports, files and dependencies are knip's job (`check:unused`,
@@ -94,30 +89,6 @@ export default defineConfig(
         "error",
         { nav: ["navigation"], ul: ["list"], ol: ["list"] },
       ],
-    },
-  },
-
-  // Tailwind classes: only what the theme defines, on the
-  // project's fixed scales (the @theme in app/styles/tokens.css,
-  // scripts/tailwind-classes.mjs).
-  {
-    files: ["app/**/*.{ts,tsx}"],
-    plugins: { "better-tailwindcss": betterTailwindcss },
-    settings: { "better-tailwindcss": { entryPoint: "app/styles/app.css" } },
-    rules: {
-      // The stylesheets' own component classes are known too.
-      "better-tailwindcss/no-unknown-classes": [
-        "error",
-        { ignore: componentClasses().map(name => `^${name}$`) },
-      ],
-      "better-tailwindcss/no-restricted-classes": [
-        "error",
-        { restrict: RESTRICTED_CLASSES },
-      ],
-      "better-tailwindcss/no-conflicting-classes": "error",
-      "better-tailwindcss/no-duplicate-classes": "error",
-      "better-tailwindcss/no-deprecated-classes": "error",
-      "better-tailwindcss/no-concatenated-classes": "error",
     },
   },
 

@@ -21,7 +21,6 @@ const TOKEN_MIRRORS = new Set([
 ]);
 const SCANNED_DIRECTORIES = ["app", "public", "e2e"];
 const SCANNED_FILES = [
-  "scripts/tailwind-classes.mjs",
   "vite.config.ts",
   "playwright.config.ts",
   "tsconfig.json",

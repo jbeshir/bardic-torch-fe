@@ -30,7 +30,7 @@ Signed-in readers can edit: an editor for each kind of page (`/pieces/:slug/edit
 - **Catalogue reads are anonymous.** The catalogue's pages call the API's public `GET /v1/...` operations from loaders in `app/server/catalogue.server.ts`, with no credentials, whether or not you are signed in. Each failure is mapped to our own page (`app/catalogue/read-failure.ts`): an outage is the "resting" page (503 with `Retry-After`), an error is "something went wrong", and a bad answer is a 502. Pages are not cached upstream in FE2.
 - **URLs are the state.** A list's search, filters, letter and page are query parameters, parsed and written canonically by `app/catalogue/query-state.ts`: a non-canonical address gets one 301, and the filter forms are plain GET forms, so they work without JavaScript.
 - **Restricted pieces.** A piece whose creator asks that it isn't shared further never shows its links outside one closed disclosure, and is kept out of the sitemap (`app/server/sitemap.server.ts`) and search engines (`noindex, nofollow`, in the piece route's `meta`). The site's own lists and search still show it, with a Restricted badge and no links (`app/catalogue/restricted.ts`).
-- **Indexing.** Only the production build can be indexed: `__INDEXABLE__` is true in it alone, and the preview, e2e and development builds answer `Disallow: /` and send `X-Robots-Tag: noindex` on every response the Worker makes (static assets get the `Disallow` only). `/robots.txt`, and one `/sitemap.xml` are resource routes; `check:prod-build` proves the flag's value in each build.
+- **Indexing.** Only the production build can be indexed: `__INDEXABLE__` is true in it alone, and the preview, e2e and development builds answer `Disallow: /` and send `X-Robots-Tag: noindex` on every response the Worker makes (static assets get the `Disallow` only). `/robots.txt`, and one `/sitemap.xml` are resource routes;
 - **The browser never calls the API.** Loaders and actions call it from the Worker through `app/server/api.server.ts`. Writes are form posts: the editors and Withdraw are document POSTs to their own route's action (they work without JavaScript), and settings use the proxy route `PATCH /api/me`. Each checks same-origin.
   - The access token lives in the server-side session and is sent as `Authorization: Bearer <jwt>`.
   - The proxies and the editors' actions accept form-encoded bodies, check same-origin (CSRF), validate the input, and map every API error code to the app's own wording.
@@ -101,13 +101,13 @@ To try a build as Cloudflare runs it, run `npm run build` (or `build:preview`), 
 
 ## Checks
 
-| command                    | what it runs                                                                                                                  |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `npm run validate`         | check:types, gen:types, format:check, lint, tsc, check:unused, check:api, check:contrast, every vitest test, check:prod-build |
-| `npm run test:e2e`         | Playwright: the journeys and the per-template axe and reflow checks; needs Chromium                                           |
-| `npm run screenshots`      | Playwright: on-demand screenshots of every template, light and dark, at 360 and 1280; needs Chromium                          |
-| `npm run audit`            | `npm audit`: any runtime advisory (info included), or a high or critical one anywhere; needs the registry                     |
-| `npm run audit:signatures` | `npm audit signatures`: the installed packages' registry signatures and provenance; needs the registry and Sigstore           |
+| command                    | what it runs                                                                                                        |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `npm run validate`         | check:types, gen:types, format:check, lint, tsc, check:unused, check:api, every vitest test, check:prod-build       |
+| `npm run test:e2e`         | Playwright: the journeys and the per-template axe and reflow checks; needs Chromium                                 |
+| `npm run screenshots`      | Playwright: on-demand screenshots of every template, light and dark, at 360 and 1280; needs Chromium                |
+| `npm run audit`            | `npm audit`: any runtime advisory (info included), or a high or critical one anywhere; needs the registry           |
+| `npm run audit:signatures` | `npm audit signatures`: the installed packages' registry signatures and provenance; needs the registry and Sigstore |
 
 CI runs the first two as the `validate` and `e2e` jobs (`.github/workflows/ci.yml`), and both audits as the `audit` job (`.github/workflows/audit.yml`, weekly and on pull requests to `main`): all three are required checks on `main`. [docs/TESTING.md](docs/TESTING.md) explains the layers.
 

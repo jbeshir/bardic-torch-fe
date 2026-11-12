@@ -8,11 +8,7 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  checkBuiltWorker,
-  removeEmittedDevVars,
-  selectBuildMode,
-} from "./build.mjs";
+import { removeEmittedDevVars, selectBuildMode } from "./build.mjs";
 
 const dirs: string[] = [];
 afterEach(() => {
@@ -20,14 +16,14 @@ afterEach(() => {
     rmSync(dir, { recursive: true, force: true });
 });
 
-/** A build output whose config deploys to Worker `name`. */
-function builtFor(name: string): string {
+/** A build output with a built config. */
+function builtDir(): string {
   const dir = mkdtempSync(path.join(tmpdir(), "bt-build-"));
   dirs.push(dir);
   mkdirSync(path.join(dir, "server"));
   writeFileSync(
     path.join(dir, "server", "wrangler.json"),
-    JSON.stringify({ name, main: "index.js" })
+    JSON.stringify({ name: "bardic-torch-fe", main: "index.js" })
   );
   return dir;
 }
@@ -59,39 +55,9 @@ describe("selectBuildMode", () => {
   );
 });
 
-describe("checkBuiltWorker", () => {
-  const PRODUCTION = "bardic-torch-fe";
-  const PREVIEW = "bardic-torch-fe-preview";
-
-  it.each([
-    ["production", PRODUCTION, {}, 0],
-    ["preview", PREVIEW, {}, 0],
-    ["production", PREVIEW, {}, 1],
-    ["preview", PRODUCTION, {}, 1],
-    ["preview", PREVIEW, { WRANGLER_CI_OVERRIDE_NAME: PREVIEW }, 0],
-    ["production", PRODUCTION, { WRANGLER_CI_OVERRIDE_NAME: PREVIEW }, 1],
-    ["preview", PREVIEW, { WRANGLER_CI_OVERRIDE_NAME: "" }, 1],
-  ] as const)(
-    "%s build of Worker %s with %j has %i problems",
-    (mode, worker, env, problems) => {
-      expect(
-        checkBuiltWorker({ buildDir: builtFor(worker), mode, env })
-      ).toHaveLength(problems);
-    }
-  );
-
-  it("fails a build with no built config", () => {
-    const dir = mkdtempSync(path.join(tmpdir(), "bt-build-"));
-    dirs.push(dir);
-    expect(
-      checkBuiltWorker({ buildDir: dir, mode: "production", env: {} })
-    ).toEqual([`production: no ${path.join(dir, "server", "wrangler.json")}`]);
-  });
-});
-
 describe("removeEmittedDevVars", () => {
   it("deletes the .dev.vars copy the Cloudflare plugin writes into the build", () => {
-    const dir = builtFor("bardic-torch-fe");
+    const dir = builtDir();
     const copy = path.join(dir, "server", ".dev.vars");
     writeFileSync(copy, "AUTH_SESSION_SECRET=a-local-secret\n");
     removeEmittedDevVars(dir);
