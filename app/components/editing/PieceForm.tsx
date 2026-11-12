@@ -115,7 +115,6 @@ function PieceForm({
           name="conservation.status"
           value={document.conservation.status}
           options={labelOptions(CONSERVATION_LABELS)}
-          exempt={CONSERVATION_LABELS.unassessed}
           sourceName="conservation.source_url"
           sourceValue={document.conservation.source_url}
         />

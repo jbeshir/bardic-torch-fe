@@ -4,16 +4,13 @@ import type { Option } from "~/editing/editor-data";
 import { labelOptions, MARKDOWN_HELP, SelectField, TextField } from "./fields";
 
 /**
- * A status and the address of its source (plan "Shared editor shell"):
- * the source is needed for any status but `exempt` (the API checks, and
- * says so at the field).
+ * A status and, optionally, the address of a page that shows it.
  */
 export function SourcedField({
   legend,
   name,
   value,
   options,
-  exempt,
   sourceName,
   sourceValue,
   children,
@@ -22,8 +19,6 @@ export function SourcedField({
   readonly name: string;
   readonly value: string;
   readonly options: readonly Option[];
-  /** The label of the status that needs no source: "Not yet assessed". */
-  readonly exempt: string;
   readonly sourceName: string;
   readonly sourceValue: string | null;
   /** More fields between the two (a person's status date). */
@@ -40,7 +35,7 @@ export function SourcedField({
         name={sourceName}
         label="Source (URL)"
         type="url"
-        help={`Needed unless the status is ‘${exempt}’: a page that shows it.`}
+        help="A page that shows it."
         value={sourceValue}
         optional
       />

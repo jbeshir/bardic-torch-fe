@@ -507,70 +507,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/link-reports": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Report a link
-     * @description Reports a link to the moderators. The URL is normalized as links are, and must belong to a visible link: one
-     *     that is not hidden and is attached to a public piece or person; otherwise it is not found, as for a hidden
-     *     link. A user has at most one open report per link. Requires a signed-in user.
-     */
-    post: operations["createLinkReport"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/moderation/link-reports": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List link reports
-     * @description Lists one page of link reports with a status (`open` unless `status` says otherwise), oldest first, with how
-     *     many there are in all. Requires the moderator role.
-     */
-    get: operations["listLinkReports"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/moderation/link-reports/{report_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Resolve or dismiss a link report
-     * @description Closes an open link report as resolved or dismissed, with an optional note. With `hide_link` the report's
-     *     link is also hidden, as `PUT /v1/links/{link_id}/hidden` does. Requires the moderator role.
-     */
-    post: operations["closeLinkReport"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/v1/moderation/links": {
     parameters: {
       query?: never;
@@ -836,7 +772,7 @@ export interface paths {
      * Submit a revision
      * @description Submits an edit of an existing entity (`base_revision_id`, from its editable document) or a new entity
      *     (`base_revision_id` null). References are by slug, to public entities only; an unknown slug is a problem
-     *     `unknown_reference`. The document is validated, including the sourced fields, before anything is stored.
+     *     `unknown_reference`. The document is validated, including its licensing sources, before anything is stored.
      *
      *     A contributor's revision is pending; it withdraws their earlier pending revision of the same entity, and
      *     they may have at most 30 pending. A moderator's revision is approved at once, which refuses a stale base
@@ -1851,7 +1787,7 @@ export interface components {
     ConservationChange: {
       conservation_status: components["schemas"]["ConservationStatus"];
       /**
-       * @description Why the status changed.
+       * @description Why the status changed (the summary of the revision that changed it), which may be empty.
        * @example Known to only a few singers.
        */
       reason: string;
@@ -3559,46 +3495,7 @@ export interface components {
       count: number;
     };
     /**
-     * @description The ID of a stored record.
-     * @example {
-     *       "id": 7
-     *     }
-     */
-    CreatedID: {
-      /**
-       * Format: int64
-       * @example 7
-       */
-      id: number;
-    };
-    /**
-     * @description The body of a link report.
-     * @example {
-     *       "url": "https://example.org/kettle",
-     *       "reason": "broken",
-     *       "message": "The page is gone."
-     *     }
-     */
-    CreateLinkReportRequest: {
-      /**
-       * @description The URL of the link, in any spelling that normalizes to it.
-       * @example https://example.org/kettle
-       */
-      url: string;
-      /**
-       * @example broken
-       * @enum {string}
-       */
-      reason:
-        "broken" | "wrong_link" | "privacy" | "copyright" | "lyrics" | "other";
-      /**
-       * @description What the moderators should know. Surrounding space is trimmed; empty is the same as null.
-       * @example The page is gone.
-       */
-      message?: string | null;
-    };
-    /**
-     * @description How a moderator closed a report or request.
+     * @description How a moderator closed a contact request.
      * @example {
      *       "resolved_by": "google-oauth2|123",
      *       "resolved_at": "2026-11-11T12:00:00Z",
@@ -3615,123 +3512,6 @@ export interface components {
       resolved_at: string;
       /** @example Link hidden. */
       note: string | null;
-    };
-    /**
-     * @description A user's report of a link.
-     * @example {
-     *       "id": 7,
-     *       "link": {
-     *         "id": 9,
-     *         "url": "https://example.org/kettle",
-     *         "is_hidden": false
-     *       },
-     *       "reporter": {
-     *         "user_id": "google-oauth2|456",
-     *         "display_name": "Morwen"
-     *       },
-     *       "reason": "broken",
-     *       "message": "The page is gone.",
-     *       "status": "open",
-     *       "created_at": "2026-11-10T09:30:00Z",
-     *       "resolution": null
-     *     }
-     */
-    LinkReport: {
-      /**
-       * Format: int64
-       * @example 7
-       */
-      id: number;
-      link: {
-        /**
-         * Format: int64
-         * @example 9
-         */
-        id: number;
-        /** @example https://example.org/kettle */
-        url: string;
-        /** @example false */
-        is_hidden: boolean;
-      };
-      reporter: {
-        /** @example google-oauth2|456 */
-        user_id: string;
-        /** @example Morwen */
-        display_name: string;
-      };
-      /**
-       * @example broken
-       * @enum {string}
-       */
-      reason:
-        "broken" | "wrong_link" | "privacy" | "copyright" | "lyrics" | "other";
-      /** @example The page is gone. */
-      message: string | null;
-      /**
-       * @example open
-       * @enum {string}
-       */
-      status: "open" | "resolved" | "dismissed";
-      /** Format: date-time */
-      created_at: string;
-      resolution: components["schemas"]["Resolution"] | null;
-    };
-    /**
-     * @description One page of link reports, oldest first.
-     * @example {
-     *       "data": [
-     *         {
-     *           "id": 7,
-     *           "link": {
-     *             "id": 9,
-     *             "url": "https://example.org/kettle",
-     *             "is_hidden": false
-     *           },
-     *           "reporter": {
-     *             "user_id": "google-oauth2|456",
-     *             "display_name": "Morwen"
-     *           },
-     *           "reason": "broken",
-     *           "message": "The page is gone.",
-     *           "status": "open",
-     *           "created_at": "2026-11-10T09:30:00Z",
-     *           "resolution": null
-     *         }
-     *       ],
-     *       "total": 1
-     *     }
-     */
-    LinkReportList: {
-      data: components["schemas"]["LinkReport"][];
-      /**
-       * Format: int64
-       * @description How many reports have the status, over every page.
-       * @example 1
-       */
-      total: number;
-    };
-    /**
-     * @description The body of a moderator's closing of a link report.
-     * @example {
-     *       "status": "resolved",
-     *       "note": "Link hidden.",
-     *       "hide_link": true
-     *     }
-     */
-    CloseLinkReportRequest: {
-      /**
-       * @example resolved
-       * @enum {string}
-       */
-      status: "resolved" | "dismissed";
-      /** @example Link hidden. */
-      note?: string | null;
-      /**
-       * @description Also hide the report's link.
-       * @default false
-       * @example true
-       */
-      hide_link: boolean;
     };
     /**
      * @description The body of a moderator's closing of a contact request.
@@ -3825,10 +3605,12 @@ export interface components {
      */
     CreateContactRequest: {
       /**
+       * @description What the request is about. `link_report` reports a link on the site, and `url` is then the link's URL.
+       *     Moderators take a link down by finding it with `GET /v1/moderation/links`.
        * @example takedown
        * @enum {string}
        */
-      kind: "takedown" | "opt_out" | "correction" | "general";
+      kind: "takedown" | "opt_out" | "correction" | "link_report" | "general";
       /** @example Wren */
       name?: string | null;
       /** @example wren@example.org */
@@ -3836,7 +3618,7 @@ export interface components {
       /** @example Please remove this recording. */
       message: string;
       /**
-       * @description The page the request is about, if any. It is stored as sent.
+       * @description The page the request is about, if any, or for a `link_report` the link's URL. Stored as sent.
        * @example https://example.org/kettle
        */
       url?: string | null;
@@ -3871,7 +3653,7 @@ export interface components {
        * @example takedown
        * @enum {string}
        */
-      kind: "takedown" | "opt_out" | "correction" | "general";
+      kind: "takedown" | "opt_out" | "correction" | "link_report" | "general";
       /** @example Wren */
       name: string | null;
       /** @example wren@example.org */
@@ -3948,7 +3730,6 @@ export interface components {
       | "wrong_facet"
       | "unknown_reference"
       | "source_required"
-      | "summary_required"
       | "prefers_no_page";
     /**
      * @description A problem with a field of a submitted document, at its path in the editor format (`credits[2].person_slug`);
@@ -4433,8 +4214,8 @@ export interface components {
        */
       base_revision_id: number | null;
       /**
-       * @description What the edit changes, at most 500 characters; may be empty, except that a conservation status change
-       *     needs one (the reason).
+       * @description What the edit changes, at most 500 characters; may be empty. When the edit changes a piece's
+       *     conservation status, the summary is the reason in its conservation history.
        * @example Describe the revel.
        */
       summary: string;
@@ -4891,10 +4672,7 @@ export interface components {
         "application/json": components["schemas"]["Error"];
       };
     };
-    /**
-     * @description The report, request or link does not exist, or for a link report no visible link has the URL; the error code
-     *     is `not_found`.
-     */
+    /** @description The request or link does not exist; the error code is `not_found`. */
     NotFound: {
       headers: {
         [name: string]: unknown;
@@ -4909,7 +4687,7 @@ export interface components {
         "application/json": components["schemas"]["Error"];
       };
     };
-    /** @description The report or request is already resolved or dismissed; the error code is `conflict`. */
+    /** @description The request is already resolved or dismissed; the error code is `conflict`. */
     NotOpen: {
       headers: {
         [name: string]: unknown;
@@ -4918,7 +4696,7 @@ export interface components {
         /**
          * @example {
          *       "code": "conflict",
-         *       "message": "the link report is not open"
+         *       "message": "the contact request is not open"
          *     }
          */
         "application/json": components["schemas"]["Error"];
@@ -5043,8 +4821,6 @@ export interface components {
     Search: string;
     /** @description Only list entries under this letter of the A–Z index. */
     Letter: components["schemas"]["Letter"];
-    /** @description The link report's `id`. */
-    ReportID: number;
     /** @description The contact request's `id`. */
     RequestID: number;
     /** @description The link's `id`, as `GET /v1/moderation/links` gives it. */
@@ -6091,121 +5867,6 @@ export interface operations {
         };
       };
       500: components["responses"]["InternalSearch"];
-      503: components["responses"]["Unavailable"];
-    };
-  };
-  createLinkReport: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** @description The link and why it is reported. */
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateLinkReportRequest"];
-      };
-    };
-    responses: {
-      /** @description The report was stored. */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CreatedID"];
-        };
-      };
-      400: components["responses"]["InvalidRequest"];
-      401: components["responses"]["Unauthenticated"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      /** @description The user already has an open report of this link; the error code is `conflict`. */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "code": "conflict",
-           *       "message": "you already have an open report of this link"
-           *     }
-           */
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      413: components["responses"]["RequestTooLarge"];
-      415: components["responses"]["UnsupportedMediaType"];
-      500: components["responses"]["Internal"];
-      503: components["responses"]["Unavailable"];
-    };
-  };
-  listLinkReports: {
-    parameters: {
-      query?: {
-        /** @description Only list items with this status. Omitted, `open`. */
-        status?: components["parameters"]["ReportStatusFilter"];
-        /** @description The most items to return, from 1 to 100. */
-        limit?: components["parameters"]["Limit"];
-        /** @description How many items to skip, from 0 to 10000. Every list order ends with an internal ID, so pages of an unchanged catalogue concatenate without gaps or duplicates. */
-        offset?: components["parameters"]["Offset"];
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The page of reports. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["LinkReportList"];
-        };
-      };
-      400: components["responses"]["InvalidListRequest"];
-      401: components["responses"]["Unauthenticated"];
-      403: components["responses"]["ModeratorForbidden"];
-      500: components["responses"]["Internal"];
-      503: components["responses"]["Unavailable"];
-    };
-  };
-  closeLinkReport: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The link report's `id`. */
-        report_id: components["parameters"]["ReportID"];
-      };
-      cookie?: never;
-    };
-    /** @description How the report is closed. */
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CloseLinkReportRequest"];
-      };
-    };
-    responses: {
-      /** @description The report is closed. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      400: components["responses"]["InvalidRequest"];
-      401: components["responses"]["Unauthenticated"];
-      403: components["responses"]["ModeratorForbidden"];
-      404: components["responses"]["NotFound"];
-      409: components["responses"]["NotOpen"];
-      413: components["responses"]["RequestTooLarge"];
-      415: components["responses"]["UnsupportedMediaType"];
-      500: components["responses"]["Internal"];
       503: components["responses"]["Unavailable"];
     };
   };

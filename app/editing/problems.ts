@@ -23,7 +23,6 @@ const PROBLEM_MESSAGES: Readonly<Record<Schemas["ProblemCode"], string>> = {
   unknown_reference:
     "We couldn’t find this in the catalogue. Choose another, or leave it out.",
   source_required: "This needs a source. Add a link to it.",
-  summary_required: "Say why in the summary.",
   prefers_no_page:
     "This person asked not to have a page, so only a moderator can add them.",
 };

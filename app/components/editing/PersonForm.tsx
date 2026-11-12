@@ -68,7 +68,6 @@ function PersonForm({
           name="status"
           value={document.status}
           options={labelOptions(PERSON_STATUS_LABELS)}
-          exempt={PERSON_STATUS_LABELS.active}
           sourceName="status_source_url"
           sourceValue={document.status_source_url}
         >
