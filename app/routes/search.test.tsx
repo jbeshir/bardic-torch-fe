@@ -17,6 +17,7 @@ const PIECES: PieceList = {
       secondary_kinds: [],
       conservation_status: "low_risk",
       is_stub: false,
+      credit_names: [],
     },
   ],
   total: 31,

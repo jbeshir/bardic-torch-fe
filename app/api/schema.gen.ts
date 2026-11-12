@@ -506,6 +506,460 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/link-reports": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Report a link
+     * @description Reports a link to the moderators. The URL is normalized as links are, and must belong to a visible link: one
+     *     that is not hidden and is attached to a public piece or person; otherwise it is not found, as for a hidden
+     *     link. A user has at most one open report per link. Requires a signed-in user.
+     */
+    post: operations["createLinkReport"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/moderation/link-reports": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List link reports
+     * @description Lists one page of link reports with a status (`open` unless `status` says otherwise), oldest first, with how
+     *     many there are in all. Requires the moderator role.
+     */
+    get: operations["listLinkReports"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/moderation/link-reports/{report_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Resolve or dismiss a link report
+     * @description Closes an open link report as resolved or dismissed, with an optional note. With `hide_link` the report's
+     *     link is also hidden, as `PUT /v1/links/{link_id}/hidden` does. Requires the moderator role.
+     */
+    post: operations["closeLinkReport"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/moderation/links": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Find a link by URL
+     * @description Returns the link whose normalized URL is the given URL's, hidden or not, with where it is attached, so that
+     *     a moderator can take it down with `PUT /v1/links/{link_id}/hidden`. Requires the moderator role.
+     */
+    get: operations["getModerationLink"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/links/{link_id}/hidden": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Hide or restore a link
+     * @description Hides a link everywhere, or restores it. A hidden link is left out of every public read, and so is any link
+     *     with the same normalized URL. Setting the state a link is already in succeeds. Requires the moderator role.
+     */
+    put: operations["setLinkHidden"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/contact": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send a contact request
+     * @description Sends a message to the moderators, from anyone, with no account. The Cloudflare Turnstile token is checked
+     *     with Cloudflare: it must pass, have been minted on the site's hostname and for the action `contact`;
+     *     otherwise the answer is 400 `turnstile_failed`. The name, email, message and URL are personal data: the
+     *     server never logs them. Credentials are
+     *     ignored. The body is at most 64 KiB.
+     */
+    post: operations["createContactRequest"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/moderation/contact-requests": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List contact requests
+     * @description Lists one page of contact requests with a status (`open` unless `status` says otherwise), oldest first, with
+     *     how many there are in all. Requires the moderator role.
+     */
+    get: operations["listContactRequests"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/moderation/contact-requests/{request_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Resolve or dismiss a contact request
+     * @description Closes an open contact request as resolved or dismissed, with an optional note. Requires the moderator role.
+     */
+    post: operations["closeContactRequest"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/me/revisions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List the caller's revisions
+     * @description Lists one page of the caller's own revisions of every status (or of `status`), newest first, with how many
+     *     there are in all. `author` is always null here. Requires a signed-in user.
+     */
+    get: operations["listMyRevisions"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/me/revisions/{revision_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get one of the caller's revisions
+     * @description Returns one of the caller's own revisions, of any status, with its review note and the same snapshot views
+     *     as a public revision. Another user's revision is not found. Requires a signed-in user.
+     */
+    get: operations["getMyRevision"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/pieces/{slug}/editable": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a piece's editable document
+     * @description Returns a public piece's document in the editor format, to edit and submit with `POST /v1/revisions`: the
+     *     caller's own pending revision of it if they have one, and otherwise its current revision. Hidden links are
+     *     left out. A document that shows a person who prefers not to have a page is editable by moderators only.
+     *     Requires a signed-in user.
+     */
+    get: operations["getEditablePiece"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/persons/{slug}/editable": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a person's editable document
+     * @description As `GET /v1/pieces/{slug}/editable`, for a public person.
+     */
+    get: operations["getEditablePerson"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/terms/{slug}/editable": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a term's editable document
+     * @description As `GET /v1/pieces/{slug}/editable`, for a public term.
+     */
+    get: operations["getEditableTerm"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/events/{slug}/editable": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get an event's editable document
+     * @description As `GET /v1/pieces/{slug}/editable`, for a public event or venue.
+     */
+    get: operations["getEditableEvent"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/collections/{collection_id}/editable": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a collection's editable document
+     * @description As `GET /v1/pieces/{slug}/editable`, for a public collection.
+     */
+    get: operations["getEditableCollection"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revisions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Submit a revision
+     * @description Submits an edit of an existing entity (`base_revision_id`, from its editable document) or a new entity
+     *     (`base_revision_id` null). References are by slug, to public entities only (for moderators, also persons
+     *     who prefer not to have a page); an unknown slug is a problem `unknown_reference`. The document is validated,
+     *     including the sourced fields, before anything is stored.
+     *
+     *     A contributor's revision is pending; it withdraws their earlier pending revision of the same entity, and
+     *     they may have at most 30 pending. A moderator's revision is approved at once, which refuses a stale base
+     *     (the entity has changed since) unless `acknowledge_stale`. A new entity whose title, name or an alias
+     *     matches a public entity of its type needs `acknowledge_duplicates`; one matching a person who prefers not
+     *     to have a page is refused. A contributor may not edit a document that shows a person who prefers not to
+     *     have a page. The body may be up to 1 MiB. Requires a signed-in user.
+     */
+    post: operations["submitRevision"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revisions/{revision_id}/withdraw": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Withdraw a revision
+     * @description Withdraws one of the caller's own pending revisions. Another user's revision is not found. Requires a
+     *     signed-in user.
+     */
+    post: operations["withdrawRevision"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/moderation/queue": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List the moderation queue
+     * @description Lists one page of the pending revisions, oldest first, with their authors and how many there are in all.
+     *     Requires the moderator role.
+     */
+    get: operations["listModerationQueue"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/moderation/revisions/{revision_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a revision for review
+     * @description Returns any revision as a moderator sees it: the author's view with the author's user ID and, for a stale
+     *     revision, the entity's current revision with the fields changed since; for a new entity's pending revision,
+     *     the public entities it may duplicate. Requires the moderator role.
+     */
+    get: operations["getModerationRevision"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revisions/{revision_id}/approve": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Approve a revision
+     * @description Approves a pending revision and writes its document into the catalogue, creating a new entity. A stale
+     *     revision (its entity has changed since its base) is refused unless `acknowledge_stale`, which overwrites the
+     *     changes since. A document that no longer validates is refused with its problems. Requires the moderator
+     *     role.
+     */
+    post: operations["approveRevision"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revisions/{revision_id}/reject": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Reject a revision
+     * @description Rejects a pending revision with a note to its author, which they see in `GET /v1/me/revisions/{revision_id}`.
+     *     Requires the moderator role.
+     */
+    post: operations["rejectRevision"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export interface components {
   schemas: {
@@ -533,7 +987,14 @@ export interface components {
         | "method_not_allowed"
         | "conflict"
         | "internal"
-        | "unavailable";
+        | "unavailable"
+        | "turnstile_failed"
+        | "validation_failed"
+        | "possible_duplicate"
+        | "moderator_only"
+        | "pending_limit_reached"
+        | "stale_revision"
+        | "revision_not_pending";
       /**
        * @description Human-readable description of the error. Not intended for display to end users.
        * @example database unavailable
@@ -685,7 +1146,8 @@ export interface components {
      *             "dance_music"
      *           ],
      *           "conservation_status": "endangered",
-     *           "is_stub": false
+     *           "is_stub": false,
+     *           "credit_names": []
      *         }
      *       ],
      *       "total": 1,
@@ -884,7 +1346,10 @@ export interface components {
      *         "dance_music"
      *       ],
      *       "conservation_status": "endangered",
-     *       "is_stub": false
+     *       "is_stub": false,
+     *       "credit_names": [
+     *         "Wren of the Vale"
+     *       ]
      *     }
      */
     PieceSummary: {
@@ -904,6 +1369,14 @@ export interface components {
        * @example false
        */
       is_stub: boolean;
+      /**
+       * @description The names of up to five credited persons who have a page, in credit order. A person who prefers not to
+       *     have a page is never named.
+       * @example [
+       *       "Wren of the Vale"
+       *     ]
+       */
+      credit_names: string[];
     };
     /**
      * @description A public person, as other entities refer to them. Persons who prefer not to have a page are never
@@ -989,11 +1462,16 @@ export interface components {
      * @description A public piece's page.
      * @example {
      *       "slug": "the-copper-kettle",
+     *       "updated_at": "2026-03-01T12:00:00Z",
+     *       "licence_version": null,
      *       "title": "The Copper Kettle",
      *       "kind": "song",
      *       "secondary_kinds": [],
      *       "conservation_status": "endangered",
      *       "is_stub": false,
+     *       "credit_names": [
+     *         "Wren of the Vale"
+     *       ],
      *       "notes_md": "A drinking song from the northern marches.",
      *       "version_notes_md": null,
      *       "licensing_status": "known",
@@ -1097,6 +1575,7 @@ export interface components {
       secondary_kinds: components["schemas"]["PieceSummary"]["secondary_kinds"];
       conservation_status: components["schemas"]["ConservationStatus"];
       is_stub: components["schemas"]["PieceSummary"]["is_stub"];
+      credit_names: components["schemas"]["PieceSummary"]["credit_names"];
       /**
        * @description Notes about the piece, in Markdown.
        * @example A drinking song from the northern marches.
@@ -1147,6 +1626,14 @@ export interface components {
       links: components["schemas"]["PieceLink"][];
       /** @description The piece's conservation status changes, oldest first. */
       conservation_history: components["schemas"]["ConservationChange"][];
+      /**
+       * Format: date-time
+       * @description When the current revision was approved.
+       * @example 2026-03-01T12:00:00Z
+       */
+      updated_at: string;
+      /** @description The version of the Creative Commons licence; null unless the licence is a cc_* one. */
+      licence_version: components["schemas"]["LicenceVersion"] | null;
     };
     /**
      * @description Another title of a piece.
@@ -1223,7 +1710,8 @@ export interface components {
      *         "kind": "song",
      *         "secondary_kinds": [],
      *         "conservation_status": "low_risk",
-     *         "is_stub": false
+     *         "is_stub": false,
+     *         "credit_names": []
      *       }
      *     }
      */
@@ -1391,6 +1879,7 @@ export interface components {
      *     true.
      * @example {
      *       "slug": "hollis-fenn",
+     *       "updated_at": "2026-03-01T12:00:00Z",
      *       "name": "Hollis Fenn",
      *       "kind": "community_bard",
      *       "is_stub": true,
@@ -1419,6 +1908,7 @@ export interface components {
       status_source_url: string | null;
       /** @description Everything the person's page shows beyond their identity. */
       profile: components["schemas"]["PersonProfile"] | null;
+      updated_at: components["schemas"]["Piece"]["updated_at"];
     };
     /**
      * @description Everything a person's page shows beyond their identity.
@@ -1526,7 +2016,8 @@ export interface components {
      *         "kind": "song",
      *         "secondary_kinds": [],
      *         "conservation_status": "endangered",
-     *         "is_stub": false
+     *         "is_stub": false,
+     *         "credit_names": []
      *       },
      *       "role": "lyrics",
      *       "certainty": "certain",
@@ -1645,6 +2136,7 @@ export interface components {
      * @description A public term's page, with one page of its members.
      * @example {
      *       "slug": "war",
+     *       "updated_at": "2026-03-01T12:00:00Z",
      *       "facet": "topic",
      *       "name": "War",
      *       "display_name": "War",
@@ -1674,7 +2166,8 @@ export interface components {
      *           "kind": "song",
      *           "secondary_kinds": [],
      *           "conservation_status": "endangered",
-     *           "is_stub": false
+     *           "is_stub": false,
+     *           "credit_names": []
      *         }
      *       ],
      *       "persons": []
@@ -1710,6 +2203,7 @@ export interface components {
        *     name. Empty unless the term is an `affiliation` term.
        */
       persons: components["schemas"]["PersonSummary"][];
+      updated_at: components["schemas"]["Piece"]["updated_at"];
     };
     /**
      * @description A public child of a term, with its counts.
@@ -1757,6 +2251,7 @@ export interface components {
      * @description A public collection's page.
      * @example {
      *       "id": 12,
+     *       "updated_at": "2026-03-01T12:00:00Z",
      *       "name": "The Northmarch Songbook",
      *       "kind": "songbook_pdf",
      *       "url": "https://example.org/songbook.pdf",
@@ -1774,7 +2269,8 @@ export interface components {
      *             "kind": "song",
      *             "secondary_kinds": [],
      *             "conservation_status": "endangered",
-     *             "is_stub": false
+     *             "is_stub": false,
+     *             "credit_names": []
      *           },
      *           "person": null,
      *           "url": "https://example.org/songbook.pdf",
@@ -1817,6 +2313,7 @@ export interface components {
        * @example 1
        */
       citations_total: number;
+      updated_at: components["schemas"]["Piece"]["updated_at"];
     };
     /**
      * @description A link in a collection, attached to a piece or a person: exactly one of `piece` and `person` is set.
@@ -1873,6 +2370,7 @@ export interface components {
      * @description A public event's or venue's page.
      * @example {
      *       "slug": "midwinter-revel",
+     *       "updated_at": "2026-03-01T12:00:00Z",
      *       "name": "Midwinter Revel",
      *       "kind": "event",
      *       "description_md": null,
@@ -1909,6 +2407,7 @@ export interface components {
        * @example 1
        */
       performances_total: number;
+      updated_at: components["schemas"]["Piece"]["updated_at"];
     };
     /**
      * @description A performance on an event's page. Performers who are not public or prefer not to have a page are left
@@ -2013,6 +2512,12 @@ export interface components {
       | "cc_by_nc_nd"
       | "arr"
       | "other";
+    /**
+     * @description The version of a Creative Commons licence. It is shown only beside a `cc_*` licence.
+     * @example 4.0
+     * @enum {string}
+     */
+    LicenceVersion: "1.0" | "2.0" | "2.5" | "3.0" | "4.0";
     /**
      * @description What sort of alternative title an alias is.
      * @example alt_title
@@ -2285,7 +2790,8 @@ export interface components {
      *         "kind": "song",
      *         "secondary_kinds": [],
      *         "conservation_status": "endangered",
-     *         "is_stub": false
+     *         "is_stub": false,
+     *         "credit_names": []
      *       },
      *       "base_revision_id": 41,
      *       "source": "user",
@@ -2307,6 +2813,7 @@ export interface components {
      *         "licensing_status": "unknown",
      *         "licensing_notes_md": null,
      *         "licence": null,
+     *         "licence_version": null,
      *         "historical_source_md": null,
      *         "period_start": null,
      *         "period_end": null,
@@ -2337,6 +2844,7 @@ export interface components {
      *         "licensing_status": "unknown",
      *         "licensing_notes_md": null,
      *         "licence": null,
+     *         "licence_version": null,
      *         "historical_source_md": null,
      *         "period_start": null,
      *         "period_end": null,
@@ -2387,6 +2895,7 @@ export interface components {
         | "is_stub"
         | "kind"
         | "licence"
+        | "licence_version"
         | "licensing_notes_md"
         | "licensing_status"
         | "links"
@@ -2668,6 +3177,7 @@ export interface components {
      *     to entities that are public now, and visible links.
      * @example {
      *       "title": "The Copper Kettle",
+     *       "licence_version": null,
      *       "kind": "song",
      *       "secondary_kinds": [],
      *       "conservation_status": "endangered",
@@ -2719,6 +3229,7 @@ export interface components {
       relations: components["schemas"]["SnapshotPieceRelation"][];
       /** @description The snapshot's links that are not hidden now, in order, with no system state such as liveness. */
       links: components["schemas"]["SnapshotPieceLink"][];
+      licence_version: components["schemas"]["Piece"]["licence_version"];
     };
     /**
      * @description A relation of a piece snapshot's piece to another public piece.
@@ -2730,7 +3241,8 @@ export interface components {
      *         "kind": "song",
      *         "secondary_kinds": [],
      *         "conservation_status": "low_risk",
-     *         "is_stub": false
+     *         "is_stub": false,
+     *         "credit_names": []
      *       }
      *     }
      */
@@ -3055,6 +3567,1129 @@ export interface components {
        */
       count: number;
     };
+    /**
+     * @description The ID of a stored record.
+     * @example {
+     *       "id": 7
+     *     }
+     */
+    CreatedID: {
+      /**
+       * Format: int64
+       * @example 7
+       */
+      id: number;
+    };
+    /**
+     * @description The body of a link report.
+     * @example {
+     *       "url": "https://example.org/kettle",
+     *       "reason": "broken",
+     *       "message": "The page is gone."
+     *     }
+     */
+    CreateLinkReportRequest: {
+      /**
+       * @description The URL of the link, in any spelling that normalizes to it.
+       * @example https://example.org/kettle
+       */
+      url: string;
+      /**
+       * @example broken
+       * @enum {string}
+       */
+      reason:
+        "broken" | "wrong_link" | "privacy" | "copyright" | "lyrics" | "other";
+      /**
+       * @description What the moderators should know. Surrounding space is trimmed; empty is the same as null.
+       * @example The page is gone.
+       */
+      message?: string | null;
+    };
+    /**
+     * @description How a moderator closed a report or request.
+     * @example {
+     *       "resolved_by": "google-oauth2|123",
+     *       "resolved_at": "2026-11-11T12:00:00Z",
+     *       "note": "Link hidden."
+     *     }
+     */
+    Resolution: {
+      /**
+       * @description The moderator's user `id`.
+       * @example google-oauth2|123
+       */
+      resolved_by: string;
+      /** Format: date-time */
+      resolved_at: string;
+      /** @example Link hidden. */
+      note: string | null;
+    };
+    /**
+     * @description A user's report of a link.
+     * @example {
+     *       "id": 7,
+     *       "link": {
+     *         "id": 9,
+     *         "url": "https://example.org/kettle",
+     *         "is_hidden": false
+     *       },
+     *       "reporter": {
+     *         "user_id": "google-oauth2|456",
+     *         "display_name": "Morwen"
+     *       },
+     *       "reason": "broken",
+     *       "message": "The page is gone.",
+     *       "status": "open",
+     *       "created_at": "2026-11-10T09:30:00Z",
+     *       "resolution": null
+     *     }
+     */
+    LinkReport: {
+      /**
+       * Format: int64
+       * @example 7
+       */
+      id: number;
+      link: {
+        /**
+         * Format: int64
+         * @example 9
+         */
+        id: number;
+        /** @example https://example.org/kettle */
+        url: string;
+        /** @example false */
+        is_hidden: boolean;
+      };
+      reporter: {
+        /** @example google-oauth2|456 */
+        user_id: string;
+        /** @example Morwen */
+        display_name: string;
+      };
+      /**
+       * @example broken
+       * @enum {string}
+       */
+      reason:
+        "broken" | "wrong_link" | "privacy" | "copyright" | "lyrics" | "other";
+      /** @example The page is gone. */
+      message: string | null;
+      /**
+       * @example open
+       * @enum {string}
+       */
+      status: "open" | "resolved" | "dismissed";
+      /** Format: date-time */
+      created_at: string;
+      resolution: components["schemas"]["Resolution"] | null;
+    };
+    /**
+     * @description One page of link reports, oldest first.
+     * @example {
+     *       "data": [
+     *         {
+     *           "id": 7,
+     *           "link": {
+     *             "id": 9,
+     *             "url": "https://example.org/kettle",
+     *             "is_hidden": false
+     *           },
+     *           "reporter": {
+     *             "user_id": "google-oauth2|456",
+     *             "display_name": "Morwen"
+     *           },
+     *           "reason": "broken",
+     *           "message": "The page is gone.",
+     *           "status": "open",
+     *           "created_at": "2026-11-10T09:30:00Z",
+     *           "resolution": null
+     *         }
+     *       ],
+     *       "total": 1
+     *     }
+     */
+    LinkReportList: {
+      data: components["schemas"]["LinkReport"][];
+      /**
+       * Format: int64
+       * @description How many reports have the status, over every page.
+       * @example 1
+       */
+      total: number;
+    };
+    /**
+     * @description The body of a moderator's closing of a link report.
+     * @example {
+     *       "status": "resolved",
+     *       "note": "Link hidden.",
+     *       "hide_link": true
+     *     }
+     */
+    CloseLinkReportRequest: {
+      /**
+       * @example resolved
+       * @enum {string}
+       */
+      status: "resolved" | "dismissed";
+      /** @example Link hidden. */
+      note?: string | null;
+      /**
+       * @description Also hide the report's link.
+       * @default false
+       * @example true
+       */
+      hide_link: boolean;
+    };
+    /**
+     * @description The body of a moderator's closing of a contact request.
+     * @example {
+     *       "status": "dismissed",
+     *       "note": "Not for us."
+     *     }
+     */
+    CloseContactRequestRequest: {
+      /**
+       * @example dismissed
+       * @enum {string}
+       */
+      status: "resolved" | "dismissed";
+      /** @example Not for us. */
+      note?: string | null;
+    };
+    /**
+     * @description A link as a moderator takes it down, hidden or not.
+     * @example {
+     *       "id": 9,
+     *       "url": "https://example.org/kettle",
+     *       "title": "The Copper Kettle, sung",
+     *       "is_hidden": false,
+     *       "liveness": "ok",
+     *       "attachments": [
+     *         {
+     *           "entity_type": "piece",
+     *           "slug": "the-copper-kettle",
+     *           "title": "The Copper Kettle",
+     *           "roles": [
+     *             "lyrics"
+     *           ]
+     *         }
+     *       ]
+     *     }
+     */
+    ModerationLink: {
+      /**
+       * Format: int64
+       * @example 9
+       */
+      id: number;
+      /** @example https://example.org/kettle */
+      url: string;
+      /** @example The Copper Kettle, sung */
+      title: string | null;
+      /** @example false */
+      is_hidden: boolean;
+      liveness: components["schemas"]["Liveness"];
+      /** @description The pieces, then persons, the link is attached to, with its roles on each. */
+      attachments: {
+        /**
+         * @example piece
+         * @enum {string}
+         */
+        entity_type: "piece" | "person";
+        /** @example the-copper-kettle */
+        slug: string;
+        /**
+         * @description The attached piece's title or person's name.
+         * @example The Copper Kettle
+         */
+        title: string;
+        roles: components["schemas"]["LinkRole"][];
+      }[];
+    };
+    /**
+     * @description The body of a request to hide or restore a link.
+     * @example {
+     *       "hidden": true
+     *     }
+     */
+    SetLinkHiddenRequest: {
+      /**
+       * @description True to hide the link, false to restore it.
+       * @example true
+       */
+      hidden: boolean;
+    };
+    /**
+     * @description The body of a contact request. Every text field is trimmed.
+     * @example {
+     *       "kind": "takedown",
+     *       "name": "Wren",
+     *       "email": "wren@example.org",
+     *       "message": "Please remove this recording.",
+     *       "url": "https://example.org/kettle",
+     *       "turnstile_token": "0.abc123"
+     *     }
+     */
+    CreateContactRequest: {
+      /**
+       * @example takedown
+       * @enum {string}
+       */
+      kind: "takedown" | "opt_out" | "correction" | "general";
+      /** @example Wren */
+      name?: string | null;
+      /** @example wren@example.org */
+      email: string;
+      /** @example Please remove this recording. */
+      message: string;
+      /**
+       * @description The page the request is about, if any. It is stored as sent.
+       * @example https://example.org/kettle
+       */
+      url?: string | null;
+      /**
+       * @description The token Cloudflare Turnstile's widget (action `contact`) gave the browser.
+       * @example 0.abc123
+       */
+      turnstile_token: string;
+    };
+    /**
+     * @description A message sent through the contact form. The name and URL are null when the sender gave
+     *     none.
+     * @example {
+     *       "id": 3,
+     *       "kind": "takedown",
+     *       "name": "Wren",
+     *       "email": "wren@example.org",
+     *       "message": "Please remove this recording.",
+     *       "url": "https://example.org/kettle",
+     *       "status": "open",
+     *       "created_at": "2026-11-10T09:30:00Z",
+     *       "resolution": null
+     *     }
+     */
+    ContactRequest: {
+      /**
+       * Format: int64
+       * @example 3
+       */
+      id: number;
+      /**
+       * @example takedown
+       * @enum {string}
+       */
+      kind: "takedown" | "opt_out" | "correction" | "general";
+      /** @example Wren */
+      name: string | null;
+      /** @example wren@example.org */
+      email: string | null;
+      /** @example Please remove this recording. */
+      message: string | null;
+      /** @example https://example.org/kettle */
+      url: string | null;
+      /**
+       * @example open
+       * @enum {string}
+       */
+      status: "open" | "resolved" | "dismissed";
+      /** Format: date-time */
+      created_at: string;
+      resolution: components["schemas"]["Resolution"] | null;
+    };
+    /**
+     * @description One page of contact requests, oldest first.
+     * @example {
+     *       "data": [
+     *         {
+     *           "id": 3,
+     *           "kind": "takedown",
+     *           "name": "Wren",
+     *           "email": "wren@example.org",
+     *           "message": "Please remove this recording.",
+     *           "url": "https://example.org/kettle",
+     *           "status": "open",
+     *           "created_at": "2026-11-10T09:30:00Z",
+     *           "resolution": null
+     *         }
+     *       ],
+     *       "total": 1
+     *     }
+     */
+    ContactRequestList: {
+      data: components["schemas"]["ContactRequest"][];
+      /**
+       * Format: int64
+       * @description How many requests have the status, over every page.
+       * @example 1
+       */
+      total: number;
+    };
+    /**
+     * @description The type of entity a revision edits.
+     * @example piece
+     * @enum {string}
+     */
+    EntityType: "piece" | "person" | "term" | "collection" | "event";
+    /**
+     * @description Where a revision is in moderation: `pending` review, `approved`, `rejected` by a moderator, or `withdrawn` by
+     *     its author (or by their later submission for the same entity).
+     * @example pending
+     * @enum {string}
+     */
+    RevisionStatus: "pending" | "approved" | "rejected" | "withdrawn";
+    /**
+     * @description What is wrong with a field of a submitted document.
+     * @example required
+     * @enum {string}
+     */
+    ProblemCode:
+      | "required"
+      | "too_long"
+      | "not_nfc"
+      | "control_character"
+      | "duplicate"
+      | "invalid"
+      | "out_of_range"
+      | "cycle"
+      | "too_deep"
+      | "wrong_facet"
+      | "unknown_reference"
+      | "source_required"
+      | "summary_required"
+      | "prefers_no_page";
+    /**
+     * @description A problem with a field of a submitted document, at its path in the editor format (`credits[2].person_slug`);
+     *     `summary` is the revision's summary.
+     * @example {
+     *       "path": "title",
+     *       "code": "required"
+     *     }
+     */
+    Problem: {
+      /** @example title */
+      path: string;
+      code: components["schemas"]["ProblemCode"];
+    };
+    /**
+     * @description The error body of a document that does not validate.
+     * @example {
+     *       "code": "validation_failed",
+     *       "message": "the document does not validate",
+     *       "problems": [
+     *         {
+     *           "path": "title",
+     *           "code": "required"
+     *         }
+     *       ]
+     *     }
+     */
+    ValidationFailed: {
+      /** @enum {string} */
+      code: "validation_failed";
+      message: components["schemas"]["Error"]["message"];
+      problems: components["schemas"]["Problem"][];
+    };
+    /**
+     * @description A public entity a new one may duplicate, by `slug` (a collection by `collection_id`).
+     * @example {
+     *       "entity_type": "piece",
+     *       "slug": "the-copper-kettle",
+     *       "collection_id": null,
+     *       "name": "The Copper Kettle"
+     *     }
+     */
+    DuplicateMatch: {
+      entity_type: components["schemas"]["EntityType"];
+      /** @example the-copper-kettle */
+      slug: string | null;
+      /**
+       * Format: int64
+       * @example null
+       */
+      collection_id: number | null;
+      /**
+       * @description The entity's title or name.
+       * @example The Copper Kettle
+       */
+      name: string;
+    };
+    /**
+     * @description The error body of a new entity that may duplicate public ones.
+     * @example {
+     *       "code": "possible_duplicate",
+     *       "message": "the new entity may duplicate public ones; acknowledge_duplicates to submit",
+     *       "possible_duplicates": [
+     *         {
+     *           "entity_type": "piece",
+     *           "slug": "the-copper-kettle",
+     *           "collection_id": null,
+     *           "name": "The Copper Kettle"
+     *         }
+     *       ]
+     *     }
+     */
+    PossibleDuplicate: {
+      /** @enum {string} */
+      code: "possible_duplicate";
+      message: components["schemas"]["Error"]["message"];
+      possible_duplicates: components["schemas"]["DuplicateMatch"][];
+    };
+    /**
+     * @description The slug of a public piece, person, term or event the document references.
+     * @example the-copper-kettle
+     */
+    EditorSlug: string;
+    /**
+     * @description Markdown or plain text.
+     * @example Sung at every revel since the founding of the barony.
+     */
+    EditorText: string | null;
+    /**
+     * @description The document's schema version; send back the version the editable document gave.
+     * @example 1
+     */
+    SchemaVersion: number;
+    /**
+     * @description A performance a link records, with its event and performers by slug.
+     * @example {
+     *       "event_slug": "midwinter-revel",
+     *       "year": 2019,
+     *       "uploader": null,
+     *       "description_verbatim": "Sung at Midwinter Revel by Morwen.",
+     *       "performer_slugs": [
+     *         "morwen"
+     *       ]
+     *     }
+     */
+    EditorPerformance: {
+      event_slug: components["schemas"]["EditorSlug"] | null;
+      /** @example 2019 */
+      year: number | null;
+      /** @example Morwen */
+      uploader: string | null;
+      /**
+       * @description How the source describes the performance, word for word.
+       * @example Sung at Midwinter Revel by Morwen.
+       */
+      description_verbatim: string;
+      performer_slugs: components["schemas"]["EditorSlug"][];
+    };
+    /**
+     * @description A link attached to a piece, by URL, with the roles it has there and the performances of the piece it
+     *     records. Its hidden state and liveness are not the document's.
+     * @example {
+     *       "url": "https://example.org/the-copper-kettle",
+     *       "title": null,
+     *       "description": null,
+     *       "platform": null,
+     *       "place_type": null,
+     *       "collection_id": null,
+     *       "locator": null,
+     *       "roles": [
+     *         "performance"
+     *       ],
+     *       "performances": []
+     *     }
+     */
+    EditorPieceLink: {
+      /** @example https://example.org/the-copper-kettle */
+      url: string;
+      /** @example The Copper Kettle, sung at Midwinter */
+      title: string | null;
+      /** @example A recording from the revel. */
+      description: string | null;
+      /** @example example.org */
+      platform: string | null;
+      place_type: components["schemas"]["LinkPlaceType"] | null;
+      /**
+       * Format: int64
+       * @description The collection the link belongs to, by its `id`.
+       * @example 12
+       */
+      collection_id: number | null;
+      /**
+       * @description Where in the collection this piece appears, such as a page number.
+       * @example p. 12
+       */
+      locator: string | null;
+      roles: components["schemas"]["LinkRole"][];
+      performances: components["schemas"]["EditorPerformance"][];
+    };
+    /**
+     * @description A piece's document in the editor format: the stored document's fields, with references to pieces, persons,
+     *     terms and events by slug (collections by ID).
+     * @example {
+     *       "schema_version": 1,
+     *       "title": "The Copper Kettle",
+     *       "kind": "song",
+     *       "secondary_kinds": [],
+     *       "conservation": {
+     *         "status": "unassessed",
+     *         "source_url": null
+     *       },
+     *       "is_stub": false,
+     *       "notes_md": null,
+     *       "version_notes_md": null,
+     *       "licensing_status": "unknown",
+     *       "licensing_notes_md": null,
+     *       "licence": null,
+     *       "licence_version": null,
+     *       "historical_source_md": null,
+     *       "period_start": null,
+     *       "period_end": null,
+     *       "aliases": [],
+     *       "terms": [
+     *         {
+     *           "term_slug": "drinking-songs",
+     *           "is_primary": true,
+     *           "part": null
+     *         }
+     *       ],
+     *       "relations": [],
+     *       "credits": [],
+     *       "links": []
+     *     }
+     */
+    EditorPieceDocument: {
+      schema_version: components["schemas"]["SchemaVersion"];
+      /** @example The Copper Kettle */
+      title: string;
+      kind: components["schemas"]["PieceKind"];
+      secondary_kinds: components["schemas"]["PieceKind"][];
+      /**
+       * @description The piece's conservation status, with the source of an assessment.
+       * @example {
+       *       "status": "unassessed",
+       *       "source_url": null
+       *     }
+       */
+      conservation: {
+        status: components["schemas"]["ConservationStatus"];
+        /** @example https://example.org/survey */
+        source_url: string | null;
+      };
+      is_stub: boolean;
+      notes_md: components["schemas"]["EditorText"];
+      version_notes_md: components["schemas"]["EditorText"];
+      licensing_status: components["schemas"]["LicensingStatus"];
+      licensing_notes_md: components["schemas"]["EditorText"];
+      licence: components["schemas"]["Licence"] | null;
+      licence_version: components["schemas"]["LicenceVersion"] | null;
+      historical_source_md: components["schemas"]["EditorText"];
+      /** @example 1300 */
+      period_start: number | null;
+      /** @example 1400 */
+      period_end: number | null;
+      aliases: {
+        /** @example Copper Kettle */
+        text: string;
+        kind: components["schemas"]["PieceAliasKind"];
+      }[];
+      terms: {
+        term_slug: components["schemas"]["EditorSlug"];
+        is_primary: boolean;
+        part: components["schemas"]["PiecePart"] | null;
+      }[];
+      relations: {
+        to_piece_slug: components["schemas"]["EditorSlug"];
+        type: components["schemas"]["PieceRelationType"];
+      }[];
+      credits: {
+        person_slug: components["schemas"]["EditorSlug"] | null;
+        role: components["schemas"]["CreditRole"];
+        attribution: components["schemas"]["Attribution"];
+        certainty: components["schemas"]["Certainty"];
+        part: components["schemas"]["PiecePart"] | null;
+        /** @example Words by Morwen, after a ballad. */
+        note: string | null;
+      }[];
+      links: components["schemas"]["EditorPieceLink"][];
+    };
+    /**
+     * @description A link attached to a person, with the performances it records, each of a piece or of none.
+     * @example {
+     *       "url": "https://example.org/morwen",
+     *       "title": "Morwen's songs",
+     *       "description": null,
+     *       "platform": "example.org",
+     *       "place_type": null,
+     *       "collection_id": null,
+     *       "locator": null,
+     *       "roles": [
+     *         "website"
+     *       ],
+     *       "performances": []
+     *     }
+     */
+    EditorPersonLink: {
+      url: components["schemas"]["EditorPieceLink"]["url"];
+      title: components["schemas"]["EditorPieceLink"]["title"];
+      description: components["schemas"]["EditorPieceLink"]["description"];
+      platform: components["schemas"]["EditorPieceLink"]["platform"];
+      place_type: components["schemas"]["EditorPieceLink"]["place_type"];
+      collection_id: components["schemas"]["EditorPieceLink"]["collection_id"];
+      locator: components["schemas"]["EditorPieceLink"]["locator"];
+      roles: components["schemas"]["EditorPieceLink"]["roles"];
+      performances: {
+        piece_slug: components["schemas"]["EditorSlug"] | null;
+        event_slug: components["schemas"]["EditorPerformance"]["event_slug"];
+        year: components["schemas"]["EditorPerformance"]["year"];
+        uploader: components["schemas"]["EditorPerformance"]["uploader"];
+        description_verbatim: components["schemas"]["EditorPerformance"]["description_verbatim"];
+        performer_slugs: components["schemas"]["EditorPerformance"]["performer_slugs"];
+      }[];
+    };
+    /**
+     * @description A person's document in the editor format, with references by slug.
+     * @example {
+     *       "schema_version": 1,
+     *       "name": "Morwen",
+     *       "kind": "community_bard",
+     *       "status": "active",
+     *       "status_date": null,
+     *       "status_source_url": null,
+     *       "pronouns": null,
+     *       "notes_md": null,
+     *       "licensing_status": "unknown",
+     *       "licensing_notes_md": null,
+     *       "is_stub": true,
+     *       "aliases": [],
+     *       "roles": [],
+     *       "affiliation_slugs": [],
+     *       "relations": [],
+     *       "links": []
+     *     }
+     */
+    EditorPersonDocument: {
+      schema_version: components["schemas"]["SchemaVersion"];
+      /** @example Morwen */
+      name: string;
+      kind: components["schemas"]["PersonKind"];
+      status: components["schemas"]["PersonStatus"];
+      /**
+       * Format: date
+       * @example 2026-01-01
+       */
+      status_date: string | null;
+      /** @example https://example.org/notice */
+      status_source_url: string | null;
+      /** @example she/her */
+      pronouns: string | null;
+      notes_md: components["schemas"]["EditorText"];
+      licensing_status: components["schemas"]["LicensingStatus"];
+      licensing_notes_md: components["schemas"]["EditorText"];
+      is_stub: boolean;
+      aliases: {
+        /** @example Morwen of the Vale */
+        name: string;
+        kind: components["schemas"]["PersonAliasKind"];
+      }[];
+      roles: components["schemas"]["PersonRole"][];
+      /** @description The person's affiliation terms, by slug. */
+      affiliation_slugs: components["schemas"]["EditorSlug"][];
+      relations: {
+        to_person_slug: components["schemas"]["EditorSlug"];
+        type: components["schemas"]["PersonRelationType"];
+      }[];
+      links: components["schemas"]["EditorPersonLink"][];
+    };
+    /**
+     * @description A term's document in the editor format, with its parent and related affiliation by slug.
+     * @example {
+     *       "schema_version": 1,
+     *       "facet": "topic",
+     *       "name": "Drinking songs",
+     *       "display_name": "Drinking songs",
+     *       "parent_slug": null,
+     *       "related_affiliation_slug": null,
+     *       "description_md": null,
+     *       "position": 0,
+     *       "aliases": []
+     *     }
+     */
+    EditorTermDocument: {
+      schema_version: components["schemas"]["SchemaVersion"];
+      facet: components["schemas"]["Facet"];
+      /** @example Drinking songs */
+      name: string;
+      /** @example Drinking songs */
+      display_name: string;
+      parent_slug: components["schemas"]["EditorSlug"] | null;
+      related_affiliation_slug: components["schemas"]["EditorSlug"] | null;
+      description_md: components["schemas"]["EditorText"];
+      /** @example 0 */
+      position: number;
+      aliases: string[];
+    };
+    /**
+     * @description A collection's document in the editor format, with its region by slug and its parent by ID.
+     * @example {
+     *       "schema_version": 1,
+     *       "name": "The Northmarch Songbook",
+     *       "url": "https://example.org/songbook.pdf",
+     *       "kind": "songbook_pdf",
+     *       "description_md": null,
+     *       "region_term_slug": null,
+     *       "parent_id": null,
+     *       "is_bardic_resource": true,
+     *       "enumerable": "pdf"
+     *     }
+     */
+    EditorCollectionDocument: {
+      schema_version: components["schemas"]["SchemaVersion"];
+      /** @example The Northmarch Songbook */
+      name: string;
+      /** @example https://example.org/songbook.pdf */
+      url: string | null;
+      kind: components["schemas"]["CollectionKind"];
+      description_md: components["schemas"]["EditorText"];
+      region_term_slug: components["schemas"]["EditorSlug"] | null;
+      /**
+       * Format: int64
+       * @description The collection this one is part of, by its `id`.
+       * @example 3
+       */
+      parent_id: number | null;
+      is_bardic_resource: boolean;
+      enumerable: components["schemas"]["CollectionEnumerable"];
+    };
+    /**
+     * @description An event's or venue's document in the editor format.
+     * @example {
+     *       "schema_version": 1,
+     *       "name": "Midwinter Revel",
+     *       "kind": "event",
+     *       "description_md": null
+     *     }
+     */
+    EditorEventDocument: {
+      schema_version: components["schemas"]["SchemaVersion"];
+      /** @example Midwinter Revel */
+      name: string;
+      kind: components["schemas"]["EventKind"];
+      description_md: components["schemas"]["EditorText"];
+    };
+    /**
+     * @description A document in the editor format, in the shape of the `entity_type` beside it.
+     * @example {
+     *       "schema_version": 1,
+     *       "name": "Midwinter Revel",
+     *       "kind": "event",
+     *       "description_md": null
+     *     }
+     */
+    EditorDocument:
+      | components["schemas"]["EditorPieceDocument"]
+      | components["schemas"]["EditorPersonDocument"]
+      | components["schemas"]["EditorTermDocument"]
+      | components["schemas"]["EditorCollectionDocument"]
+      | components["schemas"]["EditorEventDocument"];
+    /**
+     * @description An entity's editable document: the caller's own pending revision of it (`pending_revision_id`) if they have
+     *     one, and otherwise its current revision. Submit the edit on `base_revision_id`.
+     * @example {
+     *       "entity_type": "event",
+     *       "base_revision_id": 46,
+     *       "pending_revision_id": null,
+     *       "document": {
+     *         "schema_version": 1,
+     *         "name": "Midwinter Revel",
+     *         "kind": "event",
+     *         "description_md": null
+     *       }
+     *     }
+     */
+    Editable: {
+      entity_type: components["schemas"]["EntityType"];
+      /**
+       * Format: int64
+       * @description The approved revision to submit the edit on.
+       * @example 46
+       */
+      base_revision_id: number;
+      /**
+       * Format: int64
+       * @description The caller's own pending revision the document is, or null.
+       * @example null
+       */
+      pending_revision_id: number | null;
+      document: components["schemas"]["EditorDocument"];
+    };
+    /**
+     * @description A revision: an edit of the entity whose approved revision `base_revision_id` is, or with it null a new
+     *     entity of `entity_type`.
+     * @example {
+     *       "entity_type": "event",
+     *       "base_revision_id": 46,
+     *       "summary": "Describe the revel.",
+     *       "document": {
+     *         "schema_version": 1,
+     *         "name": "Midwinter Revel",
+     *         "kind": "event",
+     *         "description_md": "Held every year at the turning of the year."
+     *       },
+     *       "acknowledge_duplicates": false,
+     *       "acknowledge_stale": false
+     *     }
+     */
+    SubmitRevisionRequest: {
+      entity_type: components["schemas"]["EntityType"];
+      /**
+       * Format: int64
+       * @example 46
+       */
+      base_revision_id: number | null;
+      /**
+       * @description What the edit changes, at most 500 characters; may be empty, except that a conservation status change
+       *     needs one (the reason).
+       * @example Describe the revel.
+       */
+      summary: string;
+      document: components["schemas"]["EditorDocument"];
+      /** @description Submit a new entity that may duplicate public ones. */
+      acknowledge_duplicates: boolean;
+      /** @description For a moderator, approve the edit even if the entity has changed since its base. */
+      acknowledge_stale: boolean;
+    };
+    /**
+     * @description An approval.
+     * @example {
+     *       "acknowledge_stale": false
+     *     }
+     */
+    ApproveRevisionRequest: {
+      /** @description Approve the revision even if it is stale, overwriting the changes since its base. */
+      acknowledge_stale: boolean;
+    };
+    /**
+     * @description A rejection, with a note to the author.
+     * @example {
+     *       "note": "Please redo this on the current version."
+     *     }
+     */
+    RejectRevisionRequest: {
+      /**
+       * @description Why the revision is rejected; required, at most 2000 characters, trimmed.
+       * @example Please redo this on the current version.
+       */
+      note: string;
+    };
+    /**
+     * @description A revision's author as moderators see them, with their user ID.
+     * @example {
+     *       "user_id": "google-oauth2|456",
+     *       "display_name": "Morwen"
+     *     }
+     */
+    ModerationAuthor: {
+      user_id: components["schemas"]["User"]["id"];
+      display_name: components["schemas"]["User"]["display_name"];
+    };
+    /**
+     * @description A revision as the caller's own list and the moderation queue show it. `entity` is null for a new entity's
+     *     revision that is not approved; `is_stale` is true when its entity has changed since its base.
+     * @example {
+     *       "id": 51,
+     *       "entity_type": "event",
+     *       "entity": {
+     *         "slug": "midwinter-revel",
+     *         "collection_id": null,
+     *         "name": "Midwinter Revel"
+     *       },
+     *       "status": "pending",
+     *       "summary": "Describe the revel.",
+     *       "created_at": "2026-10-01T09:00:00Z",
+     *       "reviewed_at": null,
+     *       "is_stale": false,
+     *       "author": null
+     *     }
+     */
+    RevisionListItem: {
+      id: components["schemas"]["RevisionSummary"]["id"];
+      entity_type: components["schemas"]["EntityType"];
+      entity: {
+        slug: components["schemas"]["DuplicateMatch"]["slug"];
+        collection_id: components["schemas"]["DuplicateMatch"]["collection_id"];
+        name: components["schemas"]["DuplicateMatch"]["name"];
+      } | null;
+      status: components["schemas"]["RevisionStatus"];
+      summary: components["schemas"]["RevisionSummary"]["summary"];
+      created_at: components["schemas"]["RevisionSummary"]["created_at"];
+      /**
+       * Format: date-time
+       * @description When a moderator approved or rejected the revision.
+       * @example null
+       */
+      reviewed_at: string | null;
+      is_stale: boolean;
+      /** @description The revision's author, in the moderation queue; null in the caller's own list. */
+      author: components["schemas"]["ModerationAuthor"] | null;
+    };
+    /**
+     * @description One page of revisions, with how many there are in all.
+     * @example {
+     *       "data": [],
+     *       "total": 0
+     *     }
+     */
+    RevisionList: {
+      data: components["schemas"]["RevisionListItem"][];
+      /**
+       * Format: int64
+       * @example 1
+       */
+      total: number;
+    };
+    /**
+     * @description A snapshot view, in the shape of the `entity_type` beside it.
+     * @example {
+     *       "name": "Midwinter Revel",
+     *       "kind": "event",
+     *       "description_md": null
+     *     }
+     */
+    Snapshot:
+      | components["schemas"]["PieceSnapshot"]
+      | components["schemas"]["PersonSnapshot"]
+      | components["schemas"]["TermSnapshot"]
+      | components["schemas"]["CollectionSnapshot"]
+      | components["schemas"]["EventSnapshot"];
+    /**
+     * @description A revision of any status as its author sees it, with the same snapshot views as a public revision
+     *     (`GET /v1/revisions/{revision_id}`). `entity` is null for a new entity's revision that is not approved;
+     *     `review_note` is a moderator's note on rejecting it.
+     * @example {
+     *       "entity_type": "event",
+     *       "id": 51,
+     *       "source": "user",
+     *       "summary": "Describe the revel.",
+     *       "author": {
+     *         "display_name": "Morwen"
+     *       },
+     *       "contributors": [],
+     *       "created_at": "2026-10-01T09:00:00Z",
+     *       "status": "rejected",
+     *       "review_note": "Please cite the source.",
+     *       "reviewed_at": "2026-10-02T09:00:00Z",
+     *       "entity": {
+     *         "slug": "midwinter-revel",
+     *         "name": "Midwinter Revel",
+     *         "kind": "event"
+     *       },
+     *       "base_revision_id": 46,
+     *       "snapshot": {
+     *         "name": "Midwinter Revel",
+     *         "kind": "event",
+     *         "description_md": "Held at midwinter."
+     *       },
+     *       "base_snapshot": {
+     *         "name": "Midwinter Revel",
+     *         "kind": "event",
+     *         "description_md": null
+     *       },
+     *       "changed_fields": [
+     *         "description_md"
+     *       ]
+     *     }
+     */
+    RevisionView: {
+      entity_type: components["schemas"]["EntityType"];
+      id: components["schemas"]["RevisionSummary"]["id"];
+      source: components["schemas"]["RevisionSource"];
+      summary: components["schemas"]["RevisionSummary"]["summary"];
+      author: components["schemas"]["RevisionSummary"]["author"];
+      contributors: components["schemas"]["RevisionSummary"]["contributors"];
+      created_at: components["schemas"]["RevisionSummary"]["created_at"];
+      status: components["schemas"]["RevisionStatus"];
+      /** @example Please cite the source of the credit. */
+      review_note: string | null;
+      reviewed_at: components["schemas"]["RevisionListItem"]["reviewed_at"];
+      /** @description The entity as it is now, in the shape of `entity_type`, or null. */
+      entity:
+        | components["schemas"]["PieceSummary"]
+        | components["schemas"]["PersonSummary"]
+        | components["schemas"]["TermSummary"]
+        | components["schemas"]["CollectionRef"]
+        | components["schemas"]["EventSummary"]
+        | null;
+      base_revision_id: components["schemas"]["PieceRevision"]["base_revision_id"];
+      snapshot: components["schemas"]["Snapshot"];
+      base_snapshot: components["schemas"]["Snapshot"] | null;
+      /** @description The snapshot's top-level fields that differ from the base's or, with no base, are not empty. */
+      changed_fields: string[];
+    };
+    /**
+     * @description A revision as a moderator sees it: the author's view, with the author's user ID (null for an import); for a
+     *     stale revision the entity's current revision and the snapshot's fields that differ from it (otherwise
+     *     null); and for a new entity's pending revision the public entities it may duplicate.
+     * @example {
+     *       "entity_type": "event",
+     *       "id": 51,
+     *       "source": "user",
+     *       "summary": "Describe the revel.",
+     *       "author": {
+     *         "display_name": "Morwen"
+     *       },
+     *       "contributors": [],
+     *       "created_at": "2026-10-01T09:00:00Z",
+     *       "status": "pending",
+     *       "review_note": null,
+     *       "reviewed_at": null,
+     *       "entity": {
+     *         "slug": "midwinter-revel",
+     *         "name": "Midwinter Revel",
+     *         "kind": "event"
+     *       },
+     *       "base_revision_id": 46,
+     *       "snapshot": {
+     *         "name": "Midwinter Revel",
+     *         "kind": "event",
+     *         "description_md": "Held at midwinter."
+     *       },
+     *       "base_snapshot": {
+     *         "name": "Midwinter Revel",
+     *         "kind": "event",
+     *         "description_md": null
+     *       },
+     *       "changed_fields": [
+     *         "description_md"
+     *       ],
+     *       "author_user_id": "google-oauth2|456",
+     *       "current_revision_id": null,
+     *       "current_snapshot": null,
+     *       "changed_fields_since_current": null,
+     *       "possible_duplicates": []
+     *     }
+     */
+    ModerationRevisionView: {
+      entity_type: components["schemas"]["EntityType"];
+      id: components["schemas"]["RevisionSummary"]["id"];
+      source: components["schemas"]["RevisionSource"];
+      summary: components["schemas"]["RevisionSummary"]["summary"];
+      author: components["schemas"]["RevisionSummary"]["author"];
+      contributors: components["schemas"]["RevisionSummary"]["contributors"];
+      created_at: components["schemas"]["RevisionSummary"]["created_at"];
+      status: components["schemas"]["RevisionStatus"];
+      review_note: components["schemas"]["RevisionView"]["review_note"];
+      reviewed_at: components["schemas"]["RevisionListItem"]["reviewed_at"];
+      entity: components["schemas"]["RevisionView"]["entity"];
+      base_revision_id: components["schemas"]["PieceRevision"]["base_revision_id"];
+      snapshot: components["schemas"]["Snapshot"];
+      base_snapshot: components["schemas"]["RevisionView"]["base_snapshot"];
+      changed_fields: components["schemas"]["RevisionView"]["changed_fields"];
+      /** @example google-oauth2|456 */
+      author_user_id: string | null;
+      /**
+       * Format: int64
+       * @example 52
+       */
+      current_revision_id: number | null;
+      current_snapshot: components["schemas"]["RevisionView"]["base_snapshot"];
+      changed_fields_since_current: string[] | null;
+      possible_duplicates: components["schemas"]["DuplicateMatch"][];
+    };
   };
   responses: {
     /**
@@ -3214,6 +4849,21 @@ export interface components {
         "application/json": components["schemas"]["Error"];
       };
     };
+    /** @description The database cannot be reached or is out of connections; try again. The error code is `unavailable`. */
+    Unavailable: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        /**
+         * @example {
+         *       "code": "unavailable",
+         *       "message": "the database is busy or cannot be reached; try again"
+         *     }
+         */
+        "application/json": components["schemas"]["Error"];
+      };
+    };
     /**
      * @description The server failed to handle the request, or the search took longer than the server allows (2 seconds); a
      *     narrower search may succeed. The error code is `internal` either way.
@@ -3230,6 +4880,162 @@ export interface components {
          *     }
          */
         "application/json": components["schemas"]["Error"];
+      };
+    };
+    /**
+     * @description A query parameter is missing or out of range, is given more than once, or the query string is not validly
+     *     percent-encoded; the error code is `invalid_request`.
+     */
+    InvalidListRequest: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        /**
+         * @example {
+         *       "code": "invalid_request",
+         *       "message": "invalid status: not one of its allowed values"
+         *     }
+         */
+        "application/json": components["schemas"]["Error"];
+      };
+    };
+    /**
+     * @description The report, request or link does not exist, or for a link report no visible link has the URL; the error code
+     *     is `not_found`.
+     */
+    NotFound: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        /**
+         * @example {
+         *       "code": "not_found",
+         *       "message": "link not found"
+         *     }
+         */
+        "application/json": components["schemas"]["Error"];
+      };
+    };
+    /** @description The report or request is already resolved or dismissed; the error code is `conflict`. */
+    NotOpen: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        /**
+         * @example {
+         *       "code": "conflict",
+         *       "message": "the link report is not open"
+         *     }
+         */
+        "application/json": components["schemas"]["Error"];
+      };
+    };
+    /** @description The `collection_id` is not a positive integer in decimal digits; the error code is `invalid_request`. */
+    InvalidCollectionID: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        /**
+         * @example {
+         *       "code": "invalid_request",
+         *       "message": "invalid collection_id: must be an integer from 1 to 9223372036854775807"
+         *     }
+         */
+        "application/json": components["schemas"]["Error"];
+      };
+    };
+    /** @description The `revision_id` is not a positive integer in decimal digits; the error code is `invalid_request`. */
+    InvalidRevisionID: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        /**
+         * @example {
+         *       "code": "invalid_request",
+         *       "message": "invalid revision_id: must be an integer from 1 to 9223372036854775807"
+         *     }
+         */
+        "application/json": components["schemas"]["Error"];
+      };
+    };
+    /** @description No revision the caller may see has this ID; the error code is `not_found`. */
+    RevisionNotFound: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        /**
+         * @example {
+         *       "code": "not_found",
+         *       "message": "revision not found"
+         *     }
+         */
+        "application/json": components["schemas"]["Error"];
+      };
+    };
+    /** @description The revision is not pending; the error code is `revision_not_pending`. */
+    RevisionNotPending: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        /**
+         * @example {
+         *       "code": "revision_not_pending",
+         *       "message": "the revision is not pending"
+         *     }
+         */
+        "application/json": components["schemas"]["Error"];
+      };
+    };
+    /** @description No public entity of the type has this slug or ID; the error code is `not_found`. */
+    EntityNotFound: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        /**
+         * @example {
+         *       "code": "not_found",
+         *       "message": "piece not found"
+         *     }
+         */
+        "application/json": components["schemas"]["Error"];
+      };
+    };
+    /** @description The editable document. */
+    Editable: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        "application/json": components["schemas"]["Editable"];
+      };
+    };
+    /**
+     * @description The caller is blocked (`user_blocked`), or is not a moderator and the document shows a person who prefers
+     *     not to have a page (`moderator_only`). Blocking takes precedence.
+     */
+    EditableForbidden: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        "application/json": components["schemas"]["Error"];
+      };
+    };
+    /** @description The document does not validate; the error code is `validation_failed`, with every problem. */
+    ValidationFailed: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        "application/json": components["schemas"]["ValidationFailed"];
       };
     };
   };
@@ -3258,6 +5064,14 @@ export interface components {
     Search: string;
     /** @description Only list entries under this letter of the A–Z index. */
     Letter: components["schemas"]["Letter"];
+    /** @description The link report's `id`. */
+    ReportID: number;
+    /** @description The contact request's `id`. */
+    RequestID: number;
+    /** @description The link's `id`, as `GET /v1/moderation/links` gives it. */
+    LinkID: number;
+    /** @description Only list items with this status. Omitted, `open`. */
+    ReportStatusFilter: "open" | "resolved" | "dismissed";
   };
   requestBodies: never;
   headers: never;
@@ -3334,6 +5148,7 @@ export interface operations {
       401: components["responses"]["Unauthenticated"];
       403: components["responses"]["Forbidden"];
       500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
     };
   };
   updateMe: {
@@ -3382,6 +5197,7 @@ export interface operations {
       413: components["responses"]["RequestTooLarge"];
       415: components["responses"]["UnsupportedMediaType"];
       500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
     };
   };
   setUserBlocked: {
@@ -3446,6 +5262,7 @@ export interface operations {
       413: components["responses"]["RequestTooLarge"];
       415: components["responses"]["UnsupportedMediaType"];
       500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
     };
   };
   listPieces: {
@@ -3517,6 +5334,7 @@ export interface operations {
         };
       };
       500: components["responses"]["InternalSearch"];
+      503: components["responses"]["Unavailable"];
     };
   };
   getPiece: {
@@ -3560,6 +5378,7 @@ export interface operations {
         };
       };
       500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
     };
   };
   listPersons: {
@@ -3634,6 +5453,7 @@ export interface operations {
         };
       };
       500: components["responses"]["InternalSearch"];
+      503: components["responses"]["Unavailable"];
     };
   };
   getPerson: {
@@ -3677,6 +5497,7 @@ export interface operations {
         };
       };
       500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
     };
   };
   listTerms: {
@@ -3719,6 +5540,7 @@ export interface operations {
         };
       };
       500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
     };
   };
   getTerm: {
@@ -3778,6 +5600,7 @@ export interface operations {
         };
       };
       500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
     };
   };
   listCollections: {
@@ -3827,6 +5650,7 @@ export interface operations {
         };
       };
       500: components["responses"]["InternalSearch"];
+      503: components["responses"]["Unavailable"];
     };
   };
   getCollection: {
@@ -3850,21 +5674,7 @@ export interface operations {
           "application/json": components["schemas"]["Collection"];
         };
       };
-      /** @description The `collection_id` is not a positive integer in decimal digits; the error code is `invalid_request`. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "code": "invalid_request",
-           *       "message": "invalid collection_id: must be an integer from 1 to 9223372036854775807"
-           *     }
-           */
-          "application/json": components["schemas"]["Error"];
-        };
-      };
+      400: components["responses"]["InvalidCollectionID"];
       /** @description No public collection has this ID; the error code is `not_found`. */
       404: {
         headers: {
@@ -3881,6 +5691,7 @@ export interface operations {
         };
       };
       500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
     };
   };
   listEvents: {
@@ -3927,6 +5738,7 @@ export interface operations {
         };
       };
       500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
     };
   };
   getEvent: {
@@ -3970,6 +5782,7 @@ export interface operations {
         };
       };
       500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
     };
   };
   listPieceRevisions: {
@@ -4018,6 +5831,7 @@ export interface operations {
         };
       };
       500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
     };
   };
   listPersonRevisions: {
@@ -4066,6 +5880,7 @@ export interface operations {
         };
       };
       500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
     };
   };
   listTermRevisions: {
@@ -4114,6 +5929,7 @@ export interface operations {
         };
       };
       500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
     };
   };
   listCollectionRevisions: {
@@ -4159,6 +5975,7 @@ export interface operations {
         };
       };
       500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
     };
   };
   listEventRevisions: {
@@ -4207,6 +6024,7 @@ export interface operations {
         };
       };
       500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
     };
   };
   getRevision: {
@@ -4230,21 +6048,7 @@ export interface operations {
           "application/json": components["schemas"]["Revision"];
         };
       };
-      /** @description The `revision_id` is not a positive integer in decimal digits; the error code is `invalid_request`. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "code": "invalid_request",
-           *       "message": "invalid revision_id: must be an integer from 1 to 9223372036854775807"
-           *     }
-           */
-          "application/json": components["schemas"]["Error"];
-        };
-      };
+      400: components["responses"]["InvalidRevisionID"];
       /** @description No public revision has this ID; the error code is `not_found`. */
       404: {
         headers: {
@@ -4261,6 +6065,7 @@ export interface operations {
         };
       };
       500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
     };
   };
   listNeedsWork: {
@@ -4307,6 +6112,757 @@ export interface operations {
         };
       };
       500: components["responses"]["InternalSearch"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  createLinkReport: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description The link and why it is reported. */
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateLinkReportRequest"];
+      };
+    };
+    responses: {
+      /** @description The report was stored. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CreatedID"];
+        };
+      };
+      400: components["responses"]["InvalidRequest"];
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      /** @description The user already has an open report of this link; the error code is `conflict`. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "conflict",
+           *       "message": "you already have an open report of this link"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      413: components["responses"]["RequestTooLarge"];
+      415: components["responses"]["UnsupportedMediaType"];
+      500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listLinkReports: {
+    parameters: {
+      query?: {
+        /** @description Only list items with this status. Omitted, `open`. */
+        status?: components["parameters"]["ReportStatusFilter"];
+        /** @description The most items to return, from 1 to 100. */
+        limit?: components["parameters"]["Limit"];
+        /** @description How many items to skip, from 0 to 10000. Every list order ends with an internal ID, so pages of an unchanged catalogue concatenate without gaps or duplicates. */
+        offset?: components["parameters"]["Offset"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The page of reports. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LinkReportList"];
+        };
+      };
+      400: components["responses"]["InvalidListRequest"];
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["ModeratorForbidden"];
+      500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  closeLinkReport: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The link report's `id`. */
+        report_id: components["parameters"]["ReportID"];
+      };
+      cookie?: never;
+    };
+    /** @description How the report is closed. */
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CloseLinkReportRequest"];
+      };
+    };
+    responses: {
+      /** @description The report is closed. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["InvalidRequest"];
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["ModeratorForbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["NotOpen"];
+      413: components["responses"]["RequestTooLarge"];
+      415: components["responses"]["UnsupportedMediaType"];
+      500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getModerationLink: {
+    parameters: {
+      query: {
+        /** @description The link's URL, in any spelling that normalizes to it. */
+        url: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The link. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ModerationLink"];
+        };
+      };
+      400: components["responses"]["InvalidListRequest"];
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["ModeratorForbidden"];
+      404: components["responses"]["NotFound"];
+      500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  setLinkHidden: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The link's `id`, as `GET /v1/moderation/links` gives it. */
+        link_id: components["parameters"]["LinkID"];
+      };
+      cookie?: never;
+    };
+    /** @description Whether the link should be hidden. */
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SetLinkHiddenRequest"];
+      };
+    };
+    responses: {
+      /** @description The link is hidden or restored, as requested. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["InvalidRequest"];
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["ModeratorForbidden"];
+      404: components["responses"]["NotFound"];
+      413: components["responses"]["RequestTooLarge"];
+      415: components["responses"]["UnsupportedMediaType"];
+      500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  createContactRequest: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description The message and its Turnstile token. */
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateContactRequest"];
+      };
+    };
+    responses: {
+      /** @description The request was stored. */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The body is invalid (`invalid_request`), or the Turnstile check failed (`turnstile_failed`). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description The request body is larger than 64 KiB; the error code is `request_too_large`. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "request_too_large",
+           *       "message": "request body is too large"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      415: components["responses"]["UnsupportedMediaType"];
+      500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listContactRequests: {
+    parameters: {
+      query?: {
+        /** @description Only list items with this status. Omitted, `open`. */
+        status?: components["parameters"]["ReportStatusFilter"];
+        /** @description The most items to return, from 1 to 100. */
+        limit?: components["parameters"]["Limit"];
+        /** @description How many items to skip, from 0 to 10000. Every list order ends with an internal ID, so pages of an unchanged catalogue concatenate without gaps or duplicates. */
+        offset?: components["parameters"]["Offset"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The page of requests. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ContactRequestList"];
+        };
+      };
+      400: components["responses"]["InvalidListRequest"];
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["ModeratorForbidden"];
+      500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  closeContactRequest: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The contact request's `id`. */
+        request_id: components["parameters"]["RequestID"];
+      };
+      cookie?: never;
+    };
+    /** @description How the request is closed. */
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CloseContactRequestRequest"];
+      };
+    };
+    responses: {
+      /** @description The request is closed. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["InvalidRequest"];
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["ModeratorForbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["NotOpen"];
+      413: components["responses"]["RequestTooLarge"];
+      415: components["responses"]["UnsupportedMediaType"];
+      500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listMyRevisions: {
+    parameters: {
+      query?: {
+        /** @description Only list revisions with this status. Omitted, every status. */
+        status?: components["schemas"]["RevisionStatus"];
+        /** @description The most items to return, from 1 to 100. */
+        limit?: components["parameters"]["Limit"];
+        /** @description How many items to skip, from 0 to 10000. Every list order ends with an internal ID, so pages of an unchanged catalogue concatenate without gaps or duplicates. */
+        offset?: components["parameters"]["Offset"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The page of revisions. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevisionList"];
+        };
+      };
+      400: components["responses"]["InvalidListRequest"];
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getMyRevision: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The revision's `id`. */
+        revision_id: components["parameters"]["RevisionID"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The caller's revision. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevisionView"];
+        };
+      };
+      400: components["responses"]["InvalidRevisionID"];
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["RevisionNotFound"];
+      500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getEditablePiece: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description The entity's slug: runs of lowercase ASCII letters and digits joined by single hyphens, at most 191
+         *     characters.
+         */
+        slug: components["parameters"]["Slug"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: components["responses"]["Editable"];
+      400: components["responses"]["InvalidSlug"];
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["EditableForbidden"];
+      404: components["responses"]["EntityNotFound"];
+      500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getEditablePerson: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description The entity's slug: runs of lowercase ASCII letters and digits joined by single hyphens, at most 191
+         *     characters.
+         */
+        slug: components["parameters"]["Slug"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: components["responses"]["Editable"];
+      400: components["responses"]["InvalidSlug"];
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["EditableForbidden"];
+      404: components["responses"]["EntityNotFound"];
+      500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getEditableTerm: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description The entity's slug: runs of lowercase ASCII letters and digits joined by single hyphens, at most 191
+         *     characters.
+         */
+        slug: components["parameters"]["Slug"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: components["responses"]["Editable"];
+      400: components["responses"]["InvalidSlug"];
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["EditableForbidden"];
+      404: components["responses"]["EntityNotFound"];
+      500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getEditableEvent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description The entity's slug: runs of lowercase ASCII letters and digits joined by single hyphens, at most 191
+         *     characters.
+         */
+        slug: components["parameters"]["Slug"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: components["responses"]["Editable"];
+      400: components["responses"]["InvalidSlug"];
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["EditableForbidden"];
+      404: components["responses"]["EntityNotFound"];
+      500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getEditableCollection: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The collection's `id`. */
+        collection_id: components["parameters"]["CollectionID"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: components["responses"]["Editable"];
+      400: components["responses"]["InvalidCollectionID"];
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["EditableForbidden"];
+      404: components["responses"]["EntityNotFound"];
+      500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  submitRevision: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description The revision to submit. */
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SubmitRevisionRequest"];
+      };
+    };
+    responses: {
+      /** @description The revision was stored; the caller's view of it. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevisionView"];
+        };
+      };
+      /**
+       * @description The body is malformed, `entity_type` is not an entity type, or `document` is not its editor document
+       *     (a field has the wrong type or is unknown); the error code is `invalid_request`.
+       */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "invalid_request",
+           *       "message": "entity_type must be an entity type, and document its editor document"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["EditableForbidden"];
+      /**
+       * @description `base_revision_id` is not an approved revision of an entity of `entity_type`; the error code is
+       *     `not_found`.
+       */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "not_found",
+           *       "message": "base revision not found"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /**
+       * @description The new entity may duplicate public ones (`possible_duplicate`, with the matches), the caller already
+       *     has 30 pending revisions (`pending_limit_reached`), or a moderator's base is stale (`stale_revision`).
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "pending_limit_reached",
+           *       "message": "you already have 30 pending revisions"
+           *     }
+           */
+          "application/json":
+            | components["schemas"]["PossibleDuplicate"]
+            | components["schemas"]["Error"];
+        };
+      };
+      /** @description The request body is larger than 1 MiB; the error code is `request_too_large`. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "request_too_large",
+           *       "message": "request body is too large"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      415: components["responses"]["UnsupportedMediaType"];
+      422: components["responses"]["ValidationFailed"];
+      500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  withdrawRevision: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The revision's `id`. */
+        revision_id: components["parameters"]["RevisionID"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The revision is withdrawn. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["InvalidRevisionID"];
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["RevisionNotFound"];
+      409: components["responses"]["RevisionNotPending"];
+      500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listModerationQueue: {
+    parameters: {
+      query?: {
+        /** @description The most items to return, from 1 to 100. */
+        limit?: components["parameters"]["Limit"];
+        /** @description How many items to skip, from 0 to 10000. Every list order ends with an internal ID, so pages of an unchanged catalogue concatenate without gaps or duplicates. */
+        offset?: components["parameters"]["Offset"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The page of pending revisions. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevisionList"];
+        };
+      };
+      400: components["responses"]["InvalidListRequest"];
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["ModeratorForbidden"];
+      500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getModerationRevision: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The revision's `id`. */
+        revision_id: components["parameters"]["RevisionID"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The revision, as a moderator sees it. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ModerationRevisionView"];
+        };
+      };
+      400: components["responses"]["InvalidRevisionID"];
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["ModeratorForbidden"];
+      404: components["responses"]["RevisionNotFound"];
+      500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  approveRevision: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The revision's `id`. */
+        revision_id: components["parameters"]["RevisionID"];
+      };
+      cookie?: never;
+    };
+    /** @description The approval. */
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ApproveRevisionRequest"];
+      };
+    };
+    responses: {
+      /** @description The revision is approved and its entity's current revision. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["InvalidRequest"];
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["ModeratorForbidden"];
+      404: components["responses"]["RevisionNotFound"];
+      /**
+       * @description The revision is not pending (`revision_not_pending`), or is stale and not acknowledged
+       *     (`stale_revision`).
+       */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "stale_revision",
+           *       "message": "the entity has changed since the revision's base; acknowledge_stale to overwrite the changes"
+           *     }
+           */
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      413: components["responses"]["RequestTooLarge"];
+      415: components["responses"]["UnsupportedMediaType"];
+      422: components["responses"]["ValidationFailed"];
+      500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  rejectRevision: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The revision's `id`. */
+        revision_id: components["parameters"]["RevisionID"];
+      };
+      cookie?: never;
+    };
+    /** @description The rejection. */
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RejectRevisionRequest"];
+      };
+    };
+    responses: {
+      /** @description The revision is rejected. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["InvalidRequest"];
+      401: components["responses"]["Unauthenticated"];
+      403: components["responses"]["ModeratorForbidden"];
+      404: components["responses"]["RevisionNotFound"];
+      409: components["responses"]["RevisionNotPending"];
+      413: components["responses"]["RequestTooLarge"];
+      415: components["responses"]["UnsupportedMediaType"];
+      500: components["responses"]["Internal"];
+      503: components["responses"]["Unavailable"];
     };
   };
 }

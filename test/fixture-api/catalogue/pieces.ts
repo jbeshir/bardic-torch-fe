@@ -1,5 +1,6 @@
 import type { components } from "../../../app/api/schema.gen";
 import { DRILL_PIECES } from "./generated";
+import { rawPerson } from "./persons";
 import { rawTerm } from "./terms";
 
 /**
@@ -33,6 +34,8 @@ export type RawPiece = Readonly<
     | "relations"
     | "links"
     | "conservation_history"
+    | "credit_names"
+    | "updated_at"
   > & {
     aliases: readonly Schemas["PieceAlias"][];
     terms: readonly RawPieceTerm[];
@@ -130,6 +133,7 @@ function piece(
     licensing_status: licence === null ? "unknown" : "known",
     licensing_notes_md: options.licensingNotes ?? null,
     licence,
+    licence_version: null,
     historical_source_md: options.source ?? null,
     period_start: options.period?.[0] ?? null,
     period_end: options.period?.[1] ?? null,
@@ -637,9 +641,26 @@ export function rawPiece(slug: string): RawPiece {
   return found;
 }
 
+/** Up to five credited persons a public read shows, as summaries name them. */
+function creditNames(slug: string): string[] {
+  const names = rawPiece(slug)
+    .credits.flatMap(c => (c.person === null ? [] : [rawPerson(c.person)]))
+    .filter(p => p.status !== "prefers_no_page")
+    .map(p => p.name);
+  return [...new Set(names)].slice(0, 5);
+}
+
 /** A piece as other entities refer to it. */
 export function pieceSummary(slug: string): Schemas["PieceSummary"] {
   const { title, kind, secondary_kinds, conservation_status, is_stub } =
     rawPiece(slug);
-  return { slug, title, kind, secondary_kinds, conservation_status, is_stub };
+  return {
+    slug,
+    title,
+    kind,
+    secondary_kinds,
+    conservation_status,
+    is_stub,
+    credit_names: creditNames(slug),
+  };
 }

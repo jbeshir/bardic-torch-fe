@@ -30,6 +30,7 @@ function piece(n: number, overrides: Partial<PieceSummary> = {}): PieceSummary {
     secondary_kinds: [],
     conservation_status: "unassessed",
     is_stub: false,
+    credit_names: [],
     ...overrides,
   };
 }

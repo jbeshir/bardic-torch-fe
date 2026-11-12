@@ -40,6 +40,7 @@ function generateDrillSongs(): {
       licensing_status: "unknown",
       licensing_notes_md: null,
       licence: null,
+      licence_version: null,
       historical_source_md: null,
       period_start: null,
       period_end: null,

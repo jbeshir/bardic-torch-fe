@@ -341,6 +341,9 @@ const performed = (link: RawLink) =>
 
 // Details ---------------------------------------------------------------------
 
+/** When every fixture entity's current revision was approved. */
+const UPDATED_AT = "2026-03-01T12:00:00Z";
+
 function servePiece(raw: RawPiece): Schemas["Piece"] {
   const relation = (own: "from" | "to") =>
     PIECE_RELATIONS.filter(r => r[own] === raw.slug).map(r => ({
@@ -350,6 +353,8 @@ function servePiece(raw: RawPiece): Schemas["Piece"] {
     }));
   return {
     ...pieceSummary(raw.slug),
+    updated_at: UPDATED_AT,
+    licence_version: raw.licence_version,
     notes_md: raw.notes_md,
     version_notes_md: raw.version_notes_md,
     licensing_status: raw.licensing_status,
@@ -391,6 +396,7 @@ function servePerson(raw: RawPerson): Schemas["Person"] {
     status: raw.status,
     status_date: raw.status_date,
     status_source_url: raw.status_source_url,
+    updated_at: UPDATED_AT,
   };
   const { profile } = raw;
   if (profile === null) return { ...identity, profile: null };
@@ -445,6 +451,7 @@ function serveTerm(term: RawTerm, query: URLSearchParams): Schemas["Term"] {
   const affiliation = term.facet === "affiliation";
   return {
     slug: term.slug,
+    updated_at: UPDATED_AT,
     facet: term.facet,
     name: term.name,
     display_name: term.display_name,
@@ -507,6 +514,7 @@ function serveCollection(raw: RawCollection): Schemas["Collection"] {
   }));
   return {
     ...collectionSummary(raw),
+    updated_at: UPDATED_AT,
     description_md: raw.description_md,
     enumerable: raw.enumerable,
     region: raw.region === null ? null : termSummary(raw.region),
@@ -533,6 +541,7 @@ function serveEvent(slug: string): Schemas["Event"] | undefined {
   }));
   return {
     ...eventSummary(slug),
+    updated_at: UPDATED_AT,
     description_md: raw.description_md,
     performances: performances.slice(0, CAP),
     performances_total: performances.length,

@@ -27,7 +27,9 @@ type RawProfile = Readonly<
 >;
 
 export type RawPerson = Readonly<
-  Omit<Schemas["Person"], "profile"> & { profile: RawProfile | null }
+  Omit<Schemas["Person"], "profile" | "updated_at"> & {
+    profile: RawProfile | null;
+  }
 >;
 
 /** One relation edge; both ends see it, with the direction flipped. */

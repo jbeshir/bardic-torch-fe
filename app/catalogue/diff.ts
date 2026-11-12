@@ -295,6 +295,10 @@ const PIECE_FIELDS: Fields<Snapshots["piece"]> = {
     label: "Licence",
     read: s => maybe(s.licence, licence => text(LICENCE_LABELS[licence])),
   },
+  licence_version: {
+    label: "Licence version",
+    read: s => maybe(s.licence_version, text),
+  },
   historical_source_md: {
     label: "Historical source",
     read: s => words(s.historical_source_md),
