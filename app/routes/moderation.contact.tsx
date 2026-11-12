@@ -105,7 +105,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
   const id = String(form?.get("request_id") ?? "");
   const status = form?.get("status");
   if (!isEntityId(id) || (status !== "resolved" && status !== "dismissed")) {
-    return data({ message: UNREADABLE_FORM }, { status: 400 });
+    return data({ message: UNREADABLE_FORM, id, note: "" }, { status: 400 });
   }
   const note = String(form?.get("note") ?? "").trim();
   const result = await closeContactRequest(request, context, id, {
@@ -113,8 +113,9 @@ export async function action({ request, context }: ActionFunctionArgs) {
     note: note === "" ? null : note,
   });
   if (!result.ok) {
+    // The note comes back to its request's form.
     return data(
-      { message: result.error.message },
+      { message: result.error.message, id, note },
       { status: result.status, headers: result.headers }
     );
   }
@@ -124,7 +125,14 @@ export async function action({ request, context }: ActionFunctionArgs) {
   });
 }
 
-function Request({ request }: { readonly request: ContactRequest }) {
+function Request({
+  request,
+  note,
+}: {
+  readonly request: ContactRequest;
+  /** The note of a failed attempt to close it. */
+  readonly note: string;
+}) {
   const headingId = `request-${request.id}`;
   const { url } = request;
   const takedown =
@@ -194,7 +202,12 @@ function Request({ request }: { readonly request: ContactRequest }) {
         >
           <input type="hidden" name="request_id" value={request.id} />
           <Field label="Note" optional help="For the moderators only.">
-            <Textarea name="note" maxLength={2000} rows={2} />
+            <Textarea
+              name="note"
+              defaultValue={note}
+              maxLength={2000}
+              rows={2}
+            />
           </Field>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -267,7 +280,11 @@ export default function ContactInboxRoute() {
       ) : (
         <div className="mt-6 grid gap-4">
           {list.data.map(request => (
-            <Request key={request.id} request={request} />
+            <Request
+              key={request.id}
+              request={request}
+              note={failed?.id === String(request.id) ? failed.note : ""}
+            />
           ))}
           <ListPagination
             page={page}

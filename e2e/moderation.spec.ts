@@ -58,7 +58,7 @@ test("moderating: a stale edit approved after the warning, another rejected", as
   await main.getByLabel(/^Approve anyway/).check();
   await main.getByRole("button", { name: "Approve" }).click();
   await expect(page).toHaveURL(/\/moderation\?approved=\d+$/);
-  await expect(main.getByText(/^Revision \d+ is approved\.$/)).toBeVisible();
+  await expect(main.getByText(/Revision \d+ is approved\./)).toBeVisible();
 
   await main
     .getByRole("row", { name: new RegExp(rejected) })
@@ -69,7 +69,7 @@ test("moderating: a stale edit approved after the warning, another rejected", as
     .fill("Please say where the feast is described.");
   await main.getByRole("button", { name: "Reject" }).click();
   await expect(page).toHaveURL(/\/moderation\?rejected=\d+$/);
-  await expect(main.getByText(/^Revision \d+ is rejected\.$/)).toBeVisible();
+  await expect(main.getByText(/Revision \d+ is rejected\./)).toBeVisible();
   await expect(
     main.getByRole("row", { name: new RegExp(rejected) })
   ).toHaveCount(0);

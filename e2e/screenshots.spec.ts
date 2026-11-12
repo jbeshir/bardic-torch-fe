@@ -37,30 +37,9 @@ const TEMPLATES = [
   "/auth/login?as=moderator&returnTo=/moderation",
   "/auth/login?as=moderator&returnTo=/moderation/revisions/1901",
   "/auth/login?as=moderator&returnTo=/moderation/contact",
+  "/auth/login?as=moderator&returnTo=/moderation/users",
   "/auth/login?as=moderator&returnTo=/moderation/links?url=https%3A%2F%2Fvideo.example%2Fwatch%2Fkettle-hearth",
 ];
-
-/** Parts of the editors, at 1280: the person editor's affiliations and a piece's links. */
-const SECTIONS = [
-  ["/bards/wren-of-the-vale/edit", "affiliation_slugs", "bard-affiliations"],
-  ["/pieces/the-copper-kettle/edit", "links", "piece-links"],
-] as const;
-
-for (const [path, id, name] of SECTIONS) {
-  for (const colorScheme of ["light", "dark"] as const) {
-    test(`${path} #${id} ${colorScheme} 1280`, async ({ page }) => {
-      await page.emulateMedia({ colorScheme });
-      await page.setViewportSize({ width: 1280, height: 800 });
-      await page.goto(
-        `/auth/login?as=contributor&returnTo=${encodeURIComponent(path)}`
-      );
-      await waitForHydration(page);
-      await page.locator(`[id="${id}"]`).screenshot({
-        path: `e2e/screenshots/${name}-${colorScheme}-1280.png`,
-      });
-    });
-  }
-}
 
 for (const path of TEMPLATES) {
   for (const colorScheme of ["light", "dark"] as const) {

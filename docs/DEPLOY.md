@@ -341,10 +341,10 @@ The contact, takedown and opt-out form (`/contact`, which also reports links) is
 
 1. Go to Cloudflare dashboard → Turnstile → Add widget.
    - **Name:** "Bardic Torch contact form".
-   - **Hostnames:** `bardictorch.org` and `preview.bardictorch.org`.
+   - **Hostnames:** `bardictorch.org`. The API accepts a token minted on one hostname only (its `TURNSTILE_HOSTNAME`), and the preview Worker uses the production API, so the contact form works on production alone: on preview it answers that the robot check failed.
    - **Widget mode:** Managed.
 2. **Site key.** It is public: replace the placeholder `TURNSTILE_SITE_KEY` in `wrangler.jsonc`, in both the top-level `vars` and `env.preview.vars`, with a commit. Until then every page is the "Site configuration error" page (§2).
-3. **Secret key.** It goes to the **API**, not the frontend: set it in the API's dokku config as `TURNSTILE_SECRET_KEY` (the backend's DEPLOY.md). It is never a Worker variable.
+3. **Secret key.** It goes to the **API**, not the frontend: set it in the API's dokku config as `TURNSTILE_SECRET_KEY`, with `TURNSTILE_HOSTNAME=bardictorch.org` (the backend's DEPLOY.md). It is never a Worker variable.
 4. **Local development and e2e** use Cloudflare's published test site key `1x00000000000000000000AA` (always passes). e2e runs offline, so `e2e/support/test.ts` answers the widget's script with a local stand-in that gives the test token `XXXX.DUMMY.TOKEN.XXXX`, as the test key's widget does.
 
 ## 6. Sentry (optional)

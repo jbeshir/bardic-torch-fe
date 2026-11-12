@@ -47,10 +47,10 @@ import {
 } from "~/server/moderation.server";
 
 /**
- * /moderation/revisions/:id, a revision's review (plan §5.3): what it
- * changed against its base and, when its page has changed since (stale),
- * against the current version, with a warning that approving overwrites
- * those changes. A pending revision is approved (acknowledging a stale
+ * /moderation/revisions/:id, a revision's review (plan §5.3, §5.4): what
+ * it changed against its base and, when its page has changed since
+ * (stale), against the current version, with a warning that approving
+ * overwrites those changes; then the whole document, every field. A pending revision is approved (acknowledging a stale
  * one) or rejected with a note to its author, by document POSTs to this
  * route's action, which go back to the queue.
  */
@@ -152,6 +152,16 @@ export async function loader({
         })),
         stale,
         changes: revisionChanges(diffInput(view, view)),
+        // An edit's every field; a new entity's diff already is that.
+        whole:
+          view.base_snapshot === null
+            ? null
+            : revisionChanges(
+                diffInput(view, {
+                  base_snapshot: null,
+                  changed_fields: Object.keys(view.snapshot),
+                })
+              ),
         sinceCurrent: stale
           ? revisionChanges(
               diffInput(view, {
@@ -172,6 +182,8 @@ type Failed = {
   readonly message: string;
   readonly problems: readonly FieldProblem[];
   readonly noteError: string | null;
+  /** The note as posted, so a failed rejection keeps it. */
+  readonly note: string;
 };
 
 export async function action({ request, params, context }: ActionFunctionArgs) {
@@ -182,7 +194,11 @@ export async function action({ request, params, context }: ActionFunctionArgs) {
     message: string,
     init: ResponseInit,
     more: Partial<Omit<Failed, "message">> = {}
-  ) => data<Failed>({ message, problems: [], noteError: null, ...more }, init);
+  ) =>
+    data<Failed>(
+      { message, problems: [], noteError: null, note: "", ...more },
+      init
+    );
   if (
     !form ||
     !isEntityId(id) ||
@@ -195,7 +211,7 @@ export async function action({ request, params, context }: ActionFunctionArgs) {
     return answer(
       "Write a note for the author.",
       { status: 400 },
-      { noteError: "Say why, so the author knows what to change." }
+      { noteError: "Say why, so the author knows what to change.", note }
     );
   }
   const result =
@@ -208,7 +224,7 @@ export async function action({ request, params, context }: ActionFunctionArgs) {
     return answer(
       result.error.message,
       { status: result.status, headers: result.headers },
-      { problems: (result.error.problems ?? []).map(fieldProblem) }
+      { problems: (result.error.problems ?? []).map(fieldProblem), note }
     );
   }
   const done = intent === "approve" ? "approved" : "rejected";
@@ -221,9 +237,11 @@ export async function action({ request, params, context }: ActionFunctionArgs) {
 function Decision({
   stale,
   noteError,
+  note,
 }: {
   readonly stale: boolean;
   readonly noteError: string | null;
+  readonly note: string;
 }) {
   return (
     <section aria-labelledby="decision" className="mt-8 stack-y-6">
@@ -249,7 +267,7 @@ function Decision({
           help="Say what to change, or why it can’t go in. They see it with their edit."
           error={noteError}
         >
-          <Textarea name="note" maxLength={2000} required />
+          <Textarea name="note" defaultValue={note} maxLength={2000} required />
         </Field>
         <Button type="submit" variant="secondary-danger" icon={IconX}>
           Reject
@@ -343,7 +361,7 @@ export default function ReviewRoute() {
             {review.reviewNote === null ? null : `Note: ${review.reviewNote}`}
           </Alert>
         )}
-        {review.stale ? (
+        {review.stale && review.status === "pending" ? (
           <Alert
             tone="warning"
             title={`This ${entity.noun} has changed since this edit was started.`}
@@ -374,8 +392,18 @@ export default function ReviewRoute() {
           heading="Compared with the current version"
         />
       ) : null}
+      {review.whole ? (
+        <RevisionDiff
+          changes={review.whole}
+          heading="The whole page as this edit leaves it"
+        />
+      ) : null}
       {review.status === "pending" ? (
-        <Decision stale={review.stale} noteError={failed?.noteError ?? null} />
+        <Decision
+          stale={review.stale}
+          noteError={failed?.noteError ?? null}
+          note={failed?.note ?? ""}
+        />
       ) : null}
     </>
   );

@@ -33,14 +33,13 @@ export const meta = () => [
   { name: "robots", content: "noindex" },
 ];
 
-const MAX_ID = 255;
-
 export async function loader({ request, url, context }: LoaderFunctionArgs) {
   const check = await moderatorCheck(request, context, url);
   const done = url.searchParams.get("done");
   return data(
     {
       id: url.searchParams.get("id") ?? "",
+      name: url.searchParams.get("name") ?? "",
       done: done === "blocked" || done === "unblocked" ? done : null,
       error: check.error,
     },
@@ -55,7 +54,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
   if (blocked !== "true" && blocked !== "false") {
     return data({ message: UNREADABLE_FORM, id }, { status: 400 });
   }
-  if (id === "" || id.length > MAX_ID) {
+  if (id === "") {
     return data(
       { message: "Enter the user’s ID, as the review page gives it.", id },
       { status: 400 }
@@ -71,14 +70,18 @@ export async function action({ request, context }: ActionFunctionArgs) {
     );
   }
   const done = blocked === "true" ? "blocked" : "unblocked";
-  return redirect(`${BLOCKING_PATH}?${new URLSearchParams({ id, done })}`, {
-    status: 303,
-    headers: result.headers,
-  });
+  const name = result.data.display_name;
+  return redirect(
+    `${BLOCKING_PATH}?${new URLSearchParams({ id, done, name })}`,
+    {
+      status: 303,
+      headers: result.headers,
+    }
+  );
 }
 
 export default function BlockingRoute() {
-  const { id, done, error } = useLoaderData<typeof loader>();
+  const { id, name, done, error } = useLoaderData<typeof loader>();
   const failed = useActionData<typeof action>();
   return (
     <>
@@ -88,7 +91,7 @@ export default function BlockingRoute() {
         {done ? (
           <Alert
             tone="success"
-            title={`${id} is ${done === "blocked" ? "blocked" : "unblocked"}.`}
+            title={`${name || id} is ${done === "blocked" ? "blocked" : "unblocked"}.`}
           />
         ) : null}
         {failed ? (
@@ -113,12 +116,20 @@ export default function BlockingRoute() {
               <Input
                 name="user_id"
                 defaultValue={failed?.id ?? id}
-                maxLength={MAX_ID}
                 autoComplete="off"
                 spellCheck={false}
               />
             </Field>
+            {/* Unblock first: Enter in the field never blocks anyone. */}
             <div className="flex flex-wrap gap-2">
+              <Button
+                type="submit"
+                name="blocked"
+                value="false"
+                icon={IconUserCheck}
+              >
+                Unblock
+              </Button>
               <Button
                 type="submit"
                 name="blocked"
@@ -127,14 +138,6 @@ export default function BlockingRoute() {
                 icon={IconUserOff}
               >
                 Block
-              </Button>
-              <Button
-                type="submit"
-                name="blocked"
-                value="false"
-                icon={IconUserCheck}
-              >
-                Unblock
               </Button>
             </div>
           </Form>

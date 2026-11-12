@@ -120,12 +120,6 @@ type ApiRequest = {
   readonly body?: unknown;
 };
 
-const ANONYMOUS = {
-  isAuthenticated: true,
-  authFetch: (url: string, init?: RequestInit) => fetch(url, init),
-  headers: undefined,
-} as const;
-
 const TRY_AGAIN: ApiError = {
   code: "try_again",
   message: TRY_AGAIN_MESSAGE,
@@ -231,7 +225,9 @@ function upstreamError(
             message: "Check the display name.",
             fields: [{ field: "display_name", message: DISPLAY_NAME_RULE }],
           }
-        : undefined;
+        : operationId === "createContactRequest"
+          ? { code, message: "Check your message and try again." }
+          : undefined;
     default:
       return undefined;
   }
@@ -251,14 +247,14 @@ async function callApi<T>(
   apiRequest: ApiRequest
 ): Promise<ApiResult<T>> {
   const env = context.get(appEnvContext);
-  // The contact form needs no account, and the API ignores credentials on it.
-  const auth =
-    apiRequest.operationId === "createContactRequest"
-      ? ANONYMOUS
-      : await createAuthenticatedFetch(request, context);
+  const auth = await createAuthenticatedFetch(request, context);
   const headers = new Headers(auth.headers);
 
-  if (!auth.isAuthenticated) return failure(401, SIGNED_OUT, headers);
+  // The contact form needs no account (the API ignores credentials on it).
+  const needsAccount = apiRequest.operationId !== "createContactRequest";
+  if (needsAccount && !auth.isAuthenticated) {
+    return failure(401, SIGNED_OUT, headers);
+  }
 
   // The timeout covers the body too: a body that stalls or breaks off
   // ends like a request that never got an answer.

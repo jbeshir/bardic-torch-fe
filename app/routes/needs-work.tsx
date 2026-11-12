@@ -19,6 +19,7 @@ import { throwPageFailure, thrownPageFailure } from "~/catalogue/read-failure";
 import { pageMeta } from "~/catalogue/seo";
 import { CONTRIBUTE_HREF, NEEDS_WORK_PATH } from "~/constants/navigation";
 import { NEEDS_WORK_LABELS } from "~/constants/vocabulary";
+import { readPath } from "~/editing/editor-data";
 import { useErrorReference } from "~/hooks/useErrorReference";
 import type { NeedsWorkReason } from "~/schemas/catalogue";
 import { listNeedsWork } from "~/server/catalogue.server";
@@ -105,7 +106,9 @@ export default function NeedsWorkRoute() {
       {list.data.length === 0 ? (
         <div className="mt-4">
           <EmptyState title="Nothing needs work here">
-            Every page is in good shape for this reason.
+            {reason === null
+              ? "Every page is in good shape."
+              : "Every page is in good shape for this reason."}
           </EmptyState>
         </div>
       ) : (
@@ -117,10 +120,7 @@ export default function NeedsWorkRoute() {
                 className="flex flex-wrap items-baseline gap-x-3 border-b border-border py-3 last:border-b-0"
               >
                 <span className="text-body-lg">
-                  <Link
-                    to={`/${entry.entity_type === "piece" ? "pieces" : "bards"}/${entry.slug}`}
-                    compact
-                  >
+                  <Link to={readPath(entry.entity_type, entry.slug)} compact>
                     {entry.title}
                   </Link>
                 </span>

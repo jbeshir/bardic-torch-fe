@@ -154,9 +154,15 @@ export async function action({ request, context }: ActionFunctionArgs) {
   }
   const result = await createContactRequest(request, context, parsed.data);
   if (!result.ok) {
-    return answer({ message: result.error.message }, { status: result.status });
+    return answer(
+      { message: result.error.message },
+      { status: result.status, headers: result.headers }
+    );
   }
-  return redirect(`${CONTACT_FORM_URL}?sent=1`, { status: 303 });
+  return redirect(`${CONTACT_FORM_URL}?sent=1`, {
+    status: 303,
+    headers: result.headers,
+  });
 }
 
 export default function ContactRoute() {
