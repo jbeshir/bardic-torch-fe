@@ -47,7 +47,10 @@ export async function loader(args: LoaderFunctionArgs) {
   const { params, context } = args;
   const slug = params.slug ?? "";
   if (!isSlug(slug)) throwPageFailure({ kind: "not_found" });
-  const result = await getEvent(context, slug);
+  const [result, pending] = await Promise.all([
+    getEvent(context, slug),
+    hasPendingRevision(args, "event", slug),
+  ]);
   if (!result.ok) throwPageFailure(asPageFailure(result.failure));
   const event: Event = {
     ...result.data,
@@ -57,7 +60,7 @@ export async function loader(args: LoaderFunctionArgs) {
   return {
     event,
     description: renderMarkdown(event.description_md),
-    pending: await hasPendingRevision(args, "event", slug),
+    pending,
   };
 }
 

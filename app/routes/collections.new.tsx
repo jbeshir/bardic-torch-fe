@@ -1,11 +1,5 @@
-import {
-  useActionData,
-  useLoaderData,
-  type ActionFunctionArgs,
-  type LoaderFunctionArgs,
-} from "react-router";
-import { EditorPage, MarkdownPreview } from "~/components/editing/EditorPage";
-import { CollectionForm } from "~/components/editing/CollectionForm";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
+import { CollectionEditor } from "~/components/editing/CollectionForm";
 import { editorMeta } from "~/editing/editor-data";
 import {
   editorAction,
@@ -32,22 +26,5 @@ export function action(args: ActionFunctionArgs) {
 export const meta = () => editorMeta("New collection");
 
 export default function NewCollectionRoute() {
-  const loaded = useLoaderData<typeof loader>();
-  const outcome = useActionData<typeof action>();
-  return (
-    <EditorPage
-      heading="New collection"
-      loaded={loaded}
-      action={outcome}
-      preview={
-        outcome?.preview ? (
-          <MarkdownPreview tree={outcome.preview.description} />
-        ) : null
-      }
-    >
-      {document => (
-        <CollectionForm document={document} options={loaded.options} />
-      )}
-    </EditorPage>
-  );
+  return <CollectionEditor heading="New collection" />;
 }

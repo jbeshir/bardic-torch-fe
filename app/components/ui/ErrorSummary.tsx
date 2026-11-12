@@ -39,7 +39,7 @@ export function ErrorSummary({
       >
         <ul className="list-disc stack-y-1 pl-5">
           {problems.map(({ fieldId, message }) => (
-            <li key={fieldId}>
+            <li key={`${fieldId} ${message}`}>
               <a
                 href={`#${fieldId}`}
                 className="font-medium text-inherit underline underline-offset-prose hover:decoration-2"

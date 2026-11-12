@@ -26,12 +26,7 @@ import { decodeForm } from "~/editing/form-codec";
 import { fromSnapshot } from "~/editing/from-snapshot";
 import { fieldProblem } from "~/editing/problems";
 import { isEntityId, isSlug } from "~/schemas/address";
-import {
-  getEditable,
-  listMyRevisions,
-  readLimited,
-  submitRevision,
-} from "./api.server";
+import { getEditable, listMyRevisions, submitRevision } from "./api.server";
 import { getServerAuthContext } from "./auth.server";
 import {
   listCollections,
@@ -55,8 +50,6 @@ import { renderMarkdown } from "./markdown.server";
 
 type Document<T extends EntityType> = z.output<(typeof DOCUMENT_SCHEMAS)[T]>;
 
-/** The API's largest revision body; the form is never larger than its JSON. */
-const MAX_FORM_BYTES = 1024 * 1024;
 const PAGE = 100;
 
 async function termOptions(
@@ -259,23 +252,6 @@ export async function editorLoader<T extends EntityType>(
   return data(loaded, { headers });
 }
 
-/** The posted fields, or why they can't be read. */
-async function readFields(request: Request): Promise<URLSearchParams | string> {
-  const unreadable =
-    "We couldn’t read the form. Reload the page and try again.";
-  const type = request.headers.get("Content-Type") ?? "";
-  if (!/^application\/x-www-form-urlencoded\s*(;|$)/i.test(type)) {
-    return unreadable;
-  }
-  const text = await readLimited(request, MAX_FORM_BYTES).catch(
-    () => undefined
-  );
-  if (text === undefined) return unreadable;
-  return text === null
-    ? "The form is too large to send."
-    : new URLSearchParams(text);
-}
-
 /**
  * An edit or new route's action. `preview` makes what the page's Preview
  * shows from the document, on the server (Markdown, say), with the lists
@@ -294,8 +270,15 @@ export async function editorAction<T extends EntityType, P>(
   }
 ) {
   assertSameOrigin(request);
-  const fields = await readFields(request);
-  const form = typeof fields === "string" ? null : decodeForm(type, fields);
+  const posted = await request.formData().catch(() => null);
+  const form =
+    posted &&
+    decodeForm(
+      type,
+      new URLSearchParams(
+        [...posted].map(([name, value]) => [name, String(value)])
+      )
+    );
   const answer = (
     outcome: Partial<EditorActionData<Document<T>, P>>,
     init?: ResponseInit
@@ -315,10 +298,9 @@ export async function editorAction<T extends EntityType, P>(
   if (!form) {
     return answer(
       {
-        message:
-          typeof fields === "string"
-            ? fields
-            : "Some of the form’s values couldn’t be read. Check them and try again.",
+        message: posted
+          ? "Some of the form’s values couldn’t be read. Check them and try again."
+          : "We couldn’t read the form. Reload the page and try again.",
       },
       { status: 400 }
     );

@@ -331,7 +331,7 @@ async function callApi<T>(
  * The body as text, read until it ends or passes `limit` bytes (null), so
  * an oversized body is never held in memory, whatever Content-Length says.
  */
-export async function readLimited(
+async function readLimited(
   request: Request,
   limit: number
 ): Promise<string | null> {

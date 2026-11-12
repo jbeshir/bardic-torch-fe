@@ -58,7 +58,10 @@ export async function loader(args: LoaderFunctionArgs) {
   const { params, context } = args;
   const id = params.id ?? "";
   if (!isEntityId(id)) throwPageFailure({ kind: "not_found" });
-  const result = await getCollection(context, id);
+  const [result, pending] = await Promise.all([
+    getCollection(context, id),
+    hasPendingRevision(args, "collection", id),
+  ]);
   if (!result.ok) throwPageFailure(asPageFailure(result.failure));
   const collection = result.data;
   return {
@@ -68,7 +71,7 @@ export async function loader(args: LoaderFunctionArgs) {
     },
     // The Markdown is parsed here, on the server: the browser gets the tree.
     description: renderMarkdown(collection.description_md),
-    pending: await hasPendingRevision(args, "collection", id),
+    pending,
   };
 }
 

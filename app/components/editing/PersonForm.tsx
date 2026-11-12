@@ -1,3 +1,5 @@
+import { useActionData, useLoaderData } from "react-router";
+import { PersonBody, type PersonView } from "~/components/person/PersonPage";
 import {
   PERSON_ALIAS_KIND_LABELS,
   PERSON_KIND_LABELS,
@@ -6,7 +8,13 @@ import {
   PERSON_STATUS_LABELS,
 } from "~/constants/vocabulary";
 import type { PersonDocument } from "~/editing/documents";
-import type { Options, Picker } from "~/editing/editor-data";
+import type {
+  EditorActionData,
+  EditorLoaderData,
+  Options,
+  Picker,
+} from "~/editing/editor-data";
+import { EditorPage } from "./EditorPage";
 import {
   CheckboxField,
   ChoicesField,
@@ -32,7 +40,7 @@ export const PERSON_PICKERS: readonly Picker[] = [
 ];
 
 /** A person's fields, in sections in the order their page shows them. */
-export function PersonForm({
+function PersonForm({
   document,
   options,
 }: {
@@ -160,5 +168,24 @@ export function PersonForm({
         <LinkEditor links={document.links} options={options} ofPerson />
       </FormSection>
     </>
+  );
+}
+
+/**
+ * The person editor's page, from its route's loader and action
+ * (editing.server.ts): a new page's `heading`, or none under the entity's head.
+ */
+export function PersonEditor({ heading }: { readonly heading?: string }) {
+  const loaded = useLoaderData<EditorLoaderData<PersonDocument>>();
+  const outcome = useActionData<EditorActionData<PersonDocument, PersonView>>();
+  return (
+    <EditorPage
+      heading={heading}
+      loaded={loaded}
+      action={outcome}
+      preview={outcome?.preview ? <PersonBody view={outcome.preview} /> : null}
+    >
+      {document => <PersonForm document={document} options={loaded.options} />}
+    </EditorPage>
   );
 }

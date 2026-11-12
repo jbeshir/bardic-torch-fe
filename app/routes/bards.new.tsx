@@ -1,12 +1,5 @@
-import {
-  useActionData,
-  useLoaderData,
-  type ActionFunctionArgs,
-  type LoaderFunctionArgs,
-} from "react-router";
-import { EditorPage } from "~/components/editing/EditorPage";
-import { PersonForm, PERSON_PICKERS } from "~/components/editing/PersonForm";
-import { PersonBody } from "~/components/person/PersonPage";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
+import { PersonEditor, PERSON_PICKERS } from "~/components/editing/PersonForm";
 import { editorMeta } from "~/editing/editor-data";
 import { editorAction, editorLoader } from "~/server/editing.server";
 import { previewPerson } from "~/server/preview.server";
@@ -28,16 +21,5 @@ export function action(args: ActionFunctionArgs) {
 export const meta = () => editorMeta("New bard or group");
 
 export default function NewBardRoute() {
-  const loaded = useLoaderData<typeof loader>();
-  const outcome = useActionData<typeof action>();
-  return (
-    <EditorPage
-      heading="New bard or group"
-      loaded={loaded}
-      action={outcome}
-      preview={outcome?.preview ? <PersonBody view={outcome.preview} /> : null}
-    >
-      {document => <PersonForm document={document} options={loaded.options} />}
-    </EditorPage>
-  );
+  return <PersonEditor heading="New bard or group" />;
 }

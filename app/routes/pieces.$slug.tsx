@@ -44,7 +44,10 @@ export async function loader(args: LoaderFunctionArgs) {
   const { params, context } = args;
   const slug = params.slug ?? "";
   if (!isSlug(slug)) throwPageFailure(NOT_FOUND);
-  const result = await getPiece(context, slug);
+  const [result, pending] = await Promise.all([
+    getPiece(context, slug),
+    hasPendingRevision(args, "piece", slug),
+  ]);
   if (!result.ok) throwPageFailure(result.failure);
   const piece = result.data;
   // The Markdown is parsed here, on the server: the browser gets the trees.
@@ -56,7 +59,7 @@ export async function loader(args: LoaderFunctionArgs) {
       historicalSource: renderMarkdown(piece.historical_source_md),
       licensingNotes: renderMarkdown(piece.licensing_notes_md),
     },
-    pending: await hasPendingRevision(args, "piece", slug),
+    pending,
   };
   return view;
 }

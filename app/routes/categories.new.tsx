@@ -1,11 +1,5 @@
-import {
-  useActionData,
-  useLoaderData,
-  type ActionFunctionArgs,
-  type LoaderFunctionArgs,
-} from "react-router";
-import { EditorPage, MarkdownPreview } from "~/components/editing/EditorPage";
-import { TermForm } from "~/components/editing/TermForm";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
+import { TermEditor } from "~/components/editing/TermForm";
 import { editorMeta } from "~/editing/editor-data";
 import {
   editorAction,
@@ -29,22 +23,5 @@ export function action(args: ActionFunctionArgs) {
 export const meta = () => editorMeta("New category");
 
 export default function NewCategoryRoute() {
-  const loaded = useLoaderData<typeof loader>();
-  const outcome = useActionData<typeof action>();
-  return (
-    <EditorPage
-      heading="New category"
-      loaded={loaded}
-      action={outcome}
-      preview={
-        outcome?.preview ? (
-          <MarkdownPreview tree={outcome.preview.description} />
-        ) : null
-      }
-    >
-      {document => (
-        <TermForm document={document} options={loaded.options} isNew />
-      )}
-    </EditorPage>
-  );
+  return <TermEditor heading="New category" />;
 }

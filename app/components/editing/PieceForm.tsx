@@ -1,3 +1,5 @@
+import { useActionData, useLoaderData } from "react-router";
+import { PieceBody, type PieceView } from "~/components/piece/PiecePage";
 import {
   CONSERVATION_LABELS,
   LICENCE_LABELS,
@@ -6,7 +8,13 @@ import {
   PIECE_RELATION_LABELS,
 } from "~/constants/vocabulary";
 import type { PieceDocument } from "~/editing/documents";
-import type { Options, Picker } from "~/editing/editor-data";
+import type {
+  EditorActionData,
+  EditorLoaderData,
+  Options,
+  Picker,
+} from "~/editing/editor-data";
+import { EditorPage } from "./EditorPage";
 import { CreditEditor } from "./CreditEditor";
 import {
   CheckboxField,
@@ -38,7 +46,7 @@ export const PIECE_PICKERS: readonly Picker[] = [
 ];
 
 /** A piece's fields, in sections in the order its page shows them. */
-export function PieceForm({
+function PieceForm({
   document,
   options,
 }: {
@@ -197,5 +205,24 @@ export function PieceForm({
         <TermPicker terms={document.terms} options={options.terms ?? []} />
       </FormSection>
     </>
+  );
+}
+
+/**
+ * The piece editor's page, from its route's loader and action
+ * (editing.server.ts): a new page's `heading`, or none under the entity's head.
+ */
+export function PieceEditor({ heading }: { readonly heading?: string }) {
+  const loaded = useLoaderData<EditorLoaderData<PieceDocument>>();
+  const outcome = useActionData<EditorActionData<PieceDocument, PieceView>>();
+  return (
+    <EditorPage
+      heading={heading}
+      loaded={loaded}
+      action={outcome}
+      preview={outcome?.preview ? <PieceBody view={outcome.preview} /> : null}
+    >
+      {document => <PieceForm document={document} options={loaded.options} />}
+    </EditorPage>
   );
 }

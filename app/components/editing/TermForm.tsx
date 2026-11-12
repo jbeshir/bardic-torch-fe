@@ -1,6 +1,13 @@
+import { useActionData, useLoaderData } from "react-router";
+import type { MarkdownTree } from "~/schemas/markdown";
 import { FACET_LABELS } from "~/constants/vocabulary";
 import type { TermDocument } from "~/editing/documents";
-import type { Options } from "~/editing/editor-data";
+import type {
+  EditorActionData,
+  EditorLoaderData,
+  Options,
+} from "~/editing/editor-data";
+import { EditorPage, MarkdownPreview } from "./EditorPage";
 import {
   labelOptions,
   Rows,
@@ -13,7 +20,7 @@ import {
  * A term's fields. A new term needs a parent (plan R-20), so its parent
  * is required there; its parent must be in the same facet (the API checks).
  */
-export function TermForm({
+function TermForm({
   document,
   options,
   isNew,
@@ -57,12 +64,8 @@ export function TermForm({
         options={options.affiliations ?? []}
         optional
       />
-      <TextField
-        name="position"
-        label="Position among its siblings"
-        type="number"
-        value={document.position}
-      />
+      {/* Moderators set the position; the form keeps it as it is. */}
+      <input type="hidden" name="position" value={document.position} />
       <TextField
         name="description_md"
         label="Description"
@@ -81,5 +84,40 @@ export function TermForm({
         {(alias, name) => <TextField name={name} label="Name" value={alias} />}
       </Rows>
     </>
+  );
+}
+
+/**
+ * The term editor's page, from its route's loader and action
+ * (editing.server.ts): a new page's `heading`, or none under the entity's head.
+ */
+export function TermEditor({ heading }: { readonly heading?: string }) {
+  const loaded = useLoaderData<EditorLoaderData<TermDocument>>();
+  const outcome =
+    useActionData<
+      EditorActionData<
+        TermDocument,
+        { readonly description: MarkdownTree | null }
+      >
+    >();
+  return (
+    <EditorPage
+      heading={heading}
+      loaded={loaded}
+      action={outcome}
+      preview={
+        outcome?.preview ? (
+          <MarkdownPreview tree={outcome.preview.description} />
+        ) : null
+      }
+    >
+      {document => (
+        <TermForm
+          document={document}
+          options={loaded.options}
+          isNew={loaded.baseRevisionId === null}
+        />
+      )}
+    </EditorPage>
   );
 }

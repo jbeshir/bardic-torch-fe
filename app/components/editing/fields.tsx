@@ -117,7 +117,10 @@ export function SelectField({
   );
 }
 
-/** A native multiple select: its choices are the name's repeated values. */
+/**
+ * A native multiple select: its choices are the name's repeated values,
+ * listed first (an unknown one as itself), so none is scrolled out of view.
+ */
 export function MultiSelectField({
   name,
   values,
@@ -128,21 +131,19 @@ export function MultiSelectField({
   readonly options: readonly Option[];
 }) {
   const error = use(FieldErrorsContext)[name];
-  const unknown = values.filter(v => !options.some(o => o.value === v));
+  const chosen = values.map(
+    value => options.find(o => o.value === value) ?? { value, label: value }
+  );
+  const rest = options.filter(o => !values.includes(o.value));
   return (
     <Field
       id={name}
       error={error}
-      help="Hold Ctrl (⌘ on a Mac) to choose more than one."
+      help="Ctrl-click (⌘-click on a Mac) to add or remove a name; a plain click keeps only that one."
       {...field}
     >
       <Select name={name} multiple size={5} defaultValue={[...values]}>
-        {unknown.map(value => (
-          <option key={value} value={value}>
-            {value}
-          </option>
-        ))}
-        {grouped(options)}
+        {grouped([...chosen, ...rest])}
       </Select>
     </Field>
   );
@@ -162,7 +163,7 @@ export function ChoicesField({
 }) {
   const error = use(FieldErrorsContext)[name];
   return (
-    <CheckboxGroup legend={legend} error={error} optional>
+    <CheckboxGroup id={name} legend={legend} error={error} optional>
       {options.map(({ value, label }) => (
         <Checkbox
           key={value}
@@ -236,7 +237,9 @@ export function CheckboxField({
 /**
  * A list of rows (`path.0`, `path.1`…) in a fieldset, each row its own
  * fieldset, with Remove on each and Add after them: submit buttons whose
- * `intent` the action applies, so they work without JavaScript.
+ * `intent` the action applies, so they work without JavaScript. They post
+ * to the page's address with the list's id as its fragment, so the page
+ * comes back scrolled to the list.
  */
 export function Rows<T>({
   legend,
@@ -255,7 +258,7 @@ export function Rows<T>({
   readonly children: (row: T, name: string) => ReactNode;
 }) {
   return (
-    <fieldset className="grid gap-3">
+    <fieldset id={path} className="grid gap-3">
       <legend className="text-body-sm font-semibold text-fg">
         {legend}
         <OptionalMark />
@@ -265,6 +268,8 @@ export function Rows<T>({
         .map(({ row, index, name }) => (
           <fieldset
             key={name}
+            // A text row's control has the id itself.
+            id={typeof row === "string" ? undefined : name}
             className="grid gap-5 rounded-lg border border-border p-4"
           >
             <legend className="px-1 text-body-sm font-medium text-fg-muted">
@@ -276,6 +281,7 @@ export function Rows<T>({
                 type="submit"
                 name="intent"
                 value={`remove:${name}`}
+                formAction={`#${path}`}
                 formNoValidate
                 size="sm"
                 variant="secondary-danger"
@@ -291,6 +297,7 @@ export function Rows<T>({
           type="submit"
           name="intent"
           value={`add:${path}`}
+          formAction={`#${path}`}
           formNoValidate
           icon={IconPlus}
         >

@@ -1,19 +1,12 @@
 import {
-  useActionData,
-  useLoaderData,
   useOutletContext,
   type ActionFunctionArgs,
   type LoaderFunctionArgs,
   type MetaFunction,
 } from "react-router";
-import { EditorPage } from "~/components/editing/EditorPage";
-import { PieceForm, PIECE_PICKERS } from "~/components/editing/PieceForm";
+import { PieceEditor, PIECE_PICKERS } from "~/components/editing/PieceForm";
 import { EntityPage } from "~/components/EntityPage";
-import {
-  PieceBody,
-  pieceHead,
-  type PieceView,
-} from "~/components/piece/PiecePage";
+import { pieceHead, type PieceView } from "~/components/piece/PiecePage";
 import { matchData } from "~/catalogue/history-meta";
 import { editorMeta } from "~/editing/editor-data";
 import { editorAction, editorLoader } from "~/server/editing.server";
@@ -44,18 +37,10 @@ export const meta: MetaFunction = args => {
 };
 
 export default function PieceEditRoute() {
-  const loaded = useLoaderData<typeof loader>();
-  const outcome = useActionData<typeof action>();
-  const { piece, pending } = useOutletContext<PieceView>();
+  const { piece } = useOutletContext<PieceView>();
   return (
-    <EntityPage {...pieceHead(piece)} pending={pending}>
-      <EditorPage
-        loaded={loaded}
-        action={outcome}
-        preview={outcome?.preview ? <PieceBody view={outcome.preview} /> : null}
-      >
-        {document => <PieceForm document={document} options={loaded.options} />}
-      </EditorPage>
+    <EntityPage {...pieceHead(piece)}>
+      <PieceEditor />
     </EntityPage>
   );
 }

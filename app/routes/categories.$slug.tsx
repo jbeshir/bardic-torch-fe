@@ -55,14 +55,17 @@ export async function loader(args: LoaderFunctionArgs) {
   const { params, context } = args;
   const slug = params.slug ?? "";
   if (!isSlug(slug)) throwPageFailure({ kind: "not_found" });
-  const result = await getTerm(context, slug, { limit: 1 });
+  const [result, pending] = await Promise.all([
+    getTerm(context, slug, { limit: 1 }),
+    hasPendingRevision(args, "term", slug),
+  ]);
   if (!result.ok) throwPageFailure(asPageFailure(result.failure));
   const term = result.data;
   // The Markdown is parsed here, on the server: the browser gets the tree.
   return {
     term,
     description: renderMarkdown(term.description_md),
-    pending: await hasPendingRevision(args, "term", slug),
+    pending,
   };
 }
 

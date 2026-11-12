@@ -124,11 +124,25 @@ describe("decodeForm", () => {
     });
   });
 
-  it.each([
-    ["a value no select offers", [["facet", "palace"]]],
-    ["a number that isn't whole", [["position", "1.5"]]],
-  ] as const)("refuses %s", (_why, fields) => {
-    expect(decodeForm("term", form(fields))).toBeNull();
+  it("refuses a value no select offers", () => {
+    expect(decodeForm("term", form([["facet", "palace"]]))).toBeNull();
+  });
+
+  it("blanks a number that isn't whole, keeping the rest", () => {
+    const decoded = decodeForm(
+      "piece",
+      form([
+        ["title", "The Copper Kettle"],
+        ["period_start", "1.5"],
+      ])
+    );
+    expect(decoded?.document).toMatchObject({
+      title: "The Copper Kettle",
+      period_start: null,
+    });
+    expect(
+      decodeForm("term", form([["position", "1.5"]]))?.document.position
+    ).toBe(0);
   });
 
   it("ignores names that reach the prototype", () => {

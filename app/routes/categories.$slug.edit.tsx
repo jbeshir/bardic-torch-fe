@@ -1,12 +1,9 @@
 import {
-  useActionData,
-  useLoaderData,
   type ActionFunctionArgs,
   type LoaderFunctionArgs,
   type MetaFunction,
 } from "react-router";
-import { EditorPage, MarkdownPreview } from "~/components/editing/EditorPage";
-import { TermForm } from "~/components/editing/TermForm";
+import { TermEditor } from "~/components/editing/TermForm";
 import { matchData } from "~/catalogue/history-meta";
 import { editorMeta } from "~/editing/editor-data";
 import type { Term } from "~/schemas/catalogue";
@@ -37,21 +34,5 @@ export const meta: MetaFunction = args => {
 };
 
 export default function CategoryEditRoute() {
-  const loaded = useLoaderData<typeof loader>();
-  const outcome = useActionData<typeof action>();
-  return (
-    <EditorPage
-      loaded={loaded}
-      action={outcome}
-      preview={
-        outcome?.preview ? (
-          <MarkdownPreview tree={outcome.preview.description} />
-        ) : null
-      }
-    >
-      {document => (
-        <TermForm document={document} options={loaded.options} isNew={false} />
-      )}
-    </EditorPage>
-  );
+  return <TermEditor />;
 }

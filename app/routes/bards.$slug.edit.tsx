@@ -1,19 +1,12 @@
 import {
-  useActionData,
-  useLoaderData,
   useOutletContext,
   type ActionFunctionArgs,
   type LoaderFunctionArgs,
   type MetaFunction,
 } from "react-router";
-import { EditorPage } from "~/components/editing/EditorPage";
-import { PersonForm, PERSON_PICKERS } from "~/components/editing/PersonForm";
+import { PersonEditor, PERSON_PICKERS } from "~/components/editing/PersonForm";
 import { EntityPage } from "~/components/EntityPage";
-import {
-  PersonBody,
-  personHead,
-  type PersonView,
-} from "~/components/person/PersonPage";
+import { personHead, type PersonView } from "~/components/person/PersonPage";
 import { matchData } from "~/catalogue/history-meta";
 import { editorMeta } from "~/editing/editor-data";
 import { editorAction, editorLoader } from "~/server/editing.server";
@@ -44,22 +37,10 @@ export const meta: MetaFunction = args => {
 };
 
 export default function BardEditRoute() {
-  const loaded = useLoaderData<typeof loader>();
-  const outcome = useActionData<typeof action>();
-  const { person, pending } = useOutletContext<PersonView>();
+  const { person } = useOutletContext<PersonView>();
   return (
-    <EntityPage {...personHead(person)} pending={pending}>
-      <EditorPage
-        loaded={loaded}
-        action={outcome}
-        preview={
-          outcome?.preview ? <PersonBody view={outcome.preview} /> : null
-        }
-      >
-        {document => (
-          <PersonForm document={document} options={loaded.options} />
-        )}
-      </EditorPage>
+    <EntityPage {...personHead(person)}>
+      <PersonEditor />
     </EntityPage>
   );
 }

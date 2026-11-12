@@ -33,7 +33,7 @@ export function EditorPage<D extends { readonly schema_version: number }, P>({
   children,
 }: {
   /** A new page's h1: "New event". */
-  readonly heading?: string;
+  readonly heading?: string | undefined;
   readonly loaded: EditorLoaderData<D>;
   readonly action: EditorActionData<D, P> | undefined;
   /** The type's preview of `action.preview`, after Preview. */
@@ -54,7 +54,7 @@ export function EditorPage<D extends { readonly schema_version: number }, P>({
   const warned = Boolean(action?.duplicates.length) || action?.stale;
 
   return (
-    <div className="not-prose stack-y-6">
+    <div className="stack-y-6">
       {heading ? <h1 className="text-h1 text-fg">{heading}</h1> : null}
       {loaded.notice ? <Alert tone="info">{loaded.notice}</Alert> : null}
       {first ? <ErrorSummary problems={[first, ...more]} /> : null}
@@ -75,8 +75,14 @@ export function EditorPage<D extends { readonly schema_version: number }, P>({
         </section>
       ) : null}
       {document ? (
-        <Form method="post" reloadDocument className="stack-y-6">
-          <button type="submit" name="intent" value="preview" hidden />
+        <Form method="post" reloadDocument className="not-prose stack-y-6">
+          <button
+            type="submit"
+            name="intent"
+            value="preview"
+            formNoValidate
+            hidden
+          />
           <input
             type="hidden"
             name="schema_version"

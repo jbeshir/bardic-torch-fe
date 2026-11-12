@@ -1,12 +1,9 @@
 import {
-  useActionData,
-  useLoaderData,
   type ActionFunctionArgs,
   type LoaderFunctionArgs,
   type MetaFunction,
 } from "react-router";
-import { EditorPage, MarkdownPreview } from "~/components/editing/EditorPage";
-import { EventForm } from "~/components/editing/EventForm";
+import { EventEditor } from "~/components/editing/EventForm";
 import { matchData } from "~/catalogue/history-meta";
 import { editorMeta } from "~/editing/editor-data";
 import type { Event } from "~/schemas/catalogue";
@@ -33,19 +30,5 @@ export const meta: MetaFunction = args => {
 };
 
 export default function EventEditRoute() {
-  const loaded = useLoaderData<typeof loader>();
-  const outcome = useActionData<typeof action>();
-  return (
-    <EditorPage
-      loaded={loaded}
-      action={outcome}
-      preview={
-        outcome?.preview ? (
-          <MarkdownPreview tree={outcome.preview.description} />
-        ) : null
-      }
-    >
-      {document => <EventForm document={document} />}
-    </EditorPage>
-  );
+  return <EventEditor />;
 }

@@ -62,9 +62,9 @@ const flag = z
 const int = (fallback: number) =>
   z.preprocess(
     value => blankToNull(value) ?? fallback,
-    z.coerce.number().int()
+    z.coerce.number().int().catch(fallback)
   );
-const optionalInt = maybe(z.coerce.number().int());
+const optionalInt = maybe(z.coerce.number().int()).catch(null);
 
 /** A list: one value of a repeated name is a list of one. */
 const many = <T extends z.ZodType>(item: T) =>

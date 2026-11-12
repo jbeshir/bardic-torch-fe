@@ -41,7 +41,10 @@ export async function loader(args: LoaderFunctionArgs) {
   const { params, context } = args;
   const slug = params.slug ?? "";
   if (!isSlug(slug)) throwPageFailure(NOT_FOUND);
-  const result = await getPerson(context, slug);
+  const [result, pending] = await Promise.all([
+    getPerson(context, slug),
+    hasPendingRevision(args, "person", slug),
+  ]);
   if (!result.ok) throwPageFailure(result.failure);
   // A restricted piece's recording is emptied here, so its address never
   // reaches the page, not even in the data it hydrates from (§4.0).
@@ -66,7 +69,7 @@ export async function loader(args: LoaderFunctionArgs) {
         person.profile?.licensing_notes_md ?? null
       ),
     },
-    pending: await hasPendingRevision(args, "person", slug),
+    pending,
   };
   return view;
 }
