@@ -6,7 +6,8 @@ import { test } from "./support/test";
 /**
  * One visit per page template (screenshots.spec.ts adds every editor): axe at
  * 1280 in the default light theme, and at 360 no sideways scrolling. Settings
- * and the piece editor are visited signed in (stub sign-in, back to the page).
+ * and the piece editor are visited signed in (stub sign-in, back to the page),
+ * and the moderators' queue, review page and inbox as the fixture moderator.
  */
 const TEMPLATES = [
   "/",
@@ -28,6 +29,11 @@ const TEMPLATES = [
   "/wiki/Northmarch_Rising",
   "/auth/login?as=contributor&returnTo=/settings",
   "/auth/login?as=contributor&returnTo=/pieces/the-copper-kettle/edit",
+  "/needs-work",
+  "/contact",
+  "/auth/login?as=moderator&returnTo=/moderation",
+  "/auth/login?as=moderator&returnTo=/moderation/revisions/1901",
+  "/auth/login?as=moderator&returnTo=/moderation/contact",
 ];
 
 for (const path of TEMPLATES) {
