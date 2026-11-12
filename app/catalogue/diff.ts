@@ -203,14 +203,14 @@ const pieceRef = (piece: {
   text: piece.title,
 });
 
+/** A person, linked; by name only for one who prefers not to have a page. */
 const personRef = (person: {
-  readonly slug: string;
+  readonly slug: string | null;
   readonly name: string;
-}): DiffValue => ({
-  kind: "internal",
-  to: personPath(person.slug),
-  text: person.name,
-});
+}): DiffValue =>
+  person.slug === null
+    ? text(person.name)
+    : { kind: "internal", to: personPath(person.slug), text: person.name };
 
 const count = (n: number, noun: string) =>
   text(`${n} ${noun}${n === 1 ? "" : "s"}`);
@@ -343,9 +343,12 @@ const PIECE_FIELDS: Fields<Snapshots["piece"]> = {
       list(
         s.credits,
         c =>
-          [c.role, c.attribution, c.person?.slug ?? "", c.part ?? ""].join(
-            "\u0000"
-          ),
+          [
+            c.role,
+            c.attribution,
+            c.person?.slug ?? c.person?.name ?? "",
+            c.part ?? "",
+          ].join("\u0000"),
         c => [
           text(CREDIT_ROLE_LABELS[c.role]),
           // A credit names a person exactly when it is `named`.
@@ -434,7 +437,7 @@ const PROFILE_FIELDS: Fields<Profile> = {
     read: p =>
       list(
         p.relations,
-        r => `${r.type}\u0000${r.person.slug}`,
+        r => `${r.type}\u0000${r.person.slug ?? r.person.name}`,
         r => [
           text(PERSON_RELATION_LABELS[r.type].outgoing),
           personRef(r.person),

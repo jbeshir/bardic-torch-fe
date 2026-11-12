@@ -2,7 +2,7 @@ import type { components } from "../../app/api/schema.gen";
 import { collectionRef, COLLECTIONS } from "./catalogue/collections";
 import { eventSummary, EVENTS } from "./catalogue/events";
 import { LINKS, type RawLink } from "./catalogue/links";
-import { PERSON_RELATIONS, PERSONS, personSummary } from "./catalogue/persons";
+import { listedPerson, PERSON_RELATIONS, PERSONS } from "./catalogue/persons";
 import { PIECE_RELATIONS, PIECES, pieceSummary } from "./catalogue/pieces";
 import { REVISIONS } from "./catalogue/revisions";
 import { TERMS, termSummary } from "./catalogue/terms";
@@ -15,8 +15,7 @@ import { errorBody, type FixtureResponse } from "./responses";
  * kept per user. Its rules are only those the editors' tests and journeys
  * need: a blank title or name is 422 `required`; a new entity whose name
  * folds equal to a public one's is 409 `possible_duplicate` unless
- * acknowledged; a contributor can't edit a document that shows a person
- * who prefers not to have a page (403 `moderator_only`).
+ * acknowledged.
  */
 
 type Schemas = components["schemas"];
@@ -29,9 +28,6 @@ export type RevisionStore = Map<string, Schemas["RevisionView"][]>;
 
 const NOW = "2026-11-01T12:00:00Z";
 const FIRST_ID = 2001;
-const PREFERS_NO_PAGE = new Set(
-  PERSONS.filter(p => p.status === "prefers_no_page").map(p => p.slug)
-);
 
 const linksOf = (kind: "piece" | "person", slug: string) =>
   LINKS.filter(l => l.owner.kind === kind && l.owner.slug === slug);
@@ -214,42 +210,16 @@ const SUMMARIES: Readonly<
   Record<EntityType, (key: string) => Schemas["RevisionView"]["entity"]>
 > = {
   piece: pieceSummary,
-  person: personSummary,
+  person: listedPerson,
   term: termSummary,
   collection: id => collectionRef(Number(id)),
   event: eventSummary,
 };
 
-/** Whether the document shows a person who prefers not to have a page. */
-function showsHiddenPerson(document: Document): boolean {
-  if ("status" in document && document.status === "prefers_no_page") {
-    return true;
-  }
-  const slugs = [
-    ...("credits" in document ? document.credits.map(c => c.person_slug) : []),
-    ...("links" in document
-      ? document.links.flatMap(l =>
-          l.performances.flatMap(p => p.performer_slugs)
-        )
-      : []),
-  ];
-  return slugs.some(slug => slug !== null && PREFERS_NO_PAGE.has(slug));
-}
-
-export function getEditable(
-  user: User,
-  type: EntityType,
-  key: string
-): FixtureResponse {
+export function getEditable(type: EntityType, key: string): FixtureResponse {
   const document = DOCUMENTS[type](key);
   if (!document) {
     return { status: 404, body: errorBody("not_found", `${type} not found`) };
-  }
-  if (user.role !== "moderator" && showsHiddenPerson(document)) {
-    return {
-      status: 403,
-      body: errorBody("moderator_only", "only a moderator may edit it"),
-    };
   }
   return {
     status: 200,

@@ -88,7 +88,9 @@ export async function sitemap(
     readAll(
       offset => listPersons(context, { limit: PAGE_SIZE, offset }),
       person =>
-        person.is_stub ? [] : [`/bards/${encodeURIComponent(person.slug)}`]
+        person.is_stub || person.slug === null
+          ? []
+          : [`/bards/${encodeURIComponent(person.slug)}`]
     ),
     listTerms(context, {}).then((terms): ReadResult<readonly string[]> =>
       terms.ok

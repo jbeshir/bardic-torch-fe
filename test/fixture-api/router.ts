@@ -112,7 +112,7 @@ function signedIn(
       return { status: 200, body: user };
     default: {
       const { type } = EDITABLE[operationId as keyof typeof EDITABLE];
-      return getEditable(user, type, params.slug ?? params.collection_id ?? "");
+      return getEditable(type, params.slug ?? params.collection_id ?? "");
     }
   }
 }

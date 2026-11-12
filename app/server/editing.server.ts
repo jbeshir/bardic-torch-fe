@@ -108,7 +108,8 @@ const PAGED = {
   persons: context =>
     pagedOptions(
       page => listPersons(context, page),
-      ({ slug, name }) => ({ value: slug, label: name })
+      // A list of persons always sets the slug.
+      ({ slug, name }) => ({ value: slug ?? "", label: name })
     ),
   pieces: context =>
     pagedOptions(
@@ -189,8 +190,8 @@ async function revertTo<D>(
  * An edit route's (`key`, the slug or id in its path) or a new route's
  * loader: signed out goes to log in and back; the entity's editable
  * document, or for a new one a blank document; and the pickers' lists.
- * A document the reader can't edit (403 `moderator_only`, a blocked
- * account, an outage) is a notice in its place.
+ * A document the reader can't edit (a blocked account, an outage) is a
+ * notice in its place.
  */
 export async function editorLoader<T extends EntityType>(
   { request, url, context }: LoaderFunctionArgs,
@@ -321,9 +322,11 @@ export async function editorAction<T extends EntityType, P>(
   });
   if (result.ok) {
     const { id, status, entity } = result.data;
+    const key =
+      entity === null ? null : "slug" in entity ? entity.slug : entity.id;
     const to =
-      status === "approved" && entity
-        ? readPath(type, "slug" in entity ? entity.slug : entity.id)
+      status === "approved" && key !== null
+        ? readPath(type, key)
         : `${CONTRIBUTIONS_PATH}?submitted=${id}`;
     return redirect(to, { status: 303, headers: result.headers });
   }

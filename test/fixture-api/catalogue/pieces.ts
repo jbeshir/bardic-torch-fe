@@ -641,12 +641,11 @@ export function rawPiece(slug: string): RawPiece {
   return found;
 }
 
-/** Up to five credited persons a public read shows, as summaries name them. */
+/** Up to five credited persons, as summaries name them. */
 function creditNames(slug: string): string[] {
-  const names = rawPiece(slug)
-    .credits.flatMap(c => (c.person === null ? [] : [rawPerson(c.person)]))
-    .filter(p => p.status !== "prefers_no_page")
-    .map(p => p.name);
+  const names = rawPiece(slug).credits.flatMap(c =>
+    c.person === null ? [] : [rawPerson(c.person).name]
+  );
   return [...new Set(names)].slice(0, 5);
 }
 

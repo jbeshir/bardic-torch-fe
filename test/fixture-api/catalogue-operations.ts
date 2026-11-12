@@ -9,6 +9,7 @@ import { LINKS, type RawLink, type RawPerformance } from "./catalogue/links";
 import {
   PERSON_RELATIONS,
   PERSONS,
+  listedPerson,
   personSummary,
   rawPerson,
   type RawPerson,
@@ -392,7 +393,7 @@ function servePiece(raw: RawPiece): Schemas["Piece"] {
 
 function servePerson(raw: RawPerson): Schemas["Person"] {
   const identity = {
-    ...personSummary(raw.slug),
+    ...listedPerson(raw.slug),
     status: raw.status,
     status_date: raw.status_date,
     status_source_url: raw.status_source_url,
@@ -480,7 +481,7 @@ function serveTerm(term: RawTerm, query: URLSearchParams): Schemas["Term"] {
       ? slice(
           PERSONS_BY_NAME.filter(p => personAffiliated(p, term.slug)),
           query
-        ).map(p => personSummary(p.slug))
+        ).map(p => listedPerson(p.slug))
       : [],
   };
 }
@@ -664,7 +665,7 @@ export const CATALOGUE_READS = {
           filters,
           query,
           p => p.name,
-          p => personSummary(p.slug)
+          p => listedPerson(p.slug)
         )
       );
     },

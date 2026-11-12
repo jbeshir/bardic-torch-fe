@@ -13,6 +13,7 @@ import type {
  * collections ids. Each function gives the fields the snapshot has; the
  * caller lays them over the entity's editable document, so a person
  * snapshot without a profile leaves the profile fields as they are.
+ * A person with a null slug (prefers no page) can't be referenced, so is skipped.
  */
 
 type Snapshot<T extends Revision["entity_type"]> = Extract<
@@ -42,7 +43,9 @@ const performanceFields = (p: PieceLink["performances"][number]) => ({
   year: p.year,
   uploader: p.uploader,
   description_verbatim: p.description_verbatim,
-  performer_slugs: p.performers.map(person => person.slug),
+  performer_slugs: p.performers.flatMap(({ slug }) =>
+    slug === null ? [] : [slug]
+  ),
 });
 
 function pieceFromSnapshot(
@@ -77,10 +80,11 @@ function pieceFromSnapshot(
       to_piece_slug: r.piece.slug,
       type: r.type,
     })),
-    credits: piece.credits.map(({ person, ...credit }) => ({
-      ...credit,
-      person_slug: slugOf(person),
-    })),
+    credits: piece.credits.flatMap(({ person, ...credit }) =>
+      person?.slug === null
+        ? []
+        : [{ ...credit, person_slug: person?.slug ?? null }]
+    ),
     links: piece.links.map(link => ({
       ...linkFields(link),
       performances: link.performances.map(performanceFields),
@@ -105,10 +109,9 @@ function personFromSnapshot(
     aliases: profile.aliases.map(alias => ({ ...alias })),
     roles: [...profile.roles],
     affiliation_slugs: profile.affiliations.map(term => term.slug),
-    relations: profile.relations.map(r => ({
-      to_person_slug: r.person.slug,
-      type: r.type,
-    })),
+    relations: profile.relations.flatMap(({ person, type }) =>
+      person.slug === null ? [] : [{ to_person_slug: person.slug, type }]
+    ),
     links: profile.links.map(link => ({
       ...linkFields(link),
       performances: link.performances.map(p => ({

@@ -188,26 +188,6 @@ describe("the editor loader", () => {
       "/auth/login?returnTo=%2Fevents%2Fmidwinter-revel%2Fedit"
     );
   });
-
-  it("shows the moderator-only notice instead of the form", async () => {
-    fixtures.server.use(
-      http.get(`${API_BASE_URL}/v1/events/midwinter-revel/editable`, () =>
-        contractResponse("getEditableEvent", 403, {
-          code: "moderator_only",
-          message: "only a moderator may edit it",
-        })
-      )
-    );
-    const response = await handle(
-      new Request(`${APP_ORIGIN}/events/midwinter-revel/edit`, {
-        headers: { Cookie: await signedIn() },
-      }),
-      loadContext()
-    );
-    const html = await response.text();
-    expect(html).toContain("Only moderators can edit this page");
-    expect(html).not.toContain('name="intent"');
-  });
 });
 
 describe("the editor loader's revert", () => {

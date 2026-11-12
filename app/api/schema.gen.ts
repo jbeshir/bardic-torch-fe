@@ -136,9 +136,9 @@ export interface paths {
      * Get a piece
      * @description Returns a public piece with everything its page shows: classification, credits, relations, links with
      *     their recorded performances, and conservation history. References to entities that are not public are
-     *     left out: unapproved terms, collections and events, and credits to and performers who are unapproved or
-     *     prefer not to have a page. Hidden links never appear. An unapproved piece is not found, exactly like an
-     *     unknown one. Credentials are ignored.
+     *     left out: unapproved terms, collections and events, and credits to and performers who are unapproved. A
+     *     person who prefers not to have a page is named without a link (`slug` null). Hidden links never appear.
+     *     An unapproved piece is not found, exactly like an unknown one. Credentials are ignored.
      */
     get: operations["getPiece"];
     put?: never;
@@ -278,9 +278,9 @@ export interface paths {
     /**
      * Get a collection
      * @description Returns a public collection with its public region, parent and children, and its citations: each
-     *     visible link in the collection, once for each public piece, or public person with a page, it is attached
-     *     to, with the roles it is attached with. Citations are ordered by the piece's sort title or the person's
-     *     sort name and capped at 200, with a total. Hidden links never appear. An unapproved collection is not
+     *     visible link in the collection, once for each public piece or public person it is attached to, with the
+     *     roles it is attached with. Citations are ordered by the piece's sort title or the person's sort name and
+     *     capped at 200, with a total. Hidden links never appear. An unapproved collection is not
      *     found, exactly like an unknown one. Credentials are ignored.
      */
     get: operations["getCollection"];
@@ -324,8 +324,8 @@ export interface paths {
      * Get an event
      * @description Returns a public event or venue with the performances recorded at it, newest year first (unknown years
      *     last), capped at 200, with a total. Performances on hidden links, of unapproved pieces, or recorded only
-     *     by links of entities that are unapproved or prefer not to have a page are left out, as are performers who
-     *     are unapproved or prefer not to have a page. An unapproved event is not found, exactly like an unknown
+     *     by links of unapproved entities are left out, as are unapproved performers. A performer who prefers not to
+     *     have a page is named without a link (`slug` null). An unapproved event is not found, exactly like an unknown
      *     one. Credentials are ignored.
      */
     get: operations["getEvent"];
@@ -467,8 +467,9 @@ export interface paths {
      *     no base. A view never shows the stored document as such: each reference to another entity is shown as
      *     that entity is now, and left out if it is not public now; links are shown as the snapshot wrote them,
      *     and left out if their URL does not normalise or is a hidden link's now; credits to, performers and
-     *     relations of persons who are not public or prefer not to have a page now are left out; and of a person who prefers not to have a page, now or in the snapshot, only the
-     *     identity is shown. System fields are never shown. `entity_type` says which of
+     *     relations of persons who are not public now are left out, and persons who prefer not to have a page now
+     *     are named without a link (`slug` null); of a person who prefers not to have a page, now or in the
+     *     snapshot, only the identity is shown. System fields are never shown. `entity_type` says which of
      *     the five shapes the revision has. A revision that is not approved, or whose entity is not public, is not
      *     found, exactly like an unknown one. Credentials are ignored.
      */
@@ -730,7 +731,7 @@ export interface paths {
      * Get a piece's editable document
      * @description Returns a public piece's document in the editor format, to edit and submit with `POST /v1/revisions`: the
      *     caller's own pending revision of it if they have one, and otherwise its current revision. Hidden links are
-     *     left out. A document that shows a person who prefers not to have a page is editable by moderators only.
+     *     left out.
      *     Requires a signed-in user.
      */
     get: operations["getEditablePiece"];
@@ -834,16 +835,14 @@ export interface paths {
     /**
      * Submit a revision
      * @description Submits an edit of an existing entity (`base_revision_id`, from its editable document) or a new entity
-     *     (`base_revision_id` null). References are by slug, to public entities only (for moderators, also persons
-     *     who prefer not to have a page); an unknown slug is a problem `unknown_reference`. The document is validated,
-     *     including the sourced fields, before anything is stored.
+     *     (`base_revision_id` null). References are by slug, to public entities only; an unknown slug is a problem
+     *     `unknown_reference`. The document is validated, including the sourced fields, before anything is stored.
      *
      *     A contributor's revision is pending; it withdraws their earlier pending revision of the same entity, and
      *     they may have at most 30 pending. A moderator's revision is approved at once, which refuses a stale base
      *     (the entity has changed since) unless `acknowledge_stale`. A new entity whose title, name or an alias
      *     matches a public entity of its type needs `acknowledge_duplicates`; one matching a person who prefers not
-     *     to have a page is refused. A contributor may not edit a document that shows a person who prefers not to
-     *     have a page. The body may be up to 1 MiB. Requires a signed-in user.
+     *     to have a page is refused. The body may be up to 1 MiB. Requires a signed-in user.
      */
     post: operations["submitRevision"];
     delete?: never;
@@ -991,7 +990,6 @@ export interface components {
         | "turnstile_failed"
         | "validation_failed"
         | "possible_duplicate"
-        | "moderator_only"
         | "pending_limit_reached"
         | "stale_revision"
         | "revision_not_pending";
@@ -1370,8 +1368,7 @@ export interface components {
        */
       is_stub: boolean;
       /**
-       * @description The names of up to five credited persons who have a page, in credit order. A person who prefers not to
-       *     have a page is never named.
+       * @description The names of up to five credited public persons, in credit order.
        * @example [
        *       "Wren of the Vale"
        *     ]
@@ -1379,8 +1376,8 @@ export interface components {
       credit_names: string[];
     };
     /**
-     * @description A public person, as other entities refer to them. Persons who prefer not to have a page are never
-     *     referred to; where they are listed, `is_stub` is true.
+     * @description A public person, as other entities refer to them. A person who prefers not to have a page is named
+     *     without a link: `slug` is null and `is_stub` true. In lists of persons `slug` is always set.
      * @example {
      *       "slug": "wren-of-the-vale",
      *       "name": "Wren of the Vale",
@@ -1390,10 +1387,10 @@ export interface components {
      */
     PersonSummary: {
       /**
-       * @description The person's address.
+       * @description The person's address, or null for a person who prefers not to have a page.
        * @example wren-of-the-vale
        */
-      slug: string;
+      slug: string | null;
       /** @example Wren of the Vale */
       name: string;
       kind: components["schemas"]["PersonKind"];
@@ -1612,10 +1609,7 @@ export interface components {
       aliases: components["schemas"]["PieceAlias"][];
       /** @description The public terms the piece is classified with, by facet in the enum's order, then position. */
       terms: components["schemas"]["PieceTerm"][];
-      /**
-       * @description The piece's credits, in order. A credit to a person who is not public or prefers not to have a page is
-       *     left out entirely.
-       */
+      /** @description The piece's credits, in order. A credit to a person who is not public is left out entirely. */
       credits: components["schemas"]["PieceCredit"][];
       /** @description Relations to other public pieces: the outgoing ones, then the incoming ones, each by type and title. */
       relations: components["schemas"]["PieceRelation"][];
@@ -1815,8 +1809,7 @@ export interface components {
       performances: components["schemas"]["PiecePerformance"][];
     };
     /**
-     * @description A recorded performance of a piece. Performers who are not public or prefer not to have a page are left
-     *     out.
+     * @description A recorded performance of a piece. Performers who are not public are left out.
      * @example {
      *       "year": 2025,
      *       "uploader": null,
@@ -1890,7 +1883,11 @@ export interface components {
      *     }
      */
     Person: {
-      slug: components["schemas"]["PersonSummary"]["slug"];
+      /**
+       * @description The person's address.
+       * @example wren-of-the-vale
+       */
+      slug: string;
       name: components["schemas"]["PersonSummary"]["name"];
       kind: components["schemas"]["PersonKind"];
       is_stub: components["schemas"]["PersonSummary"]["is_stub"];
@@ -1951,7 +1948,7 @@ export interface components {
       /** @description The public affiliation terms of the person, by position, then name. */
       affiliations: components["schemas"]["TermSummary"][];
       /**
-       * @description Relations to other public persons who do not prefer no page: the outgoing ones, then the incoming
+       * @description Relations to other public persons: the outgoing ones, then the incoming
        *     ones, each by type and name.
        */
       relations: components["schemas"]["PersonRelation"][];
@@ -2303,8 +2300,8 @@ export interface components {
       /** @description The public collections that are part of this one, by sort name. */
       children: components["schemas"]["CollectionSummary"][];
       /**
-       * @description The collection's visible links, once for each public piece, or public person with a page, each is
-       *     attached to, by the piece's sort title or the person's sort name. At most 200.
+       * @description The collection's visible links, once for each public piece or public person each is attached to, by
+       *     the piece's sort title or the person's sort name. At most 200.
        */
       citations: components["schemas"]["CollectionCitation"][];
       /**
@@ -2410,8 +2407,7 @@ export interface components {
       updated_at: components["schemas"]["Piece"]["updated_at"];
     };
     /**
-     * @description A performance on an event's page. Performers who are not public or prefer not to have a page are left
-     *     out.
+     * @description A performance on an event's page. Performers who are not public are left out.
      * @example {
      *       "piece": null,
      *       "link": {
@@ -2464,7 +2460,8 @@ export interface components {
      */
     PersonKind: "community_bard" | "historical" | "group";
     /**
-     * @description A person's status. A person who `prefers_no_page` is shown by identity only.
+     * @description A person's status. A person who `prefers_no_page` has a page showing their identity only, and is
+     *     named without a link elsewhere.
      * @example active
      * @enum {string}
      */
@@ -3220,10 +3217,7 @@ export interface components {
       aliases: components["schemas"]["Piece"]["aliases"];
       /** @description The public terms the piece was classified with, in the snapshot's order. */
       terms: components["schemas"]["PieceTerm"][];
-      /**
-       * @description The snapshot's credits, in order. A credit to a person who is not public or prefers not to have a page
-       *     now is left out entirely.
-       */
+      /** @description The snapshot's credits, in order. A credit to a person who is not public now is left out entirely. */
       credits: components["schemas"]["PieceCredit"][];
       /** @description The piece's relations to other pieces that are public now; a snapshot holds outgoing ones only. */
       relations: components["schemas"]["SnapshotPieceRelation"][];
@@ -3307,7 +3301,7 @@ export interface components {
     };
     /**
      * @description A performance a person snapshot's link records, of a public piece or of none in particular. Performers
-     *     who are not public or prefer not to have a page now are left out.
+     *     who are not public now are left out.
      * @example {
      *       "piece": null,
      *       "year": 2025,
@@ -3376,16 +3370,13 @@ export interface components {
       roles: components["schemas"]["PersonRole"][];
       /** @description The person's affiliation terms that are public now, in the snapshot's order. */
       affiliations: components["schemas"]["TermSummary"][];
-      /**
-       * @description The person's relations to other persons who are public and do not prefer no page now; a snapshot holds
-       *     outgoing ones only.
-       */
+      /** @description The person's relations to other persons who are public now; a snapshot holds outgoing ones only. */
       relations: components["schemas"]["SnapshotPersonRelation"][];
       /** @description The snapshot's links that are not hidden now, in order. */
       links: components["schemas"]["SnapshotPersonLink"][];
     };
     /**
-     * @description A relation of a person snapshot's person to another public person with a page.
+     * @description A relation of a person snapshot's person to another public person.
      * @example {
      *       "type": "member_of",
      *       "person": {
@@ -5017,18 +5008,6 @@ export interface components {
         "application/json": components["schemas"]["Editable"];
       };
     };
-    /**
-     * @description The caller is blocked (`user_blocked`), or is not a moderator and the document shows a person who prefers
-     *     not to have a page (`moderator_only`). Blocking takes precedence.
-     */
-    EditableForbidden: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        "application/json": components["schemas"]["Error"];
-      };
-    };
     /** @description The document does not validate; the error code is `validation_failed`, with every problem. */
     ValidationFailed: {
       headers: {
@@ -6489,7 +6468,7 @@ export interface operations {
       200: components["responses"]["Editable"];
       400: components["responses"]["InvalidSlug"];
       401: components["responses"]["Unauthenticated"];
-      403: components["responses"]["EditableForbidden"];
+      403: components["responses"]["Forbidden"];
       404: components["responses"]["EntityNotFound"];
       500: components["responses"]["Internal"];
       503: components["responses"]["Unavailable"];
@@ -6513,7 +6492,7 @@ export interface operations {
       200: components["responses"]["Editable"];
       400: components["responses"]["InvalidSlug"];
       401: components["responses"]["Unauthenticated"];
-      403: components["responses"]["EditableForbidden"];
+      403: components["responses"]["Forbidden"];
       404: components["responses"]["EntityNotFound"];
       500: components["responses"]["Internal"];
       503: components["responses"]["Unavailable"];
@@ -6537,7 +6516,7 @@ export interface operations {
       200: components["responses"]["Editable"];
       400: components["responses"]["InvalidSlug"];
       401: components["responses"]["Unauthenticated"];
-      403: components["responses"]["EditableForbidden"];
+      403: components["responses"]["Forbidden"];
       404: components["responses"]["EntityNotFound"];
       500: components["responses"]["Internal"];
       503: components["responses"]["Unavailable"];
@@ -6561,7 +6540,7 @@ export interface operations {
       200: components["responses"]["Editable"];
       400: components["responses"]["InvalidSlug"];
       401: components["responses"]["Unauthenticated"];
-      403: components["responses"]["EditableForbidden"];
+      403: components["responses"]["Forbidden"];
       404: components["responses"]["EntityNotFound"];
       500: components["responses"]["Internal"];
       503: components["responses"]["Unavailable"];
@@ -6582,7 +6561,7 @@ export interface operations {
       200: components["responses"]["Editable"];
       400: components["responses"]["InvalidCollectionID"];
       401: components["responses"]["Unauthenticated"];
-      403: components["responses"]["EditableForbidden"];
+      403: components["responses"]["Forbidden"];
       404: components["responses"]["EntityNotFound"];
       500: components["responses"]["Internal"];
       503: components["responses"]["Unavailable"];
@@ -6630,7 +6609,7 @@ export interface operations {
         };
       };
       401: components["responses"]["Unauthenticated"];
-      403: components["responses"]["EditableForbidden"];
+      403: components["responses"]["Forbidden"];
       /**
        * @description `base_revision_id` is not an approved revision of an entity of `entity_type`; the error code is
        *     `not_found`.

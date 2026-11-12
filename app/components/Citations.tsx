@@ -2,6 +2,7 @@ import { RowTable } from "~/components/catalogue/RowTable";
 import { UserLink } from "~/components/catalogue/UserLink";
 import { ConservationBadge } from "~/components/ui/ConservationBadge";
 import { Link } from "~/components/ui/Link";
+import { PersonName } from "~/components/person/PersonName";
 import { MoreNotListed } from "~/components/catalogue/MoreNotListed";
 import { linkExposure, LINK_NOT_SHOWN } from "~/catalogue/restricted";
 import {
@@ -11,7 +12,7 @@ import {
 } from "~/constants/vocabulary";
 import type { CollectionCitation } from "~/schemas/catalogue";
 
-/** What a citation cites: the piece or the bard, linked, with its kind. */
+/** What a citation cites: the piece or the bard, named, with its kind. */
 function Cited({ citation }: { readonly citation: CollectionCitation }) {
   const { piece, person } = citation;
   if (piece) {
@@ -32,9 +33,7 @@ function Cited({ citation }: { readonly citation: CollectionCitation }) {
   if (person) {
     return (
       <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <Link to={`/bards/${person.slug}`} appearance="prose">
-          {person.name}
-        </Link>
+        <PersonName person={person} appearance="prose" />
         <span className="text-caption text-fg-muted">
           {PERSON_KIND_LABELS[person.kind]}
         </span>
@@ -85,7 +84,7 @@ export function Citations({
         // With the index: a restricted piece's citations all have an empty
         // URL once the loader has stripped it.
         rowKey={(citation, index) =>
-          `${citation.piece?.slug ?? citation.person?.slug ?? ""} ${citation.url} ${index}`
+          `${citation.piece?.slug ?? citation.person?.name ?? ""} ${citation.url} ${index}`
         }
         columns={[
           {

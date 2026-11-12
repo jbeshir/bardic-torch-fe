@@ -171,12 +171,6 @@ function upstreamError(
         message:
           "You already have 30 edits waiting for review. Withdraw one, or wait for a moderator to review them, then try again.",
       };
-    case "moderator_only":
-      return {
-        code,
-        message:
-          "Only moderators can edit this page, because it shows someone who asked not to have a page.",
-      };
     case "validation_failed":
       return { code, message: "Check the highlighted fields." };
     case "invalid_request":

@@ -1,4 +1,4 @@
-import { Link } from "~/components/ui/Link";
+import { PersonName } from "~/components/person/PersonName";
 import { PERSON_KIND_LABELS } from "~/constants/vocabulary";
 import type { PersonSummary } from "~/schemas/catalogue";
 
@@ -11,9 +11,7 @@ export function PersonListItem({ person }: { readonly person: PersonSummary }) {
   return (
     <li className="border-b border-border py-3 last:border-b-0">
       <div className="text-body-lg">
-        <Link to={`/bards/${person.slug}`} compact>
-          {person.name}
-        </Link>
+        <PersonName person={person} compact />
       </div>
       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-fg-muted">
         <span>{PERSON_KIND_LABELS[person.kind]}</span>
