@@ -4,9 +4,9 @@ import { waitForHydration } from "./support/hydration";
 import { test } from "./support/test";
 
 /**
- * One visit per page template (the same list as screenshots.spec.ts): axe at
+ * One visit per page template (screenshots.spec.ts adds every editor): axe at
  * 1280 in the default light theme, and at 360 no sideways scrolling. Settings
- * is visited signed in (stub sign-in, back to /settings).
+ * and the piece editor are visited signed in (stub sign-in, back to the page).
  */
 const TEMPLATES = [
   "/",
@@ -27,6 +27,7 @@ const TEMPLATES = [
   "/help/conservation-status",
   "/wiki/Northmarch_Rising",
   "/auth/login?as=contributor&returnTo=/settings",
+  "/auth/login?as=contributor&returnTo=/pieces/the-copper-kettle/edit",
 ];
 
 for (const path of TEMPLATES) {
