@@ -83,7 +83,6 @@ describe("the moderation pages", () => {
     ).text();
     expect(page).toContain("has changed since this edit was started");
     expect(page).toContain("Compared with the current version");
-    expect(page).toContain("The whole page as this edit leaves it");
 
     const refused = await post(
       "/moderation/revisions/1901",

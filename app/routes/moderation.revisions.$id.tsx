@@ -50,9 +50,9 @@ import {
  * /moderation/revisions/:id, a revision's review (plan §5.3, §5.4): what
  * it changed against its base and, when its page has changed since
  * (stale), against the current version, with a warning that approving
- * overwrites those changes; then the whole document, every field. A pending revision is approved (acknowledging a stale
- * one) or rejected with a note to its author, by document POSTs to this
- * route's action, which go back to the queue.
+ * overwrites those changes. A pending revision is approved (acknowledging
+ * a stale one) or rejected with a note to its author, by document POSTs to
+ * this route's action, which go back to the queue.
  */
 
 type View = components["schemas"]["ModerationRevisionView"];
@@ -152,16 +152,6 @@ export async function loader({
         })),
         stale,
         changes: revisionChanges(diffInput(view, view)),
-        // An edit's every field; a new entity's diff already is that.
-        whole:
-          view.base_snapshot === null
-            ? null
-            : revisionChanges(
-                diffInput(view, {
-                  base_snapshot: null,
-                  changed_fields: Object.keys(view.snapshot),
-                })
-              ),
         sinceCurrent: stale
           ? revisionChanges(
               diffInput(view, {
@@ -390,12 +380,6 @@ export default function ReviewRoute() {
         <RevisionDiff
           changes={review.sinceCurrent}
           heading="Compared with the current version"
-        />
-      ) : null}
-      {review.whole ? (
-        <RevisionDiff
-          changes={review.whole}
-          heading="The whole page as this edit leaves it"
         />
       ) : null}
       {review.status === "pending" ? (
