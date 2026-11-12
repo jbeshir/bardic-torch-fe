@@ -61,9 +61,6 @@ type ApiResult<T> = (
   readonly headers: Headers;
 };
 
-/** Largest form body the proxy routes accept. */
-const MAX_BODY_BYTES = 8 * 1024;
-
 /**
  * Where each authenticated operation lives; the compiler checks it against
  * the spec.
@@ -153,6 +150,11 @@ function upstreamError(
         code,
         message:
           "You already have 30 edits waiting for review. Withdraw one, or wait for a moderator to review them, then try again.",
+      };
+    case "request_too_large":
+      return {
+        code: "invalid_request",
+        message: "The form is too large to send.",
       };
     case "validation_failed":
       return { code, message: "Check the highlighted fields." };
@@ -279,39 +281,8 @@ async function callApi<T>(
 }
 
 /**
- * The body as text, read until it ends or passes `limit` bytes (null), so
- * an oversized body is never held in memory, whatever Content-Length says.
- */
-async function readLimited(
-  request: Request,
-  limit: number
-): Promise<string | null> {
-  if (!request.body) return "";
-  const reader = request.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let size = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    size += value.byteLength;
-    if (size > limit) {
-      await reader.cancel();
-      return null;
-    }
-    chunks.push(value);
-  }
-  const bytes = new Uint8Array(size);
-  let offset = 0;
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return new TextDecoder().decode(bytes);
-}
-
-/**
- * Read and validate a proxy route's form-encoded body. Other content types
- * get a 415, bodies over 8 KB a 413 and invalid fields a 400 listing them.
+ * Read and validate a proxy route's form body; an unreadable body or invalid
+ * fields are a 400.
  */
 async function readFormBody<S extends z.ZodType>(
   request: Request,
@@ -319,34 +290,15 @@ async function readFormBody<S extends z.ZodType>(
 ): Promise<
   { readonly ok: true; readonly data: z.output<S> } | ApiResult<never>
 > {
-  const contentType = request.headers.get("Content-Type") ?? "";
-  if (!/^application\/x-www-form-urlencoded\s*(;|$)/i.test(contentType)) {
-    return failure(415, {
-      code: "invalid_request",
-      message: "Send the form as form data.",
-    });
-  }
-  const declaredLength = Number(request.headers.get("Content-Length") ?? 0);
-  const text =
-    declaredLength > MAX_BODY_BYTES
-      ? null
-      : await readLimited(request, MAX_BODY_BYTES).catch(() => undefined);
-  if (text === null) {
-    return failure(413, {
-      code: "invalid_request",
-      message: "The form is too large to send.",
-    });
-  }
-  if (text === undefined) {
+  const form = await request.formData().catch(() => null);
+  if (!form) {
     return failure(400, {
       code: "invalid_request",
       message: "The form didn’t arrive in full. Try again.",
     });
   }
 
-  const parsed = schema.safeParse(
-    Object.fromEntries(new URLSearchParams(text))
-  );
+  const parsed = schema.safeParse(Object.fromEntries(form));
   if (parsed.success) return { ok: true, data: parsed.data };
   return failure(400, {
     code: "invalid_request",

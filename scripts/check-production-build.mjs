@@ -86,7 +86,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       ["production", "preview"].flatMap(mode => {
         const buildDir = path.join(tempDir, mode);
         const built = build(mode, { buildDir, stdio: "pipe" });
-        if (!existsSync(path.join(buildDir, "server"))) return built;
         return [...built, ...inspectBuild({ buildDir, mode, marker })];
       })
     );

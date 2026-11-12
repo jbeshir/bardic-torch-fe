@@ -119,7 +119,7 @@ Status is never shown by colour alone: there is always an icon, the label, and a
 
 ### 2.6 Usage rules
 
-- Text goes only on `canvas`, `surface`, `surface-raised`, `surface-sunken`, `accent-subtle`, `hero-glow`, a status `-bg`, or its own fill (`accent`, `danger`). Each of those pairs is in §2.7. **If a pair isn't in the table, add it and run the test before you use it.**
+- Text goes only on `canvas`, `surface`, `surface-raised`, `surface-sunken`, `accent-subtle`, `hero-glow`, a status `-bg`, or its own fill (`accent`, `danger`). Use only these backgrounds for text; a new pair must reach 4.5:1 (3:1 for non-text) in both themes.
 - In prose, links are distinguished by an underline as well as colour (WCAG 1.4.1). Outside prose, a link may drop the underline only inside a clearly navigational container: nav lists, tabs, chips, breadcrumbs, cards whose whole area is the link. It must still show an underline on hover or focus.
 - Use `link-visited` in prose and search results only, not in nav, tabs or chips.
 - Disabled controls use `text-fg-subtle` on `bg-input-bg-locked` with `border-border` (the checkbox box keeps `border-border-strong`, so an empty disabled box stays visible on dark `surface`). Disabled Pagination steps have no fill at all. WCAG exempts them from contrast, but they still pass.
@@ -130,7 +130,7 @@ Status is never shown by colour alone: there is always an icon, the label, and a
 
 The tokens were chosen for contrast: WCAG 2.2 AA in both themes (4.5:1 for text, 3:1 for non-text UI).
 
-- **Where the focus ring sits.** The default ring has a 2 px offset, so it sits on the surface around the control. In dense containers (tabs, chip rows, nav) it is inset (`outline-offset: -2px`), so it sits on the item's own fill: `accent-subtle`, a status `-bg` or `hero-glow`. All of these pairs are in the table. An inset ring never goes on an `accent` or `danger` fill (§2.6).
+- **Where the focus ring sits.** The default ring has a 2 px offset, so it sits on the surface around the control. In dense containers (tabs, chip rows, nav) it is inset (`outline-offset: -2px`), so it sits on the item's own fill: `accent-subtle`, a status `-bg` or `hero-glow`. An inset ring never goes on an `accent` or `danger` fill (§2.6).
 - **Filled buttons.** `bg-accent` and `bg-danger` reach ≥3:1 against every surface they sit on, so the button's edge is visible.
 - **Current tab.** A 3 px `accent` bar (≥3:1 on every surface) plus weight and colour; never colour alone.
 

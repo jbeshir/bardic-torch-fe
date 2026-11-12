@@ -201,12 +201,4 @@ describe("PATCH /api/me", () => {
       },
     });
   });
-
-  it("rejects bodies over 8 KB with 413", async () => {
-    const response = await patch({ display_name: "x".repeat(9000) });
-    expect(response.status).toBe(413);
-    expect(await response.json()).toMatchObject({
-      error: { code: "invalid_request" },
-    });
-  });
 });

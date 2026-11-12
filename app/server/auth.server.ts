@@ -55,20 +55,16 @@ const auth0StateSchema = z.object({
   codeVerifier: z.string(),
 });
 
-// One session storage and Auth0 client configuration per configuration,
-// built on first use in each isolate.
-const sessionStorageCache = new Map<string, AppSessionStorage>();
-const auth0ConfigCache = new Map<string, Configuration>();
+// The session storage and Auth0 client configuration, built on first use in
+// each isolate.
+let sessionStorage: AppSessionStorage | undefined;
+let auth0Config: Configuration | undefined;
 
 export function getOrCreateSessionStorage(
   env: Pick<AuthEnv, "AUTH_SESSION_SECRET">
 ): AppSessionStorage {
-  const cached = sessionStorageCache.get(env.AUTH_SESSION_SECRET);
-  if (cached) return cached;
-
-  const storage = createSessionStorage(env.AUTH_SESSION_SECRET);
-  sessionStorageCache.set(env.AUTH_SESSION_SECRET, storage);
-  return storage;
+  sessionStorage ??= createSessionStorage(env.AUTH_SESSION_SECRET);
+  return sessionStorage;
 }
 
 /**
@@ -78,9 +74,7 @@ export function getOrCreateSessionStorage(
  * in Auth0), and every call to Auth0 is bounded by AUTH0_TIMEOUT_MS.
  */
 function getAuth0Config(env: AuthEnv): Configuration {
-  const cacheKey = `${env.AUTH0_DOMAIN}:${env.AUTH0_CLIENT_ID}:${env.AUTH0_CLIENT_SECRET}`;
-  const cached = auth0ConfigCache.get(cacheKey);
-  if (cached) return cached;
+  if (auth0Config) return auth0Config;
 
   const origin = `https://${env.AUTH0_DOMAIN}`;
   const config = new Configuration(
@@ -98,7 +92,7 @@ function getAuth0Config(env: AuthEnv): Configuration {
   // In seconds. It can only be set here: openid-client reads no timeout
   // from the client metadata.
   config.timeout = AUTH0_TIMEOUT_MS / 1000;
-  auth0ConfigCache.set(cacheKey, config);
+  auth0Config = config;
   return config;
 }
 
