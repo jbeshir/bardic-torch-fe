@@ -3,6 +3,7 @@ import { LINKS } from "./catalogue/links";
 import { PERSONS } from "./catalogue/persons";
 import { PIECES } from "./catalogue/pieces";
 import { REVISIONS } from "./catalogue/revisions";
+import { SEED_USERS } from "./data";
 import { currentBase, keyOf, type RevisionStore } from "./editing-operations";
 import { errorBody, type FixtureResponse } from "./responses";
 
@@ -68,7 +69,8 @@ const REVEL = canned(1013);
 /**
  * Two pending edits by the apprentice: the kettle's, made on its first
  * revision (1003's change, so it is stale), and the revel's, on its
- * current revision.
+ * current revision. And the contributor's edit of Wren (1007's change),
+ * rejected with a note.
  */
 export const SEEDED_REVISIONS: readonly (readonly [string, RevisionView])[] = [
   [
@@ -94,6 +96,20 @@ export const SEEDED_REVISIONS: readonly (readonly [string, RevisionView])[] = [
       base_snapshot: REVEL.snapshot,
       changed_fields: ["description_md"],
     }),
+  ],
+  [
+    SEED_USERS.contributor.id,
+    {
+      ...canned(1007),
+      id: 1903,
+      summary: "Filled in Wren’s profile",
+      author: { display_name: SEED_USERS.contributor.display_name },
+      contributors: [],
+      created_at: "2026-10-18T14:00:00Z",
+      status: "rejected",
+      review_note: "Please say where the profile’s details come from.",
+      reviewed_at: "2026-10-19T10:00:00Z",
+    },
   ],
 ];
 
@@ -211,6 +227,7 @@ export function listModerationQueue(
         status: r.status,
         summary: r.summary,
         created_at: r.created_at,
+        review_note: r.review_note,
         reviewed_at: r.reviewed_at,
         is_stale: staleAgainst(state, r) !== null,
         author: { user_id: userId, display_name: displayName(state, userId) },

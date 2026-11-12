@@ -368,6 +368,7 @@ export function listMyRevisions(
         status: r.status,
         summary: r.summary,
         created_at: r.created_at,
+        review_note: r.review_note,
         reviewed_at: r.reviewed_at,
         is_stale: false,
         author: null,

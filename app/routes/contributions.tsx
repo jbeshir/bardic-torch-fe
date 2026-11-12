@@ -26,8 +26,9 @@ import { assertSameOrigin } from "~/server/csrf.server";
 
 /**
  * /contributions, "My contributions": the reader's own revisions, newest
- * first, 50 a page. A pending one can be continued or withdrawn; Withdraw
- * is a document POST to this route's action. `?submitted=` and
+ * first, 50 a page. A rejected one shows the moderator's note under its
+ * status. A pending one can be continued or withdrawn; Withdraw is a
+ * document POST to this route's action. `?submitted=` and
  * `?withdrawn=` (where the editors and the action leave to) say what
  * just happened.
  */
@@ -200,7 +201,16 @@ export default function ContributionsRoute() {
               {
                 header: "Status",
                 nowrap: true,
-                cell: revision => STATUS_LABELS[revision.status],
+                cell: revision => (
+                  <>
+                    {STATUS_LABELS[revision.status]}
+                    {revision.review_note === null ? null : (
+                      <p className="mt-1 max-w-xs whitespace-normal text-body-sm text-fg-muted">
+                        {`Note: ${revision.review_note}`}
+                      </p>
+                    )}
+                  </>
+                ),
               },
               {
                 header: "Summary",

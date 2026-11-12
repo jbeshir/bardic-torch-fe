@@ -229,6 +229,16 @@ describe("server-rendered routes", () => {
     expect(/<h1[^>]*>(.*?)<\/h1>/s.exec(html)?.[1]).toBe(h1);
   });
 
+  it("shows a rejected contribution's note to its author", async () => {
+    const cookie = await sessionCookie(
+      sessionTokens({ accessToken: "fixture:contributor" })
+    );
+    const html = await (await get("/contributions", cookie)).text();
+    expect(html).toMatch(
+      /Not accepted<p [^>]*>Note: Please say where the profile’s details come from\.<\/p>/
+    );
+  });
+
   it.each(MODERATOR_PAGES)("%s answers 200 to a moderator", async (url, h1) => {
     const cookie = await sessionCookie(
       sessionTokens({ accessToken: "fixture:moderator" })

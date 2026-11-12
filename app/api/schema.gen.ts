@@ -885,7 +885,8 @@ export interface paths {
     put?: never;
     /**
      * Reject a revision
-     * @description Rejects a pending revision with a note to its author, which they see in `GET /v1/me/revisions/{revision_id}`.
+     * @description Rejects a pending revision with a note to its author, which they see in `GET /v1/me/revisions` and
+     *     `GET /v1/me/revisions/{revision_id}`.
      *     Requires the moderator role.
      */
     post: operations["rejectRevision"];
@@ -4261,7 +4262,8 @@ export interface components {
     };
     /**
      * @description A revision as the caller's own list and the moderation queue show it. `entity` is null for a new entity's
-     *     revision that is not approved; `is_stale` is true when its entity has changed since its base.
+     *     revision that is not approved; `review_note` is a moderator's note on rejecting it; `is_stale` is true when
+     *     its entity has changed since its base.
      * @example {
      *       "id": 51,
      *       "entity_type": "event",
@@ -4273,6 +4275,7 @@ export interface components {
      *       "status": "pending",
      *       "summary": "Describe the revel.",
      *       "created_at": "2026-10-01T09:00:00Z",
+     *       "review_note": null,
      *       "reviewed_at": null,
      *       "is_stale": false,
      *       "author": null
@@ -4289,6 +4292,7 @@ export interface components {
       status: components["schemas"]["RevisionStatus"];
       summary: components["schemas"]["RevisionSummary"]["summary"];
       created_at: components["schemas"]["RevisionSummary"]["created_at"];
+      review_note: components["schemas"]["RevisionView"]["review_note"];
       /**
        * Format: date-time
        * @description When a moderator approved or rejected the revision.
