@@ -167,7 +167,7 @@ const personDocument = z.object({
     row({ name: text, kind: oneOf(PERSON_ALIAS_KIND_LABELS).default("sca") })
   ),
   roles: many(oneOf(PERSON_ROLE_LABELS)),
-  affiliation_slugs: many(z.string()),
+  affiliation_slugs: many(text),
   relations: many(
     row({
       to_person_slug: text,
