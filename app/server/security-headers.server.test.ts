@@ -41,10 +41,15 @@ describe("security headers", () => {
     }
   });
 
-  it("allows scripts only from this origin and with the request's nonce, never inline or eval", () => {
+  it("allows scripts only from this origin, with the request's nonce and from Turnstile, never inline or eval", () => {
     const headers = build();
     const csp = directives(headers);
-    expect(csp.get("script-src")).toEqual(["'self'", "'nonce-abc123'"]);
+    expect(csp.get("script-src")).toEqual([
+      "'self'",
+      "'nonce-abc123'",
+      "https://challenges.cloudflare.com",
+    ]);
+    expect(csp.get("frame-src")).toEqual(["https://challenges.cloudflare.com"]);
     expect(csp.get("object-src")).toEqual(["'none'"]);
     expect(csp.get("frame-ancestors")).toEqual(["'none'"]);
     expect(csp.get("form-action")).toEqual([

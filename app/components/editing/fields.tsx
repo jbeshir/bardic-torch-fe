@@ -117,38 +117,6 @@ export function SelectField({
   );
 }
 
-/**
- * A native multiple select: its choices are the name's repeated values,
- * listed first (an unknown one as itself), so none is scrolled out of view.
- */
-export function MultiSelectField({
-  name,
-  values,
-  options,
-  ...field
-}: Common & {
-  readonly values: readonly string[];
-  readonly options: readonly Option[];
-}) {
-  const error = use(FieldErrorsContext)[name];
-  const chosen = values.map(
-    value => options.find(o => o.value === value) ?? { value, label: value }
-  );
-  const rest = options.filter(o => !values.includes(o.value));
-  return (
-    <Field
-      id={name}
-      error={error}
-      help="Ctrl-click (⌘-click on a Mac) to add or remove a name; a plain click keeps only that one."
-      {...field}
-    >
-      <Select name={name} multiple size={5} defaultValue={[...values]}>
-        {grouped([...chosen, ...rest])}
-      </Select>
-    </Field>
-  );
-}
-
 /** Checkboxes under one legend, one per option, posting their values. */
 export function ChoicesField({
   name,

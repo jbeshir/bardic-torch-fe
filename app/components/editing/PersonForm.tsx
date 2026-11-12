@@ -21,7 +21,6 @@ import {
   FormSection,
   labelOptions,
   MARKDOWN_HELP,
-  MultiSelectField,
   relationOptions,
   Rows,
   SelectField,
@@ -108,13 +107,22 @@ function PersonForm({
           values={document.roles}
           options={labelOptions(PERSON_ROLE_LABELS)}
         />
-        <MultiSelectField
-          name="affiliation_slugs"
-          label="Affiliations"
-          values={document.affiliation_slugs}
-          options={options.affiliations ?? []}
-          optional
-        />
+        <Rows
+          legend="Affiliations"
+          path="affiliation_slugs"
+          rows={document.affiliation_slugs}
+          rowLabel={index => `Affiliation ${index + 1}`}
+          addLabel="Add an affiliation"
+        >
+          {(slug, name) => (
+            <SelectField
+              name={name}
+              label="Kingdom or group"
+              value={slug === "" ? null : slug}
+              options={options.affiliations ?? []}
+            />
+          )}
+        </Rows>
         <CheckboxField
           name="is_stub"
           label="A stub: the page needs more"

@@ -12,6 +12,7 @@ import {
   type CollectionList,
   type Event,
   type EventList,
+  type NeedsWorkList,
   type Person,
   type PersonList,
   type Piece,
@@ -161,6 +162,11 @@ const ENDPOINTS = {
     method: "GET",
     path: "/v1/revisions/{revision_id}",
     query: [],
+  },
+  listNeedsWork: {
+    method: "GET",
+    path: "/v1/needs-work",
+    query: ["reason", "limit", "offset"],
   },
 } as const satisfies {
   readonly [Id in keyof operations]?: EndpointOf<operations[Id]> & {
@@ -411,4 +417,12 @@ export function getRevision(
   id: string
 ): Promise<ReadResult<Revision>> {
   return callPublicApi(context, "getRevision", { path: { revision_id: id } });
+}
+
+/** A page of the pieces and persons that need work (`GET /v1/needs-work`). */
+export function listNeedsWork(
+  context: Readonly<RouterContextProvider>,
+  query: ApiQuery<"listNeedsWork">
+): Promise<ReadResult<NeedsWorkList>> {
+  return callPublicApi(context, "listNeedsWork", { query });
 }

@@ -1,3 +1,4 @@
+import type { components } from "~/api/schema.gen";
 import type { CcLicence } from "~/constants/licences";
 import type {
   Attribution,
@@ -406,4 +407,25 @@ export const PERSON_STATUS_LABELS: Readonly<Record<PersonStatus, string>> = {
   active: "Active",
   deceased: "Deceased",
   prefers_no_page: "Prefers not to have a page",
+};
+
+/** What a contact request is about, as the contact form offers it. */
+export const CONTACT_KIND_LABELS: Readonly<
+  Record<components["schemas"]["CreateContactRequest"]["kind"], string>
+> = {
+  takedown: "Take something down",
+  opt_out: "Opt out: leave me off the site",
+  correction: "A correction",
+  link_report: "Report a link",
+  general: "Something else",
+};
+
+/** Why a page needs work (the needs-work page's filters). */
+export const NEEDS_WORK_LABELS: Readonly<
+  Record<components["schemas"]["NeedsWorkReason"], string>
+> = {
+  stub: "Stub",
+  unassessed: "Conservation not assessed",
+  missing_licensing: "Licensing unknown",
+  dead_links: "Broken links",
 };

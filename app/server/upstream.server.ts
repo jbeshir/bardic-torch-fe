@@ -6,7 +6,7 @@
 
 import type { paths } from "~/api/schema.gen";
 
-export type Method = "GET" | "PATCH" | "POST" | "DELETE";
+export type Method = "GET" | "PATCH" | "POST" | "PUT" | "DELETE";
 
 /**
  * The (path, method) pair at which `paths` declares `operation`. Methods a

@@ -233,6 +233,7 @@ describe("the pending banner", () => {
           status: "pending",
           summary: "",
           created_at: "2026-10-01T09:00:00Z",
+          review_note: null,
           reviewed_at: null,
           is_stale: false,
           author: null,

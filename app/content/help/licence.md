@@ -64,4 +64,4 @@ Bardic Torch is community-maintained and not affiliated with the Society for Cre
 
 ## Questions and takedowns
 
-If you think something on Bardic Torch infringes your rights, or you’d like a link removed, [contact us through our form](https://forms.gle/wUwWnMKtWZSUisWCA). We can remove or hide a link, but the content will stay online wherever it is hosted. See the [FAQ for bards](/help/faq-for-bards) for more.
+If you think something on Bardic Torch infringes your rights, or you’d like a link removed, [contact us through our form](/contact). We can remove or hide a link, but the content will stay online wherever it is hosted. See the [FAQ for bards](/help/faq-for-bards) for more.

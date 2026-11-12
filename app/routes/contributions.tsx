@@ -18,7 +18,7 @@ import { formatDate } from "~/catalogue/format";
 import { redirectPastTheEnd } from "~/catalogue/paging";
 import { historyQuery } from "~/catalogue/query-state";
 import { CONTRIBUTIONS_PATH, loginHref } from "~/constants/account";
-import { readPath } from "~/editing/editor-data";
+import { revisionEntity } from "~/editing/revision-entity";
 import { isEntityId } from "~/schemas/address";
 import type { RevisionListItem } from "~/schemas/api";
 import { listMyRevisions, withdrawRevision } from "~/server/api.server";
@@ -26,8 +26,9 @@ import { assertSameOrigin } from "~/server/csrf.server";
 
 /**
  * /contributions, "My contributions": the reader's own revisions, newest
- * first, 50 a page. A pending one can be continued or withdrawn; Withdraw
- * is a document POST to this route's action. `?submitted=` and
+ * first, 50 a page. A rejected one shows the moderator's note under its
+ * status. A pending one can be continued or withdrawn; Withdraw is a
+ * document POST to this route's action. `?submitted=` and
  * `?withdrawn=` (where the editors and the action leave to) say what
  * just happened.
  */
@@ -42,14 +43,6 @@ const STATUS_LABELS: Readonly<Record<RevisionListItem["status"], string>> = {
   approved: "Approved",
   rejected: "Not accepted",
   withdrawn: "Withdrawn",
-};
-
-const NOUNS: Readonly<Record<RevisionListItem["entity_type"], string>> = {
-  piece: "piece",
-  person: "bard",
-  term: "category",
-  collection: "collection",
-  event: "event or venue",
 };
 
 export async function loader({ request, url, context }: LoaderFunctionArgs) {
@@ -111,24 +104,9 @@ export async function action({ request, context }: ActionFunctionArgs) {
   });
 }
 
-/** What the revision is of: its page's name, or "New piece". */
-function entityName({ entity, entity_type }: RevisionListItem) {
-  const noun = NOUNS[entity_type];
-  return entity
-    ? { name: entity.name, noun, path: entityPath(entity_type, entity) }
-    : { name: `New ${noun}`, noun, path: null };
-}
-
-function entityPath(
-  type: RevisionListItem["entity_type"],
-  entity: NonNullable<RevisionListItem["entity"]>
-) {
-  return readPath(type, entity.slug ?? entity.collection_id ?? "");
-}
-
 function Actions({ revision }: { readonly revision: RevisionListItem }) {
   if (revision.status !== "pending") return null;
-  const { name, path } = entityName(revision);
+  const { name, path } = revisionEntity(revision);
   return (
     <div className="flex flex-wrap items-center gap-2">
       {path === null ? null : (
@@ -209,7 +187,7 @@ export default function ContributionsRoute() {
               {
                 header: "Page",
                 cell: revision => {
-                  const { name, noun, path } = entityName(revision);
+                  const { name, noun, path } = revisionEntity(revision);
                   return path === null ? (
                     name
                   ) : (
@@ -223,7 +201,16 @@ export default function ContributionsRoute() {
               {
                 header: "Status",
                 nowrap: true,
-                cell: revision => STATUS_LABELS[revision.status],
+                cell: revision => (
+                  <>
+                    {STATUS_LABELS[revision.status]}
+                    {revision.review_note === null ? null : (
+                      <p className="mt-1 max-w-xs whitespace-normal text-body-sm text-fg-muted">
+                        {`Note: ${revision.review_note}`}
+                      </p>
+                    )}
+                  </>
+                ),
               },
               {
                 header: "Summary",

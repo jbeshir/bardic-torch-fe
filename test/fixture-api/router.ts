@@ -8,17 +8,35 @@ import {
   submitRevision,
   withdrawRevision,
 } from "./editing-operations";
+import {
+  approveRevision,
+  closeContactRequest,
+  createContactRequest,
+  getModerationLink,
+  getModerationRevision,
+  listContactRequests,
+  listModerationQueue,
+  type ModerationState,
+  rejectRevision,
+  SEEDED_CONTACTS,
+  SEEDED_REVISIONS,
+  setLinkHidden,
+  setUserBlocked,
+} from "./moderation-operations";
 import { errorBody, type FixtureResponse } from "./responses";
 import { requestProblems, responseProblems } from "./spec";
 
 /**
  * Routes a request to the fixture API's canned answers: `getHealthz`, the
  * seeded users' `getMe` and `updateMe`, the catalogue reads
- * (catalogue-operations.ts) and the editing operations
- * (editing-operations.ts). A request is signed in by the bearer the app
+ * (catalogue-operations.ts), the editing operations
+ * (editing-operations.ts) and the moderation and contact operations
+ * (moderation-operations.ts). A request is signed in by the bearer the app
  * sends for a stub session, exactly `Bearer fixture:<userId>`;
- * anything else is 401. A renamed user and each user's revisions are
- * remembered in the state; a JSON body that breaks the spec is 400.
+ * anything else is 401, except on the contact form, which needs no
+ * account. A renamed user, each user's revisions, the contact requests
+ * and the hidden links are remembered in the state; a JSON body that
+ * breaks the spec is 400.
  *
  * Every answer is validated against the spec; a fixture that breaks the
  * contract throws instead of answering. It follows no backend rule beyond
@@ -26,10 +44,7 @@ import { requestProblems, responseProblems } from "./spec";
  * `affiliation` that no listed term has is 400.
  */
 
-export type FixtureState = {
-  readonly users: Map<string, components["schemas"]["User"]>;
-  readonly revisions: RevisionStore;
-};
+export type FixtureState = ModerationState;
 
 type FixtureRequest = {
   readonly method: string;
@@ -45,9 +60,18 @@ export function createFixtureState(): FixtureState {
     users: new Map(
       (Object.keys(SEED_USERS) as SeedUserId[]).map(id => [id, SEED_USERS[id]])
     ),
-    revisions: new Map(),
+    revisions: SEEDED_REVISIONS.reduce<RevisionStore>(
+      (store, [userId, revision]) =>
+        store.set(userId, [...(store.get(userId) ?? []), revision]),
+      new Map()
+    ),
+    current: new Map(),
+    contacts: new Map(SEEDED_CONTACTS.map(request => [request.id, request])),
+    hiddenLinks: new Set(),
   };
 }
+
+type Schemas = components["schemas"];
 
 const BEARER = /^Bearer fixture:([a-z0-9-]+)$/;
 
@@ -67,6 +91,22 @@ const EDITABLE = {
   },
 } as const;
 
+/** A JSON body as the spec allows it, or the 400 it gets. */
+function bodyOf(
+  operationId: string,
+  request: FixtureRequest
+): { readonly body: unknown } | FixtureResponse {
+  const body: unknown =
+    request.body === "" ? undefined : JSON.parse(request.body);
+  const problems =
+    body === undefined
+      ? []
+      : requestProblems(operationId as keyof operations, body);
+  return problems.length > 0
+    ? { status: 400, body: errorBody("invalid_request", problems.join("; ")) }
+    : { body };
+}
+
 /** The signed-in user's operations: theirs, or a 401. */
 function signedIn(
   state: FixtureState,
@@ -77,17 +117,10 @@ function signedIn(
   const id = BEARER.exec(request.authorization ?? "")?.[1] ?? "";
   const user = state.users.get(id);
   if (!user) return UNAUTHENTICATED;
-  const body: unknown =
-    request.body === "" ? undefined : JSON.parse(request.body);
-  if (body !== undefined) {
-    const problems = requestProblems(operationId as keyof operations, body);
-    if (problems.length > 0) {
-      return {
-        status: 400,
-        body: errorBody("invalid_request", problems.join("; ")),
-      };
-    }
-  }
+  const parsed = bodyOf(operationId, request);
+  if ("status" in parsed) return parsed;
+  const { body } = parsed;
+  const query = new URLSearchParams(request.search);
   switch (operationId) {
     case "updateMe": {
       const { display_name } = body as { display_name: string };
@@ -97,22 +130,61 @@ function signedIn(
     case "submitRevision":
       return submitRevision(
         state.revisions,
+        state.current,
         user,
         body as components["schemas"]["SubmitRevisionRequest"]
       );
     case "listMyRevisions":
-      return listMyRevisions(
-        state.revisions,
-        user,
-        new URLSearchParams(request.search)
-      );
+      return listMyRevisions(state.revisions, user, query);
     case "withdrawRevision":
       return withdrawRevision(state.revisions, user, params.revision_id ?? "");
     case "getMe":
       return { status: 200, body: user };
+    case "listModerationQueue":
+      return listModerationQueue(state, user, query);
+    case "getModerationRevision":
+      return getModerationRevision(state, user, params.revision_id ?? "");
+    case "approveRevision":
+      return approveRevision(
+        state,
+        user,
+        params.revision_id ?? "",
+        body as Schemas["ApproveRevisionRequest"]
+      );
+    case "rejectRevision":
+      return rejectRevision(
+        state,
+        user,
+        params.revision_id ?? "",
+        body as Schemas["RejectRevisionRequest"]
+      );
+    case "listContactRequests":
+      return listContactRequests(state, user, query);
+    case "closeContactRequest":
+      return closeContactRequest(
+        state,
+        user,
+        params.request_id ?? "",
+        body as Schemas["CloseContactRequestRequest"]
+      );
+    case "getModerationLink":
+      return getModerationLink(state, user, query);
+    case "setLinkHidden":
+      return setLinkHidden(
+        state,
+        user,
+        params.link_id ?? "",
+        body as Schemas["SetLinkHiddenRequest"]
+      );
+    case "setUserBlocked":
+      return setUserBlocked(state, user, params.user_id ?? "");
     default: {
       const { type } = EDITABLE[operationId as keyof typeof EDITABLE];
-      return getEditable(type, params.slug ?? params.collection_id ?? "");
+      return getEditable(
+        state.current,
+        type,
+        params.slug ?? params.collection_id ?? ""
+      );
     }
   }
 }
@@ -128,6 +200,52 @@ const ROUTES = [
     method: "POST",
     path: "/v1/revisions/{revision_id}/withdraw",
   },
+  {
+    operationId: "listModerationQueue",
+    method: "GET",
+    path: "/v1/moderation/queue",
+  },
+  {
+    operationId: "getModerationRevision",
+    method: "GET",
+    path: "/v1/moderation/revisions/{revision_id}",
+  },
+  {
+    operationId: "approveRevision",
+    method: "POST",
+    path: "/v1/revisions/{revision_id}/approve",
+  },
+  {
+    operationId: "rejectRevision",
+    method: "POST",
+    path: "/v1/revisions/{revision_id}/reject",
+  },
+  {
+    operationId: "listContactRequests",
+    method: "GET",
+    path: "/v1/moderation/contact-requests",
+  },
+  {
+    operationId: "closeContactRequest",
+    method: "POST",
+    path: "/v1/moderation/contact-requests/{request_id}",
+  },
+  {
+    operationId: "getModerationLink",
+    method: "GET",
+    path: "/v1/moderation/links",
+  },
+  {
+    operationId: "setLinkHidden",
+    method: "PUT",
+    path: "/v1/links/{link_id}/hidden",
+  },
+  {
+    operationId: "setUserBlocked",
+    method: "PUT",
+    path: "/v1/users/{user_id}/blocked",
+  },
+  { operationId: "createContactRequest", method: "POST", path: "/v1/contact" },
   ...Object.entries(EDITABLE).map(([operationId, { path }]) => ({
     operationId,
     method: "GET",
@@ -148,6 +266,15 @@ function answer(
 ): FixtureResponse {
   if (operationId === "getHealthz") {
     return { status: 200, body: { status: "ok" } };
+  }
+  if (operationId === "createContactRequest") {
+    const parsed = bodyOf(operationId, request);
+    return "status" in parsed
+      ? parsed
+      : createContactRequest(
+          state,
+          parsed.body as Schemas["CreateContactRequest"]
+        );
   }
   if (operationId in CATALOGUE_READS) {
     return CATALOGUE_READS[operationId as keyof typeof CATALOGUE_READS].read(

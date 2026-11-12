@@ -26,7 +26,7 @@ import { TERMS, termSummary, type RawTerm } from "./catalogue/terms";
 import { errorBody, type FixtureResponse } from "./responses";
 
 /**
- * The 16 catalogue reads the read pages call, each answering what the
+ * The 17 catalogue reads the read pages call, each answering what the
  * backend would for this data: the data holds only what a public read
  * shows, so there is nothing to hide, redact or validate here. The router
  * checks every body against the spec.
@@ -610,6 +610,76 @@ const historyOf =
   (params, query) =>
     history(entity, params[param] ?? "", query);
 
+// Needs work -------------------------------------------------------------------
+
+const NEEDS_WORK_REASONS = [
+  "stub",
+  "unassessed",
+  "missing_licensing",
+  "dead_links",
+] as const satisfies readonly Schemas["NeedsWorkReason"][];
+
+const hasDeadLink = (kind: "piece" | "person", slug: string) =>
+  LINKS.some(
+    l => l.owner.kind === kind && l.owner.slug === slug && l.liveness === "dead"
+  );
+
+/** Every public piece, then person, needing work, with its reasons. */
+function needingWork(): Schemas["NeedsWorkEntry"][] {
+  const pieces = sorted(PIECES, p => p.title).map(p => ({
+    entity_type: "piece" as const,
+    slug: p.slug,
+    title: p.title,
+    reasons: NEEDS_WORK_REASONS.filter(reason =>
+      p.conservation_status === "restricted"
+        ? reason === "stub" && p.is_stub
+        : {
+            stub: p.is_stub,
+            unassessed: p.conservation_status === "unassessed",
+            missing_licensing: p.licensing_status === "unknown",
+            dead_links: hasDeadLink("piece", p.slug),
+          }[reason]
+    ),
+  }));
+  const persons = sorted(
+    PERSONS.filter(p => p.status !== "prefers_no_page"),
+    p => p.name
+  ).map(p => ({
+    entity_type: "person" as const,
+    slug: p.slug ?? "",
+    title: p.name,
+    reasons: NEEDS_WORK_REASONS.filter(
+      reason =>
+        ({
+          stub: p.is_stub,
+          unassessed: false,
+          missing_licensing:
+            p.kind === "community_bard" &&
+            p.profile?.licensing_status === "unknown",
+          dead_links: hasDeadLink("person", p.slug ?? ""),
+        })[reason]
+    ),
+  }));
+  return [...pieces, ...persons].filter(entry => entry.reasons.length > 0);
+}
+
+function listNeedsWork(query: URLSearchParams): FixtureResponse {
+  const all = needingWork();
+  const reason = query.get("reason");
+  const chosen =
+    reason === null
+      ? all
+      : all.filter(entry => (entry.reasons as string[]).includes(reason));
+  return ok({
+    data: slice(chosen, query),
+    total: chosen.length,
+    counts: NEEDS_WORK_REASONS.map(r => ({
+      reason: r,
+      count: all.filter(entry => entry.reasons.includes(r)).length,
+    })),
+  });
+}
+
 /** The reads, by the spec's operationId: its path template and its answer. */
 export const CATALOGUE_READS = {
   listPieces: {
@@ -761,5 +831,9 @@ export const CATALOGUE_READS = {
       revision => revision,
       "revision_id"
     ),
+  },
+  listNeedsWork: {
+    path: "/v1/needs-work",
+    read: (_params, query) => listNeedsWork(query),
   },
 } satisfies Record<string, { path: string; read: Read }>;

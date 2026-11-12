@@ -1,6 +1,7 @@
 import { formatDate } from "~/catalogue/format";
 import { UserLink } from "~/components/catalogue/UserLink";
 import { Link } from "~/components/ui/Link";
+import { reportLinkHref } from "~/constants/navigation";
 import { LINK_PLACE_TYPE_LABELS } from "~/constants/vocabulary";
 import type { Piece } from "~/schemas/catalogue";
 import { Liveness } from "./Liveness";
@@ -20,7 +21,8 @@ export function linkName(link: Pick<AnyLink, "title" | "url">): string {
  * link, a reader's URL (nofollow ugc); then a caption with the platform,
  * what kind of place it is and, for a link that works, when it was last
  * checked; the collection it is in, as an internal link with its locator;
- * the description; and what the link checker found (`Liveness`).
+ * the description; what the link checker found (`Liveness`); and a link
+ * to report it through the contact form.
  * `archive: false` offers no archived copy (a restricted piece).
  */
 export function LinkRow({
@@ -63,6 +65,11 @@ export function LinkRow({
         <p className="text-body-sm text-fg-muted">{link.description}</p>
       ) : null}
       <Liveness link={link} archive={archive} />
+      <span className="text-caption">
+        <Link to={reportLinkHref(link.url)} appearance="muted" compact>
+          Report this link<span className="sr-only">: {name}</span>
+        </Link>
+      </span>
     </li>
   );
 }

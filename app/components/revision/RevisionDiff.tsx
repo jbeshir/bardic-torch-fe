@@ -4,20 +4,23 @@ import type { RevisionChanges } from "~/catalogue/diff";
 import { DiffRow } from "./DiffRow";
 
 /**
- * A revision's changes (plan §4.11): "Changes" (or, with no base, "First
- * recorded version" and what it set), one DiffRow per changed field. In a
- * restricted piece's revision, a caption first says why links are text.
+ * A revision's changes (plan §4.11): "Changes", or `heading` (or, with no
+ * base, "First recorded version" and what it set), one DiffRow per changed
+ * field. In a restricted piece's revision, a caption first says why links
+ * are text.
  */
 export function RevisionDiff({
   changes,
+  heading = "Changes",
 }: {
   readonly changes: RevisionChanges;
+  readonly heading?: string;
 }) {
   const headingId = useId();
   return (
     <section aria-labelledby={headingId} className="mt-8">
       <h2 id={headingId} className="text-h3 text-fg">
-        {changes.first ? "First recorded version" : "Changes"}
+        {changes.first ? "First recorded version" : heading}
       </h2>
       {changes.first ? (
         <p className="mt-1 text-body-sm text-fg-muted">

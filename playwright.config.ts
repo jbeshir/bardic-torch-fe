@@ -26,6 +26,8 @@ const bindings = {
   AUTH0_CLIENT_SECRET: "e2e-client-secret",
   AUTH0_DEFAULT_REDIRECT_URI: BASE_URL,
   AUTH0_AUDIENCE: "e2e-audience",
+  // Turnstile's test key; e2e/support/test.ts serves its script locally.
+  TURNSTILE_SITE_KEY: "1x00000000000000000000AA",
   AUTH_MODE: "stub",
 };
 

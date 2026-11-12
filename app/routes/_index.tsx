@@ -16,7 +16,11 @@ import { ConservationBadge } from "~/components/ui/ConservationBadge";
 import { SectionError } from "~/components/ui/ErrorState";
 import { Link } from "~/components/ui/Link";
 import { TagList } from "~/components/ui/TagList";
-import { CONTRIBUTE_HREF, helpHref } from "~/constants/navigation";
+import {
+  CONTRIBUTE_HREF,
+  helpHref,
+  NEEDS_WORK_PATH,
+} from "~/constants/navigation";
 import {
   BROWSE_STATUS_LABELS,
   PIECE_KIND_LABELS,
@@ -199,15 +203,18 @@ export default function Index() {
           <Card title="Anyone can contribute">
             <p>
               You don’t have to be a bard, and no contribution is too small.
-              Editing is not open yet: it arrives in a later release. Until
-              then, send us the link to where a work lives, and once editing
-              opens a moderator will review every edit before it goes live. That
-              way the index can keep growing beyond what any one person could
-              maintain.
+              Edit any page or add a new one, and a moderator reviews it before
+              it goes live. That way the index can keep growing beyond what any
+              one person could maintain.
             </p>
-            <p className="mt-3">
-              <Link to={CONTRIBUTE_HREF}>How to contribute</Link>
-            </p>
+            <ul role="list" className="mt-3 stack-y-1">
+              <li>
+                <Link to={CONTRIBUTE_HREF}>How to contribute</Link>
+              </li>
+              <li>
+                <Link to={NEEDS_WORK_PATH}>Pages that need work</Link>
+              </li>
+            </ul>
           </Card>
         </CardList>
       </Section>

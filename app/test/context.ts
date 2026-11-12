@@ -19,6 +19,7 @@ const parsed = parseEnv({
   AUTH0_CLIENT_SECRET: "client-secret",
   AUTH0_DEFAULT_REDIRECT_URI: APP_ORIGIN,
   AUTH0_AUDIENCE: "audience",
+  TURNSTILE_SITE_KEY: "1x00000000000000000000AA",
 });
 if (!parsed.ok) throw new Error(parsed.problems.join("\n"));
 

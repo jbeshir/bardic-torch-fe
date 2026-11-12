@@ -33,8 +33,15 @@ export const SEARCH = { action: "/search", param: "q" } as const;
 /** The original wiki's front page. */
 export const WIKI_HOME_URL = wikiPageUrl("Main Page");
 
-/** The contact form, until the site has its own (FE4). */
-export const CONTACT_FORM_URL = "https://forms.gle/wUwWnMKtWZSUisWCA";
+/** The contact, takedown and opt-out form, which also reports a link. */
+export const CONTACT_FORM_URL = "/contact";
+
+/** The form reporting a link: the contact form, of kind `link_report`. */
+export const reportLinkHref = (url: string) =>
+  `${CONTACT_FORM_URL}?${new URLSearchParams({ kind: "link_report", url })}`;
+
+/** The pages that need work (R-18). */
+export const NEEDS_WORK_PATH = "/needs-work";
 
 /** The licence of the site's text. */
 export const LICENCE_URL = "https://creativecommons.org/licenses/by-sa/4.0/";

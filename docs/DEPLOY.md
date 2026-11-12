@@ -199,6 +199,7 @@ Both Workers have the same `observability` block:
 | `AUTH0_CLIENT_ID`            | plain, `wrangler.jsonc` | the application's client ID     | the same                          |
 | `AUTH0_DEFAULT_REDIRECT_URI` | plain, `wrangler.jsonc` | `https://bardictorch.org`       | `https://preview.bardictorch.org` |
 | `AUTH0_AUDIENCE`             | plain, `wrangler.jsonc` | `https://api.bardictorch.org`   | the same                          |
+| `TURNSTILE_SITE_KEY`         | plain, `wrangler.jsonc` | the Turnstile widget's site key | the same                          |
 | `AUTH_SESSION_SECRET`        | **secret**, required    | random, at least 32 characters  | a **different** random value      |
 | `AUTH0_CLIENT_SECRET`        | **secret**, required    | the application's client secret | the same                          |
 | `SENTRY_DSN`                 | **secret**, optional    | the Sentry DSN, or unset        | the same, or unset                |
@@ -210,9 +211,10 @@ Notes on the variables:
 - **`AUTH0_DOMAIN`** is the host Auth0 issues tokens from: the tenant domain, or the custom domain if the tenant has one. The ID token's issuer must be exactly `https://<AUTH0_DOMAIN>/` (§8).
 - **`AUTH_SESSION_SECRET`** signs the `__Host-bt_session` and `__Host-bt_return_to` cookies. Generate it with `openssl rand -base64 48`. Using a different value in preview means a preview session can never be replayed on production. Changing it signs everyone out.
 - **`SENTRY_DSN`** is not sensitive (the browser receives it too), but it is kept out of the repository as a secret. Without it, nothing is sent to Sentry. It can't be listed in `secrets.required`, because it is optional.
+- **`TURNSTILE_SITE_KEY`** is the contact form's Turnstile widget (§5). It is public. Development (`.dev.vars.example`, `npm run dev:fixtures`) and e2e use Cloudflare's test key `1x00000000000000000000AA`, whose widget always passes.
 - **`AUTH_MODE`** must never be set. Production and preview builds don't contain stub sign-in, and they ignore `AUTH_MODE=stub` with a logged error.
 
-Every request validates these variables (`app/server/env.server.ts`). If one is missing or malformed, or is still a placeholder starting `replace-with` (as `AUTH0_CLIENT_ID` is in `wrangler.jsonc` until step 1 of §1 is done), every page is a plain **"Site configuration error"** page with status 500. The variable's name, never its value, is logged ("Invalid environment: …"), and shows in Workers Logs.
+Every request validates these variables (`app/server/env.server.ts`). If one is missing or malformed, or is still a placeholder starting `replace-with` (as `AUTH0_CLIENT_ID` and `TURNSTILE_SITE_KEY` are in `wrangler.jsonc` until steps 1 of §1 and §5 are done), every page is a plain **"Site configuration error"** page with status 500. The variable's name, never its value, is logged ("Invalid environment: …"), and shows in Workers Logs.
 
 A plain-text variable changes with the next deploy of the commit that changes it. A secret set with `wrangler secret put` deploys a new version of the Worker straight away.
 
@@ -333,19 +335,17 @@ The identity providers send the reader back to **Auth0**, not to the site, so th
 
 If §8's browser check 1 fails at the provider, the usual causes are a redirect URI that isn't exactly `https://<AUTH0_DOMAIN>/login/callback` (Google: `redirect_uri_mismatch`), a consent screen still in Testing, or a Facebook app still in Development mode.
 
-## 5. Turnstile (for FE4; not used by FE1 or FE2)
+## 5. Turnstile
 
-FE4's contact, takedown and opt-out form will be protected by Cloudflare Turnstile. The API verifies the token (`POST /v1/contact`). Create the widget now so FE4 only has to wire it in:
+The contact, takedown and opt-out form (`/contact`, which also reports links) is protected by Cloudflare Turnstile. The browser loads the widget from `https://challenges.cloudflare.com` (allowed in the CSP's `script-src` and `frame-src`), and the API verifies the token (`POST /v1/contact`, action `contact`). Create the widget before the first deploy:
 
 1. Go to Cloudflare dashboard → Turnstile → Add widget.
    - **Name:** "Bardic Torch contact form".
-   - **Hostnames:** `bardictorch.org` and `preview.bardictorch.org`.
+   - **Hostnames:** `bardictorch.org`. The API accepts a token minted on one hostname only (its `TURNSTILE_HOSTNAME`), and the preview Worker uses the production API, so the contact form works on production alone: on preview it answers that the robot check failed.
    - **Widget mode:** Managed.
-2. **Site key.** It is public. FE4 will add it to `wrangler.jsonc` as a plain-text variable in both Workers' `vars`, and allow `https://challenges.cloudflare.com` in the CSP.
-3. **Secret key.** It goes to the **API**, not the frontend: set it in the API's dokku config with `dokku config:set <api-app> …`, under the name the backend defines. It is never a Worker variable.
-4. **Local development and e2e** use Cloudflare's published test keys, not the real ones.
-
-Nothing in FE1 or FE2 reads either key.
+2. **Site key.** It is public: replace the placeholder `TURNSTILE_SITE_KEY` in `wrangler.jsonc`, in both the top-level `vars` and `env.preview.vars`, with a commit. Until then every page is the "Site configuration error" page (§2).
+3. **Secret key.** It goes to the **API**, not the frontend: set it in the API's dokku config as `TURNSTILE_SECRET_KEY`, with `TURNSTILE_HOSTNAME=bardictorch.org` (the backend's DEPLOY.md). It is never a Worker variable.
+4. **Local development and e2e** use Cloudflare's published test site key `1x00000000000000000000AA` (always passes). e2e runs offline, so `e2e/support/test.ts` answers the widget's script with a local stand-in that gives the test token `XXXX.DUMMY.TOKEN.XXXX`, as the test key's widget does.
 
 ## 6. Sentry (optional)
 

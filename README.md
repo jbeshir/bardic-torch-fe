@@ -20,7 +20,9 @@ FE2 adds the catalogue, read-only and anonymous:
 - the directories (`/bards`, `/categories`, `/collections`, `/events`);
 - `robots.txt` and one `sitemap.xml`, and page metadata for search engines (indexed in the production build only).
 
-Signed-in readers can edit: an editor for each kind of page (`/pieces/:slug/edit`, `/pieces/new`, and the same for bards, categories, collections and events) and their own revisions (`/contributions`), where a pending edit can be continued or withdrawn. The original wiki is linked only for the help pages' attribution, the footer and the 404 page.
+Signed-in readers can edit: an editor for each kind of page (`/pieces/:slug/edit`, `/pieces/new`, and the same for bards, categories, collections and events) and their own revisions (`/contributions`), where a pending edit can be continued or withdrawn.
+
+FE4 adds moderation and contact. Anyone can write to the moderators through the contact form (`/contact`, with Cloudflare Turnstile; reporting a link is the same form), and see the pages that need work (`/needs-work`). Moderators get the queue (`/moderation`), each edit's review with its diffs and the stale warning (`/moderation/revisions/:id`, approve or reject with a note), the contact inbox (`/moderation/contact`), takedown of a link (`/moderation/links`) and blocking (`/moderation/users`). Those pages call moderation operations, which the API refuses to anyone else: its answer is the gate. The original wiki is linked only for the help pages' attribution, the footer and the 404 page.
 
 ## Key concepts
 
@@ -31,7 +33,7 @@ Signed-in readers can edit: an editor for each kind of page (`/pieces/:slug/edit
 - **URLs are the state.** A list's search, filters, letter and page are query parameters, parsed and written canonically by `app/catalogue/query-state.ts`: a non-canonical address gets one 301, and the filter forms are plain GET forms, so they work without JavaScript.
 - **Restricted pieces.** A piece whose creator asks that it isn't shared further never shows its links outside one closed disclosure, and is kept out of the sitemap (`app/server/sitemap.server.ts`) and search engines (`noindex, nofollow`, in the piece route's `meta`). The site's own lists and search still show it, with a Restricted badge and no links (`app/catalogue/restricted.ts`).
 - **Indexing.** Only the production build can be indexed: `__INDEXABLE__` is true in it alone, and the preview, e2e and development builds answer `Disallow: /` and send `X-Robots-Tag: noindex` on every response the Worker makes (static assets get the `Disallow` only). `/robots.txt`, and one `/sitemap.xml` are resource routes.
-- **The browser never calls the API.** Loaders and actions call it from the Worker through `app/server/api.server.ts`. Writes are form posts: the editors and Withdraw are document POSTs to their own route's action (they work without JavaScript), and settings use the proxy route `PATCH /api/me`. Each checks same-origin.
+- **The browser never calls the API.** Loaders and actions call it from the Worker through `app/server/api.server.ts`. Writes are form posts: the editors, Withdraw, the moderation pages and the contact form are document POSTs to their own route's action (they work without JavaScript, apart from the contact form's Turnstile check), and settings use the proxy route `PATCH /api/me`. Each checks same-origin.
   - The access token lives in the server-side session and is sent as `Authorization: Bearer <jwt>`.
   - The proxies and the editors' actions accept form-encoded bodies, check same-origin (CSRF), validate the input, and map every API error code to the app's own wording.
 - **Sessions.** Sign-in is an OpenID Connect authorization-code flow with PKCE (openid-client, configured statically for the Auth0 tenant). The app keeps only the Auth0 tokens in a signed cookie session, `__Host-bt_session` (HttpOnly, Secure, SameSite=Lax), and refreshes the access token before it expires, once per request.
@@ -49,7 +51,7 @@ Signed-in readers can edit: an editor for each kind of page (`/pieces/:slug/edit
 
   Each build command runs `node scripts/build.mjs <mode>`, whose Vite mode decides stub sign-in. Workers Builds runs `npm run build:ci`, which picks the mode from `WORKERS_CI_BRANCH`: `production` on `main`, and `preview` on the `preview` branch; any other branch fails the build, and an empty branch fails too (docs/DEPLOY.md §2). A `production` build deploys to the `bardic-torch-fe` Worker, a `preview` build to `bardic-torch-fe-preview` (both in `wrangler.jsonc`). `check:prod-build` proves that production and preview builds contain no stub code.
 
-- **Fixture API.** `test/fixture-api/` serves canned answers to the catalogue's reads and to `getMe`/`updateMe` for a few invented users. The same router drives the msw handlers in unit tests, the HTTP server in e2e, and `npm run dev:fixtures`. Every fixture response is checked against the spec.
+- **Fixture API.** `test/fixture-api/` serves canned answers to the catalogue's reads, to `getMe`/`updateMe` for a few invented users, and to the editing, moderation and contact operations. The same router drives the msw handlers in unit tests, the HTTP server in e2e, and `npm run dev:fixtures`. Every fixture response is checked against the spec.
 - **Design tokens.** All colour comes from `app/styles/tokens.ts`.
   - `app/styles/tokens.css` is hand-written; a test keeps its colours in step with `tokens.ts`.
   - Tailwind's palette is replaced by the tokens, so there are no `dark:` classes and no raw colours.
