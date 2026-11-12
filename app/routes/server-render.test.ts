@@ -1,6 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { API_BASE_URL } from "~/test/context";
+import { API_BASE_URL, sessionCookie, sessionTokens } from "~/test/context";
 import { serveFixtureApi } from "~/test/msw";
 import { serveApp } from "~/test/server-build";
 import stylesheetUrl from "../../test/support/stylesheet-url";
@@ -12,13 +12,19 @@ import * as bardHistory from "./bards.$slug.history";
 import * as bards from "./bards._index";
 import * as categoryLayout from "./categories.$slug";
 import * as categoryRead from "./categories.$slug._index";
+import * as categoryEdit from "./categories.$slug.edit";
 import * as categories from "./categories._index";
+import * as categoryNew from "./categories.new";
 import * as collectionLayout from "./collections.$id";
 import * as collectionRead from "./collections.$id._index";
+import * as collectionEdit from "./collections.$id.edit";
 import * as collections from "./collections._index";
+import * as collectionNew from "./collections.new";
 import * as eventLayout from "./events.$slug";
 import * as eventRead from "./events.$slug._index";
+import * as eventEdit from "./events.$slug.edit";
 import * as events from "./events._index";
+import * as eventNew from "./events.new";
 import * as helpPage from "./help.$slug";
 import * as help from "./help._index";
 import * as pieceLayout from "./pieces.$slug";
@@ -45,9 +51,9 @@ const route = (id: string, path: string, module: Module) => ({
   hasLoader: true,
   hasErrorBoundary: true,
 });
-/** The index route, or the history route, under `layout`'s route. */
+/** The index route, or the history or edit route, under `layout`'s route. */
 const child = (layout: string, module: Module, path?: string) => ({
-  id: `routes/${layout}${path ? ".history" : "._index"}`,
+  id: `routes/${layout}${path ? `.${path}` : "._index"}`,
   parentId: `routes/${layout}`,
   module,
   hasLoader: path !== undefined,
@@ -69,12 +75,18 @@ const get = serveApp([
   route("categories._index", "categories", categories),
   route("categories.$slug", "categories/:slug", categoryLayout),
   child("categories.$slug", categoryRead),
+  child("categories.$slug", categoryEdit, "edit"),
+  route("categories.new", "categories/new", categoryNew),
   route("collections._index", "collections", collections),
   route("collections.$id", "collections/:id", collectionLayout),
   child("collections.$id", collectionRead),
+  child("collections.$id", collectionEdit, "edit"),
+  route("collections.new", "collections/new", collectionNew),
   route("events._index", "events", events),
   route("events.$slug", "events/:slug", eventLayout),
   child("events.$slug", eventRead),
+  child("events.$slug", eventEdit, "edit"),
+  route("events.new", "events/new", eventNew),
   route("revisions.$id", "revisions/:id", revision),
   route("search", "search", search),
   route("settings", "settings", settings),
@@ -119,6 +131,7 @@ const PAGES: readonly (readonly [string, number, Check])[] = [
   ["/collections/12", 200, { h1: "The Northmarch Songbook" }],
   ["/events", 200, { h1: "Events and venues" }],
   ["/events/midwinter-revel", 200, { h1: "Midwinter Revel" }],
+  ["/events/new", 302, { location: "/auth/login?returnTo=%2Fevents%2Fnew" }],
   ["/help", 200, { h1: "Help" }],
   ["/help/conservation-status", 200, { h1: "Conservation status" }],
   ["/settings", 200, { contains: "<title>Settings" }],
@@ -131,6 +144,16 @@ const PAGES: readonly (readonly [string, number, Check])[] = [
   ["/", 200, { contains: `href="${stylesheetUrl}"` }],
   ["/robots.txt", 200, { contains: "Sitemap:" }],
   ["/sitemap.xml", 200, { contains: "<urlset" }],
+];
+
+/** The editors, as the fixture contributor: each edit and new page. */
+const EDITOR_PAGES: readonly (readonly [string, string])[] = [
+  ["/events/midwinter-revel/edit", "Midwinter Revel"],
+  ["/events/new", "New event or venue"],
+  ["/collections/12/edit", "The Northmarch Songbook"],
+  ["/collections/new", "New collection"],
+  ["/categories/swords/edit", "Swords"],
+  ["/categories/new", "New category"],
 ];
 
 describe("server-rendered routes", () => {
@@ -148,6 +171,14 @@ describe("server-rendered routes", () => {
       expect(
         /<h1[^>]*>(.*?)<\/h1>/s.exec(html)?.[1]?.replace(/<[^>]*>/g, "")
       ).toBe(check.h1);
+  });
+
+  it.each(EDITOR_PAGES)("%s answers 200 signed in", async (url, h1) => {
+    const cookie = await sessionCookie(
+      sessionTokens({ accessToken: "fixture:contributor" })
+    );
+    const html = await (await get(url, cookie)).text();
+    expect(/<h1[^>]*>(.*?)<\/h1>/s.exec(html)?.[1]).toBe(h1);
   });
 
   it("is the resting page (503, Retry-After) when the API is down", async () => {

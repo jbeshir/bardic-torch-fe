@@ -1,6 +1,6 @@
 import type { RouterContextProvider } from "react-router";
 import { z } from "zod";
-import type { operations } from "~/api/schema.gen";
+import type { components, operations } from "~/api/schema.gen";
 import { isUnavailable } from "~/catalogue/read-failure";
 import { type UpstreamErrorCode, type User } from "~/schemas/api";
 import { DISPLAY_NAME_RULE } from "~/schemas/rules";
@@ -43,8 +43,17 @@ type ErrorCode = Exclude<
   "forbidden" | "offline" | "unexpected_response"
 >;
 
-/** An error the app reports, with its own copy (see `upstreamError`). */
-type ApiError = ProxyError & { readonly code: ErrorCode };
+type Schemas = components["schemas"];
+
+/**
+ * An error the app reports, with its own copy (see `upstreamError`). A 422
+ * carries the API's `problems`, and a 409 `possible_duplicate` its matches.
+ */
+type ApiError = ProxyError & {
+  readonly code: ErrorCode;
+  readonly problems?: readonly Schemas["Problem"][];
+  readonly duplicates?: readonly Schemas["DuplicateMatch"][];
+};
 
 type ApiResult<T> = (
   | { readonly ok: true; readonly data: T }
@@ -65,6 +74,20 @@ const MAX_BODY_BYTES = 8 * 1024;
 const ENDPOINTS = {
   getMe: { method: "GET", path: "/v1/me" },
   updateMe: { method: "PATCH", path: "/v1/me" },
+  getEditablePiece: { method: "GET", path: "/v1/pieces/{slug}/editable" },
+  getEditablePerson: { method: "GET", path: "/v1/persons/{slug}/editable" },
+  getEditableTerm: { method: "GET", path: "/v1/terms/{slug}/editable" },
+  getEditableEvent: { method: "GET", path: "/v1/events/{slug}/editable" },
+  getEditableCollection: {
+    method: "GET",
+    path: "/v1/collections/{collection_id}/editable",
+  },
+  submitRevision: { method: "POST", path: "/v1/revisions" },
+  listMyRevisions: { method: "GET", path: "/v1/me/revisions" },
+  withdrawRevision: {
+    method: "POST",
+    path: "/v1/revisions/{revision_id}/withdraw",
+  },
 } as const satisfies {
   readonly [Id in keyof operations]?: EndpointOf<operations[Id]>;
 };
@@ -74,6 +97,7 @@ type OperationId = keyof typeof ENDPOINTS;
 type ApiRequest = {
   readonly operationId: OperationId;
   readonly params?: Readonly<Record<string, string>>;
+  readonly query?: URLSearchParams;
   readonly body?: unknown;
 };
 
@@ -123,6 +147,32 @@ function upstreamError(
         message:
           "Something changed while you were editing. Reload the page and try again.",
       };
+    case "possible_duplicate":
+      return {
+        code,
+        message:
+          "This may already be in the catalogue. Check the pages below, and submit again if yours is a different one.",
+      };
+    case "stale_revision":
+      return {
+        code,
+        message:
+          "This page has changed since you started editing. Check the current version, then save again to replace those changes.",
+      };
+    case "pending_limit_reached":
+      return {
+        code,
+        message:
+          "You already have 30 edits waiting for review. Withdraw one, or wait for a moderator to review them, then try again.",
+      };
+    case "moderator_only":
+      return {
+        code,
+        message:
+          "Only moderators can edit this page, because it shows someone who asked not to have a page.",
+      };
+    case "validation_failed":
+      return { code, message: "Check the highlighted fields." };
     case "invalid_request":
       if (operationId === "updateMe") {
         return {
@@ -174,7 +224,7 @@ async function callApi<T>(
         env.BARDIC_TORCH_API_BASE_URL,
         ENDPOINTS[apiRequest.operationId].path,
         apiRequest.params
-      ),
+      ) + (apiRequest.query ? `?${apiRequest.query}` : ""),
       {
         method: ENDPOINTS[apiRequest.operationId].method,
         headers:
@@ -225,6 +275,9 @@ async function callApi<T>(
     typeof payload === "object" && payload !== null && !Array.isArray(payload)
       ? (payload as Record<string, unknown>)
       : undefined;
+  if (response.status === 204) {
+    return { ok: true, status: 204, data: undefined as T, headers };
+  }
   if (response.ok) {
     if (body) {
       return { ok: true, status: response.status, data: body as T, headers };
@@ -238,9 +291,18 @@ async function callApi<T>(
       return failure(response.status, UNREACHABLE, headers);
     }
     if (code !== undefined) {
+      const error = upstreamError(apiRequest.operationId, code);
+      const { problems, possible_duplicates } = body as {
+        readonly problems?: Schemas["Problem"][];
+        readonly possible_duplicates?: Schemas["DuplicateMatch"][];
+      };
       return failure(
         response.status,
-        upstreamError(apiRequest.operationId, code),
+        code === "validation_failed" && problems
+          ? { ...error, problems }
+          : code === "possible_duplicate" && possible_duplicates
+            ? { ...error, duplicates: possible_duplicates }
+            : error,
         headers
       );
     }
@@ -263,7 +325,7 @@ async function callApi<T>(
  * The body as text, read until it ends or passes `limit` bytes (null), so
  * an oversized body is never held in memory, whatever Content-Length says.
  */
-async function readLimited(
+export async function readLimited(
   request: Request,
   limit: number
 ): Promise<string | null> {
@@ -413,6 +475,41 @@ export function updateMe(
 ) {
   return callApi<User>(request, context, {
     operationId: "updateMe",
+    body,
+  });
+}
+
+const EDITABLE_OPERATIONS = {
+  piece: "getEditablePiece",
+  person: "getEditablePerson",
+  term: "getEditableTerm",
+  event: "getEditableEvent",
+  collection: "getEditableCollection",
+} as const satisfies Record<Schemas["EntityType"], OperationId>;
+
+/**
+ * An entity's editable document (`GET /v1/{type}/{key}/editable`): `key`
+ * is the slug, or a collection's id, already checked by the route.
+ */
+export function getEditable(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  type: Schemas["EntityType"],
+  key: string
+) {
+  return callApi<Schemas["Editable"]>(request, context, {
+    operationId: EDITABLE_OPERATIONS[type],
+    params: type === "collection" ? { collection_id: key } : { slug: key },
+  });
+}
+
+export function submitRevision(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  body: RequestBody<"submitRevision">
+) {
+  return callApi<Schemas["RevisionView"]>(request, context, {
+    operationId: "submitRevision",
     body,
   });
 }

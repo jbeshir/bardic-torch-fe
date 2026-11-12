@@ -1,0 +1,506 @@
+import type { components } from "../../app/api/schema.gen";
+import {
+  collectionRef,
+  COLLECTIONS,
+  rawCollection,
+} from "./catalogue/collections";
+import { eventSummary, EVENTS } from "./catalogue/events";
+import { LINKS, type RawLink } from "./catalogue/links";
+import { PERSON_RELATIONS, PERSONS, personSummary } from "./catalogue/persons";
+import { PIECE_RELATIONS, PIECES, pieceSummary } from "./catalogue/pieces";
+import { REVISIONS } from "./catalogue/revisions";
+import { TERMS, termSummary } from "./catalogue/terms";
+import { errorBody, type FixtureResponse } from "./responses";
+
+/**
+ * The fixture API's editing operations: each public entity's editable
+ * document (built from the raw catalogue), `submitRevision`,
+ * `listMyRevisions` and `withdrawRevision`, with the submitted revisions
+ * kept per user. Its rules are only those the editors' tests and journeys
+ * need: a blank title or name is 422 `required`; a new entity whose name
+ * folds equal to a public one's is 409 `possible_duplicate` unless
+ * acknowledged; a contributor can't edit a document that shows a person
+ * who prefers not to have a page (403 `moderator_only`).
+ */
+
+type Schemas = components["schemas"];
+type EntityType = Schemas["EntityType"];
+type User = Schemas["User"];
+type Document = Schemas["EditorDocument"];
+
+/** Each user's revisions, newest last. */
+export type RevisionStore = Map<string, Schemas["RevisionView"][]>;
+
+const NOW = "2026-11-01T12:00:00Z";
+const FIRST_ID = 2001;
+const PREFERS_NO_PAGE = new Set(
+  PERSONS.filter(p => p.status === "prefers_no_page").map(p => p.slug)
+);
+
+const linksOf = (kind: "piece" | "person", slug: string) =>
+  LINKS.filter(l => l.owner.kind === kind && l.owner.slug === slug);
+
+const editorLink = ({ collection, performances, ...link }: RawLink) => ({
+  url: link.url,
+  title: link.title,
+  description: link.description,
+  platform: link.platform,
+  place_type: link.place_type,
+  collection_id: collection,
+  locator: link.locator,
+  roles: [...link.roles],
+  performances: performances.map(p => ({
+    event_slug: p.event,
+    year: p.year,
+    uploader: p.uploader,
+    description_verbatim: p.description_verbatim,
+    performer_slugs: [...p.performers],
+  })),
+});
+
+// Editable documents ----------------------------------------------------------
+
+const DOCUMENTS: Readonly<
+  Record<EntityType, (key: string) => Document | undefined>
+> = {
+  piece: slug => {
+    const raw = PIECES.find(p => p.slug === slug);
+    if (!raw) return undefined;
+    return {
+      schema_version: 1,
+      title: raw.title,
+      kind: raw.kind,
+      secondary_kinds: [...raw.secondary_kinds],
+      conservation: {
+        status: raw.conservation_status,
+        source_url: raw.conservation_history.at(-1)?.source_url ?? null,
+      },
+      is_stub: raw.is_stub,
+      notes_md: raw.notes_md,
+      version_notes_md: raw.version_notes_md,
+      licensing_status: raw.licensing_status,
+      licensing_notes_md: raw.licensing_notes_md,
+      licence: raw.licence,
+      licence_version: raw.licence_version,
+      historical_source_md: raw.historical_source_md,
+      period_start: raw.period_start,
+      period_end: raw.period_end,
+      aliases: raw.aliases.map(({ text, kind }) => ({ text, kind })),
+      terms: raw.terms.map(t => ({
+        term_slug: t.term,
+        is_primary: t.is_primary,
+        part: t.part,
+      })),
+      relations: PIECE_RELATIONS.filter(r => r.from === slug).map(r => ({
+        to_piece_slug: r.to,
+        type: r.type,
+      })),
+      credits: raw.credits.map(({ person, ...credit }) => ({
+        ...credit,
+        person_slug: person,
+      })),
+      links: linksOf("piece", slug).map(editorLink),
+    };
+  },
+  person: slug => {
+    const raw = PERSONS.find(p => p.slug === slug);
+    if (!raw) return undefined;
+    const { profile } = raw;
+    return {
+      schema_version: 1,
+      name: raw.name,
+      kind: raw.kind,
+      status: raw.status,
+      status_date: raw.status_date,
+      status_source_url: raw.status_source_url,
+      pronouns: profile?.pronouns ?? null,
+      notes_md: profile?.notes_md ?? null,
+      licensing_status: profile?.licensing_status ?? "unknown",
+      licensing_notes_md: profile?.licensing_notes_md ?? null,
+      is_stub: raw.is_stub,
+      aliases: (profile?.aliases ?? []).map(({ name, kind }) => ({
+        name,
+        kind,
+      })),
+      roles: [...(profile?.roles ?? [])],
+      affiliation_slugs: [...(profile?.affiliations ?? [])],
+      relations: PERSON_RELATIONS.filter(r => r.from === slug).map(r => ({
+        to_person_slug: r.to,
+        type: r.type,
+      })),
+      links: linksOf("person", slug).map(link => {
+        const { performances, ...rest } = editorLink(link);
+        return {
+          ...rest,
+          performances: performances.map(p => ({ piece_slug: null, ...p })),
+        };
+      }),
+    };
+  },
+  term: slug => {
+    const raw = TERMS.find(t => t.slug === slug);
+    if (!raw) return undefined;
+    return {
+      schema_version: 1,
+      facet: raw.facet,
+      name: raw.name,
+      display_name: raw.display_name,
+      parent_slug: raw.parent,
+      related_affiliation_slug: raw.related_affiliation,
+      description_md: raw.description_md,
+      position: TERMS.filter(
+        t => t.facet === raw.facet && t.parent === raw.parent
+      ).indexOf(raw),
+      aliases: [...raw.aliases],
+    };
+  },
+  collection: id => {
+    const raw = COLLECTIONS.find(c => String(c.id) === id);
+    if (!raw) return undefined;
+    return {
+      schema_version: 1,
+      name: raw.name,
+      url: raw.url,
+      kind: raw.kind,
+      description_md: raw.description_md,
+      region_term_slug: raw.region,
+      parent_id: raw.parent,
+      is_bardic_resource: raw.is_bardic_resource,
+      enumerable: raw.enumerable,
+    };
+  },
+  event: slug => {
+    const raw = EVENTS.find(e => e.slug === slug);
+    if (!raw) return undefined;
+    const { name, kind, description_md } = raw;
+    return { schema_version: 1, name, kind, description_md };
+  },
+};
+
+/** Each entity's key and its documents' names, to find duplicates by. */
+const KEYS: Readonly<
+  Record<EntityType, readonly { key: string; name: string }[]>
+> = {
+  piece: PIECES.map(p => ({ key: p.slug, name: p.title })),
+  person: PERSONS.map(p => ({ key: p.slug, name: p.name })),
+  term: TERMS.map(t => ({ key: t.slug, name: t.name })),
+  collection: COLLECTIONS.map(c => ({ key: String(c.id), name: c.name })),
+  event: EVENTS.map(e => ({ key: e.slug, name: e.name })),
+};
+
+const TYPE_OFFSETS: Readonly<Record<EntityType, number>> = {
+  piece: 10000,
+  person: 20000,
+  term: 30000,
+  collection: 40000,
+  event: 50000,
+};
+
+/** An entity's base revision: its newest fixture revision, or one of its own. */
+function baseOf(type: EntityType, key: string): number {
+  const latest = REVISIONS.filter(
+    r =>
+      r.entity_type === type &&
+      String("slug" in r.entity ? r.entity.slug : r.entity.id) === key
+  ).at(-1);
+  return (
+    latest?.id ??
+    TYPE_OFFSETS[type] + KEYS[type].findIndex(entry => entry.key === key)
+  );
+}
+
+/** The entity a base revision is of. */
+function entityOfBase(type: EntityType, base: number) {
+  return KEYS[type].find(({ key }) => baseOf(type, key) === base)?.key;
+}
+
+const SUMMARIES: Readonly<
+  Record<EntityType, (key: string) => Schemas["RevisionView"]["entity"]>
+> = {
+  piece: pieceSummary,
+  person: personSummary,
+  term: termSummary,
+  collection: id => collectionRef(Number(id)),
+  event: eventSummary,
+};
+
+/** Whether the document shows a person who prefers not to have a page. */
+function showsHiddenPerson(document: Document): boolean {
+  if ("status" in document && document.status === "prefers_no_page") {
+    return true;
+  }
+  const slugs = [
+    ...("credits" in document ? document.credits.map(c => c.person_slug) : []),
+    ...("links" in document
+      ? document.links.flatMap(l =>
+          l.performances.flatMap(p => p.performer_slugs)
+        )
+      : []),
+  ];
+  return slugs.some(slug => slug !== null && PREFERS_NO_PAGE.has(slug));
+}
+
+export function getEditable(
+  user: User,
+  type: EntityType,
+  key: string
+): FixtureResponse {
+  const document = DOCUMENTS[type](key);
+  if (!document) {
+    return { status: 404, body: errorBody("not_found", `${type} not found`) };
+  }
+  if (user.role !== "moderator" && showsHiddenPerson(document)) {
+    return {
+      status: 403,
+      body: errorBody("moderator_only", "only a moderator may edit it"),
+    };
+  }
+  return {
+    status: 200,
+    body: {
+      entity_type: type,
+      base_revision_id: baseOf(type, key),
+      pending_revision_id: null,
+      document,
+    },
+  };
+}
+
+// Submitting ------------------------------------------------------------------
+
+/** References as summaries, the snapshot views a revision is served with. */
+const SNAPSHOTS: Readonly<
+  Record<EntityType, (document: never) => Schemas["Snapshot"]>
+> = {
+  piece: ({
+    schema_version: _version,
+    conservation,
+    terms,
+    relations,
+    credits,
+    links,
+    ...piece
+  }: Schemas["EditorPieceDocument"]) => ({
+    ...piece,
+    conservation_status: conservation.status,
+    conservation_source_url: conservation.source_url,
+    terms: terms.map(({ term_slug, ...t }) => ({
+      ...t,
+      term: termSummary(term_slug),
+    })),
+    relations: relations.map(r => ({
+      type: r.type,
+      piece: pieceSummary(r.to_piece_slug),
+    })),
+    credits: credits.map(({ person_slug, ...c }) => ({
+      ...c,
+      person: person_slug === null ? null : personSummary(person_slug),
+    })),
+    links: links.map(({ collection_id, performances, ...link }) => ({
+      ...link,
+      collection: collection_id === null ? null : collectionRef(collection_id),
+      performances: performances.map(
+        ({ event_slug, performer_slugs, ...p }) => ({
+          ...p,
+          event: event_slug === null ? null : eventSummary(event_slug),
+          performers: performer_slugs.map(personSummary),
+        })
+      ),
+    })),
+  }),
+  person: (person: Schemas["EditorPersonDocument"]) => ({
+    name: person.name,
+    kind: person.kind,
+    status: person.status,
+    status_date: person.status_date,
+    status_source_url: person.status_source_url,
+    is_stub: person.is_stub,
+    profile: {
+      pronouns: person.pronouns,
+      notes_md: person.notes_md,
+      licensing_status: person.licensing_status,
+      licensing_notes_md: person.licensing_notes_md,
+      aliases: person.aliases,
+      roles: person.roles,
+      affiliations: person.affiliation_slugs.map(termSummary),
+      relations: person.relations.map(r => ({
+        type: r.type,
+        person: personSummary(r.to_person_slug),
+      })),
+      links: person.links.map(({ collection_id, performances, ...link }) => ({
+        ...link,
+        collection:
+          collection_id === null ? null : collectionRef(collection_id),
+        performances: performances.map(p => ({
+          piece: p.piece_slug === null ? null : pieceSummary(p.piece_slug),
+          year: p.year,
+          uploader: p.uploader,
+          description_verbatim: p.description_verbatim,
+          event: p.event_slug === null ? null : eventSummary(p.event_slug),
+          performers: p.performer_slugs.map(personSummary),
+        })),
+      })),
+    },
+  }),
+  term: ({
+    schema_version: _version,
+    parent_slug,
+    related_affiliation_slug,
+    ...term
+  }: Schemas["EditorTermDocument"]) => ({
+    ...term,
+    parent: parent_slug === null ? null : termSummary(parent_slug),
+    related_affiliation:
+      related_affiliation_slug === null
+        ? null
+        : termSummary(related_affiliation_slug),
+  }),
+  collection: ({
+    schema_version: _version,
+    region_term_slug,
+    parent_id,
+    ...collection
+  }: Schemas["EditorCollectionDocument"]) => ({
+    ...collection,
+    region: region_term_slug === null ? null : termSummary(region_term_slug),
+    parent: parent_id === null ? null : collectionSummary(parent_id),
+  }),
+  event: ({
+    schema_version: _version,
+    ...event
+  }: Schemas["EditorEventDocument"]) => event,
+};
+
+function collectionSummary(id: number): Schemas["CollectionSummary"] {
+  const { name, kind, url, is_bardic_resource } = rawCollection(id);
+  return { id, name, kind, url, is_bardic_resource };
+}
+
+const fold = (name: string) => name.trim().toLowerCase();
+
+export function submitRevision(
+  store: RevisionStore,
+  user: User,
+  request: Schemas["SubmitRevisionRequest"]
+): FixtureResponse {
+  const { entity_type: type, base_revision_id: base, document } = request;
+  const name = "title" in document ? document.title : document.name;
+  const path = "title" in document ? "title" : "name";
+  if (name.trim() === "") {
+    return {
+      status: 422,
+      body: {
+        code: "validation_failed",
+        message: "the document does not validate",
+        problems: [{ path, code: "required" }],
+      },
+    };
+  }
+  const key = base === null ? undefined : entityOfBase(type, base);
+  if (base !== null && key === undefined) {
+    return {
+      status: 404,
+      body: errorBody("not_found", "base revision not found"),
+    };
+  }
+  const matches = KEYS[type].filter(entry => fold(entry.name) === fold(name));
+  if (base === null && matches.length > 0 && !request.acknowledge_duplicates) {
+    return {
+      status: 409,
+      body: {
+        code: "possible_duplicate",
+        message: "the new entity may duplicate public ones",
+        possible_duplicates: matches.map(match => ({
+          entity_type: type,
+          slug: type === "collection" ? null : match.key,
+          collection_id: type === "collection" ? Number(match.key) : null,
+          name: match.name,
+        })),
+      },
+    };
+  }
+  const approved = user.role === "moderator";
+  const own = store.get(user.id) ?? [];
+  const all = [...store.values()].flat();
+  const revision: Schemas["RevisionView"] = {
+    entity_type: type,
+    id: FIRST_ID + all.length,
+    source: "user",
+    summary: request.summary,
+    author: { display_name: user.display_name },
+    contributors: [],
+    created_at: NOW,
+    status: approved ? "approved" : "pending",
+    review_note: null,
+    reviewed_at: approved ? NOW : null,
+    entity: key === undefined ? null : SUMMARIES[type](key),
+    base_revision_id: base,
+    snapshot: SNAPSHOTS[type](document as never),
+    base_snapshot: null,
+    changed_fields: [],
+  };
+  store.set(user.id, [...own, revision]);
+  return { status: 201, body: revision };
+}
+
+export function listMyRevisions(
+  store: RevisionStore,
+  user: User,
+  query: URLSearchParams
+): FixtureResponse {
+  const status = query.get("status");
+  const mine = (store.get(user.id) ?? [])
+    .filter(r => status === null || r.status === status)
+    .reverse();
+  const offset = Number(query.get("offset") ?? 0);
+  const limit = Number(query.get("limit") ?? 50);
+  return {
+    status: 200,
+    body: {
+      data: mine.slice(offset, offset + limit).map(r => ({
+        id: r.id,
+        entity_type: r.entity_type,
+        entity: r.entity && {
+          slug: "slug" in r.entity ? r.entity.slug : null,
+          collection_id: "slug" in r.entity ? null : r.entity.id,
+          name:
+            "title" in r.entity
+              ? r.entity.title
+              : "name" in r.entity
+                ? r.entity.name
+                : r.entity.display_name,
+        },
+        status: r.status,
+        summary: r.summary,
+        created_at: r.created_at,
+        reviewed_at: r.reviewed_at,
+        is_stale: false,
+        author: null,
+      })),
+      total: mine.length,
+    },
+  };
+}
+
+export function withdrawRevision(
+  store: RevisionStore,
+  user: User,
+  id: string
+): FixtureResponse {
+  const mine = store.get(user.id) ?? [];
+  const revision = mine.find(r => String(r.id) === id);
+  if (!revision) {
+    return { status: 404, body: errorBody("not_found", "revision not found") };
+  }
+  if (revision.status !== "pending") {
+    return {
+      status: 409,
+      body: errorBody("revision_not_pending", "the revision is not pending"),
+    };
+  }
+  store.set(
+    user.id,
+    mine.map(r => (r === revision ? { ...r, status: "withdrawn" } : r))
+  );
+  return { status: 204 };
+}

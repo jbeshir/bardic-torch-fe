@@ -1,0 +1,251 @@
+import {
+  data,
+  redirect,
+  type ActionFunctionArgs,
+  type LoaderFunctionArgs,
+  type RouterContextProvider,
+} from "react-router";
+import type { z } from "zod";
+import {
+  asPageFailure,
+  NOT_FOUND,
+  throwPageFailure,
+} from "~/catalogue/read-failure";
+import { loginHref } from "~/constants/account";
+import { FACET_LABELS } from "~/constants/vocabulary";
+import { DOCUMENT_SCHEMAS, type EntityType } from "~/editing/documents";
+import {
+  readPath,
+  type EditorActionData,
+  type EditorLoaderData,
+  type Option,
+  type Options,
+  type Picker,
+} from "~/editing/editor-data";
+import { decodeForm } from "~/editing/form-codec";
+import { fieldProblem } from "~/editing/problems";
+import { isEntityId, isSlug } from "~/schemas/address";
+import { getEditable, readLimited, submitRevision } from "./api.server";
+import { getServerAuthContext } from "./auth.server";
+import { listCollections, listTerms } from "./catalogue.server";
+import { assertSameOrigin } from "./csrf.server";
+import { renderMarkdown } from "./markdown.server";
+
+/**
+ * The loader and action every edit and new route shares (plan "No client
+ * JS"). The form is a document POST to its own route's action, which
+ * checks same-origin, decodes the form (form-codec.ts) and either adds or
+ * removes a row, previews, or submits the revision and answers with its
+ * outcome: a 303 on success, otherwise the form again with what went wrong.
+ */
+
+type Document<T extends EntityType> = z.output<(typeof DOCUMENT_SCHEMAS)[T]>;
+
+/** The API's largest revision body; the form is never larger than its JSON. */
+const MAX_FORM_BYTES = 1024 * 1024;
+const PAGE = 100;
+
+async function termOptions(
+  context: Readonly<RouterContextProvider>
+): Promise<Options> {
+  const result = await listTerms(context, {});
+  if (!result.ok) throwPageFailure(result.failure);
+  const depths = new Map<string, number>();
+  const all = result.data.data.map(term => {
+    const depth =
+      term.parent_slug === null ? 0 : (depths.get(term.parent_slug) ?? 0) + 1;
+    depths.set(term.slug, depth);
+    // No-break spaces: an option collapses plain ones.
+    const label = `${"\u00a0\u00a0".repeat(depth)}${term.name}`;
+    return { term, option: { value: term.slug, label } };
+  });
+  return {
+    terms: all.map(({ term, option }) => ({
+      ...option,
+      group: FACET_LABELS[term.facet],
+    })),
+    affiliations: all
+      .filter(({ term }) => term.facet === "affiliation")
+      .map(({ option }) => option),
+  };
+}
+
+/** Every public collection, a page of 100 at a time. */
+async function collectionOptions(
+  context: Readonly<RouterContextProvider>
+): Promise<Options> {
+  const collections: Option[] = [];
+  for (let offset = 0; ; offset += PAGE) {
+    const result = await listCollections(context, { limit: PAGE, offset });
+    if (!result.ok) throwPageFailure(asPageFailure(result.failure));
+    const { data: page, total } = result.data;
+    collections.push(
+      ...page.map(({ id, name }) => ({ value: String(id), label: name }))
+    );
+    if (page.length === 0 || offset + PAGE >= total) return { collections };
+  }
+}
+
+/** The option lists `pickers` need, loaded together; a failure is the page's. */
+async function loadOptions(
+  context: Readonly<RouterContextProvider>,
+  pickers: readonly Picker[]
+): Promise<Options> {
+  const lists = await Promise.all([
+    pickers.includes("terms") || pickers.includes("affiliations")
+      ? termOptions(context)
+      : {},
+    pickers.includes("collections") ? collectionOptions(context) : {},
+  ]);
+  return Object.assign({}, ...lists) as Options;
+}
+
+/**
+ * An edit route's (`key`, the slug or id in its path) or a new route's
+ * loader: signed out goes to log in and back; the entity's editable
+ * document, or for a new one a blank document; and the pickers' lists.
+ * A document the reader can't edit (403 `moderator_only`, a blocked
+ * account, an outage) is a notice in its place.
+ */
+export async function editorLoader<T extends EntityType>(
+  { request, url, context }: LoaderFunctionArgs,
+  {
+    type,
+    key,
+    pickers = [],
+  }: {
+    readonly type: T;
+    readonly key?: string;
+    readonly pickers?: readonly Picker[];
+  }
+) {
+  const login = loginHref(`${url.pathname}${url.search}`);
+  const auth = await getServerAuthContext(request, context);
+  if (!auth.authContext.isAuthenticated) {
+    throw redirect(login, { headers: new Headers(auth.headers) });
+  }
+  const valid = type === "collection" ? isEntityId : isSlug;
+  if (key !== undefined && !valid(key)) throwPageFailure(NOT_FOUND);
+
+  const [editable, options] = await Promise.all([
+    key === undefined ? null : getEditable(request, context, type, key),
+    loadOptions(context, pickers),
+  ]);
+  const headers = editable?.headers ?? new Headers(auth.headers);
+  if (editable?.status === 401) throw redirect(login, { headers });
+  if (editable?.status === 404) throwPageFailure(NOT_FOUND);
+
+  const loaded: EditorLoaderData<Document<T>> = editable
+    ? {
+        document: editable.ok ? (editable.data.document as Document<T>) : null,
+        baseRevisionId: editable.ok ? editable.data.base_revision_id : null,
+        notice: editable.ok ? null : editable.error.message,
+        options,
+      }
+    : {
+        document: DOCUMENT_SCHEMAS[type].parse({}) as Document<T>,
+        baseRevisionId: null,
+        notice: null,
+        options,
+      };
+  return data(loaded, { headers });
+}
+
+/** The posted fields, or why they can't be read. */
+async function readFields(request: Request): Promise<URLSearchParams | string> {
+  const unreadable =
+    "We couldn’t read the form. Reload the page and try again.";
+  const type = request.headers.get("Content-Type") ?? "";
+  if (!/^application\/x-www-form-urlencoded\s*(;|$)/i.test(type)) {
+    return unreadable;
+  }
+  const text = await readLimited(request, MAX_FORM_BYTES).catch(
+    () => undefined
+  );
+  if (text === undefined) return unreadable;
+  return text === null
+    ? "The form is too large to send."
+    : new URLSearchParams(text);
+}
+
+/**
+ * An edit or new route's action. `preview` makes what the page's Preview
+ * shows from the document, on the server (Markdown, say).
+ */
+export async function editorAction<T extends EntityType, P>(
+  { request, context }: ActionFunctionArgs,
+  {
+    type,
+    preview,
+  }: {
+    readonly type: T;
+    readonly preview: (document: Document<T>) => P;
+  }
+) {
+  assertSameOrigin(request);
+  const fields = await readFields(request);
+  const form = typeof fields === "string" ? null : decodeForm(type, fields);
+  const answer = (
+    outcome: Partial<EditorActionData<Document<T>, P>>,
+    init?: ResponseInit
+  ) => {
+    const full: EditorActionData<Document<T>, P> = {
+      document: form?.document ?? null,
+      summary: form?.summary ?? "",
+      preview: null,
+      message: null,
+      problems: [],
+      duplicates: [],
+      stale: false,
+      ...outcome,
+    };
+    return data(full, init);
+  };
+  if (!form) {
+    return answer(
+      {
+        message:
+          typeof fields === "string"
+            ? fields
+            : "Some of the form’s values couldn’t be read. Check them and try again.",
+      },
+      { status: 400 }
+    );
+  }
+  if (form.intent.kind === "preview") {
+    return answer({ preview: preview(form.document) });
+  }
+  if (form.intent.kind !== "submit") return answer({});
+
+  const result = await submitRevision(request, context, {
+    entity_type: type,
+    base_revision_id: form.baseRevisionId,
+    summary: form.summary,
+    document: form.document,
+    acknowledge_duplicates: form.acknowledgeDuplicates,
+    acknowledge_stale: form.acknowledgeStale,
+  });
+  if (result.ok) {
+    const { id, status, entity } = result.data;
+    const to =
+      status === "approved" && entity
+        ? readPath(type, "slug" in entity ? entity.slug : entity.id)
+        : `/contributions?submitted=${id}`;
+    return redirect(to, { status: 303, headers: result.headers });
+  }
+  const { error } = result;
+  return answer(
+    {
+      message: error.message,
+      problems: (error.problems ?? []).map(fieldProblem),
+      duplicates: error.duplicates ?? [],
+      stale: error.code === "stale_revision",
+    },
+    { status: result.status, headers: result.headers }
+  );
+}
+
+/** The preview of a type whose page is its description (event, collection, term). */
+export const previewDescription = (document: {
+  readonly description_md: string | null;
+}) => ({ description: renderMarkdown(document.description_md) });
