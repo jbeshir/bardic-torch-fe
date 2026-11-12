@@ -1,3 +1,5 @@
+import { IconChevronDown } from "@tabler/icons-react";
+import { use } from "react";
 import {
   LINK_PLACE_TYPE_LABELS,
   LINK_ROLE_LABELS,
@@ -6,8 +8,8 @@ import type { PieceDocument } from "~/editing/documents";
 import type { Options } from "~/editing/editor-data";
 import {
   ChoicesField,
+  FieldErrorsContext,
   labelOptions,
-  MultiSelectField,
   Rows,
   SelectField,
   TextField,
@@ -37,6 +39,8 @@ export function LinkEditor({
   readonly ofPerson: boolean;
 }) {
   const persons = options.persons ?? [];
+  const errors = Object.keys(use(FieldErrorsContext));
+  const roleOptions = labelOptions(LINK_ROLE_LABELS);
   return (
     <Rows
       legend="Links"
@@ -46,7 +50,33 @@ export function LinkEditor({
       addLabel="Add a link"
     >
       {(link, name) => (
-        <>
+        // Folded, but open while it is new (no address yet) or has a problem.
+        <details
+          className="group grid gap-5"
+          open={
+            link.url === "" ||
+            errors.some(key => key === name || key.startsWith(`${name}.`))
+          }
+        >
+          <summary className="summary-plain flex min-h-6 cursor-pointer items-center justify-between gap-2 rounded-sm text-body-sm text-fg">
+            <span>
+              {link.title ?? (link.url === "" ? "New link" : link.url)}
+              {link.roles.length > 0
+                ? ` — ${roleOptions
+                    .filter(({ value }) =>
+                      (link.roles as readonly string[]).includes(value)
+                    )
+                    .map(({ label }) => label)
+                    .join(", ")}`
+                : ""}
+            </span>
+            <IconChevronDown
+              size={16}
+              stroke={1.75}
+              aria-hidden="true"
+              className="text-fg-subtle group-open:rotate-180"
+            />
+          </summary>
           <TextField
             name={`${name}.url`}
             label="Address (URL)"
@@ -97,7 +127,7 @@ export function LinkEditor({
             name={`${name}.roles`}
             legend="What it is"
             values={link.roles}
-            options={labelOptions(LINK_ROLE_LABELS)}
+            options={roleOptions}
           />
           <Rows
             legend="Performances"
@@ -144,17 +174,26 @@ export function LinkEditor({
                   multiline
                   optional
                 />
-                <MultiSelectField
-                  name={`${at}.performer_slugs`}
-                  label="Performers"
-                  values={performance.performer_slugs}
-                  options={persons}
-                  optional
-                />
+                <Rows
+                  legend="Performers"
+                  path={`${at}.performer_slugs`}
+                  rows={performance.performer_slugs}
+                  rowLabel={index => `Performer ${index + 1}`}
+                  addLabel="Add a performer"
+                >
+                  {(slug, field) => (
+                    <SelectField
+                      name={field}
+                      label="Person"
+                      value={slug === "" ? null : slug}
+                      options={persons}
+                    />
+                  )}
+                </Rows>
               </>
             )}
           </Rows>
-        </>
+        </details>
       )}
     </Rows>
   );

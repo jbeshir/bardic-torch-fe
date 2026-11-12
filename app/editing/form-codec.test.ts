@@ -82,8 +82,8 @@ describe("decodeForm", () => {
         ["links.0.url", "https://songs.example/kettle"],
         ["links.0.roles", "lyrics"],
         ["links.0.performances.0.year", "2019"],
-        ["links.0.performances.0.performer_slugs", "wren-of-the-vale"],
-        ["links.0.performances.0.performer_slugs", "northmarch-bards"],
+        ["links.0.performances.0.performer_slugs.0", "wren-of-the-vale"],
+        ["links.0.performances.0.performer_slugs.1", "northmarch-bards"],
       ])
     )?.document;
     expect(decoded).toMatchObject({

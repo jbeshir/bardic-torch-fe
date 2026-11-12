@@ -65,6 +65,20 @@ describe("row intents", () => {
       ],
     ],
     [
+      "add:links.0.performances.0.performer_slugs (a blank performer)",
+      [["links.0.performances.0.year", "2019"]],
+      "add:links.0.performances.0.performer_slugs",
+      "links",
+      [
+        {
+          ...BLANK_LINK,
+          performances: [
+            { ...BLANK_PERFORMANCE, year: 2019, performer_slugs: [""] },
+          ],
+        },
+      ],
+    ],
+    [
       "remove:links.0.performances.0",
       [
         ["links.0.url", "https://songs.example"],

@@ -84,7 +84,7 @@ const performance = {
   year: optionalInt,
   uploader: optionalText,
   description_verbatim: text,
-  performer_slugs: many(z.string()),
+  performer_slugs: many(text),
 };
 
 const link = {
