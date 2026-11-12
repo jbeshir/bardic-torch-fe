@@ -97,6 +97,25 @@ function sectionsOf(
 }
 
 /**
+ * A person's infobox and sections without their head: the editor's
+ * preview of the person (a whole page there would repeat the h1 and the
+ * tabs). The view's person has a profile.
+ */
+export function PersonBody({ view }: { readonly view: PersonView }) {
+  const { profile } = view.person;
+  return profile ? (
+    <div className="flow-root">
+      <PersonInfobox person={view.person} />
+      <div className="prose-bt">
+        {sectionsOf(profile, view.markdown).map(({ id, element }) => (
+          <Fragment key={id}>{element}</Fragment>
+        ))}
+      </div>
+    </div>
+  ) : null;
+}
+
+/**
  * A person's head, the same on their Read and History views: "Bards" in
  * the breadcrumbs, the name, their kind, pronouns and status as the meta
  * line, and the banner: the one that keeps a no-page person's request on

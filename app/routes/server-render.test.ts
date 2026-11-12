@@ -8,8 +8,10 @@ import * as notFound from "./$";
 import * as home from "./_index";
 import * as bardLayout from "./bards.$slug";
 import * as bardRead from "./bards.$slug._index";
+import * as bardEdit from "./bards.$slug.edit";
 import * as bardHistory from "./bards.$slug.history";
 import * as bards from "./bards._index";
+import * as bardNew from "./bards.new";
 import * as categoryLayout from "./categories.$slug";
 import * as categoryRead from "./categories.$slug._index";
 import * as categoryEdit from "./categories.$slug.edit";
@@ -29,8 +31,10 @@ import * as helpPage from "./help.$slug";
 import * as help from "./help._index";
 import * as pieceLayout from "./pieces.$slug";
 import * as pieceRead from "./pieces.$slug._index";
+import * as pieceEdit from "./pieces.$slug.edit";
 import * as pieceHistory from "./pieces.$slug.history";
 import * as pieces from "./pieces._index";
+import * as pieceNew from "./pieces.new";
 import * as revision from "./revisions.$id";
 import * as robots from "./robots[.]txt";
 import * as search from "./search";
@@ -68,10 +72,14 @@ const get = serveApp([
   route("pieces.$slug", "pieces/:slug", pieceLayout),
   child("pieces.$slug", pieceRead),
   child("pieces.$slug", pieceHistory, "history"),
+  child("pieces.$slug", pieceEdit, "edit"),
+  route("pieces.new", "pieces/new", pieceNew),
   route("bards._index", "bards", bards),
   route("bards.$slug", "bards/:slug", bardLayout),
   child("bards.$slug", bardRead),
   child("bards.$slug", bardHistory, "history"),
+  child("bards.$slug", bardEdit, "edit"),
+  route("bards.new", "bards/new", bardNew),
   route("categories._index", "categories", categories),
   route("categories.$slug", "categories/:slug", categoryLayout),
   child("categories.$slug", categoryRead),
@@ -154,6 +162,10 @@ const EDITOR_PAGES: readonly (readonly [string, string])[] = [
   ["/collections/new", "New collection"],
   ["/categories/swords/edit", "Swords"],
   ["/categories/new", "New category"],
+  ["/pieces/the-copper-kettle/edit", "The Copper Kettle"],
+  ["/pieces/new", "New piece"],
+  ["/bards/wren-of-the-vale/edit", "Wren of the Vale"],
+  ["/bards/new", "New bard or group"],
 ];
 
 describe("server-rendered routes", () => {

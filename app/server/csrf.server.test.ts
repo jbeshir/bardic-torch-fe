@@ -2,12 +2,16 @@ import type { ActionFunctionArgs } from "react-router";
 import { describe, expect, it } from "vitest";
 import { action as updateMe } from "~/routes/api.me";
 import { action as logout } from "~/routes/auth.logout";
+import { action as editBard } from "~/routes/bards.$slug.edit";
+import { action as newBard } from "~/routes/bards.new";
 import { action as editCategory } from "~/routes/categories.$slug.edit";
 import { action as newCategory } from "~/routes/categories.new";
 import { action as editCollection } from "~/routes/collections.$id.edit";
 import { action as newCollection } from "~/routes/collections.new";
 import { action as editEvent } from "~/routes/events.$slug.edit";
 import { action as newEvent } from "~/routes/events.new";
+import { action as editPiece } from "~/routes/pieces.$slug.edit";
+import { action as newPiece } from "~/routes/pieces.new";
 import { action as saveTheme } from "~/routes/resources.theme";
 import { APP_ORIGIN } from "~/test/context";
 import { runAction } from "~/test/proxy";
@@ -45,6 +49,10 @@ const ROUTES: ReadonlyArray<{
       ["/collections/new", newCollection, {}],
       ["/categories/:slug/edit", editCategory, { slug: "swords" }],
       ["/categories/new", newCategory, {}],
+      ["/pieces/:slug/edit", editPiece, { slug: "the-copper-kettle" }],
+      ["/pieces/new", newPiece, {}],
+      ["/bards/:slug/edit", editBard, { slug: "wren-of-the-vale" }],
+      ["/bards/new", newBard, {}],
     ] as const
   ).map(([name, action, params]) => ({
     name,

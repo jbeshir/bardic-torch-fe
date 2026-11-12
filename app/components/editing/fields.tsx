@@ -2,7 +2,7 @@ import { IconPlus, IconTrash } from "@tabler/icons-react";
 import { createContext, use, type ReactNode } from "react";
 import type { Option } from "~/editing/editor-data";
 import { Button } from "~/components/ui/Button";
-import { Checkbox } from "~/components/ui/Checkbox";
+import { Checkbox, CheckboxGroup } from "~/components/ui/Checkbox";
 import { Field, OptionalMark } from "~/components/ui/Field";
 import { Input } from "~/components/ui/Input";
 import { Select } from "~/components/ui/Select";
@@ -117,9 +117,101 @@ export function SelectField({
   );
 }
 
-/** A label record (`EVENT_KIND_LABELS`) as options, in its order. */
+/** A native multiple select: its choices are the name's repeated values. */
+export function MultiSelectField({
+  name,
+  values,
+  options,
+  ...field
+}: Common & {
+  readonly values: readonly string[];
+  readonly options: readonly Option[];
+}) {
+  const error = use(FieldErrorsContext)[name];
+  const unknown = values.filter(v => !options.some(o => o.value === v));
+  return (
+    <Field
+      id={name}
+      error={error}
+      help="Hold Ctrl (⌘ on a Mac) to choose more than one."
+      {...field}
+    >
+      <Select name={name} multiple size={5} defaultValue={[...values]}>
+        {unknown.map(value => (
+          <option key={value} value={value}>
+            {value}
+          </option>
+        ))}
+        {grouped(options)}
+      </Select>
+    </Field>
+  );
+}
+
+/** Checkboxes under one legend, one per option, posting their values. */
+export function ChoicesField({
+  name,
+  legend,
+  values,
+  options,
+}: {
+  readonly name: string;
+  readonly legend: string;
+  readonly values: readonly string[];
+  readonly options: readonly Option[];
+}) {
+  const error = use(FieldErrorsContext)[name];
+  return (
+    <CheckboxGroup legend={legend} error={error} optional>
+      {options.map(({ value, label }) => (
+        <Checkbox
+          key={value}
+          name={name}
+          value={value}
+          label={label}
+          defaultChecked={values.includes(value)}
+        />
+      ))}
+    </CheckboxGroup>
+  );
+}
+
+/**
+ * A label record (`EVENT_KIND_LABELS`) as options, in its order, each
+ * label with a capital (some records are for the middle of a sentence).
+ */
 export const labelOptions = (labels: Readonly<Record<string, string>>) =>
-  Object.entries(labels).map(([value, label]) => ({ value, label }));
+  Object.entries(labels).map(([value, label]) => ({
+    value,
+    label: `${label.charAt(0).toUpperCase()}${label.slice(1)}`,
+  }));
+
+/** A relation record's outgoing labels as options: "Variant of". */
+export const relationOptions = (
+  labels: Readonly<Record<string, { readonly outgoing: string }>>
+) =>
+  Object.entries(labels).map(([value, { outgoing }]) => ({
+    value,
+    label: outgoing,
+  }));
+
+/** A part of a long form: a fieldset headed by an h2. */
+export function FormSection({
+  title,
+  children,
+}: {
+  readonly title: string;
+  readonly children: ReactNode;
+}) {
+  return (
+    <fieldset className="grid gap-5">
+      <legend className="mb-5 w-full">
+        <h2 className="border-b border-border pb-2 text-h2 text-fg">{title}</h2>
+      </legend>
+      {children}
+    </fieldset>
+  );
+}
 
 export function CheckboxField({
   name,

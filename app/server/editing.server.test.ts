@@ -15,6 +15,8 @@ import { runAction } from "~/test/proxy";
 import { testBuild } from "~/test/server-build";
 import * as eventEdit from "~/routes/events.$slug.edit";
 import * as eventNew from "~/routes/events.new";
+import * as pieceLayout from "~/routes/pieces.$slug";
+import * as pieceEdit from "~/routes/pieces.$slug.edit";
 
 // The editor loader and action through the real server entry and root,
 // against the fixture API: documents posted as a browser without
@@ -34,6 +36,19 @@ const handle = createRequestHandler(
       id: "routes/events.new",
       path: "events/new",
       module: eventNew,
+      hasLoader: true,
+    },
+    {
+      id: "routes/pieces.$slug",
+      path: "pieces/:slug",
+      module: pieceLayout,
+      hasLoader: true,
+    },
+    {
+      id: "routes/pieces.$slug.edit",
+      parentId: "routes/pieces.$slug",
+      path: "edit",
+      module: pieceEdit,
       hasLoader: true,
     },
   ]),
@@ -127,6 +142,30 @@ describe("the editor action", () => {
       acknowledge_duplicates: "on",
     });
     expect(acknowledged.status).toBe(303);
+  });
+});
+
+describe("the piece editor", () => {
+  it("adds a credit row and keeps the earlier rows' values", async () => {
+    const response = await post("/pieces/the-copper-kettle/edit", {
+      schema_version: "1",
+      title: "The Copper Kettle",
+      "credits.0.person_slug": "wren-of-the-vale",
+      "credits.0.role": "tune",
+      "credits.0.note": "The second tune",
+      intent: "add:credits",
+    });
+    expect(response.status).toBe(200);
+    const html = await response.text();
+    expect(html).toMatch(
+      /name="credits\.0\.person_slug".*?<option value="wren-of-the-vale" selected="">/s
+    );
+    expect(html).toMatch(
+      /name="credits\.0\.role".*?<option value="tune" selected="">/s
+    );
+    expect(html).toMatch(/name="credits\.0\.note" value="The second tune"/);
+    expect(html).toContain('name="credits.1.role"');
+    expect(html).not.toContain('name="credits.2.role"');
   });
 });
 

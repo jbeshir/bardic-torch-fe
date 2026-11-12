@@ -105,6 +105,23 @@ function sectionsOf({ piece, markdown }: PieceView): PageSectionEntry[] {
 }
 
 /**
+ * A piece's infobox and sections without its head: the editor's preview
+ * of the piece (a whole page there would repeat the h1 and the tabs).
+ */
+export function PieceBody({ view }: { readonly view: PieceView }) {
+  return (
+    <div className="flow-root">
+      <PieceInfobox piece={view.piece} />
+      <div className="prose-bt">
+        {sectionsOf(view).map(({ id, element }) => (
+          <Fragment key={id}>{element}</Fragment>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
  * The page-level state under the title rule (plan §4.5), if any: a
  * restricted piece's banner (which replaces every other prompt, the stub's
  * included), or the stub's.

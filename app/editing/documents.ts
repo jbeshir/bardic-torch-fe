@@ -35,6 +35,8 @@ import {
 
 type Schemas = components["schemas"];
 export type EntityType = Schemas["EntityType"];
+export type PieceDocument = Schemas["EditorPieceDocument"];
+export type PersonDocument = Schemas["EditorPersonDocument"];
 export type EventDocument = Schemas["EditorEventDocument"];
 export type CollectionDocument = Schemas["EditorCollectionDocument"];
 export type TermDocument = Schemas["EditorTermDocument"];
@@ -148,7 +150,7 @@ const pieceDocument = z.object({
     })
   ),
   links: many(row({ ...link, performances: many(row(performance)) })),
-}) satisfies z.ZodType<Schemas["EditorPieceDocument"]>;
+}) satisfies z.ZodType<PieceDocument>;
 
 const personDocument = z.object({
   schema_version: int(1),
@@ -178,7 +180,7 @@ const personDocument = z.object({
       performances: many(row({ piece_slug: optionalText, ...performance })),
     })
   ),
-}) satisfies z.ZodType<Schemas["EditorPersonDocument"]>;
+}) satisfies z.ZodType<PersonDocument>;
 
 const termDocument = z.object({
   schema_version: int(1),

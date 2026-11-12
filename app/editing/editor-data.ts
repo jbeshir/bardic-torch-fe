@@ -17,7 +17,8 @@ export type Option = {
 };
 
 /** The public lists a form picks references from. */
-export type Picker = "terms" | "affiliations" | "collections";
+export type Picker =
+  "terms" | "affiliations" | "collections" | "persons" | "pieces" | "events";
 
 export type Options = Readonly<Partial<Record<Picker, readonly Option[]>>>;
 

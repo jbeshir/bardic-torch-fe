@@ -27,7 +27,14 @@ import { fieldProblem } from "~/editing/problems";
 import { isEntityId, isSlug } from "~/schemas/address";
 import { getEditable, readLimited, submitRevision } from "./api.server";
 import { getServerAuthContext } from "./auth.server";
-import { listCollections, listTerms } from "./catalogue.server";
+import {
+  listCollections,
+  listEvents,
+  listPersons,
+  listPieces,
+  listTerms,
+  type ReadResult,
+} from "./catalogue.server";
 import { assertSameOrigin } from "./csrf.server";
 import { renderMarkdown } from "./markdown.server";
 
@@ -70,32 +77,67 @@ async function termOptions(
   };
 }
 
-/** Every public collection, a page of 100 at a time. */
-async function collectionOptions(
-  context: Readonly<RouterContextProvider>
-): Promise<Options> {
-  const collections: Option[] = [];
+type Page = { readonly limit: number; readonly offset: number };
+
+/** Every item of a public list, a page of 100 at a time, as options. */
+async function pagedOptions<T>(
+  read: (
+    page: Page
+  ) => Promise<
+    ReadResult<{ readonly data: readonly T[]; readonly total: number }>
+  >,
+  option: (item: T) => Option
+): Promise<Option[]> {
+  const options: Option[] = [];
   for (let offset = 0; ; offset += PAGE) {
-    const result = await listCollections(context, { limit: PAGE, offset });
+    const result = await read({ limit: PAGE, offset });
     if (!result.ok) throwPageFailure(asPageFailure(result.failure));
     const { data: page, total } = result.data;
-    collections.push(
-      ...page.map(({ id, name }) => ({ value: String(id), label: name }))
-    );
-    if (page.length === 0 || offset + PAGE >= total) return { collections };
+    options.push(...page.map(option));
+    if (page.length === 0 || offset + PAGE >= total) return options;
   }
 }
+
+/** The paged pickers' lists: each public list's entities by slug (or id). */
+const PAGED = {
+  collections: context =>
+    pagedOptions(
+      page => listCollections(context, page),
+      ({ id, name }) => ({ value: String(id), label: name })
+    ),
+  persons: context =>
+    pagedOptions(
+      page => listPersons(context, page),
+      ({ slug, name }) => ({ value: slug, label: name })
+    ),
+  pieces: context =>
+    pagedOptions(
+      page => listPieces(context, page),
+      ({ slug, title }) => ({ value: slug, label: title })
+    ),
+  events: context =>
+    pagedOptions(
+      page => listEvents(context, page),
+      ({ slug, name }) => ({ value: slug, label: name })
+    ),
+} as const satisfies Record<
+  Exclude<Picker, "terms" | "affiliations">,
+  (context: Readonly<RouterContextProvider>) => Promise<Option[]>
+>;
 
 /** The option lists `pickers` need, loaded together; a failure is the page's. */
 async function loadOptions(
   context: Readonly<RouterContextProvider>,
   pickers: readonly Picker[]
 ): Promise<Options> {
+  const paged = (Object.keys(PAGED) as (keyof typeof PAGED)[]).filter(picker =>
+    pickers.includes(picker)
+  );
   const lists = await Promise.all([
     pickers.includes("terms") || pickers.includes("affiliations")
       ? termOptions(context)
       : {},
-    pickers.includes("collections") ? collectionOptions(context) : {},
+    ...paged.map(async picker => ({ [picker]: await PAGED[picker](context) })),
   ]);
   return Object.assign({}, ...lists) as Options;
 }
@@ -170,16 +212,19 @@ async function readFields(request: Request): Promise<URLSearchParams | string> {
 
 /**
  * An edit or new route's action. `preview` makes what the page's Preview
- * shows from the document, on the server (Markdown, say).
+ * shows from the document, on the server (Markdown, say), with the lists
+ * of `pickers` for the names of the references (loaded for a preview only).
  */
 export async function editorAction<T extends EntityType, P>(
   { request, context }: ActionFunctionArgs,
   {
     type,
     preview,
+    pickers = [],
   }: {
     readonly type: T;
-    readonly preview: (document: Document<T>) => P;
+    readonly preview: (document: Document<T>, options: Options) => P;
+    readonly pickers?: readonly Picker[];
   }
 ) {
   assertSameOrigin(request);
@@ -213,7 +258,8 @@ export async function editorAction<T extends EntityType, P>(
     );
   }
   if (form.intent.kind === "preview") {
-    return answer({ preview: preview(form.document) });
+    const options = await loadOptions(context, pickers);
+    return answer({ preview: preview(form.document, options) });
   }
   if (form.intent.kind !== "submit") return answer({});
 
