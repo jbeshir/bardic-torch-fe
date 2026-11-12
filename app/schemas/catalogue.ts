@@ -58,5 +58,7 @@ export type EventList = DeepReadonly<Schemas["EventList"]>;
 export type EventPerformance = DeepReadonly<Schemas["EventPerformance"]>;
 export type Event = DeepReadonly<Schemas["Event"]>;
 export type RevisionSummary = DeepReadonly<Schemas["RevisionSummary"]>;
+export type NeedsWorkList = DeepReadonly<Schemas["NeedsWorkList"]>;
+export type NeedsWorkReason = Schemas["NeedsWorkReason"];
 export type RevisionHistory = DeepReadonly<Schemas["RevisionHistory"]>;
 export type Revision = DeepReadonly<Schemas["Revision"]>;

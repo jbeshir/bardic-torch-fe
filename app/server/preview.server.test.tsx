@@ -28,7 +28,7 @@ describe("the piece preview", () => {
     ).toHaveAttribute("href", "/bards/wren-of-the-vale");
     const links = screen.getByRole("region", { name: "Where to find it" });
     expect(
-      within(links).getByRole("link", { name: /The words, from the songbook/ })
+      within(links).getByRole("link", { name: /^The words, from the songbook/ })
     ).toHaveAttribute("href", "https://example.org/kettle");
   });
 });

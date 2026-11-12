@@ -152,4 +152,4 @@ Bard pages will show an **etiquette card** that summarises your preferences in p
 - **Piece-level rules win.** If one song has different rules from the rest of your work, the song’s own rules take precedence on its page.
 - **It changes when you do.** Update your page, send us the new link, and the card will be updated once a moderator has checked it.
 
-To get started, publish your page and [send us the link](https://forms.gle/wUwWnMKtWZSUisWCA). For more about sources and opting out, see the [FAQ for bards](/help/faq-for-bards).
+To get started, publish your page and [send us the link](/contact). For more about sources and opting out, see the [FAQ for bards](/help/faq-for-bards).

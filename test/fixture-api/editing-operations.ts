@@ -15,7 +15,8 @@ import { errorBody, type FixtureResponse } from "./responses";
  * kept per user. Its rules are only those the editors' tests and journeys
  * need: a blank title or name is 422 `required`; a new entity whose name
  * folds equal to a public one's is 409 `possible_duplicate` unless
- * acknowledged.
+ * acknowledged. An approved revision (a moderator's own) becomes its
+ * entity's current revision, the base its next edit starts from.
  */
 
 type Schemas = components["schemas"];
@@ -25,6 +26,9 @@ type Document = Schemas["EditorDocument"];
 
 /** Each user's revisions, newest last. */
 export type RevisionStore = Map<string, Schemas["RevisionView"][]>;
+
+/** Each entity's current revision once one is approved here, by `type:key`. */
+type CurrentRevisions = Map<string, number>;
 
 const NOW = "2026-11-01T12:00:00Z";
 const FIRST_ID = 2001;
@@ -201,9 +205,30 @@ function baseOf(type: EntityType, key: string): number {
   );
 }
 
-/** The entity a base revision is of. */
-function entityOfBase(type: EntityType, base: number) {
-  return KEYS[type].find(({ key }) => baseOf(type, key) === base)?.key;
+/** An entity's current revision: the newest approved here, or its base. */
+export function currentBase(
+  current: CurrentRevisions,
+  type: EntityType,
+  key: string
+): number {
+  return current.get(`${type}:${key}`) ?? baseOf(type, key);
+}
+
+/** The key of a revision's entity, or null for a new one. */
+export function keyOf(revision: Schemas["RevisionView"]): string | null {
+  const { entity } = revision;
+  if (entity === null) return null;
+  return "slug" in entity ? entity.slug : String(entity.id);
+}
+
+/** The entity a base revision is of: a canned revision, or one made here. */
+function entityOfBase(store: RevisionStore, type: EntityType, base: number) {
+  const made = [...store.values()]
+    .flat()
+    .find(r => r.entity_type === type && r.id === base);
+  return made
+    ? (keyOf(made) ?? undefined)
+    : KEYS[type].find(({ key }) => baseOf(type, key) === base)?.key;
 }
 
 const SUMMARIES: Readonly<
@@ -216,7 +241,11 @@ const SUMMARIES: Readonly<
   event: eventSummary,
 };
 
-export function getEditable(type: EntityType, key: string): FixtureResponse {
+export function getEditable(
+  current: CurrentRevisions,
+  type: EntityType,
+  key: string
+): FixtureResponse {
   const document = DOCUMENTS[type](key);
   if (!document) {
     return { status: 404, body: errorBody("not_found", `${type} not found`) };
@@ -225,7 +254,7 @@ export function getEditable(type: EntityType, key: string): FixtureResponse {
     status: 200,
     body: {
       entity_type: type,
-      base_revision_id: baseOf(type, key),
+      base_revision_id: currentBase(current, type, key),
       pending_revision_id: null,
       document,
     },
@@ -238,6 +267,7 @@ const fold = (name: string) => name.trim().toLowerCase();
 
 export function submitRevision(
   store: RevisionStore,
+  current: CurrentRevisions,
   user: User,
   request: Schemas["SubmitRevisionRequest"]
 ): FixtureResponse {
@@ -254,7 +284,7 @@ export function submitRevision(
       },
     };
   }
-  const key = base === null ? undefined : entityOfBase(type, base);
+  const key = base === null ? undefined : entityOfBase(store, type, base);
   if (base !== null && key === undefined) {
     return {
       status: 404,
@@ -280,9 +310,13 @@ export function submitRevision(
   const approved = user.role === "moderator";
   const own = store.get(user.id) ?? [];
   const all = [...store.values()].flat();
+  // A canned change of the type, so a review shows a diff.
+  const change = REVISIONS.find(
+    r => r.entity_type === type && r.base_snapshot !== null
+  )!;
   const revision: Schemas["RevisionView"] = {
     entity_type: type,
-    id: FIRST_ID + all.length,
+    id: FIRST_ID + all.filter(r => r.id >= FIRST_ID).length,
     source: "user",
     summary: request.summary,
     author: { display_name: user.display_name },
@@ -293,12 +327,14 @@ export function submitRevision(
     reviewed_at: approved ? NOW : null,
     entity: key === undefined ? null : SUMMARIES[type](key),
     base_revision_id: base,
-    // A canned snapshot of the type: no test reads it.
-    snapshot: REVISIONS.find(r => r.entity_type === type)!.snapshot,
-    base_snapshot: null,
-    changed_fields: [],
+    snapshot: change.snapshot,
+    base_snapshot: change.base_snapshot,
+    changed_fields: change.changed_fields,
   };
   store.set(user.id, [...own, revision]);
+  if (approved && key !== undefined) {
+    current.set(`${type}:${key}`, revision.id);
+  }
   return { status: 201, body: revision };
 }
 

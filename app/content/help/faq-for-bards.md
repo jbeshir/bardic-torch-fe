@@ -18,7 +18,7 @@ Your page holds links to where your work already lives (your website, albums, vi
 
 ## Can I edit my own page?
 
-Not yet: editing arrives in a later release. Until then, send us the link to where your work lives through our [contact form](https://forms.gle/wUwWnMKtWZSUisWCA). You don’t need an account. Once editing opens, like everyone’s, your edits will be checked by a moderator before they go live. See the [contributing guide](/help/contributing).
+Yes. Log in and edit it like any other page; like everyone’s, your edits are checked by a moderator before they go live. Or send us the link to where your work lives through our [contact form](/contact), which needs no account. See the [contributing guide](/help/contributing).
 
 ## Why can’t I just tell you I’m the bard?
 
@@ -44,7 +44,7 @@ That’s your choice, and we’ll respect it.
 
 1. State it somewhere public that we can cite, such as your website or blog. For example: ‘I do not wish to have pages about me on Bardic Torch’ or ‘I do not want my works archived’.
    As with any source, the page must be public, permanent and clearly yours (see [above](#why-cant-i-just-tell-you-im-the-bard)).
-2. Send us the link through our [contact form](https://forms.gle/wUwWnMKtWZSUisWCA). You don’t need an account.
+2. Send us the link through our [contact form](/contact). You don’t need an account.
 
 Your page then becomes a short stub that shows only your cited statement. Your links and credits are hidden from public view, and nobody can create a new page for you under a matching name.
 
@@ -60,7 +60,7 @@ Each piece’s licensing and etiquette notes must carry a source. Edits are revi
 
 ## Someone links to a copy of my work that I didn’t allow
 
-We can remove or hide the link. Use the [contact form](https://forms.gle/wUwWnMKtWZSUisWCA) and tell us which link and why.
+We can remove or hide the link. Use the [contact form](/contact) and tell us which link and why.
 
 Please note that removing our link doesn’t take the content down. The songbook, video or page will still be online where it’s hosted. To remove it, contact the site that hosts it, for example by asking the songbook’s owner, reporting it to YouTube, or asking the performer directly.
 
@@ -82,4 +82,4 @@ We credit you by the name you publish under. Legal and mundane names brought ove
 
 ## How do I contact you?
 
-For now, use the [Bardic Torch contact form](https://forms.gle/wUwWnMKtWZSUisWCA). It works without an account. A contact form on this site is coming later.
+Use the [Bardic Torch contact form](/contact). It works without an account.

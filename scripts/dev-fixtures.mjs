@@ -32,6 +32,8 @@ function fixtureAppEnv(devPort, fixturePort) {
     AUTH0_CLIENT_SECRET: "dev-fixtures",
     AUTH0_DEFAULT_REDIRECT_URI: `http://localhost:${devPort}`,
     AUTH0_AUDIENCE: "dev-fixtures",
+    // Turnstile's test key: the widget always passes.
+    TURNSTILE_SITE_KEY: "1x00000000000000000000AA",
   };
 }
 

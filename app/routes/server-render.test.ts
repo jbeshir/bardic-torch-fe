@@ -39,6 +39,13 @@ import * as revision from "./revisions.$id";
 import * as robots from "./robots[.]txt";
 import * as search from "./search";
 import * as contributions from "./contributions";
+import * as contact from "./contact";
+import * as moderationInbox from "./moderation.contact";
+import * as moderationQueue from "./moderation._index";
+import * as moderationLinks from "./moderation.links";
+import * as moderationReview from "./moderation.revisions.$id";
+import * as moderationUsers from "./moderation.users";
+import * as needsWork from "./needs-work";
 import * as settings from "./settings";
 import * as sitemap from "./sitemap[.]xml";
 
@@ -99,6 +106,17 @@ const get = serveApp([
   route("revisions.$id", "revisions/:id", revision),
   route("search", "search", search),
   route("contributions", "contributions", contributions),
+  route("needs-work", "needs-work", needsWork),
+  route("contact", "contact", contact),
+  route("moderation._index", "moderation", moderationQueue),
+  route(
+    "moderation.revisions.$id",
+    "moderation/revisions/:id",
+    moderationReview
+  ),
+  route("moderation.contact", "moderation/contact", moderationInbox),
+  route("moderation.links", "moderation/links", moderationLinks),
+  route("moderation.users", "moderation/users", moderationUsers),
   route("settings", "settings", settings),
   { ...route("help._index", "help", help), hasLoader: false },
   route("help.$slug", "help/:slug", helpPage),
@@ -142,6 +160,9 @@ const PAGES: readonly (readonly [string, number, Check])[] = [
   ["/events", 200, { h1: "Events and venues" }],
   ["/events/midwinter-revel", 200, { h1: "Midwinter Revel" }],
   ["/events/new", 302, { location: "/auth/login?returnTo=%2Fevents%2Fnew" }],
+  ["/needs-work", 200, { h1: "Needs work" }],
+  ["/contact", 200, { h1: "Contact us" }],
+  ["/moderation", 302, { location: "/auth/login?returnTo=%2Fmoderation" }],
   ["/help", 200, { h1: "Help" }],
   ["/help/conservation-status", 200, { h1: "Conservation status" }],
   ["/settings", 200, { contains: "<title>Settings" }],
@@ -171,6 +192,18 @@ const EDITOR_PAGES: readonly (readonly [string, string])[] = [
   ["/bards/new", "New bard or group"],
 ];
 
+/** The moderators' pages, as the fixture moderator. */
+const MODERATOR_PAGES: readonly (readonly [string, string])[] = [
+  ["/moderation", "Moderation queue"],
+  ["/moderation/revisions/1901", "Edit of The Copper Kettle"],
+  ["/moderation/contact", "Contact inbox"],
+  [
+    "/moderation/links?url=https%3A%2F%2Fvideo.example%2Fwatch%2Fkettle-hearth",
+    "Take down a link",
+  ],
+  ["/moderation/users", "Block a user"],
+];
+
 describe("server-rendered routes", () => {
   it.each(PAGES)("%s answers %i", async (url, status, check) => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -194,6 +227,15 @@ describe("server-rendered routes", () => {
     );
     const html = await (await get(url, cookie)).text();
     expect(/<h1[^>]*>(.*?)<\/h1>/s.exec(html)?.[1]).toBe(h1);
+  });
+
+  it.each(MODERATOR_PAGES)("%s answers 200 to a moderator", async (url, h1) => {
+    const cookie = await sessionCookie(
+      sessionTokens({ accessToken: "fixture:moderator" })
+    );
+    const response = await get(url, cookie);
+    expect(response.status).toBe(200);
+    expect(/<h1[^>]*>(.*?)<\/h1>/s.exec(await response.text())?.[1]).toBe(h1);
   });
 
   it("is the resting page (503, Retry-After) when the API is down", async () => {

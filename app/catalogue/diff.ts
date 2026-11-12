@@ -495,19 +495,35 @@ function profileRows(
   return [...sides, ...subs];
 }
 
+/**
+ * What the diff reads of a revision: its snapshots in the shape of its
+ * `entity_type`, the fields that differ, and the entity as it is now
+ * (null for a new entity's revision that isn't approved).
+ */
+export type DiffInput = Revision extends infer R
+  ? R extends Revision
+    ? Pick<
+        R,
+        "entity_type" | "snapshot" | "base_snapshot" | "changed_fields"
+      > & {
+        readonly entity: R["entity"] | null;
+      }
+    : never
+  : never;
+
 /** Whether a piece revision is restricted now or in either snapshot. */
 function isRestrictedPiece(
-  revision: Extract<Revision, { readonly entity_type: "piece" }>
+  revision: Extract<DiffInput, { readonly entity_type: "piece" }>
 ): boolean {
   return [
-    revision.entity.conservation_status,
+    revision.entity?.conservation_status,
     revision.snapshot.conservation_status,
     revision.base_snapshot?.conservation_status,
   ].includes("restricted");
 }
 
 /** The changes `revision` made, ready to show. */
-export function revisionChanges(revision: Revision): RevisionChanges {
+export function revisionChanges(revision: DiffInput): RevisionChanges {
   const first = revision.base_snapshot === null;
   const rowsIn = <Snapshot>(
     fields: Fields<Snapshot>,

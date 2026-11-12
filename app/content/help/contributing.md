@@ -90,6 +90,6 @@ Every edit from a contributor waits for one of our moderators before it goes liv
 
 ## Getting help
 
-If you’re stuck, or something looks wrong, [contact us through our form](https://forms.gle/wUwWnMKtWZSUisWCA). You don’t need an account. A contact form on this site is coming later.
+If you’re stuck, or something looks wrong, [contact us through our form](/contact). You don’t need an account.
 
 Thank you for helping pass the torch.

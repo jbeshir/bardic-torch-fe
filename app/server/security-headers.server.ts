@@ -5,9 +5,10 @@ import type { AppEnv } from "./env.server.ts";
  * documents and single fetch `.data` answers, the Worker
  * (worker.server) to everything else (resource routes, the route
  * discovery `/__manifest`).
- * Scripts run only from this origin or with the per-request nonce; forms
- * may post here or to Auth0 (logout redirects there); nothing may frame
- * the site.
+ * Scripts run only from this origin, with the per-request nonce, or from
+ * Cloudflare Turnstile, whose widget (on the contact form) is also the
+ * only frame; forms may post here or to Auth0 (logout redirects there);
+ * nothing may frame the site.
  */
 
 type SecurityHeaderOptions = {
@@ -21,6 +22,9 @@ type SecurityHeaderOptions = {
 };
 
 const DOCUMENT_CACHE_CONTROL = "private, no-cache";
+
+/** Where Cloudflare Turnstile's script and widget frame come from. */
+const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
 
 /** A fresh base64 nonce of 128 random bits. */
 export function createNonce(): string {
@@ -49,7 +53,8 @@ function contentSecurityPolicy({
   ];
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}'`,
+    `script-src 'self' 'nonce-${nonce}' ${TURNSTILE_ORIGIN}`,
+    `frame-src ${TURNSTILE_ORIGIN}`,
     `style-src 'self'${development ? " 'unsafe-inline'" : ""}`,
     "img-src 'self' data:",
     "font-src 'self'",

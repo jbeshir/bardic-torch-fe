@@ -11,6 +11,11 @@ import { action as newCollection } from "~/routes/collections.new";
 import { action as editEvent } from "~/routes/events.$slug.edit";
 import { action as newEvent } from "~/routes/events.new";
 import { action as withdraw } from "~/routes/contributions";
+import { action as contact } from "~/routes/contact";
+import { action as closeRequest } from "~/routes/moderation.contact";
+import { action as takedown } from "~/routes/moderation.links";
+import { action as review } from "~/routes/moderation.revisions.$id";
+import { action as block } from "~/routes/moderation.users";
 import { action as editPiece } from "~/routes/pieces.$slug.edit";
 import { action as newPiece } from "~/routes/pieces.new";
 import { action as saveTheme } from "~/routes/resources.theme";
@@ -60,6 +65,11 @@ const ROUTES: ReadonlyArray<{
       ["/pieces/new", newPiece, {}],
       ["/bards/:slug/edit", editBard, { slug: "wren-of-the-vale" }],
       ["/bards/new", newBard, {}],
+      ["/contact", contact, {}],
+      ["/moderation/revisions/:id", review, { id: "1901" }],
+      ["/moderation/contact", closeRequest, {}],
+      ["/moderation/links", takedown, {}],
+      ["/moderation/users", block, {}],
     ] as const
   ).map(([name, action, params]) => ({
     name,

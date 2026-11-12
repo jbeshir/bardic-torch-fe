@@ -600,6 +600,10 @@
 @utility min-h-textarea {
   min-height: 7.5rem;
 }
+/* The Turnstile widget's height, held before it loads: no layout shift. */
+@utility min-h-turnstile {
+  min-height: 65px;
+}
 @utility top-toast {
   top: calc(var(--bt-header-h) + 0.5rem);
 }
