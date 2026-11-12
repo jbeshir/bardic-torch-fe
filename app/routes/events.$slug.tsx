@@ -24,6 +24,7 @@ import { useErrorReference } from "~/hooks/useErrorReference";
 import { isSlug } from "~/schemas/address";
 import type { Event } from "~/schemas/catalogue";
 import { getEvent } from "~/server/catalogue.server";
+import { hasPendingRevision } from "~/server/editing.server";
 import { renderMarkdown } from "~/server/markdown.server";
 
 /**
@@ -42,7 +43,8 @@ export const headers = catalogueHeaders;
 
 export const shouldRevalidate = ignoreSearchChanges;
 
-export async function loader({ params, context }: LoaderFunctionArgs) {
+export async function loader(args: LoaderFunctionArgs) {
+  const { params, context } = args;
   const slug = params.slug ?? "";
   if (!isSlug(slug)) throwPageFailure({ kind: "not_found" });
   const result = await getEvent(context, slug);
@@ -52,7 +54,11 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
     performances: result.data.performances.map(withoutRestrictedRecording),
   };
   // The Markdown is parsed here, on the server: the browser gets the tree.
-  return { event, description: renderMarkdown(event.description_md) };
+  return {
+    event,
+    description: renderMarkdown(event.description_md),
+    pending: await hasPendingRevision(args, "event", slug),
+  };
 }
 
 export const meta: MetaFunction = args => {
@@ -69,12 +75,13 @@ export const meta: MetaFunction = args => {
 };
 
 export default function EventLayout() {
-  const { event } = useLoaderData<typeof loader>();
+  const { event, pending } = useLoaderData<typeof loader>();
   const { pathname } = useLocation();
   const path = `/events/${event.slug}`;
   return (
     <EntityPage
       path={path}
+      pending={pending}
       title={event.name}
       subtitle={EVENT_KIND_LABELS[event.kind]}
       breadcrumbs={{

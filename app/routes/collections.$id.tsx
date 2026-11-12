@@ -33,6 +33,7 @@ import { useErrorReference } from "~/hooks/useErrorReference";
 import { isEntityId } from "~/schemas/address";
 import type { Collection } from "~/schemas/catalogue";
 import { getCollection } from "~/server/catalogue.server";
+import { hasPendingRevision } from "~/server/editing.server";
 import { renderMarkdown } from "~/server/markdown.server";
 
 /**
@@ -53,7 +54,8 @@ export const headers = catalogueHeaders;
 
 export const shouldRevalidate = ignoreSearchChanges;
 
-export async function loader({ params, context }: LoaderFunctionArgs) {
+export async function loader(args: LoaderFunctionArgs) {
+  const { params, context } = args;
   const id = params.id ?? "";
   if (!isEntityId(id)) throwPageFailure({ kind: "not_found" });
   const result = await getCollection(context, id);
@@ -66,6 +68,7 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
     },
     // The Markdown is parsed here, on the server: the browser gets the tree.
     description: renderMarkdown(collection.description_md),
+    pending: await hasPendingRevision(args, "collection", id),
   };
 }
 
@@ -158,13 +161,14 @@ function CollectionInfobox({
 }
 
 export default function CollectionLayout() {
-  const { collection } = useLoaderData<typeof loader>();
+  const { collection, pending } = useLoaderData<typeof loader>();
   const { pathname } = useLocation();
   const path = `/collections/${collection.id}`;
   const reading = pathname === path;
   return (
     <EntityPage
       path={path}
+      pending={pending}
       title={collection.name}
       subtitle={collectionMeta(collection)}
       breadcrumbs={{

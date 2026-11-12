@@ -1,4 +1,5 @@
 import { IconBook2 } from "@tabler/icons-react";
+import { Link } from "~/components/ui/Link";
 import { useId, useRef } from "react";
 import {
   data,
@@ -331,6 +332,11 @@ export default function BardsRoute() {
   return (
     <>
       <h1 className="text-h1 text-fg">Bards</h1>
+      <p className="mt-2">
+        <Link to="/bards/new" appearance="standalone">
+          Add a bard
+        </Link>
+      </p>
       <div className="mt-4">
         <ViewTabs
           views={[{ label: "Read", to: ALL_BARDS, icon: IconBook2 }]}

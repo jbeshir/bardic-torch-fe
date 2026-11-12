@@ -132,7 +132,7 @@ export function EditorPage<D extends { readonly schema_version: number }, P>({
               name="summary"
               label="Summary of your changes"
               help="A few words on what you changed and why, for the moderators and the page’s history."
-              value={action?.summary ?? ""}
+              value={action?.summary ?? loaded.summary}
               optional
             />
           </FieldErrorsContext>

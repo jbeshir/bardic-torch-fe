@@ -20,6 +20,7 @@ import { pageMeta } from "~/catalogue/seo";
 import { useErrorReference } from "~/hooks/useErrorReference";
 import { isSlug } from "~/schemas/address";
 import { getPiece } from "~/server/catalogue.server";
+import { hasPendingRevision } from "~/server/editing.server";
 import { renderMarkdown } from "~/server/markdown.server";
 
 /**
@@ -39,7 +40,8 @@ const MISSING = "that piece";
 
 export const headers = catalogueHeaders;
 
-export async function loader({ params, context }: LoaderFunctionArgs) {
+export async function loader(args: LoaderFunctionArgs) {
+  const { params, context } = args;
   const slug = params.slug ?? "";
   if (!isSlug(slug)) throwPageFailure(NOT_FOUND);
   const result = await getPiece(context, slug);
@@ -54,6 +56,7 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
       historicalSource: renderMarkdown(piece.historical_source_md),
       licensingNotes: renderMarkdown(piece.licensing_notes_md),
     },
+    pending: await hasPendingRevision(args, "piece", slug),
   };
   return view;
 }

@@ -215,6 +215,11 @@ export default function CollectionsRoute() {
   return (
     <>
       <h1 className="text-h1 text-fg">Collections</h1>
+      <p className="mt-2">
+        <Link to="/collections/new" appearance="standalone">
+          Add a collection
+        </Link>
+      </p>
       <div className="mt-4">
         <ViewTabs
           views={[{ label: "Read", to: ALL_COLLECTIONS, icon: IconBook2 }]}

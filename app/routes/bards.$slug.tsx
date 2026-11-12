@@ -22,6 +22,7 @@ import { useErrorReference } from "~/hooks/useErrorReference";
 import { isSlug } from "~/schemas/address";
 import type { Person } from "~/schemas/catalogue";
 import { getPerson } from "~/server/catalogue.server";
+import { hasPendingRevision } from "~/server/editing.server";
 import { renderMarkdown } from "~/server/markdown.server";
 
 /**
@@ -36,7 +37,8 @@ const MISSING = "that bard";
 
 export const headers = catalogueHeaders;
 
-export async function loader({ params, context }: LoaderFunctionArgs) {
+export async function loader(args: LoaderFunctionArgs) {
+  const { params, context } = args;
   const slug = params.slug ?? "";
   if (!isSlug(slug)) throwPageFailure(NOT_FOUND);
   const result = await getPerson(context, slug);
@@ -64,6 +66,7 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
         person.profile?.licensing_notes_md ?? null
       ),
     },
+    pending: await hasPendingRevision(args, "person", slug),
   };
   return view;
 }

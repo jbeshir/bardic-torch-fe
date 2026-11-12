@@ -38,6 +38,7 @@ import * as pieceNew from "./pieces.new";
 import * as revision from "./revisions.$id";
 import * as robots from "./robots[.]txt";
 import * as search from "./search";
+import * as contributions from "./contributions";
 import * as settings from "./settings";
 import * as sitemap from "./sitemap[.]xml";
 
@@ -97,6 +98,7 @@ const get = serveApp([
   route("events.new", "events/new", eventNew),
   route("revisions.$id", "revisions/:id", revision),
   route("search", "search", search),
+  route("contributions", "contributions", contributions),
   route("settings", "settings", settings),
   { ...route("help._index", "help", help), hasLoader: false },
   route("help.$slug", "help/:slug", helpPage),
@@ -156,6 +158,7 @@ const PAGES: readonly (readonly [string, number, Check])[] = [
 
 /** The editors, as the fixture contributor: each edit and new page. */
 const EDITOR_PAGES: readonly (readonly [string, string])[] = [
+  ["/contributions", "My contributions"],
   ["/events/midwinter-revel/edit", "Midwinter Revel"],
   ["/events/new", "New event or venue"],
   ["/collections/12/edit", "The Northmarch Songbook"],

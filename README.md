@@ -20,7 +20,7 @@ FE2 adds the catalogue, read-only and anonymous:
 - the directories (`/bards`, `/categories`, `/collections`, `/events`);
 - `robots.txt` and one `sitemap.xml`, and page metadata for search engines (indexed in the production build only).
 
-Editing comes in FE3. The original wiki is linked only for the help pages' attribution, the footer and the 404 page.
+Signed-in readers can edit: an editor for each kind of page (`/pieces/:slug/edit`, `/pieces/new`, and the same for bards, categories, collections and events) and their own revisions (`/contributions`), where a pending edit can be continued or withdrawn. The original wiki is linked only for the help pages' attribution, the footer and the 404 page.
 
 ## Key concepts
 
@@ -31,9 +31,9 @@ Editing comes in FE3. The original wiki is linked only for the help pages' attri
 - **URLs are the state.** A list's search, filters, letter and page are query parameters, parsed and written canonically by `app/catalogue/query-state.ts`: a non-canonical address gets one 301, and the filter forms are plain GET forms, so they work without JavaScript.
 - **Restricted pieces.** A piece whose creator asks that it isn't shared further never shows its links outside one closed disclosure, and is kept out of the sitemap (`app/server/sitemap.server.ts`) and search engines (`noindex, nofollow`, in the piece route's `meta`). The site's own lists and search still show it, with a Restricted badge and no links (`app/catalogue/restricted.ts`).
 - **Indexing.** Only the production build can be indexed: `__INDEXABLE__` is true in it alone, and the preview, e2e and development builds answer `Disallow: /` and send `X-Robots-Tag: noindex` on every response the Worker makes (static assets get the `Disallow` only). `/robots.txt`, and one `/sitemap.xml` are resource routes; `check:prod-build` proves the flag's value in each build.
-- **The browser never calls the API.** Loaders, and the proxy route `PATCH /api/me`, call it from the Worker through `app/server/api.server.ts`.
+- **The browser never calls the API.** Loaders and actions call it from the Worker through `app/server/api.server.ts`. Writes are form posts: the editors and Withdraw are document POSTs to their own route's action (they work without JavaScript), and settings use the proxy route `PATCH /api/me`. Each checks same-origin.
   - The access token lives in the server-side session and is sent as `Authorization: Bearer <jwt>`.
-  - The proxies accept form-encoded bodies, check same-origin (CSRF), validate the input, and map every API error code to the app's own wording.
+  - The proxies and the editors' actions accept form-encoded bodies, check same-origin (CSRF), validate the input, and map every API error code to the app's own wording.
 - **Sessions.** Sign-in is an OpenID Connect authorization-code flow with PKCE (openid-client, configured statically for the Auth0 tenant). The app keeps only the Auth0 tokens in a signed cookie session, `__Host-bt_session` (HttpOnly, Secure, SameSite=Lax), and refreshes the access token before it expires, once per request.
   - Each sign-in's state and PKCE verifier wait for `/auth/callback` in their own signed cookie, `__Host-bt_auth0:<state>`, for 5 minutes. The callback checks the state's format and that it matches the cookie, then clears the cookie.
   - `/auth/login` remembers where to come back to in `__Host-bt_return_to`. `/auth/callback` validates it again with `safeReturnTo`.

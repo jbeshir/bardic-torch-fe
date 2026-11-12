@@ -46,9 +46,9 @@ export const meta: MetaFunction = args => {
 export default function BardEditRoute() {
   const loaded = useLoaderData<typeof loader>();
   const outcome = useActionData<typeof action>();
-  const { person } = useOutletContext<PersonView>();
+  const { person, pending } = useOutletContext<PersonView>();
   return (
-    <EntityPage {...personHead(person)}>
+    <EntityPage {...personHead(person)} pending={pending}>
       <EditorPage
         loaded={loaded}
         action={outcome}

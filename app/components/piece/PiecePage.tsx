@@ -36,6 +36,8 @@ export type PieceView = {
     readonly historicalSource: MarkdownTree | null;
     readonly licensingNotes: MarkdownTree | null;
   };
+  /** The reader has an edit of the piece waiting for review. */
+  readonly pending?: boolean;
 };
 
 /**
@@ -169,6 +171,7 @@ export function PiecePage({ view }: { readonly view: PieceView }) {
   return (
     <EntityPage
       {...head}
+      pending={view.pending}
       infobox={<PieceInfobox piece={piece} />}
       categories={piece.terms.map(({ term }) => ({
         label: term.display_name,

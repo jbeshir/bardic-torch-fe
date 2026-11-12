@@ -28,6 +28,8 @@ export type EditorLoaderData<D> = {
   /** The approved revision an edit is made on; null for a new entity. */
   readonly baseRevisionId: number | null;
   readonly notice: string | null;
+  /** The summary to start with: "Revert to revision N", or empty. */
+  readonly summary: string;
   readonly options: Options;
 };
 

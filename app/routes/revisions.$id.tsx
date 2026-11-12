@@ -1,3 +1,4 @@
+import { IconArrowBackUp } from "@tabler/icons-react";
 import {
   useLoaderData,
   useRouteError,
@@ -106,6 +107,14 @@ export default function RevisionRoute() {
           <Link to={entity.path} compact>
             View the {entity.noun} as it is now
           </Link>
+        </li>
+        <li>
+          <ButtonLink
+            to={`${entity.path}/edit?revert=${revision.id}`}
+            icon={IconArrowBackUp}
+          >
+            Revert to this version
+          </ButtonLink>
         </li>
         {revision.baseRevisionId === null ? null : (
           <li>

@@ -46,9 +46,9 @@ export const meta: MetaFunction = args => {
 export default function PieceEditRoute() {
   const loaded = useLoaderData<typeof loader>();
   const outcome = useActionData<typeof action>();
-  const { piece } = useOutletContext<PieceView>();
+  const { piece, pending } = useOutletContext<PieceView>();
   return (
-    <EntityPage {...pieceHead(piece)}>
+    <EntityPage {...pieceHead(piece)} pending={pending}>
       <EditorPage
         loaded={loaded}
         action={outcome}

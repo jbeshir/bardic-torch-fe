@@ -134,6 +134,11 @@ export default function EventsRoute() {
   return (
     <>
       <h1 className="text-h1 text-fg">Events and venues</h1>
+      <p className="mt-2">
+        <Link to="/events/new" appearance="standalone">
+          Add an event
+        </Link>
+      </p>
       <div className="mt-4">
         <ViewTabs
           views={[{ label: "Read", to: ALL_EVENTS, icon: IconBook2 }]}

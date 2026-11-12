@@ -11,7 +11,7 @@ import {
   NOT_FOUND,
   throwPageFailure,
 } from "~/catalogue/read-failure";
-import { loginHref } from "~/constants/account";
+import { CONTRIBUTIONS_PATH, loginHref } from "~/constants/account";
 import { FACET_LABELS } from "~/constants/vocabulary";
 import { DOCUMENT_SCHEMAS, type EntityType } from "~/editing/documents";
 import {
@@ -23,15 +23,22 @@ import {
   type Picker,
 } from "~/editing/editor-data";
 import { decodeForm } from "~/editing/form-codec";
+import { fromSnapshot } from "~/editing/from-snapshot";
 import { fieldProblem } from "~/editing/problems";
 import { isEntityId, isSlug } from "~/schemas/address";
-import { getEditable, readLimited, submitRevision } from "./api.server";
+import {
+  getEditable,
+  listMyRevisions,
+  readLimited,
+  submitRevision,
+} from "./api.server";
 import { getServerAuthContext } from "./auth.server";
 import {
   listCollections,
   listEvents,
   listPersons,
   listPieces,
+  getRevision,
   listTerms,
   type ReadResult,
 } from "./catalogue.server";
@@ -143,6 +150,49 @@ async function loadOptions(
 }
 
 /**
+ * `?revert=` (a link from a revision's page): revision `id`'s snapshot over
+ * the entity's editable `document`, with the summary "Revert to revision
+ * N". A revision that can't be read, or is of another entity, is a notice
+ * and the document as it is.
+ */
+async function revertTo<D>(
+  context: Readonly<RouterContextProvider>,
+  {
+    type,
+    key,
+    id,
+    document,
+  }: {
+    readonly type: EntityType;
+    readonly key: string;
+    readonly id: string;
+    readonly document: D;
+  }
+): Promise<{ document: D; summary: string; notice: string | null }> {
+  const result = isEntityId(id) ? await getRevision(context, id) : null;
+  const as = (notice: string) => ({ document, summary: "", notice });
+  if (!result?.ok) {
+    return as(
+      "We couldn’t load the revision to revert to, so this is the page as it is now."
+    );
+  }
+  const { entity_type, entity } = result.data;
+  if (
+    entity_type !== type ||
+    String("slug" in entity ? entity.slug : entity.id) !== key
+  ) {
+    return as(
+      "That revision is of a different page, so this is the page as it is now."
+    );
+  }
+  return {
+    document: { ...document, ...fromSnapshot(result.data) },
+    summary: `Revert to revision ${id}`,
+    notice: null,
+  };
+}
+
+/**
  * An edit route's (`key`, the slug or id in its path) or a new route's
  * loader: signed out goes to log in and back; the entity's editable
  * document, or for a new one a blank document; and the pickers' lists.
@@ -177,17 +227,33 @@ export async function editorLoader<T extends EntityType>(
   if (editable?.status === 401) throw redirect(login, { headers });
   if (editable?.status === 404) throwPageFailure(NOT_FOUND);
 
+  const revert = url.searchParams.get("revert");
+  const reverted =
+    key !== undefined && editable?.ok && revert !== null
+      ? await revertTo(context, {
+          type,
+          key,
+          id: revert,
+          document: editable.data.document as Document<T>,
+        })
+      : null;
   const loaded: EditorLoaderData<Document<T>> = editable
     ? {
-        document: editable.ok ? (editable.data.document as Document<T>) : null,
+        document: editable.ok
+          ? (reverted?.document ?? (editable.data.document as Document<T>))
+          : null,
         baseRevisionId: editable.ok ? editable.data.base_revision_id : null,
-        notice: editable.ok ? null : editable.error.message,
+        notice: editable.ok
+          ? (reverted?.notice ?? null)
+          : editable.error.message,
+        summary: reverted?.summary ?? "",
         options,
       }
     : {
         document: DOCUMENT_SCHEMAS[type].parse({}) as Document<T>,
         baseRevisionId: null,
         notice: null,
+        summary: "",
         options,
       };
   return data(loaded, { headers });
@@ -276,7 +342,7 @@ export async function editorAction<T extends EntityType, P>(
     const to =
       status === "approved" && entity
         ? readPath(type, "slug" in entity ? entity.slug : entity.id)
-        : `/contributions?submitted=${id}`;
+        : `${CONTRIBUTIONS_PATH}?submitted=${id}`;
     return redirect(to, { status: 303, headers: result.headers });
   }
   const { error } = result;
@@ -295,3 +361,29 @@ export async function editorAction<T extends EntityType, P>(
 export const previewDescription = (document: {
   readonly description_md: string | null;
 }) => ({ description: renderMarkdown(document.description_md) });
+
+/**
+ * Whether the signed-in reader has an edit of this entity waiting for
+ * review (the pending banner), for an entity layout's loader. Signed out,
+ * or a failed lookup, is no banner: it is a convenience, not the page.
+ */
+export async function hasPendingRevision(
+  { request, context }: Pick<LoaderFunctionArgs, "request" | "context">,
+  type: EntityType,
+  key: string
+): Promise<boolean> {
+  const result = await listMyRevisions(
+    request,
+    context,
+    new URLSearchParams({ status: "pending", limit: "30" })
+  );
+  return (
+    result.ok &&
+    result.data.data.some(
+      ({ entity_type, entity }) =>
+        entity_type === type &&
+        entity !== null &&
+        (entity.slug ?? String(entity.collection_id)) === key
+    )
+  );
+}

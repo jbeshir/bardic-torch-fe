@@ -6,6 +6,7 @@ import {
   APP_ORIGIN,
   formRequest,
   loadContext,
+  routeArgs,
   sessionCookie,
   sessionTokens,
 } from "~/test/context";
@@ -13,6 +14,7 @@ import { contractResponse } from "~/test/contract";
 import { serveFixtureApi } from "~/test/msw";
 import { runAction } from "~/test/proxy";
 import { testBuild } from "~/test/server-build";
+import * as contributions from "~/routes/contributions";
 import * as eventEdit from "~/routes/events.$slug.edit";
 import * as eventNew from "~/routes/events.new";
 import * as pieceLayout from "~/routes/pieces.$slug";
@@ -30,6 +32,12 @@ const handle = createRequestHandler(
       id: "routes/events.$slug.edit",
       path: "events/:slug/edit",
       module: eventEdit,
+      hasLoader: true,
+    },
+    {
+      id: "routes/contributions",
+      path: "contributions",
+      module: contributions,
       hasLoader: true,
     },
     {
@@ -199,5 +207,124 @@ describe("the editor loader", () => {
     const html = await response.text();
     expect(html).toContain("Only moderators can edit this page");
     expect(html).not.toContain('name="intent"');
+  });
+});
+
+describe("the editor loader's revert", () => {
+  const edit = async (path: string) =>
+    (
+      await handle(
+        new Request(`${APP_ORIGIN}${path}`, {
+          headers: { Cookie: await signedIn() },
+        }),
+        loadContext()
+      )
+    ).text();
+
+  const notes = (html: string) =>
+    /<textarea[^>]*name="version_notes_md"[^>]*>([^<]*)</.exec(html)?.[1];
+
+  it("fills the editor from the revision's snapshot, with its summary", async () => {
+    const plain = await edit("/pieces/the-copper-kettle/edit");
+    expect(notes(plain)).toBe("This version has a slower chorus.");
+    expect(plain).not.toContain("Revert to revision");
+
+    // Revision 1003 had no version notes.
+    const html = await edit("/pieces/the-copper-kettle/edit?revert=1003");
+    expect(notes(html)).toBe("");
+    expect(html).toMatch(/name="summary"[^>]*value="Revert to revision 1003"/);
+  });
+
+  it("is a notice and the plain editor for another entity's revision", async () => {
+    const html = await edit("/events/midwinter-revel/edit?revert=1003");
+    expect(html).toContain("different page");
+    expect(html).toContain('name="name"');
+  });
+});
+
+describe("the pending banner", () => {
+  const pending = (slug: string) =>
+    contractResponse("listMyRevisions", 200, {
+      data: [
+        {
+          id: 51,
+          entity_type: "piece",
+          entity: { slug, collection_id: null, name: "A piece" },
+          status: "pending",
+          summary: "",
+          created_at: "2026-10-01T09:00:00Z",
+          reviewed_at: null,
+          is_stale: false,
+          author: null,
+        },
+      ],
+      total: 1,
+    });
+  const layout = async (cookie: string | null) =>
+    pieceLayout.loader(
+      routeArgs(
+        new Request(`${APP_ORIGIN}/pieces/the-copper-kettle`, {
+          headers: cookie ? { Cookie: cookie } : {},
+        }),
+        { params: { slug: "the-copper-kettle" } }
+      )
+    );
+
+  it("is set for a signed-in author with a pending revision of the piece", async () => {
+    fixtures.server.use(
+      http.get(`${API_BASE_URL}/v1/me/revisions`, () =>
+        pending("the-copper-kettle")
+      )
+    );
+    expect(await layout(await signedIn())).toHaveProperty("pending", true);
+  });
+
+  it("is not set for another piece's revision, a failed lookup or a signed-out reader", async () => {
+    fixtures.server.use(
+      http.get(`${API_BASE_URL}/v1/me/revisions`, () => pending("other"))
+    );
+    expect(await layout(await signedIn())).toHaveProperty("pending", false);
+    fixtures.server.use(
+      http.get(
+        `${API_BASE_URL}/v1/me/revisions`,
+        () => new Response("down", { status: 503 })
+      )
+    );
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    expect(await layout(await signedIn())).toHaveProperty("pending", false);
+    expect(await layout(null)).toHaveProperty("pending", false);
+  });
+});
+
+describe("withdrawing a contribution", () => {
+  it("withdraws the pending revision and goes back with a notice", async () => {
+    await post("/events/midwinter-revel/edit", REVEL);
+    const response = await post("/contributions", {
+      intent: "withdraw",
+      revision_id: "2001",
+    });
+    expect(response.status).toBe(303);
+    expect(response.headers.get("Location")).toBe(
+      "/contributions?withdrawn=2001"
+    );
+    const page = await handle(
+      new Request(`${APP_ORIGIN}/contributions?withdrawn=2001`, {
+        headers: { Cookie: await signedIn() },
+      }),
+      loadContext()
+    );
+    const html = await page.text();
+    expect(html).toContain("Your edit has been withdrawn.");
+    expect(html).toContain("Withdrawn");
+    expect(html).not.toContain('value="withdraw"');
+  });
+
+  it("says so when the revision is no longer pending", async () => {
+    await post("/events/midwinter-revel/edit", REVEL);
+    const form = { intent: "withdraw", revision_id: "2001" };
+    await post("/contributions", form);
+    const response = await post("/contributions", form);
+    expect(response.status).toBe(409);
+    expect(await response.text()).toContain("no longer waiting for review");
   });
 });

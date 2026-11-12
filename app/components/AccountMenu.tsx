@@ -1,6 +1,7 @@
 import { Form, Link as RouterLink, useLocation } from "react-router";
 import {
   IconChevronDown,
+  IconGitPullRequest,
   IconLogin,
   IconLogout,
   IconSettings,
@@ -14,6 +15,7 @@ import { TryAgain } from "~/components/ui/ErrorState";
 import {
   LOGOUT_ACTION,
   ROLE_LABELS,
+  CONTRIBUTIONS_PATH,
   loginHref,
   SETTINGS_PATH,
   type Account,
@@ -94,15 +96,26 @@ function AccountPanel({
         <Alert tone="danger">{account.message}</Alert>
       ) : null}
       {account.state === "blocked" ? null : (
-        <RouterLink to={SETTINGS_PATH} prefetch="intent" className={ROW}>
-          <IconSettings
-            size={18}
-            stroke={1.75}
-            aria-hidden="true"
-            className="text-fg-muted"
-          />
-          Settings
-        </RouterLink>
+        <>
+          <RouterLink to={CONTRIBUTIONS_PATH} prefetch="intent" className={ROW}>
+            <IconGitPullRequest
+              size={18}
+              stroke={1.75}
+              aria-hidden="true"
+              className="text-fg-muted"
+            />
+            My contributions
+          </RouterLink>
+          <RouterLink to={SETTINGS_PATH} prefetch="intent" className={ROW}>
+            <IconSettings
+              size={18}
+              stroke={1.75}
+              aria-hidden="true"
+              className="text-fg-muted"
+            />
+            Settings
+          </RouterLink>
+        </>
       )}
       <div className="border-t border-border pt-1">
         {/* A real form post: logging out leaves for Auth0. */}

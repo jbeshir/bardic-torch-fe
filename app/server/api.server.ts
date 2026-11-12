@@ -159,6 +159,12 @@ function upstreamError(
         message:
           "This page has changed since you started editing. Check the current version, then save again to replace those changes.",
       };
+    case "revision_not_pending":
+      return {
+        code,
+        message:
+          "That edit is no longer waiting for review, so it can’t be withdrawn. Reload the page to see where it stands.",
+      };
     case "pending_limit_reached":
       return {
         code,
@@ -511,5 +517,29 @@ export function submitRevision(
   return callApi<Schemas["RevisionView"]>(request, context, {
     operationId: "submitRevision",
     body,
+  });
+}
+
+/** The caller's own revisions (`GET /v1/me/revisions`), newest first. */
+export function listMyRevisions(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  query: URLSearchParams
+) {
+  return callApi<Schemas["RevisionList"]>(request, context, {
+    operationId: "listMyRevisions",
+    query,
+  });
+}
+
+/** Withdraws one of the caller's pending revisions; `id` is already checked. */
+export function withdrawRevision(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  id: string
+) {
+  return callApi<undefined>(request, context, {
+    operationId: "withdrawRevision",
+    params: { revision_id: id },
   });
 }

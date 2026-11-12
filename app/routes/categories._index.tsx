@@ -289,6 +289,11 @@ export default function CategoriesRoute() {
         </div>
       )}
       <h1 className="text-h1 text-fg">{title}</h1>
+      <p className="mt-2">
+        <Link to="/categories/new" appearance="standalone">
+          Add a category
+        </Link>
+      </p>
       <div className="mt-4">
         <ViewTabs
           views={[

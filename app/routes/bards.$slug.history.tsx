@@ -58,9 +58,9 @@ export const meta: MetaFunction = args => {
 
 export default function BardHistoryRoute() {
   const { state, history } = useLoaderData<typeof loader>();
-  const { person } = useOutletContext<PersonView>();
+  const { person, pending } = useOutletContext<PersonView>();
   return (
-    <EntityPage {...personHead(person)}>
+    <EntityPage {...personHead(person)} pending={pending}>
       <HistoryView
         state={state}
         history={history}

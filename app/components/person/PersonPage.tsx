@@ -35,6 +35,8 @@ export type PersonView = {
     readonly notes: MarkdownTree | null;
     readonly licensingNotes: MarkdownTree | null;
   };
+  /** The reader has an edit of the person waiting for review. */
+  readonly pending?: boolean;
 };
 
 /**
@@ -156,7 +158,12 @@ export function PersonPage({ view }: { readonly view: PersonView }) {
   const { profile } = person;
   if (!profile) {
     return (
-      <EntityPage {...head} history={false} licence={<LicenceLine />}>
+      <EntityPage
+        {...head}
+        pending={view.pending}
+        history={false}
+        licence={<LicenceLine />}
+      >
         {null}
       </EntityPage>
     );
@@ -165,6 +172,7 @@ export function PersonPage({ view }: { readonly view: PersonView }) {
   return (
     <EntityPage
       {...head}
+      pending={view.pending}
       infobox={<PersonInfobox person={person} />}
       contents={sections.map(({ id, label }) => ({ id, label }))}
       licence={<LicenceLine historyPath={`${head.path}/history`} />}
