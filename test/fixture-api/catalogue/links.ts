@@ -17,7 +17,7 @@ type Schemas = components["schemas"];
 
 export type RawPerformance = Readonly<
   Omit<Schemas["PiecePerformance"], "event" | "performers"> & {
-    /** An event or venue slug, or null. */
+    /** An event slug, or null. */
     event: string | null;
     /** Person slugs. */
     performers: readonly string[];
@@ -137,14 +137,12 @@ const HAND_LINKS: readonly RawLink[] = [
   }),
   link(piece("the-ashdown-wassail"), "https://shop.example/wassail-sheet", {
     title: "Wassail sheet music",
-    place_type: "vendor",
     liveness: "blocked",
     last_checked_at: CHECKED,
     roles: ["official", "sheet_music"],
   }),
   link(piece("the-ashdown-wassail"), "https://records.example/wassail", {
     title: "Wassail in the hall records",
-    place_type: "physical_archive",
     roles: ["translation"],
   }),
   link(
@@ -218,12 +216,10 @@ const HAND_LINKS: readonly RawLink[] = [
   // Other pieces: the remaining roles, place types and performances.
   link(piece("the-long-road-north"), "https://writer.example/contact", {
     title: "Write to the author",
-    place_type: "author_contact",
     roles: ["other"],
   }),
   link(piece("the-long-road-north"), "https://oral.example/tradition/road", {
     title: "How the song is passed on",
-    place_type: "oral_tradition",
     roles: ["licensing_source"],
     liveness: "ok",
     last_checked_at: CHECKED,
@@ -231,7 +227,7 @@ const HAND_LINKS: readonly RawLink[] = [
   link(piece("midwinter-carol"), "https://video.example/watch/carol", {
     title: "Midwinter carol, sung",
     platform: "Videohall",
-    place_type: "other",
+    place_type: "streaming",
     collection: NORTHMARCH_SONGBOOK_ID,
     locator: "p. 3",
     liveness: "ok",

@@ -26,23 +26,23 @@ const BLANK_PERFORMANCE = {
 
 describe("row intents", () => {
   it.each([
-    ["add:aliases to none", [], "add:aliases", "aliases", [""]],
+    ["add:term_slugs to none", [], "add:term_slugs", "term_slugs", [""]],
     [
-      "add:aliases after one",
-      [["aliases.0", "Inn songs"]],
-      "add:aliases",
-      "aliases",
-      ["Inn songs", ""],
+      "add:term_slugs after one",
+      [["term_slugs.0", "joyful"]],
+      "add:term_slugs",
+      "term_slugs",
+      ["joyful", ""],
     ],
     [
-      "remove:aliases.0 of two",
+      "remove:term_slugs.0 of two",
       [
-        ["aliases.0", "Inn songs"],
-        ["aliases.1", "Alehouse songs"],
+        ["term_slugs.0", "joyful"],
+        ["term_slugs.1", "drinking"],
       ],
-      "remove:aliases.0",
-      "aliases",
-      ["Alehouse songs"],
+      "remove:term_slugs.0",
+      "term_slugs",
+      ["drinking"],
     ],
     [
       "add:links (a blank row of every default)",
@@ -89,9 +89,8 @@ describe("row intents", () => {
       [{ ...BLANK_LINK, url: "https://songs.example" }],
     ],
   ] as const)("%s", (_why, fields, intent, list, rows) => {
-    const type = list === "aliases" ? "term" : "piece";
     const decoded = decodeForm(
-      type,
+      "piece",
       new URLSearchParams([
         ...fields.map(([name, value]): [string, string] => [name, value]),
         ["intent", intent],

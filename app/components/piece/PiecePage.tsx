@@ -1,7 +1,5 @@
 import { Fragment } from "react";
-import { pieceSubtitle, restrictionStatement } from "~/catalogue/piece";
 import { linkExposure } from "~/catalogue/restricted";
-import { isUserUrl } from "~/catalogue/user-url";
 import { LicenceLine } from "~/components/catalogue/LicenceLine";
 import {
   LICENSING_ID,
@@ -15,12 +13,11 @@ import { EntityPage } from "~/components/EntityPage";
 import { PageBanner } from "~/components/PageBanner";
 
 import { UserMarkdown } from "~/components/UserMarkdown";
-import { FACET_LABELS } from "~/constants/vocabulary";
+import { FACET_LABELS, PIECE_KIND_LABELS } from "~/constants/vocabulary";
 import type { Piece } from "~/schemas/catalogue";
 import type { MarkdownTree } from "~/schemas/markdown";
 import { Performances, performancesOf } from "./Performances";
 import { PieceInfobox } from "./PieceInfobox";
-import { RelatedPieces } from "./RelatedPieces";
 import { RestrictedLinks, WhereToFind } from "./WhereToFind";
 
 /**
@@ -33,7 +30,6 @@ export type PieceView = {
   readonly markdown: {
     readonly notes: MarkdownTree | null;
     readonly versions: MarkdownTree | null;
-    readonly historicalSource: MarkdownTree | null;
     readonly licensingNotes: MarkdownTree | null;
   };
   /** The reader has an edit of the piece waiting for review. */
@@ -79,7 +75,6 @@ function sectionsOf({ piece, markdown }: PieceView): PageSectionEntry[] {
         <LicensingCard
           subject="piece"
           status={piece.licensing_status}
-          licence={piece.licence}
           notes={markdown.licensingNotes}
           sources={piece.links.filter(link =>
             link.roles.includes("licensing_source")
@@ -89,20 +84,6 @@ function sectionsOf({ piece, markdown }: PieceView): PageSectionEntry[] {
       ),
     },
     ...prose("versions", "Versions", markdown.versions),
-    ...prose(
-      "historical-source",
-      "Historical source",
-      markdown.historicalSource
-    ),
-    ...(piece.relations.length > 0
-      ? [
-          pageSection(
-            "related-pieces",
-            "Related pieces",
-            <RelatedPieces relations={piece.relations} />
-          ),
-        ]
-      : []),
   ];
 }
 
@@ -130,20 +111,14 @@ export function PieceBody({ view }: { readonly view: PieceView }) {
  */
 function banner(piece: Piece) {
   if (piece.conservation_status === "restricted") {
-    const statement = restrictionStatement(piece.conservation_history);
-    return (
-      <PageBanner
-        kind="restricted"
-        statementUrl={statement && isUserUrl(statement) ? statement : undefined}
-      />
-    );
+    return <PageBanner kind="restricted" />;
   }
   return piece.is_stub ? <PageBanner kind="stub" subject="piece" /> : undefined;
 }
 
 /**
  * A piece's head, the same on its Read and History views: "Pieces" in the
- * breadcrumbs, the title, the kinds and period as the meta line, and the
+ * breadcrumbs, the title, the kind as the meta line, and the
  * restricted or stub banner.
  */
 export function pieceHead(piece: Piece) {
@@ -154,7 +129,7 @@ export function pieceHead(piece: Piece) {
       trail: [{ label: "Pieces", to: "/pieces" }] as const,
       current: piece.title,
     },
-    subtitle: pieceSubtitle(piece),
+    subtitle: PIECE_KIND_LABELS[piece.kind],
     banners: banner(piece),
   };
 }
@@ -173,7 +148,7 @@ export function PiecePage({ view }: { readonly view: PieceView }) {
       {...head}
       pending={view.pending}
       infobox={<PieceInfobox piece={piece} />}
-      categories={piece.terms.map(({ term }) => ({
+      categories={piece.terms.map(term => ({
         label: term.display_name,
         prefix: `${FACET_LABELS[term.facet]}:`,
         to: `/categories/${term.slug}`,

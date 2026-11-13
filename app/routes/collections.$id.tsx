@@ -12,7 +12,6 @@ import { EntityPage } from "~/components/EntityPage";
 import { SERVER_ERROR_META, ServerError } from "~/components/ErrorPages";
 import { LicenceLine } from "~/components/catalogue/LicenceLine";
 import { Infobox } from "~/components/ui/Infobox";
-import { Link } from "~/components/ui/Link";
 import { TagList } from "~/components/ui/TagList";
 import { catalogueHeaders } from "~/catalogue/headers";
 import { throwPageFailure, thrownPageFailure } from "~/catalogue/read-failure";
@@ -21,10 +20,7 @@ import { failureMeta, ignoreSearchChanges } from "~/catalogue/entity-route";
 import { pageMeta } from "~/catalogue/seo";
 import { categoryPath } from "~/catalogue/term-page";
 import { urlHost } from "~/catalogue/user-url";
-import {
-  COLLECTION_KIND_LABELS,
-  ENUMERABLE_LABELS,
-} from "~/constants/vocabulary";
+import { COLLECTION_KIND_LABELS } from "~/constants/vocabulary";
 import { useErrorReference } from "~/hooks/useErrorReference";
 import { isEntityId } from "~/schemas/address";
 import type { Collection } from "~/schemas/catalogue";
@@ -34,8 +30,7 @@ import { renderMarkdown } from "~/server/markdown.server";
 
 /**
  * `/collections/:id`, the layout of a collection's page (plan §1, §4.9):
- * one `getCollection` read for the head (breadcrumbs with the parent, the
- * h1, the kind and region, the Read and History tabs) and, on Read, the
+ * one `getCollection` read for the head (breadcrumbs, the h1, the kind and region, the Read and History tabs) and, on Read, the
  * infobox, the licence line and the body (`collections.$id._index.tsx`,
  * from this route's data). History pages never reload it.
  *
@@ -129,29 +124,6 @@ function CollectionInfobox({
                 />
               ) : null,
             },
-            ...(collection.parent
-              ? [
-                  {
-                    label: "Part of",
-                    value: (
-                      <Link
-                        to={`/collections/${collection.parent.id}`}
-                        appearance="prose"
-                      >
-                        {collection.parent.name}
-                      </Link>
-                    ),
-                  },
-                ]
-              : []),
-            {
-              label: "Contents can be listed",
-              value: ENUMERABLE_LABELS[collection.enumerable],
-            },
-            {
-              label: "Made for bards",
-              value: collection.is_bardic_resource ? "Yes" : "No",
-            },
           ],
         },
       ]}
@@ -171,17 +143,7 @@ export default function CollectionLayout() {
       title={collection.name}
       subtitle={collectionMeta(collection)}
       breadcrumbs={{
-        trail: [
-          { label: "Collections", to: "/collections" },
-          ...(collection.parent
-            ? [
-                {
-                  label: collection.parent.name,
-                  to: `/collections/${collection.parent.id}`,
-                },
-              ]
-            : []),
-        ],
+        trail: [{ label: "Collections", to: "/collections" }],
         current: collection.name,
       }}
       {...(reading

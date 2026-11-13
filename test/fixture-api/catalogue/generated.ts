@@ -6,7 +6,7 @@ import type { RawPiece } from "./pieces";
 /**
  * The deterministic filler for the capped lists (PLAN §7.3): 205 practice
  * pieces by one invented bard, all cited by one collection, with a
- * performance each at one venue (all but the last three). It uses no
+ * performance each at one event (all but the last three). It uses no
  * randomness and no clock, so two runs give identical records.
  */
 
@@ -32,34 +32,22 @@ function generateDrillSongs(): {
       slug,
       title,
       kind: "song",
-      secondary_kinds: [],
       conservation_status: "unassessed",
       is_stub: false,
       notes_md: null,
       version_notes_md: null,
       licensing_status: "unknown",
       licensing_notes_md: null,
-      licence: null,
-      licence_version: null,
-      historical_source_md: null,
-      period_start: null,
-      period_end: null,
       aliases: [],
-      terms: [
-        { term: "joyful", is_primary: false, part: null },
-        { term: "sca-pieces", is_primary: true, part: null },
-      ],
+      terms: ["joyful", "sca-pieces"],
       credits: [
         {
           role: "lyrics",
           attribution: "named",
           certainty: "certain",
-          part: null,
-          note: null,
           person: DRILL_BARD_SLUG,
         },
       ],
-      conservation_history: [],
     });
     links.push({
       owner: { kind: "piece", slug },

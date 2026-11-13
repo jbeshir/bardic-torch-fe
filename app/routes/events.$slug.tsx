@@ -15,25 +15,22 @@ import { throwPageFailure, thrownPageFailure } from "~/catalogue/read-failure";
 import { withoutRestrictedRecording } from "~/catalogue/restricted";
 import { failureMeta, ignoreSearchChanges } from "~/catalogue/entity-route";
 import { pageMeta } from "~/catalogue/seo";
-import { EVENT_KIND_LABELS } from "~/constants/vocabulary";
 import { useErrorReference } from "~/hooks/useErrorReference";
 import { isSlug } from "~/schemas/address";
 import type { Event } from "~/schemas/catalogue";
 import { getEvent } from "~/server/catalogue.server";
 import { hasPendingRevision } from "~/server/editing.server";
-import { renderMarkdown } from "~/server/markdown.server";
 
 /**
- * `/events/:slug`, the layout of an event's or venue's page (plan §1,
- * §4.10): one `getEvent` read for the head (breadcrumbs, the h1, the kind,
- * the Read and History tabs), and on Read the licence line and the body
+ * `/events/:slug`, the layout of an event's page (plan §1, §4.10): one
+ * `getEvent` read for the head (breadcrumbs, the h1, the Read and History tabs), and on Read the licence line and the body
  * (`events.$slug._index.tsx`, from this route's data). A restricted
  * piece's recording is emptied here, so its address never reaches the
  * page (§4.0).
  */
 
 const WHAT = "this event";
-const MISSING = "that event or venue";
+const MISSING = "that event";
 
 export const headers = catalogueHeaders;
 
@@ -52,12 +49,7 @@ export async function loader(args: LoaderFunctionArgs) {
     ...result.data,
     performances: result.data.performances.map(withoutRestrictedRecording),
   };
-  // The Markdown is parsed here, on the server: the browser gets the tree.
-  return {
-    event,
-    description: renderMarkdown(event.description_md),
-    pending,
-  };
+  return { event, pending };
 }
 
 export const meta: MetaFunction = args => {
@@ -68,7 +60,7 @@ export const meta: MetaFunction = args => {
   if (!event) return [...SERVER_ERROR_META];
   return pageMeta(args, {
     title: event.name,
-    description: `${event.name}, ${event.kind === "venue" ? "a venue" : "an event"} in the Bardic Torch catalogue, and the performances recorded there.`,
+    description: `${event.name}, an event in the Bardic Torch catalogue, and the performances recorded there.`,
     path: `/events/${event.slug}`,
   });
 };
@@ -82,9 +74,8 @@ export default function EventLayout() {
       path={path}
       pending={pending}
       title={event.name}
-      subtitle={EVENT_KIND_LABELS[event.kind]}
       breadcrumbs={{
-        trail: [{ label: "Events and venues", to: "/events" }],
+        trail: [{ label: "Events", to: "/events" }],
         current: event.name,
       }}
       {...(pathname === path

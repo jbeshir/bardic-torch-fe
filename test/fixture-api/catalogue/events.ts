@@ -1,6 +1,6 @@
 import type { components } from "../../../app/api/schema.gen";
 
-/** The raw event and venue records of the fixture catalogue (all invented). */
+/** The raw event records of the fixture catalogue (all invented). */
 
 type Schemas = components["schemas"];
 
@@ -8,55 +8,23 @@ export type RawEvent = Readonly<
   Omit<Schemas["Event"], "performances" | "performances_total" | "updated_at">
 >;
 
-/** The venue of the 203 capped performances. */
+/** The event of the 203 capped performances. */
 export const MUSTER_FIELD_SLUG = "muster-field";
 export const MIDWINTER_REVEL_SLUG = "midwinter-revel";
 /** An event nothing was performed at. */
 const QUIET_HALL_SLUG = "quiet-hall";
 
-function event(
-  slug: string,
-  name: string,
-  kind: Schemas["EventKind"],
-  description: string | null = null
-): RawEvent {
-  return { slug, name, kind, description_md: description };
-}
+const event = (slug: string, name: string): RawEvent => ({ slug, name });
 
 export const EVENTS: readonly RawEvent[] = [
-  event(
-    MIDWINTER_REVEL_SLUG,
-    "Midwinter Revel",
-    "event",
-    "A winter feast with **long** evenings of song."
-  ),
-  event(
-    MUSTER_FIELD_SLUG,
-    "Muster Field",
-    "venue",
-    "An open field where the drill sessions are held."
-  ),
-  event(
-    "the-copper-hearth",
-    "The Copper Hearth",
-    "venue",
-    "A tavern with a *large* fireplace."
-  ),
-  event("westerfell-crown-tourney", "Westerfell Crown Tourney", "event"),
-  event(
-    "caer-wyn-bardic-circle",
-    "Caer Wyn Bardic Circle",
-    "event",
-    "Meets monthly.\n\n- Open floor\n- All welcome"
-  ),
-  event("greywater-harvest-feast", "Greywater Harvest Feast", "event"),
-  event(
-    "ashdown-twelfth-night",
-    "Ashdown Twelfth Night",
-    "event",
-    "Held in the barony each January."
-  ),
-  event(QUIET_HALL_SLUG, "Quiet Hall", "venue"),
+  event(MIDWINTER_REVEL_SLUG, "Midwinter Revel"),
+  event(MUSTER_FIELD_SLUG, "Muster Field"),
+  event("the-copper-hearth", "The Copper Hearth"),
+  event("westerfell-crown-tourney", "Westerfell Crown Tourney"),
+  event("caer-wyn-bardic-circle", "Caer Wyn Bardic Circle"),
+  event("greywater-harvest-feast", "Greywater Harvest Feast"),
+  event("ashdown-twelfth-night", "Ashdown Twelfth Night"),
+  event(QUIET_HALL_SLUG, "Quiet Hall"),
 ];
 
 const BY_SLUG: ReadonlyMap<string, RawEvent> = new Map(
@@ -70,8 +38,7 @@ export function rawEvent(slug: string): RawEvent {
   return found;
 }
 
-/** An event or venue as other entities refer to it. */
+/** An event as other entities refer to it. */
 export function eventSummary(slug: string): Schemas["EventSummary"] {
-  const { name, kind } = rawEvent(slug);
-  return { slug, name, kind };
+  return { slug, name: rawEvent(slug).name };
 }

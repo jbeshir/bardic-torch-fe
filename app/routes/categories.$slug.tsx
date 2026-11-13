@@ -88,9 +88,6 @@ function termLink(term: TermSummary) {
 function TermInfobox({ term }: { readonly term: Term }) {
   const parent = term.ancestors.at(-1);
   const rows = [
-    ...(term.aliases.length > 0
-      ? [{ label: "Also called", value: term.aliases.join(", ") }]
-      : []),
     ...(parent ? [{ label: "Part of", value: termLink(parent) }] : []),
     ...(term.related_affiliation
       ? [

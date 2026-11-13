@@ -4,7 +4,6 @@ import {
   ATTRIBUTION_LABELS,
   CERTAINTY_QUALIFIERS,
   CREDIT_ROLE_LABELS,
-  PIECE_PART_LABELS,
 } from "~/constants/vocabulary";
 import type { Certainty, Piece } from "~/schemas/catalogue";
 
@@ -47,42 +46,25 @@ function Credited({ credit }: { readonly credit: Credit }) {
 }
 
 /**
- * A credit's row label: its role, with the part it is for, "Words (verses)"; just
- * the role when the part is the same word.
- */
-export function creditLabel(credit: Pick<Credit, "role" | "part">): string {
-  const role = CREDIT_ROLE_LABELS[credit.role];
-  const part = credit.part ? PIECE_PART_LABELS[credit.part] : null;
-  // "Tune (tune)" says it twice.
-  return part && part !== role ? `${role} (${part.toLowerCase()})` : role;
-}
-
-/**
  * A piece's credits as infobox rows (plan §4.5), in the API's order: the
  * role as the label; the person (a link to their page, if they have one) or
- * the attribution, the certainty qualifier and the note as the value. The
+ * the attribution and the certainty qualifier as the value. The
  * rows are what there is, never padded: with none, one "Credits" row shows
  * the empty value (never "unknown author").
  */
 export function creditRows(credits: Piece["credits"]) {
   if (credits.length === 0) return [{ label: "Credits", value: null }];
   return credits.map(credit => ({
-    // Two credits differ in their role, part or who they are to.
+    // Two credits differ in their role or who they are to.
     id: [
       credit.role,
-      credit.part,
       credit.person?.slug ?? credit.person?.name ?? credit.attribution,
     ].join(":"),
-    label: creditLabel(credit),
+    label: CREDIT_ROLE_LABELS[credit.role],
     value: (
       <>
         <Credited credit={credit} />
         <CertaintyQualifier certainty={credit.certainty} />
-        {credit.note ? (
-          <span className="block text-caption text-fg-subtle">
-            {credit.note}
-          </span>
-        ) : null}
       </>
     ),
   }));

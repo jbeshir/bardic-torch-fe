@@ -7,51 +7,52 @@ const form = (fields: readonly (readonly [string, string])[]) =>
 describe("decodeForm", () => {
   it.each([
     [
-      "an event: blank text is null",
-      "event",
+      "a person: blank text is null, a ticked box is true",
+      "person",
       [
         ["schema_version", "1"],
-        ["name", "Midwinter Revel"],
-        ["kind", "venue"],
-        ["description_md", "  "],
+        ["name", "Wren of the Vale"],
+        ["notes_md", "  "],
+        ["is_stub", "on"],
       ],
       {
         schema_version: 1,
-        name: "Midwinter Revel",
-        kind: "venue",
-        description_md: null,
+        name: "Wren of the Vale",
+        kind: "community_bard",
+        status: "active",
+        notes_md: null,
+        licensing_status: "unknown",
+        licensing_notes_md: null,
+        is_stub: true,
+        aliases: [],
+        roles: [],
+        affiliation_slugs: [],
+        links: [],
       },
     ],
     [
-      "a collection: a ticked box is true, a blank number null, a typed one a number",
+      "a collection: the defaults for what isn't posted",
       "collection",
       [
         ["name", "Songs"],
-        ["is_bardic_resource", "on"],
-        ["parent_id", ""],
         ["url", "https://songs.example"],
       ],
       {
         schema_version: 1,
         name: "Songs",
         url: "https://songs.example",
-        kind: "other",
+        kind: "website",
         description_md: null,
         region_term_slug: null,
-        parent_id: null,
-        is_bardic_resource: true,
-        enumerable: "unknown",
       },
     ],
     [
-      "a term: rows by index, in index order, and a textarea's line breaks as \\n",
+      "a term: a textarea's line breaks as \\n",
       "term",
       [
         ["name", "Tavern"],
         ["display_name", "Tavern"],
         ["position", "3"],
-        ["aliases.1", "Inn songs"],
-        ["aliases.0", "Alehouse songs"],
         ["description_md", "One\r\nTwo"],
       ],
       {
@@ -63,20 +64,20 @@ describe("decodeForm", () => {
         related_affiliation_slug: null,
         description_md: "One\nTwo",
         position: 3,
-        aliases: ["Alehouse songs", "Inn songs"],
       },
     ],
   ] as const)("%s", (_why, type, fields, document) => {
     expect(decodeForm(type, form(fields))?.document).toEqual(document);
   });
 
-  it("decodes a piece's nested rows: unticked boxes false, one checkbox a list, missing lists []", () => {
+  it("decodes a piece's nested rows: rows in index order, unticked boxes false, one checkbox a list, missing lists []", () => {
     const decoded = decodeForm(
       "piece",
       form([
         ["title", "The Copper Kettle"],
-        ["conservation.status", "endangered"],
-        ["conservation.source_url", "https://survey.example"],
+        ["conservation_status", "endangered"],
+        ["term_slugs.1", "drinking"],
+        ["term_slugs.0", "joyful"],
         ["credits.0.person_slug", ""],
         ["credits.0.attribution", "traditional"],
         ["links.0.url", "https://songs.example/kettle"],
@@ -89,20 +90,15 @@ describe("decodeForm", () => {
     expect(decoded).toMatchObject({
       title: "The Copper Kettle",
       is_stub: false,
-      conservation: {
-        status: "endangered",
-        source_url: "https://survey.example",
-      },
+      conservation_status: "endangered",
       aliases: [],
-      terms: [],
+      term_slugs: ["joyful", "drinking"],
       credits: [
         {
           person_slug: null,
           role: "lyrics",
           attribution: "traditional",
           certainty: "certain",
-          part: null,
-          note: null,
         },
       ],
       links: [
@@ -133,12 +129,13 @@ describe("decodeForm", () => {
       "piece",
       form([
         ["title", "The Copper Kettle"],
-        ["period_start", "1.5"],
+        ["links.0.url", "https://songs.example/kettle"],
+        ["links.0.performances.0.year", "1.5"],
       ])
     );
     expect(decoded?.document).toMatchObject({
       title: "The Copper Kettle",
-      period_start: null,
+      links: [{ performances: [{ year: null }] }],
     });
     expect(
       decodeForm("term", form([["position", "1.5"]]))?.document.position

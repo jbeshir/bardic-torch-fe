@@ -84,10 +84,8 @@ async function post(path: string, form: Readonly<Record<string, string>>) {
 const REVEL = {
   schema_version: "1",
   base_revision_id: "1013",
-  name: "Midwinter Revel",
-  kind: "event",
-  description_md: "A winter feast.",
-  summary: "Shortened the description",
+  name: "The Midwinter Revel",
+  summary: "Named it in full",
   intent: "submit",
 };
 
@@ -136,7 +134,6 @@ describe("the editor action", () => {
     const fields = {
       schema_version: "1",
       name: "midwinter revel ",
-      kind: "event",
       intent: "submit",
     };
     const warned = await post("/events/new", fields);
@@ -160,7 +157,7 @@ describe("the piece editor", () => {
       title: "The Copper Kettle",
       "credits.0.person_slug": "wren-of-the-vale",
       "credits.0.role": "tune",
-      "credits.0.note": "The second tune",
+      "credits.0.certainty": "probable",
       intent: "add:credits",
     });
     expect(response.status).toBe(200);
@@ -171,7 +168,9 @@ describe("the piece editor", () => {
     expect(html).toMatch(
       /name="credits\.0\.role".*?<option value="tune" selected="">/s
     );
-    expect(html).toMatch(/name="credits\.0\.note" value="The second tune"/);
+    expect(html).toMatch(
+      /name="credits\.0\.certainty".*?<option value="probable" selected="">/s
+    );
     expect(html).toContain('name="credits.1.role"');
     expect(html).not.toContain('name="credits.2.role"');
   });

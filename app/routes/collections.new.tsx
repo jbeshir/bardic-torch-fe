@@ -12,7 +12,7 @@ import {
 export function loader(args: LoaderFunctionArgs) {
   return editorLoader(args, {
     type: "collection",
-    pickers: ["affiliations", "collections"],
+    pickers: ["affiliations"],
   });
 }
 

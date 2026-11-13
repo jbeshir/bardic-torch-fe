@@ -2,8 +2,8 @@ import type { components } from "../../../app/api/schema.gen";
 import { collectionRef, rawCollection } from "./collections";
 import { eventSummary, MIDWINTER_REVEL_SLUG, rawEvent } from "./events";
 import { LINKS, performanceSummary, type RawLink } from "./links";
-import { PERSON_RELATIONS, personSummary, rawPerson } from "./persons";
-import { PIECE_RELATIONS, pieceSummary, rawPiece } from "./pieces";
+import { personSummary, rawPerson } from "./persons";
+import { pieceSummary, rawPiece } from "./pieces";
 import { rawTerm, termSummary } from "./terms";
 
 /**
@@ -71,33 +71,17 @@ function pieceSnapshot(
   return {
     title: raw.title,
     kind: raw.kind,
-    secondary_kinds: [...raw.secondary_kinds],
     conservation_status: raw.conservation_status,
-    conservation_source_url:
-      raw.conservation_history.at(-1)?.source_url ?? null,
     is_stub: raw.is_stub,
     notes_md: raw.notes_md,
     version_notes_md: raw.version_notes_md,
     licensing_status: raw.licensing_status,
     licensing_notes_md: raw.licensing_notes_md,
-    licence: raw.licence,
-    licence_version: raw.licence_version,
-    historical_source_md: raw.historical_source_md,
-    period_start: raw.period_start,
-    period_end: raw.period_end,
     aliases: [...raw.aliases],
-    terms: raw.terms.map(t => ({
-      term: termSummary(t.term),
-      is_primary: t.is_primary,
-      part: t.part,
-    })),
+    terms: raw.terms.map(termSummary),
     credits: raw.credits.map(c => ({
       ...c,
       person: c.person === null ? null : personSummary(c.person),
-    })),
-    relations: PIECE_RELATIONS.filter(r => r.from === slug).map(r => ({
-      type: r.type,
-      piece: pieceSummary(r.to),
     })),
     links: LINKS.filter(
       l => l.owner.kind === "piece" && l.owner.slug === slug
@@ -117,24 +101,17 @@ function personSnapshot(
     name: raw.name,
     kind: raw.kind,
     status: raw.status,
-    status_date: raw.status_date,
-    status_source_url: raw.status_source_url,
     is_stub: raw.is_stub,
     profile:
       profile === null
         ? null
         : {
-            pronouns: profile.pronouns,
             notes_md: profile.notes_md,
             licensing_status: profile.licensing_status,
             licensing_notes_md: profile.licensing_notes_md,
             aliases: profile.aliases.map(({ name, kind }) => ({ name, kind })),
             roles: [...profile.roles],
             affiliations: profile.affiliations.map(termSummary),
-            relations: PERSON_RELATIONS.filter(r => r.from === slug).map(r => ({
-              type: r.type,
-              person: personSummary(r.to),
-            })),
             links: LINKS.filter(
               l => l.owner.kind === "person" && l.owner.slug === slug
             ).map(l => ({ ...snapshotLink(l), performances: [] })),
@@ -197,31 +174,13 @@ function pieceRevision(
 const KETTLE_AT_IMPORT = pieceSnapshot("the-copper-kettle", {
   overrides: {
     title: "Copper Kettle",
-    secondary_kinds: [],
     conservation_status: "unassessed",
-    conservation_source_url: null,
     notes_md: "Sung at feasts.",
     version_notes_md: null,
     licensing_status: "unknown",
-    licence: null,
-    period_start: null,
-    period_end: null,
     aliases: [],
-    terms: [
-      {
-        term: termSummary("traditional-and-folk"),
-        is_primary: true,
-        part: null,
-      },
-      { term: termSummary("drinking"), is_primary: false, part: null },
-    ],
+    terms: [termSummary("traditional-and-folk"), termSummary("drinking")],
     credits: [],
-    relations: [
-      {
-        type: "same_text_other_form",
-        piece: pieceSummary("kettle-and-tongs"),
-      },
-    ],
     links: [],
   },
 });
@@ -235,8 +194,6 @@ const KETTLE_CURRENT = pieceSnapshot("the-copper-kettle");
 const HOARD_AT_IMPORT = pieceSnapshot("the-dragons-hoard", {
   overrides: {
     conservation_status: "endangered",
-    conservation_source_url: null,
-    licence: null,
     licensing_status: "unknown",
   },
 });
@@ -247,7 +204,6 @@ const WREN_AT_IMPORT = personSnapshot(
   "wren-of-the-vale",
   {},
   {
-    pronouns: null,
     notes_md: "A singer.",
     aliases: [],
     links: [],
@@ -293,12 +249,11 @@ function warSnapshot(
     related_affiliation: null,
     description_md: raw.description_md,
     position: 1,
-    aliases: [...raw.aliases],
     ...overrides,
   };
 }
 
-const WAR_AT_IMPORT = warSnapshot({ description_md: null, aliases: [] });
+const WAR_AT_IMPORT = warSnapshot({ description_md: null });
 const WAR_USER = warSnapshot();
 
 function collectionSnapshot(
@@ -312,9 +267,6 @@ function collectionSnapshot(
     kind: raw.kind,
     description_md: raw.description_md,
     region: raw.region === null ? null : termSummary(raw.region),
-    parent: null,
-    is_bardic_resource: raw.is_bardic_resource,
-    enumerable: raw.enumerable,
     ...overrides,
   };
 }
@@ -322,19 +274,12 @@ function collectionSnapshot(
 const SONGBOOK_AT_IMPORT = collectionSnapshot(12, {
   description_md: null,
   region: null,
-  enumerable: "unknown",
 });
 const SONGBOOK_USER = collectionSnapshot(12);
 
-const REVEL_AT_IMPORT: Schemas["EventSnapshot"] = {
-  name: "Midwinter Revel",
-  kind: "event",
-  description_md: null,
-};
+const REVEL_AT_IMPORT: Schemas["EventSnapshot"] = { name: "Midwinter Revels" };
 const REVEL_USER: Schemas["EventSnapshot"] = {
   name: rawEvent(MIDWINTER_REVEL_SLUG).name,
-  kind: rawEvent(MIDWINTER_REVEL_SLUG).kind,
-  description_md: rawEvent(MIDWINTER_REVEL_SLUG).description_md,
 };
 
 export const REVISIONS: readonly Revision[] = [
@@ -346,7 +291,7 @@ export const REVISIONS: readonly Revision[] = [
       {
         id: 1003,
         createdAt: "2026-02-01T12:00:00Z",
-        summary: "Added the tune credit, links and a licence",
+        summary: "Added the tune credit, links and the licensing",
       },
       1001
     ),
@@ -456,7 +401,7 @@ export const REVISIONS: readonly Revision[] = [
       {
         id: 1013,
         createdAt: "2026-03-12T12:00:00Z",
-        summary: "Described the revel",
+        summary: "Corrected the name",
       },
       1012
     ),

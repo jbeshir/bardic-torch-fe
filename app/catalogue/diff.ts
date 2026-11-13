@@ -4,25 +4,18 @@ import {
   COLLECTION_KIND_LABELS,
   CONSERVATION_LABELS,
   CREDIT_ROLE_LABELS,
-  ENUMERABLE_LABELS,
-  EVENT_KIND_LABELS,
   FACET_LABELS,
-  LICENCE_LABELS,
   LICENSING_STATUS_LABELS,
   LINK_PLACE_TYPE_LABELS,
   LINK_ROLE_LABELS,
   PERSON_ALIAS_KIND_LABELS,
   PERSON_KIND_LABELS,
-  PERSON_RELATION_LABELS,
   PERSON_ROLE_LABELS,
   PERSON_STATUS_LABELS,
   PIECE_ALIAS_KIND_LABELS,
   PIECE_KIND_LABELS,
-  PIECE_PART_LABELS,
-  PIECE_RELATION_LABELS,
 } from "~/constants/vocabulary";
 import type { Revision } from "~/schemas/catalogue";
-import { formatDate } from "./format";
 import { isUserUrl } from "./user-url";
 
 /**
@@ -158,18 +151,9 @@ type Profile = NonNullable<Snapshots["person"]["profile"]>;
 const PIECE_FIELDS: Fields<Snapshots["piece"]> = {
   title: { label: "Title", value: s => s.title },
   kind: { label: "Kind", value: s => PIECE_KIND_LABELS[s.kind] },
-  secondary_kinds: {
-    label: "Other kinds",
-    value: s => items(s.secondary_kinds, kind => PIECE_KIND_LABELS[kind]),
-  },
   conservation_status: {
     label: "Conservation status",
     value: s => CONSERVATION_LABELS[s.conservation_status],
-  },
-  conservation_source_url: {
-    label: "Conservation source",
-    value: (s, asText) =>
-      maybe(s.conservation_source_url, url => link(url, null, asText)),
   },
   is_stub: { label: "Stub", value: s => yesNo(s.is_stub) },
   notes_md: { label: "Notes", value: s => s.notes_md },
@@ -182,20 +166,6 @@ const PIECE_FIELDS: Fields<Snapshots["piece"]> = {
     label: "Licensing notes",
     value: s => s.licensing_notes_md,
   },
-  licence: {
-    label: "Licence",
-    value: s => maybe(s.licence, licence => LICENCE_LABELS[licence]),
-  },
-  licence_version: { label: "Licence version", value: s => s.licence_version },
-  historical_source_md: {
-    label: "Historical source",
-    value: s => s.historical_source_md,
-  },
-  period_start: {
-    label: "Period from",
-    value: s => maybe(s.period_start, String),
-  },
-  period_end: { label: "Period to", value: s => maybe(s.period_end, String) },
   aliases: {
     label: "Also known as",
     value: s =>
@@ -208,14 +178,8 @@ const PIECE_FIELDS: Fields<Snapshots["piece"]> = {
     value: s =>
       items(
         s.terms,
-        t =>
-          join(
-            t.term.display_name,
-            FACET_LABELS[t.term.facet],
-            t.part && PIECE_PART_LABELS[t.part],
-            t.is_primary && "Primary"
-          ),
-        t => `${t.term.slug}\u0000${t.part ?? ""}`
+        t => join(t.display_name, FACET_LABELS[t.facet]),
+        t => t.slug
       ),
   },
   credits: {
@@ -230,25 +194,13 @@ const PIECE_FIELDS: Fields<Snapshots["piece"]> = {
             c.person
               ? c.person.name
               : c.attribution !== "named" && ATTRIBUTION_LABELS[c.attribution],
-            c.part && PIECE_PART_LABELS[c.part],
             c.certainty !== "certain" &&
-              standalone(CERTAINTY_QUALIFIERS[c.certainty]),
-            c.note
+              standalone(CERTAINTY_QUALIFIERS[c.certainty])
           ),
         c =>
-          [
-            c.role,
-            c.attribution,
-            c.person?.slug ?? c.person?.name ?? "",
-            c.part ?? "",
-          ].join("\u0000")
-      ),
-  },
-  relations: {
-    label: "Related pieces",
-    value: s =>
-      items(s.relations, r =>
-        join(PIECE_RELATION_LABELS[r.type].outgoing, r.piece.title)
+          [c.role, c.attribution, c.person?.slug ?? c.person?.name ?? ""].join(
+            "\u0000"
+          )
       ),
   },
   links: {
@@ -269,7 +221,6 @@ const PIECE_FIELDS: Fields<Snapshots["piece"]> = {
 };
 
 const PROFILE_FIELDS: Fields<Profile> = {
-  pronouns: { label: "Pronouns", value: p => p.pronouns },
   notes_md: { label: "Notes", value: p => p.notes_md },
   licensing_status: {
     label: "Licensing",
@@ -293,13 +244,6 @@ const PROFILE_FIELDS: Fields<Profile> = {
   affiliations: {
     label: "Affiliations",
     value: p => items(p.affiliations, term => term.display_name),
-  },
-  relations: {
-    label: "Relations",
-    value: p =>
-      items(p.relations, r =>
-        join(PERSON_RELATION_LABELS[r.type].outgoing, r.person.name)
-      ),
   },
   links: {
     label: "Links",
@@ -327,15 +271,6 @@ const PERSON_FIELDS: Fields<Omit<Snapshots["person"], "profile">> = {
   name: { label: "Name", value: s => s.name },
   kind: { label: "Kind", value: s => PERSON_KIND_LABELS[s.kind] },
   status: { label: "Status", value: s => PERSON_STATUS_LABELS[s.status] },
-  status_date: {
-    label: "Status date",
-    value: s => maybe(s.status_date, formatDate),
-  },
-  status_source_url: {
-    label: "Status source",
-    value: (s, asText) =>
-      maybe(s.status_source_url, url => link(url, null, asText)),
-  },
   is_stub: { label: "Stub", value: s => yesNo(s.is_stub) },
 };
 
@@ -350,10 +285,6 @@ const TERM_FIELDS: Fields<Snapshots["term"]> = {
   },
   description_md: { label: "Description", value: s => s.description_md },
   position: { label: "Position", value: s => String(s.position) },
-  aliases: {
-    label: "Also called",
-    value: s => items(s.aliases, alias => alias),
-  },
 };
 
 const COLLECTION_FIELDS: Fields<Snapshots["collection"]> = {
@@ -365,21 +296,10 @@ const COLLECTION_FIELDS: Fields<Snapshots["collection"]> = {
   kind: { label: "Kind", value: s => COLLECTION_KIND_LABELS[s.kind] },
   description_md: { label: "Description", value: s => s.description_md },
   region: { label: "Region", value: s => s.region?.display_name ?? null },
-  parent: { label: "Part of", value: s => s.parent?.name ?? null },
-  is_bardic_resource: {
-    label: "Made for bards",
-    value: s => yesNo(s.is_bardic_resource),
-  },
-  enumerable: {
-    label: "Contents can be listed",
-    value: s => ENUMERABLE_LABELS[s.enumerable],
-  },
 };
 
 const EVENT_FIELDS: Fields<Snapshots["event"]> = {
   name: { label: "Name", value: s => s.name },
-  kind: { label: "Kind", value: s => EVENT_KIND_LABELS[s.kind] },
-  description_md: { label: "Description", value: s => s.description_md },
 };
 
 // ---------------------------------------------------------------------------
@@ -453,14 +373,12 @@ function rowsOf<Snapshot>(
 const IDENTITY_ONLY = "Identity only (the person prefers not to have a page)";
 
 const EMPTY_PROFILE: Profile = {
-  pronouns: null,
   notes_md: null,
   licensing_status: "unknown",
   licensing_notes_md: null,
   aliases: [],
   roles: [],
   affiliations: [],
-  relations: [],
   links: [],
 };
 

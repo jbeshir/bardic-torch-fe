@@ -14,7 +14,6 @@ const PIECES: PieceList = {
       slug: "northmarch-rising",
       title: "Northmarch Rising",
       kind: "song",
-      secondary_kinds: [],
       conservation_status: "low_risk",
       is_stub: false,
       credit_names: [],

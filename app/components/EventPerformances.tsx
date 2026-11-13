@@ -23,7 +23,7 @@ function Performers({
 }
 
 /**
- * The performances recorded at an event or venue (plan §4.10), in the
+ * The performances recorded at an event (plan §4.10), in the
  * API's order (newest year first, unknown years last): the year, the piece
  * (or "No particular piece"), the performers and the recording, a table
  * from md and cards below. A restricted piece is named and linked to its

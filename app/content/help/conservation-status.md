@@ -74,7 +74,7 @@ Each piece’s status badge links to its entry on this page. To see pieces by st
 Some creators don’t want their work recorded, archived or shared. It might belong to an oral tradition, or be meant only for the people in the room. That wish comes first.
 
 - **Restricted overrides everything.** A Restricted piece is never marked Endangered or Critically endangered, however few places it exists in. Those statuses exist to help works be found and preserved, and these works shouldn’t be.
-- **No ‘help preserve’ prompts.** A Restricted piece’s page doesn’t ask anyone to find, add or host copies. It shows the creator’s wishes and a link to where they stated them.
+- **No ‘help preserve’ prompts.** A Restricted piece’s page doesn’t ask anyone to find, add or host copies. It shows the creator’s wishes instead.
 - **It needs a source.** Like any statement about a creator’s wishes, Restricted must link to a public page where the creator said so. See the [FAQ for bards](/help/faq-for-bards) for how creators can do this.
 - **Please respect it.** Don’t add recordings or copies of a Restricted work, here or anywhere else.
 

@@ -3,7 +3,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 
 /**
  * A native disclosure for something a page lists but doesn't lead with: a
- * status history, a restricted piece's links, the bards' filters. It is
+ * restricted piece's links, the bards' filters. It is
  * `<details>`, so it works without JS and is closed until the reader opens
  * it; the summary is a 24 px target in the link colour, with a chevron
  * that turns when open. With `openWhen` (a media query) and JS, it starts
@@ -16,7 +16,7 @@ export function Disclosure({
   primary,
   children,
 }: {
-  /** The summary's words: "Status history (3)". */
+  /** The summary's words: "Filters". */
   readonly summary: string;
   readonly openWhen?: string;
   /** Open from the start (e.g. while a filter inside is applied). */

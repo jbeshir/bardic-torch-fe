@@ -2,11 +2,10 @@ import {
   ATTRIBUTION_LABELS,
   CERTAINTY_QUALIFIERS,
   CREDIT_ROLE_LABELS,
-  PIECE_PART_LABELS,
 } from "~/constants/vocabulary";
 import type { PieceDocument } from "~/editing/documents";
 import type { Option } from "~/editing/editor-data";
-import { labelOptions, Rows, SelectField, TextField } from "./fields";
+import { labelOptions, Rows, SelectField } from "./fields";
 
 const ATTRIBUTIONS = [
   { value: "named", label: "Named: the person above" },
@@ -18,7 +17,7 @@ const CERTAINTIES = [
   ...labelOptions(CERTAINTY_QUALIFIERS),
 ];
 
-/** A piece's credits: who made which part, and how sure we are. */
+/** A piece's credits: who made what, and how sure we are. */
 export function CreditEditor({
   credits,
   persons,
@@ -61,19 +60,6 @@ export function CreditEditor({
             label="Certainty"
             value={credit.certainty}
             options={CERTAINTIES}
-          />
-          <SelectField
-            name={`${name}.part`}
-            label="Part"
-            value={credit.part}
-            options={labelOptions(PIECE_PART_LABELS)}
-            optional
-          />
-          <TextField
-            name={`${name}.note`}
-            label="Note"
-            value={credit.note}
-            optional
           />
         </>
       )}

@@ -16,7 +16,6 @@ const PROBLEM_MESSAGES: Readonly<Record<Schemas["ProblemCode"], string>> = {
   control_character: "This has a hidden control character. Type it again.",
   duplicate: "This is listed twice. Remove one of them.",
   invalid: "This isn’t in a form we can use. Check it.",
-  out_of_range: "This number is out of range. Check it.",
   cycle: "This would put the page inside itself. Choose another.",
   too_deep: "This goes too many levels deep. Choose one higher up.",
   wrong_facet: "This is in another facet. Choose one from the same facet.",

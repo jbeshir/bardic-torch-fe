@@ -157,7 +157,7 @@ const PAGES: readonly (readonly [string, number, Check])[] = [
   ["/categories/swords", 200, { h1: "Swords" }],
   ["/collections", 200, { h1: "Collections" }],
   ["/collections/12", 200, { h1: "The Northmarch Songbook" }],
-  ["/events", 200, { h1: "Events and venues" }],
+  ["/events", 200, { h1: "Events" }],
   ["/events/midwinter-revel", 200, { h1: "Midwinter Revel" }],
   ["/events/new", 302, { location: "/auth/login?returnTo=%2Fevents%2Fnew" }],
   ["/needs-work", 200, { h1: "Needs work" }],
@@ -181,7 +181,7 @@ const PAGES: readonly (readonly [string, number, Check])[] = [
 const EDITOR_PAGES: readonly (readonly [string, string])[] = [
   ["/contributions", "My contributions"],
   ["/events/midwinter-revel/edit", "Midwinter Revel"],
-  ["/events/new", "New event or venue"],
+  ["/events/new", "New event"],
   ["/collections/12/edit", "The Northmarch Songbook"],
   ["/collections/new", "New collection"],
   ["/categories/swords/edit", "Swords"],

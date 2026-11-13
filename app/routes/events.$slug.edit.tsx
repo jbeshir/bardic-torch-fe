@@ -10,7 +10,7 @@ import type { Event } from "~/schemas/catalogue";
 import {
   editorAction,
   editorLoader,
-  previewDescription,
+  previewName,
 } from "~/server/editing.server";
 
 /** `/events/:slug/edit`: the Edit view, under its layout's head. */
@@ -20,7 +20,7 @@ export function loader(args: LoaderFunctionArgs) {
 }
 
 export function action(args: ActionFunctionArgs) {
-  return editorAction(args, { type: "event", preview: previewDescription });
+  return editorAction(args, { type: "event", preview: previewName });
 }
 
 export const meta: MetaFunction = args => {

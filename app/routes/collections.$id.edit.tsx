@@ -19,7 +19,7 @@ export function loader(args: LoaderFunctionArgs) {
   return editorLoader(args, {
     type: "collection",
     key: args.params.id ?? "",
-    pickers: ["affiliations", "collections"],
+    pickers: ["affiliations"],
   });
 }
 

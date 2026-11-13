@@ -1,9 +1,6 @@
 import { useActionData, useLoaderData } from "react-router";
 import type { MarkdownTree } from "~/schemas/markdown";
-import {
-  COLLECTION_KIND_LABELS,
-  ENUMERABLE_LABELS,
-} from "~/constants/vocabulary";
+import { COLLECTION_KIND_LABELS } from "~/constants/vocabulary";
 import type { CollectionDocument } from "~/editing/documents";
 import type {
   EditorActionData,
@@ -11,15 +8,9 @@ import type {
   Options,
 } from "~/editing/editor-data";
 import { EditorPage, MarkdownPreview } from "./EditorPage";
-import {
-  CheckboxField,
-  labelOptions,
-  SelectField,
-  TextField,
-  MARKDOWN_HELP,
-} from "./fields";
+import { labelOptions, SelectField, TextField, MARKDOWN_HELP } from "./fields";
 
-/** A collection's fields: its region is an affiliation, its parent a collection. */
+/** A collection's fields: its region is an affiliation. */
 function CollectionForm({
   document,
   options,
@@ -44,28 +35,10 @@ function CollectionForm({
         options={labelOptions(COLLECTION_KIND_LABELS)}
       />
       <SelectField
-        name="enumerable"
-        label="Can its contents be listed?"
-        value={document.enumerable}
-        options={labelOptions(ENUMERABLE_LABELS)}
-      />
-      <CheckboxField
-        name="is_bardic_resource"
-        label="A bardic resource"
-        checked={document.is_bardic_resource}
-      />
-      <SelectField
         name="region_term_slug"
         label="Region"
         value={document.region_term_slug}
         options={options.affiliations ?? []}
-        optional
-      />
-      <SelectField
-        name="parent_id"
-        label="Part of"
-        value={document.parent_id}
-        options={options.collections ?? []}
         optional
       />
       <TextField

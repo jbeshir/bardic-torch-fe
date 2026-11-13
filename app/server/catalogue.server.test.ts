@@ -51,11 +51,11 @@ describe("what it sends", () => {
       q: "a b",
       stub: false,
       conservation_status: ["low_risk"],
-      kind: ["comedy"],
+      kind: ["poem"],
       term: ["war"],
     });
     expect(seen).toEqual([
-      "?term=war&kind=comedy&conservation_status=low_risk&stub=false&q=a+b&letter=W&sort=title&limit=50&offset=100",
+      "?term=war&kind=poem&conservation_status=low_risk&stub=false&q=a+b&letter=W&sort=title&limit=50&offset=100",
     ]);
   });
 });

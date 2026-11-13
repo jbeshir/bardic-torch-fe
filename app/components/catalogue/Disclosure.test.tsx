@@ -8,11 +8,11 @@ describe("Disclosure", () => {
   it("is closed, a focusable summary that opens it", async () => {
     const user = userEvent.setup();
     await renderWithRouter(
-      <Disclosure summary="Status history (2)">
+      <Disclosure summary="Filters">
         <p>The entries.</p>
       </Disclosure>
     );
-    const summary = screen.getByText("Status history (2)");
+    const summary = screen.getByText("Filters");
     const details = summary.closest("details");
     expect(details).not.toHaveAttribute("open");
     expect(screen.getByText("The entries.")).not.toBeVisible();

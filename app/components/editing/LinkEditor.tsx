@@ -118,7 +118,7 @@ export function LinkEditor({
                 ) : null}
                 <SelectField
                   name={`${at}.event_slug`}
-                  label="Event or venue"
+                  label="Event"
                   value={performance.event_slug}
                   options={options.events ?? []}
                   optional

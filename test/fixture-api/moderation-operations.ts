@@ -84,17 +84,13 @@ export const SEEDED_REVISIONS: readonly (readonly [string, RevisionView])[] = [
   ],
   [
     APPRENTICE.id,
-    pending(1902, "Described the feast", "2026-10-22T18:30:00Z", {
+    pending(1902, "Named the feast in full", "2026-10-22T18:30:00Z", {
       entity_type: REVEL.entity_type,
       entity: REVEL.entity,
       base_revision_id: REVEL.id,
-      snapshot: {
-        ...REVEL.snapshot,
-        description_md:
-          "Held each year at midwinter, with a bardic circle after the feast.",
-      },
+      snapshot: { name: "Midwinter Revel and Bardic Circle" },
       base_snapshot: REVEL.snapshot,
-      changed_fields: ["description_md"],
+      changed_fields: ["name"],
     }),
   ],
   [

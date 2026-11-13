@@ -16,7 +16,7 @@ FE2 adds the catalogue, read-only and anonymous:
 
 - the home page, with the catalogue's size and its ways in;
 - the piece browse and A–Z (`/pieces`), with facets, text search and paging, and search results (`/search`);
-- a page for each piece, bard (any person or group), category, collection and event or venue, with its Read and History views, and a page for each revision with its changes (`/revisions/:id`);
+- a page for each piece, bard (any person or group), category, collection and event, with its Read and History views, and a page for each revision with its changes (`/revisions/:id`);
 - the directories (`/bards`, `/categories`, `/collections`, `/events`);
 - `robots.txt` and one `sitemap.xml`, and page metadata for search engines (indexed in the production build only).
 

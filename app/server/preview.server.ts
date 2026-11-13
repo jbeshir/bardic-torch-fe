@@ -29,7 +29,6 @@ const FACETS = new Map(
 /** The summaries the read components take, from the option lists. */
 function summaries(options: Options) {
   const person = namer(options.persons);
-  const piece = namer(options.pieces);
   const event = namer(options.events);
   const collection = namer(options.collections);
   return {
@@ -39,20 +38,7 @@ function summaries(options: Options) {
       kind: "community_bard" as const,
       is_stub: false,
     }),
-    piece: (slug: string) => ({
-      slug,
-      title: piece(slug),
-      kind: "song" as const,
-      secondary_kinds: [],
-      conservation_status: "unassessed" as const,
-      is_stub: false,
-      credit_names: [],
-    }),
-    event: (slug: string) => ({
-      slug,
-      name: event(slug),
-      kind: "event" as const,
-    }),
+    event: (slug: string) => ({ slug, name: event(slug) }),
     link: (link: Document["links"][number]) => ({
       url: link.url,
       title: link.title,
@@ -84,26 +70,16 @@ export function previewPiece(
   const piece: Piece = {
     ...document,
     slug: "",
-    conservation_status: document.conservation.status,
     credit_names: [],
     updated_at: "",
-    conservation_history: [],
-    terms: document.terms.map(({ term_slug, ...term }) => ({
-      ...term,
-      term: {
-        slug: term_slug,
-        facet: FACETS.get(terms.get(term_slug)?.group ?? "") ?? "topic",
-        display_name: terms.get(term_slug)?.label.trim() ?? term_slug,
-      },
+    terms: document.term_slugs.map(slug => ({
+      slug,
+      facet: FACETS.get(terms.get(slug)?.group ?? "") ?? "topic",
+      display_name: terms.get(slug)?.label.trim() ?? slug,
     })),
     credits: document.credits.map(({ person_slug, ...credit }) => ({
       ...credit,
       person: person_slug === null ? null : summary.person(person_slug),
-    })),
-    relations: document.relations.map(({ to_piece_slug, type }) => ({
-      type,
-      direction: "outgoing",
-      piece: summary.piece(to_piece_slug),
     })),
     links: document.links.map(link => ({
       ...summary.link(link),
@@ -121,7 +97,6 @@ export function previewPiece(
     markdown: {
       notes: renderMarkdown(document.notes_md),
       versions: renderMarkdown(document.version_notes_md),
-      historicalSource: renderMarkdown(document.historical_source_md),
       licensingNotes: renderMarkdown(document.licensing_notes_md),
     },
   };
@@ -144,11 +119,6 @@ export function previewPerson(
           slug,
           facet: "affiliation",
           display_name: affiliation(slug),
-        })),
-        relations: document.relations.map(({ to_person_slug, type }) => ({
-          type,
-          direction: "outgoing",
-          person: summary.person(to_person_slug),
         })),
         links: document.links.map(summary.link),
         works: [],

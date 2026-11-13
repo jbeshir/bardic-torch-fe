@@ -12,11 +12,12 @@ import type { Person } from "~/schemas/catalogue";
 
 type Profile = NonNullable<Person["profile"]>;
 
-/** The other names a person goes by; redirects are search aids, not shown. */
+/** The other names a person goes by. */
 function aliasesOf(profile: Profile) {
-  return profile.aliases.flatMap(({ name, kind }) =>
-    kind === "redirect" ? [] : [{ name, kind: PERSON_ALIAS_KIND_LABELS[kind] }]
-  );
+  return profile.aliases.map(({ name, kind }) => ({
+    name,
+    kind: PERSON_ALIAS_KIND_LABELS[kind],
+  }));
 }
 
 /** A person's websites, promoted from their links into the infobox. */

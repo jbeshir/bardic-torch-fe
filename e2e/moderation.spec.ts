@@ -68,7 +68,7 @@ test("moderating: a stale edit approved after the warning, another rejected", as
     .click();
   await main
     .getByLabel("Note to the author")
-    .fill("Please say where the feast is described.");
+    .fill("Please say where the feast is named so.");
   await main.getByRole("button", { name: "Reject" }).click();
   await expect(page).toHaveURL(/\/moderation\?rejected=\d+$/);
   await expect(main.getByText(/Revision \d+ is rejected\./)).toBeVisible();

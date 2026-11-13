@@ -6,22 +6,16 @@ import {
   COLLECTION_KIND_LABELS,
   CONSERVATION_LABELS,
   CREDIT_ROLE_LABELS,
-  ENUMERABLE_LABELS,
-  EVENT_KIND_LABELS,
   FACET_LABELS,
-  LICENCE_LABELS,
   LICENSING_STATUS_LABELS,
   LINK_PLACE_TYPE_LABELS,
   LINK_ROLE_LABELS,
   PERSON_ALIAS_KIND_LABELS,
   PERSON_KIND_LABELS,
-  PERSON_RELATION_LABELS,
   PERSON_ROLE_LABELS,
   PERSON_STATUS_LABELS,
   PIECE_ALIAS_KIND_LABELS,
   PIECE_KIND_LABELS,
-  PIECE_PART_LABELS,
-  PIECE_RELATION_LABELS,
 } from "~/constants/vocabulary";
 
 /**
@@ -77,8 +71,6 @@ const many = <T extends z.ZodType>(item: T) =>
 const row = <T extends z.ZodRawShape>(shape: T) =>
   z.preprocess(value => value ?? {}, z.object(shape));
 
-const LICENCE_VERSIONS = { "1.0": 0, "2.0": 0, "2.5": 0, "3.0": 0, "4.0": 0 };
-
 const performance = {
   event_slug: optionalText,
   year: optionalInt,
@@ -107,36 +99,15 @@ const pieceDocument = z.object({
   schema_version: int(1),
   title: text,
   kind: oneOf(PIECE_KIND_LABELS).default("song"),
-  secondary_kinds: many(oneOf(PIECE_KIND_LABELS)),
-  conservation: row({
-    status: oneOf(CONSERVATION_LABELS).default("unassessed"),
-    source_url: optionalText,
-  }),
+  conservation_status: oneOf(CONSERVATION_LABELS).default("unassessed"),
   is_stub: flag,
   notes_md: optionalText,
   version_notes_md: optionalText,
   ...licensing,
-  licence: maybe(oneOf(LICENCE_LABELS)),
-  licence_version: maybe(oneOf(LICENCE_VERSIONS)),
-  historical_source_md: optionalText,
-  period_start: optionalInt,
-  period_end: optionalInt,
   aliases: many(
     row({ text, kind: oneOf(PIECE_ALIAS_KIND_LABELS).default("alt_title") })
   ),
-  terms: many(
-    row({
-      term_slug: text,
-      is_primary: flag,
-      part: maybe(oneOf(PIECE_PART_LABELS)),
-    })
-  ),
-  relations: many(
-    row({
-      to_piece_slug: text,
-      type: oneOf(PIECE_RELATION_LABELS).default("variant_of"),
-    })
-  ),
+  term_slugs: many(text),
   credits: many(
     row({
       person_slug: optionalText,
@@ -145,8 +116,6 @@ const pieceDocument = z.object({
       certainty: oneOf({ certain: 0, ...CERTAINTY_QUALIFIERS }).default(
         "certain"
       ),
-      part: maybe(oneOf(PIECE_PART_LABELS)),
-      note: optionalText,
     })
   ),
   links: many(row({ ...link, performances: many(row(performance)) })),
@@ -157,9 +126,6 @@ const personDocument = z.object({
   name: text,
   kind: oneOf(PERSON_KIND_LABELS).default("community_bard"),
   status: oneOf(PERSON_STATUS_LABELS).default("active"),
-  status_date: optionalText,
-  status_source_url: optionalText,
-  pronouns: optionalText,
   notes_md: optionalText,
   ...licensing,
   is_stub: flag,
@@ -168,12 +134,6 @@ const personDocument = z.object({
   ),
   roles: many(oneOf(PERSON_ROLE_LABELS)),
   affiliation_slugs: many(text),
-  relations: many(
-    row({
-      to_person_slug: text,
-      type: oneOf(PERSON_RELATION_LABELS).default("member_of"),
-    })
-  ),
   links: many(
     row({
       ...link,
@@ -191,26 +151,20 @@ const termDocument = z.object({
   related_affiliation_slug: optionalText,
   description_md: optionalText,
   position: int(0),
-  aliases: many(text),
 }) satisfies z.ZodType<TermDocument>;
 
 const collectionDocument = z.object({
   schema_version: int(1),
   name: text,
   url: optionalText,
-  kind: oneOf(COLLECTION_KIND_LABELS).default("other"),
+  kind: oneOf(COLLECTION_KIND_LABELS).default("website"),
   description_md: optionalText,
   region_term_slug: optionalText,
-  parent_id: optionalInt,
-  is_bardic_resource: flag,
-  enumerable: oneOf(ENUMERABLE_LABELS).default("unknown"),
 }) satisfies z.ZodType<CollectionDocument>;
 
 const eventDocument = z.object({
   schema_version: int(1),
   name: text,
-  kind: oneOf(EVENT_KIND_LABELS).default("event"),
-  description_md: optionalText,
 }) satisfies z.ZodType<EventDocument>;
 
 /** Each entity type's document schema. */

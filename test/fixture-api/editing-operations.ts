@@ -2,8 +2,8 @@ import type { components } from "../../app/api/schema.gen";
 import { collectionRef, COLLECTIONS } from "./catalogue/collections";
 import { eventSummary, EVENTS } from "./catalogue/events";
 import { LINKS, type RawLink } from "./catalogue/links";
-import { listedPerson, PERSON_RELATIONS, PERSONS } from "./catalogue/persons";
-import { PIECE_RELATIONS, PIECES, pieceSummary } from "./catalogue/pieces";
+import { listedPerson, PERSONS } from "./catalogue/persons";
+import { PIECES, pieceSummary } from "./catalogue/pieces";
 import { REVISIONS } from "./catalogue/revisions";
 import { TERMS, termSummary } from "./catalogue/terms";
 import { errorBody, type FixtureResponse } from "./responses";
@@ -66,31 +66,14 @@ const DOCUMENTS: Readonly<
       schema_version: 1,
       title: raw.title,
       kind: raw.kind,
-      secondary_kinds: [...raw.secondary_kinds],
-      conservation: {
-        status: raw.conservation_status,
-        source_url: raw.conservation_history.at(-1)?.source_url ?? null,
-      },
+      conservation_status: raw.conservation_status,
       is_stub: raw.is_stub,
       notes_md: raw.notes_md,
       version_notes_md: raw.version_notes_md,
       licensing_status: raw.licensing_status,
       licensing_notes_md: raw.licensing_notes_md,
-      licence: raw.licence,
-      licence_version: raw.licence_version,
-      historical_source_md: raw.historical_source_md,
-      period_start: raw.period_start,
-      period_end: raw.period_end,
       aliases: raw.aliases.map(({ text, kind }) => ({ text, kind })),
-      terms: raw.terms.map(t => ({
-        term_slug: t.term,
-        is_primary: t.is_primary,
-        part: t.part,
-      })),
-      relations: PIECE_RELATIONS.filter(r => r.from === slug).map(r => ({
-        to_piece_slug: r.to,
-        type: r.type,
-      })),
+      term_slugs: [...raw.terms],
       credits: raw.credits.map(({ person, ...credit }) => ({
         ...credit,
         person_slug: person,
@@ -107,9 +90,6 @@ const DOCUMENTS: Readonly<
       name: raw.name,
       kind: raw.kind,
       status: raw.status,
-      status_date: raw.status_date,
-      status_source_url: raw.status_source_url,
-      pronouns: profile?.pronouns ?? null,
       notes_md: profile?.notes_md ?? null,
       licensing_status: profile?.licensing_status ?? "unknown",
       licensing_notes_md: profile?.licensing_notes_md ?? null,
@@ -120,10 +100,6 @@ const DOCUMENTS: Readonly<
       })),
       roles: [...(profile?.roles ?? [])],
       affiliation_slugs: [...(profile?.affiliations ?? [])],
-      relations: PERSON_RELATIONS.filter(r => r.from === slug).map(r => ({
-        to_person_slug: r.to,
-        type: r.type,
-      })),
       links: linksOf("person", slug).map(link => {
         const { performances, ...rest } = editorLink(link);
         return {
@@ -147,7 +123,6 @@ const DOCUMENTS: Readonly<
       position: TERMS.filter(
         t => t.facet === raw.facet && t.parent === raw.parent
       ).indexOf(raw),
-      aliases: [...raw.aliases],
     };
   },
   collection: id => {
@@ -160,16 +135,12 @@ const DOCUMENTS: Readonly<
       kind: raw.kind,
       description_md: raw.description_md,
       region_term_slug: raw.region,
-      parent_id: raw.parent,
-      is_bardic_resource: raw.is_bardic_resource,
-      enumerable: raw.enumerable,
     };
   },
   event: slug => {
     const raw = EVENTS.find(e => e.slug === slug);
     if (!raw) return undefined;
-    const { name, kind, description_md } = raw;
-    return { schema_version: 1, name, kind, description_md };
+    return { schema_version: 1, name: raw.name };
   },
 };
 

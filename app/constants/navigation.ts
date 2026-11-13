@@ -102,7 +102,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       page("Pieces", "/pieces"),
       page("Bards", "/bards"),
       page("Collections", "/collections"),
-      page("Events and venues", "/events"),
+      page("Events", "/events"),
       page("Categories", "/categories"),
     ],
   },

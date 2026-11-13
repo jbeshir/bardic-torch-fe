@@ -146,22 +146,13 @@ export function ChoicesField({
 }
 
 /**
- * A label record (`EVENT_KIND_LABELS`) as options, in its order, each
+ * A label record (`PIECE_KIND_LABELS`) as options, in its order, each
  * label with a capital (some records are for the middle of a sentence).
  */
 export const labelOptions = (labels: Readonly<Record<string, string>>) =>
   Object.entries(labels).map(([value, label]) => ({
     value,
     label: `${label.charAt(0).toUpperCase()}${label.slice(1)}`,
-  }));
-
-/** A relation record's outgoing labels as options: "Variant of". */
-export const relationOptions = (
-  labels: Readonly<Record<string, { readonly outgoing: string }>>
-) =>
-  Object.entries(labels).map(([value, { outgoing }]) => ({
-    value,
-    label: outgoing,
   }));
 
 /** A part of a long form: a fieldset headed by an h2. */
