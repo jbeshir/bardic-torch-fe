@@ -104,8 +104,8 @@ export async function action({ request, context }: ActionFunctionArgs) {
   });
 }
 
+/** A pending edit's actions; an edit in any other state has none. */
 function Actions({ revision }: { readonly revision: RevisionListItem }) {
-  if (revision.status !== "pending") return null;
   const { name, path } = revisionEntity(revision);
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -232,7 +232,10 @@ export default function ContributionsRoute() {
               },
               {
                 header: "Actions",
-                cell: revision => <Actions revision={revision} />,
+                cell: revision =>
+                  revision.status === "pending" ? (
+                    <Actions revision={revision} />
+                  ) : null,
               },
             ]}
           />

@@ -229,7 +229,7 @@ describe("server-rendered routes", () => {
     expect(/<h1[^>]*>(.*?)<\/h1>/s.exec(html)?.[1]).toBe(h1);
   });
 
-  it("shows a rejected contribution's note to its author", async () => {
+  it("shows a rejected contribution's note to its author, and no actions", async () => {
     const cookie = await sessionCookie(
       sessionTokens({ accessToken: "fixture:contributor" })
     );
@@ -237,6 +237,7 @@ describe("server-rendered routes", () => {
     expect(html).toMatch(
       /Not accepted<p [^>]*>Note: Please say where the profile’s details come from\.<\/p>/
     );
+    expect(html).not.toMatch(/<dt[^>]*>Actions<\/dt>/);
   });
 
   it.each(MODERATOR_PAGES)("%s answers 200 to a moderator", async (url, h1) => {
