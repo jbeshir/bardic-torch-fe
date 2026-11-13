@@ -125,7 +125,7 @@ const ENDPOINTS = {
   listEvents: {
     method: "GET",
     path: "/v1/events",
-    query: ["kind", "limit", "offset"],
+    query: ["limit", "offset"],
   },
   getEvent: {
     method: "GET",
@@ -351,7 +351,7 @@ export function getCollection(
   });
 }
 
-/** A page of events and venues by name (`GET /v1/events`). */
+/** A page of events by name (`GET /v1/events`). */
 export function listEvents(
   context: Readonly<RouterContextProvider>,
   query: ApiQuery<"listEvents">
@@ -360,7 +360,7 @@ export function listEvents(
 }
 
 /**
- * An event or venue with its performances (`GET /v1/events/{slug}`):
+ * An event with its performances (`GET /v1/events/{slug}`):
  * `slug` already checked with `isSlug`.
  */
 export function getEvent(

@@ -8,13 +8,7 @@ import type {
   Options,
 } from "~/editing/editor-data";
 import { EditorPage, MarkdownPreview } from "./EditorPage";
-import {
-  labelOptions,
-  Rows,
-  SelectField,
-  TextField,
-  MARKDOWN_HELP,
-} from "./fields";
+import { labelOptions, SelectField, TextField, MARKDOWN_HELP } from "./fields";
 
 /**
  * A term's fields. A new term needs a parent (plan R-20), so its parent
@@ -74,15 +68,6 @@ function TermForm({
         multiline
         optional
       />
-      <Rows
-        legend="Other names"
-        path="aliases"
-        rows={document.aliases}
-        rowLabel={index => `Other name ${index + 1}`}
-        addLabel="Add another name"
-      >
-        {(alias, name) => <TextField name={name} label="Name" value={alias} />}
-      </Rows>
     </>
   );
 }

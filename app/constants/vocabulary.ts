@@ -1,29 +1,21 @@
 import type { components } from "~/api/schema.gen";
-import type { CcLicence } from "~/constants/licences";
 import type {
   Attribution,
   Certainty,
-  CollectionEnumerable,
   CollectionKind,
   ConservationStatus,
   CreditRole,
-  EventKind,
   Facet,
   Letter,
-  Licence,
   LicensingStatus,
   LinkPlaceType,
   LinkRole,
   PersonAliasKind,
   PersonKind,
-  PersonRelationType,
   PersonRole,
   PersonStatus,
   PieceAliasKind,
   PieceKind,
-  PiecePart,
-  PieceRelationType,
-  RelationDirection,
 } from "~/schemas/catalogue";
 
 /**
@@ -91,7 +83,6 @@ export const PIECE_KIND_LABELS: Readonly<Record<PieceKind, string>> = {
   story: "Story",
   dance_music: "Dance music",
   instrumental: "Instrumental",
-  comedy: "Comedy",
 };
 
 /**
@@ -116,7 +107,6 @@ export const FACET_LABELS: Readonly<Record<Facet, string>> = {
   culture: "Culture",
   language: "Language",
   legendaria: "Legendaria",
-  form: "Form",
   origin: "Origin",
   other: "Other",
   affiliation: "Affiliation",
@@ -131,18 +121,6 @@ export const CREDIT_ROLE_LABELS: Readonly<Record<CreditRole, string>> = {
   lyrics: "Words",
   tune: "Tune",
   author: "Author",
-  choreography: "Choreography",
-  music: "Music",
-  arrangement: "Arrangement",
-  translation: "Translation",
-};
-
-/** The part of a piece a credit or an origin is for: "Tune". */
-export const PIECE_PART_LABELS: Readonly<Record<PiecePart, string>> = {
-  words: "Words",
-  tune: "Tune",
-  verses: "Verses",
-  chorus: "Chorus",
 };
 
 /**
@@ -174,7 +152,6 @@ export const CERTAINTY_QUALIFIERS: Readonly<
 export const PIECE_ALIAS_KIND_LABELS: Readonly<Record<PieceAliasKind, string>> =
   {
     alt_title: "alternative title",
-    nickname: "nickname",
     subtitle: "subtitle",
     redirect: "old title",
   };
@@ -224,63 +201,7 @@ export const LINK_PLACE_TYPE_LABELS: Readonly<Record<LinkPlaceType, string>> = {
   streaming: "streaming service",
   author_site: "author’s site",
   community_archive: "community archive",
-  physical_archive: "physical archive",
   book: "book",
-  vendor: "shop",
-  author_contact: "author contact",
-  oral_tradition: "oral tradition",
-  other: "other place",
-};
-
-// ---------------------------------------------------------------------------
-// Licensing and relations.
-// ---------------------------------------------------------------------------
-
-/**
- * Each licence's full name, never with a version: the API records the
- * family only (plan §4.0, spec issue B13).
- */
-export const LICENCE_LABELS: Readonly<Record<Licence, string>> = {
-  pd: "Public domain",
-  cc_by: "Creative Commons Attribution",
-  cc_by_sa: "Creative Commons Attribution-ShareAlike",
-  cc_by_nc: "Creative Commons Attribution-NonCommercial",
-  cc_by_nc_sa: "Creative Commons Attribution-NonCommercial-ShareAlike",
-  cc_by_nd: "Creative Commons Attribution-NoDerivatives",
-  cc_by_nc_nd: "Creative Commons Attribution-NonCommercial-NoDerivatives",
-  arr: "All rights reserved",
-  other: "Another licence",
-};
-
-/**
- * The Creative Commons licences' short names, for the infobox: "CC BY-SA".
- * The other licences have none, so the infobox says only "Known".
- */
-export const CC_LICENCE_SHORT_NAMES: Readonly<Record<CcLicence, string>> = {
-  cc_by: "CC BY",
-  cc_by_sa: "CC BY-SA",
-  cc_by_nc: "CC BY-NC",
-  cc_by_nc_sa: "CC BY-NC-SA",
-  cc_by_nd: "CC BY-ND",
-  cc_by_nc_nd: "CC BY-NC-ND",
-};
-
-/**
- * Each relation between pieces, read from this piece's side: an outgoing
- * one is what this piece is ("Variant of" the other), an incoming one what
- * the others are of it ("Variants"). A text in another form is the same
- * both ways.
- */
-export const PIECE_RELATION_LABELS: Readonly<
-  Record<PieceRelationType, Readonly<Record<RelationDirection, string>>>
-> = {
-  variant_of: { outgoing: "Variant of", incoming: "Variants" },
-  contrafactum_of: { outgoing: "Contrafactum of", incoming: "Contrafacta" },
-  setting_of: { outgoing: "Setting of", incoming: "Settings" },
-  same_text_other_form: {
-    outgoing: "Same text in another form",
-    incoming: "Same text in another form",
-  },
 };
 
 // ---------------------------------------------------------------------------
@@ -305,19 +226,14 @@ export const DECEASED_LABELS: Readonly<Record<PersonKind, string>> = {
 };
 
 /**
- * What kind of other name a person's alias is. A page never shows a
- * `redirect` alias (a search aid); only a revision's diff names one. A
- * public legal name is just their name.
+ * What kind of other name a person's alias is. A public legal name is
+ * just their name.
  */
 export const PERSON_ALIAS_KIND_LABELS: Readonly<
   Record<PersonAliasKind, string>
 > = {
   legal: "Name",
   sca: "SCA name",
-  stage: "Stage name",
-  nickname: "Nickname",
-  former: "Former name",
-  redirect: "Old name",
 };
 
 /** Each role a person takes, in sentence case. */
@@ -337,22 +253,6 @@ export const WORK_ROLE_HEADINGS: Readonly<Record<CreditRole, string>> = {
   lyrics: "Words",
   tune: "Tunes",
   author: "Writings",
-  choreography: "Choreography",
-  music: "Music",
-  arrangement: "Arrangements",
-  translation: "Translations",
-};
-
-/**
- * Each relation between persons, read from this person's side (as
- * PIECE_RELATION_LABELS): "Member of" a group, its "Members".
- */
-export const PERSON_RELATION_LABELS: Readonly<
-  Record<PersonRelationType, Readonly<Record<RelationDirection, string>>>
-> = {
-  member_of: { outgoing: "Member of", incoming: "Members" },
-  heir_of: { outgoing: "Heir of", incoming: "Heirs" },
-  same_as: { outgoing: "Also recorded as", incoming: "Also recorded as" },
 };
 
 // ---------------------------------------------------------------------------
@@ -374,25 +274,7 @@ export const COLLECTION_KIND_LABELS: Readonly<Record<CollectionKind, string>> =
     blog: "Blog",
     archived_songbook: "Archived songbook",
     hosted_document: "Hosted document",
-    other: "Other",
   };
-
-/** Whether, and how, a collection's contents can be listed. */
-export const ENUMERABLE_LABELS: Readonly<Record<CollectionEnumerable, string>> =
-  {
-    yes: "Yes",
-    pdf: "From a PDF",
-    browser: "In a browser",
-    api: "Through an API",
-    no: "No",
-    unknown: "Not yet assessed",
-  };
-
-/** Each event kind's label. */
-export const EVENT_KIND_LABELS: Readonly<Record<EventKind, string>> = {
-  event: "Event",
-  venue: "Venue",
-};
 
 /** Whether a piece's or a person's licensing is known, in a revision. */
 export const LICENSING_STATUS_LABELS: Readonly<

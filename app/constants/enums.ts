@@ -14,7 +14,6 @@ export const PIECE_KINDS = [
   "story",
   "dance_music",
   "instrumental",
-  "comedy",
 ] as const;
 
 /**
@@ -70,7 +69,6 @@ export const FACETS = [
   "culture",
   "language",
   "legendaria",
-  "form",
   "origin",
   "other",
   "affiliation",
@@ -79,19 +77,8 @@ export const FACETS = [
 /** A person's kind. */
 export const PERSON_KINDS = ["community_bard", "historical", "group"] as const;
 
-/** An event's kind: a venue or an event. */
-export const EVENT_KINDS = ["venue", "event"] as const;
-
 /** A credit's role in a piece. */
-export const CREDIT_ROLES = [
-  "lyrics",
-  "tune",
-  "author",
-  "choreography",
-  "music",
-  "arrangement",
-  "translation",
-] as const;
+export const CREDIT_ROLES = ["lyrics", "tune", "author"] as const;
 
 /** A person's role. */
 export const PERSON_ROLES = [
@@ -138,5 +125,4 @@ export const COLLECTION_KINDS = [
   "blog",
   "archived_songbook",
   "hosted_document",
-  "other",
 ] as const;

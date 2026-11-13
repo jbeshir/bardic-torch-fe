@@ -64,13 +64,13 @@ You only need to add what you know. The fullest entries have:
 
 Categories (here called **terms**) let people find pieces by what they need. Each term belongs to a facet:
 
-- **Genre**: the kind of piece. Songs (sung), Instrumental (playable from sheet music), Stories (narrative spoken pieces), Poems (not set to music; don’t tag songs as poems just because they rhyme), Dances and Comedy. A piece can be both a song and an instrumental, or both a story and a poem.
+- **Genre**: the kind of piece. Songs (sung), Instrumental (playable from sheet music), Stories (narrative spoken pieces), Poems (not set to music; don’t tag songs as poems just because they rhyme) and Dances.
 - **Mood**: the performance context it suits, not every shade of feeling. Tragic for a funeral, Comedic or Joyful for a party, Warlike for the battlefield, Relaxed for a late-night campfire, and so on. Narrower moods are for contexts, such as marching songs under Warlike.
 - **Topic**: the main subjects only, not everything mentioned. Keep them broad and put specific ones underneath, so Swords goes under War.
 - **Culture**: the persona or setting a piece suits, such as Norse pieces for a Viking persona. It doesn’t describe the bard’s background or the language of the piece. List from broad to specific: European, British, English.
 - **Language**: languages other than English.
 - **Legendaria**: cycles of legend, such as Arthuriana or the Fenian Cycle.
-- **Origin** (the wiki called it ‘Source Category’): where a piece comes from. The terms are Pre-1600 Sources (documentably), Traditional & Folk, Borrowings (modern songs from outside the community; take extra care with copyright), SCA Pieces, SF&F Pieces, Contrafacta (new words to an old tune), Contrafacta (Modern) (new words to a tune still in copyright) and Setting Pieces (new music for old words). Century terms such as 16th Century sit under Origin and mean ‘documentable to’. A piece can have more than one origin, with one marked as the main one. Please don’t use ‘filk’: it means too many different things.
+- **Origin** (the wiki called it ‘Source Category’): where a piece comes from. The terms are Pre-1600 Sources (documentably), Traditional & Folk, Borrowings (modern songs from outside the community; take extra care with copyright), SCA Pieces, SF&F Pieces, Contrafacta (new words to an old tune), Contrafacta (Modern) (new words to a tune still in copyright) and Setting Pieces (new music for old words). Century terms such as 16th Century sit under Origin and mean ‘documentable to’. A piece can have more than one origin; put the main one first. Please don’t use ‘filk’: it means too many different things.
 - **Conservation**: how safe a piece is from being lost (see [Conservation status](/help/conservation-status)).
 
 ### Naming a new term

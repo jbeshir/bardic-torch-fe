@@ -2,7 +2,7 @@ import type { components } from "../../../app/api/schema.gen";
 
 /**
  * The raw collection records of the fixture catalogue: invented songbooks,
- * sites and channels, one of every kind and every `enumerable` value.
+ * sites and channels, one of every kind.
  */
 
 type Schemas = components["schemas"];
@@ -10,17 +10,10 @@ type Schemas = components["schemas"];
 export type RawCollection = Readonly<
   Omit<
     Schemas["Collection"],
-    | "region"
-    | "parent"
-    | "children"
-    | "citations"
-    | "citations_total"
-    | "updated_at"
+    "region" | "citations" | "citations_total" | "updated_at"
   > & {
     /** A term slug (an affiliation), or null. */
     region: string | null;
-    /** The parent collection's id, or null. */
-    parent: number | null;
   }
 >;
 
@@ -33,8 +26,6 @@ function collection(
   id: number,
   name: string,
   kind: Schemas["CollectionKind"],
-  enumerable: Schemas["CollectionEnumerable"],
-  isBardicResource: boolean,
   overrides: Partial<RawCollection> = {}
 ): RawCollection {
   return {
@@ -42,62 +33,47 @@ function collection(
     name,
     kind,
     url: `https://collections.example/${id}`,
-    is_bardic_resource: isBardicResource,
     description_md: null,
-    enumerable,
     region: null,
-    parent: null,
     ...overrides,
   };
 }
 
 export const COLLECTIONS: readonly RawCollection[] = [
-  collection(1, "The Ashdown Tune Index", "index_or_link_list", "yes", true, {
+  collection(1, "The Ashdown Tune Index", "index_or_link_list", {
     region: "barony-of-ashdown",
     description_md: "A hand-kept list of **tunes** sung in the barony.",
   }),
-  collection(2, "Bardic Resources Wiki", "wiki", "browser", true),
-  collection(3, "Caer Wyn Songsheets", "songbook_pdf", "pdf", true, {
+  collection(2, "Bardic Resources Wiki", "wiki"),
+  collection(3, "Caer Wyn Songsheets", "songbook_pdf", {
     region: "caer-wyn",
   }),
-  collection(4, "Crossing Tunes Blog", "blog", "no", false),
-  collection(5, "Eastmarch Archive", "archived_songbook", "unknown", false, {
+  collection(4, "Crossing Tunes Blog", "blog"),
+  collection(5, "Eastmarch Archive", "archived_songbook", {
     url: null,
   }),
-  collection(6, "Greywater Pages", "website", "unknown", false, {
+  collection(6, "Greywater Pages", "website", {
     region: "shire-of-greywater",
   }),
-  collection(7, "Hall Recordings", "youtube_channel", "api", true),
-  collection(8, "Harvest Playlist", "youtube_playlist", "browser", false, {
-    parent: 7,
-  }),
-  collection(DRILL_BOOK_ID, "The Drill Book", "hosted_document", "pdf", true, {
+  collection(7, "Hall Recordings", "youtube_channel"),
+  collection(8, "Harvest Playlist", "youtube_playlist"),
+  collection(DRILL_BOOK_ID, "The Drill Book", "hosted_document", {
     description_md: "Practice pieces for new singers, in *numbered* order.",
   }),
-  collection(10, "Kingdom Songs Category", "wiki_category", "yes", true),
-  collection(
-    11,
-    "Lorekeeper’s Shared Songbook",
-    "google_doc_songbook",
-    "browser",
-    false
-  ),
+  collection(10, "Kingdom Songs Category", "wiki_category"),
+  collection(11, "Lorekeeper’s Shared Songbook", "google_doc_songbook"),
   collection(
     NORTHMARCH_SONGBOOK_ID,
     "The Northmarch Songbook",
     "songbook_website",
-    "yes",
-    true,
     {
       region: "northmarch",
       description_md:
         "The songbook of the kingdom, with a *locator* for each entry.\n\n- Printed yearly\n- Online since the first edition",
     }
   ),
-  collection(13, "2nd Northmarch Songbook", "other", "no", true, {
-    parent: NORTHMARCH_SONGBOOK_ID,
-  }),
-  collection(14, "Westerfell Songbook Site", "songbook_website", "yes", false, {
+  collection(13, "2nd Northmarch Songbook", "songbook_pdf"),
+  collection(14, "Westerfell Songbook Site", "songbook_website", {
     region: "westerfell",
   }),
 ];

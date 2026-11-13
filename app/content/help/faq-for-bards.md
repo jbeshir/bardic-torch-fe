@@ -46,7 +46,7 @@ That’s your choice, and we’ll respect it.
    As with any source, the page must be public, permanent and clearly yours (see [above](#why-cant-i-just-tell-you-im-the-bard)).
 2. Send us the link through our [contact form](/contact). You don’t need an account.
 
-Your page then becomes a short stub that shows only your cited statement. Your links and credits are hidden from public view, and nobody can create a new page for you under a matching name.
+Your page then becomes a short stub that shows only your name and your request. Your links and credits are hidden from public view, and nobody can create a new page for you under a matching name.
 
 Why keep a stub instead of deleting the page? Because if the page simply vanished, someone could create it again without knowing you’d asked. The stub keeps your request on record for every future editor. It also tells readers not to share your work elsewhere.
 

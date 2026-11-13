@@ -338,10 +338,15 @@ export async function editorAction<T extends EntityType, P>(
   );
 }
 
-/** The preview of a type whose page is its description (event, collection, term). */
+/** The preview of a type whose page is its description (collection, term). */
 export const previewDescription = (document: {
   readonly description_md: string | null;
 }) => ({ description: renderMarkdown(document.description_md) });
+
+/** The preview of an event, whose page is its name. */
+export const previewName = (document: { readonly name: string }) => ({
+  name: document.name,
+});
 
 /**
  * Whether the signed-in reader has an edit of this entity waiting for

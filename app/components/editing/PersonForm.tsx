@@ -3,7 +3,6 @@ import { PersonBody, type PersonView } from "~/components/person/PersonPage";
 import {
   PERSON_ALIAS_KIND_LABELS,
   PERSON_KIND_LABELS,
-  PERSON_RELATION_LABELS,
   PERSON_ROLE_LABELS,
   PERSON_STATUS_LABELS,
 } from "~/constants/vocabulary";
@@ -21,13 +20,12 @@ import {
   FormSection,
   labelOptions,
   MARKDOWN_HELP,
-  relationOptions,
   Rows,
   SelectField,
   TextField,
 } from "./fields";
 import { LinkEditor } from "./LinkEditor";
-import { LicensingFields, SourcedField } from "./SourcedField";
+import { LicensingFields } from "./LicensingFields";
 
 /** The lists the person form picks from, and its preview names from. */
 export const PERSON_PICKERS: readonly Picker[] = [
@@ -56,28 +54,12 @@ function PersonForm({
           value={document.kind}
           options={labelOptions(PERSON_KIND_LABELS)}
         />
-        <TextField
-          name="pronouns"
-          label="Pronouns"
-          value={document.pronouns}
-          optional
-        />
-        <SourcedField
-          legend="Status"
+        <SelectField
           name="status"
+          label="Status"
           value={document.status}
           options={labelOptions(PERSON_STATUS_LABELS)}
-          sourceName="status_source_url"
-          sourceValue={document.status_source_url}
-        >
-          <TextField
-            name="status_date"
-            label="Since"
-            help="As year-month-day: ‘2026-03-01’."
-            value={document.status_date}
-            optional
-          />
-        </SourcedField>
+        />
         <Rows
           legend="Other names"
           path="aliases"
@@ -143,35 +125,7 @@ function PersonForm({
           notes={document.licensing_notes_md}
         />
       </FormSection>
-      <FormSection title="Relations and links">
-        <Rows
-          legend="Relations"
-          path="relations"
-          rows={document.relations}
-          rowLabel={index => `Relation ${index + 1}`}
-          addLabel="Add a relation"
-        >
-          {(relation, name) => (
-            <>
-              <SelectField
-                name={`${name}.type`}
-                label="Relation"
-                value={relation.type}
-                options={relationOptions(PERSON_RELATION_LABELS)}
-              />
-              <SelectField
-                name={`${name}.to_person_slug`}
-                label="Person"
-                value={
-                  relation.to_person_slug === ""
-                    ? null
-                    : relation.to_person_slug
-                }
-                options={options.persons ?? []}
-              />
-            </>
-          )}
-        </Rows>
+      <FormSection title="Links">
         <LinkEditor links={document.links} options={options} ofPerson />
       </FormSection>
     </>

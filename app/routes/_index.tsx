@@ -250,7 +250,7 @@ export default function Index() {
             <Link to="/collections">Collections</Link>
           </li>
           <li>
-            <Link to="/events">Events and venues</Link>
+            <Link to="/events">Events</Link>
           </li>
         </ul>
       </Section>

@@ -7,7 +7,6 @@ import {
 import { eventSummary, EVENTS } from "./catalogue/events";
 import { LINKS, type RawLink, type RawPerformance } from "./catalogue/links";
 import {
-  PERSON_RELATIONS,
   PERSONS,
   listedPerson,
   personSummary,
@@ -15,7 +14,6 @@ import {
   type RawPerson,
 } from "./catalogue/persons";
 import {
-  PIECE_RELATIONS,
   PIECES,
   pieceSummary,
   rawPiece,
@@ -165,7 +163,7 @@ function lineage(slug: string): RawTerm[] {
 const FACETS = [...new Set(TERMS.map(t => t.facet))];
 
 const pieceTerms = (piece: RawPiece) =>
-  new Set(piece.terms.flatMap(({ term }) => lineage(term).map(t => t.slug)));
+  new Set(piece.terms.flatMap(term => lineage(term).map(t => t.slug)));
 const PIECE_TERMS = new Map(PIECES.map(p => [p.slug, pieceTerms(p)]));
 const hasTerm = (piece: RawPiece, slug: string) =>
   PIECE_TERMS.get(piece.slug)?.has(slug) ?? false;
@@ -191,7 +189,6 @@ const PIECE_KINDS = [
   "story",
   "dance_music",
   "instrumental",
-  "comedy",
 ] as const;
 
 const CONSERVATION_STATUSES = [
@@ -202,8 +199,7 @@ const CONSERVATION_STATUSES = [
   "restricted",
 ] as const;
 
-const hasKind = (piece: RawPiece, kind: string) =>
-  piece.kind === kind || piece.secondary_kinds.some(k => k === kind);
+const hasKind = (piece: RawPiece, kind: string) => piece.kind === kind;
 
 function listPieces(query: URLSearchParams): FixtureResponse {
   // A term filter is a piece term; anything else is the FE's "left out" case.
@@ -346,48 +342,31 @@ const performed = (link: RawLink) =>
 const UPDATED_AT = "2026-03-01T12:00:00Z";
 
 function servePiece(raw: RawPiece): Schemas["Piece"] {
-  const relation = (own: "from" | "to") =>
-    PIECE_RELATIONS.filter(r => r[own] === raw.slug).map(r => ({
-      type: r.type,
-      direction: own === "from" ? ("outgoing" as const) : ("incoming" as const),
-      piece: pieceSummary(own === "from" ? r.to : r.from),
-    }));
   return {
     ...pieceSummary(raw.slug),
     updated_at: UPDATED_AT,
-    licence_version: raw.licence_version,
     notes_md: raw.notes_md,
     version_notes_md: raw.version_notes_md,
     licensing_status: raw.licensing_status,
     licensing_notes_md: raw.licensing_notes_md,
-    licence: raw.licence,
-    historical_source_md: raw.historical_source_md,
-    period_start: raw.period_start,
-    period_end: raw.period_end,
     aliases: [...raw.aliases],
     terms: raw.terms
-      .map((t, position) => ({ t, position }))
+      .map((term, position) => ({ term, position }))
       .sort(
         (a, b) =>
-          FACETS.indexOf(termOf(a.t.term)?.facet ?? "other") -
-            FACETS.indexOf(termOf(b.t.term)?.facet ?? "other") ||
+          FACETS.indexOf(termOf(a.term)?.facet ?? "other") -
+            FACETS.indexOf(termOf(b.term)?.facet ?? "other") ||
           a.position - b.position
       )
-      .map(({ t }) => ({
-        term: termSummary(t.term),
-        is_primary: t.is_primary,
-        part: t.part,
-      })),
+      .map(({ term }) => termSummary(term)),
     credits: raw.credits.map(credit => ({
       ...credit,
       person: credit.person === null ? null : personSummary(credit.person),
     })),
-    relations: [...relation("from"), ...relation("to")],
     links: linksOf("piece", raw.slug).map(link => ({
       ...personLink(link),
       performances: link.performances.map(servePerformance),
     })),
-    conservation_history: [...raw.conservation_history],
   };
 }
 
@@ -395,8 +374,6 @@ function servePerson(raw: RawPerson): Schemas["Person"] {
   const identity = {
     ...listedPerson(raw.slug),
     status: raw.status,
-    status_date: raw.status_date,
-    status_source_url: raw.status_source_url,
     updated_at: UPDATED_AT,
   };
   const { profile } = raw;
@@ -408,7 +385,6 @@ function servePerson(raw: RawPerson): Schemas["Person"] {
         piece: pieceSummary(piece.slug),
         role: c.role,
         certainty: c.certainty,
-        part: c.part,
       }))
   );
   const performances = PERFORMANCES.filter(
@@ -422,23 +398,15 @@ function servePerson(raw: RawPerson): Schemas["Person"] {
     event: eventOf(performance.event),
     description_verbatim: performance.description_verbatim,
   }));
-  const relation = (own: "from" | "to") =>
-    PERSON_RELATIONS.filter(r => r[own] === raw.slug).map(r => ({
-      type: r.type,
-      direction: own === "from" ? ("outgoing" as const) : ("incoming" as const),
-      person: personSummary(own === "from" ? r.to : r.from),
-    }));
   return {
     ...identity,
     profile: {
-      pronouns: profile.pronouns,
       notes_md: profile.notes_md,
       licensing_status: profile.licensing_status,
       licensing_notes_md: profile.licensing_notes_md,
       aliases: [...profile.aliases],
       roles: [...profile.roles],
       affiliations: profile.affiliations.map(termSummary),
-      relations: [...relation("from"), ...relation("to")],
       links: linksOf("person", raw.slug).map(personLink),
       works: works.slice(0, CAP),
       works_total: works.length,
@@ -457,7 +425,6 @@ function serveTerm(term: RawTerm, query: URLSearchParams): Schemas["Term"] {
     name: term.name,
     display_name: term.display_name,
     description_md: term.description_md,
-    aliases: [...term.aliases],
     ancestors: lineage(term.slug)
       .slice(1)
       .reverse()
@@ -493,11 +460,9 @@ const collectionSummary = (
   name: raw.name,
   kind: raw.kind,
   url: raw.url,
-  is_bardic_resource: raw.is_bardic_resource,
 });
 
 function serveCollection(raw: RawCollection): Schemas["Collection"] {
-  const parent = COLLECTIONS.find(c => c.id === raw.parent);
   const cited = sorted(
     LINKS.filter(l => l.collection === raw.id),
     l =>
@@ -517,20 +482,14 @@ function serveCollection(raw: RawCollection): Schemas["Collection"] {
     ...collectionSummary(raw),
     updated_at: UPDATED_AT,
     description_md: raw.description_md,
-    enumerable: raw.enumerable,
     region: raw.region === null ? null : termSummary(raw.region),
-    parent: parent ? collectionSummary(parent) : null,
-    children: COLLECTIONS.filter(c => c.parent === raw.id).map(
-      collectionSummary
-    ),
     citations: cited.slice(0, CAP),
     citations_total: cited.length,
   };
 }
 
 function serveEvent(slug: string): Schemas["Event"] | undefined {
-  const raw = EVENTS.find(e => e.slug === slug);
-  if (!raw) return undefined;
+  if (!EVENTS.some(e => e.slug === slug)) return undefined;
   const performances = PERFORMANCES.filter(
     ({ performance }) => performance.event === slug
   ).map(({ link, performance }) => ({
@@ -543,7 +502,6 @@ function serveEvent(slug: string): Schemas["Event"] | undefined {
   return {
     ...eventSummary(slug),
     updated_at: UPDATED_AT,
-    description_md: raw.description_md,
     performances: performances.slice(0, CAP),
     performances_total: performances.length,
   };
@@ -792,8 +750,7 @@ export const CATALOGUE_READS = {
   listEvents: {
     path: "/v1/events",
     read: (_params, query) => {
-      const kind = query.get("kind");
-      const found = EVENTS.filter(e => kind === null || e.kind === kind)
+      const found = [...EVENTS]
         .sort((a, b) => a.name.localeCompare(b.name))
         .map(e => eventSummary(e.slug));
       return ok({ data: slice(found, query), total: found.length });

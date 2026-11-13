@@ -114,7 +114,7 @@ describe("the moderation pages", () => {
 
     const rejected = await post(
       "/moderation/revisions/1902",
-      { intent: "reject", note: "Please cite where the feast is described." },
+      { intent: "reject", note: "Please cite where the feast is named so." },
       "moderator"
     );
     expect(rejected.headers.get("Location")).toBe("/moderation?rejected=1902");

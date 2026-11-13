@@ -2,10 +2,8 @@ import { useActionData, useLoaderData } from "react-router";
 import { PieceBody, type PieceView } from "~/components/piece/PiecePage";
 import {
   CONSERVATION_LABELS,
-  LICENCE_LABELS,
   PIECE_ALIAS_KIND_LABELS,
   PIECE_KIND_LABELS,
-  PIECE_RELATION_LABELS,
 } from "~/constants/vocabulary";
 import type { PieceDocument } from "~/editing/documents";
 import type {
@@ -18,28 +16,20 @@ import { EditorPage } from "./EditorPage";
 import { CreditEditor } from "./CreditEditor";
 import {
   CheckboxField,
-  ChoicesField,
   FormSection,
   labelOptions,
   MARKDOWN_HELP,
-  relationOptions,
   Rows,
   SelectField,
   TextField,
 } from "./fields";
 import { LinkEditor } from "./LinkEditor";
-import { LicensingFields, SourcedField } from "./SourcedField";
+import { LicensingFields } from "./LicensingFields";
 import { TermPicker } from "./TermPicker";
-
-const VERSIONS = ["4.0", "3.0", "2.5", "2.0", "1.0"].map(version => ({
-  value: version,
-  label: version,
-}));
 
 /** The lists the piece form picks from, and its preview names from. */
 export const PIECE_PICKERS: readonly Picker[] = [
   "persons",
-  "pieces",
   "events",
   "terms",
   "collections",
@@ -61,12 +51,6 @@ function PieceForm({
           name="kind"
           label="Kind"
           value={document.kind}
-          options={labelOptions(PIECE_KIND_LABELS)}
-        />
-        <ChoicesField
-          name="secondary_kinds"
-          legend="Other kinds"
-          values={document.secondary_kinds}
           options={labelOptions(PIECE_KIND_LABELS)}
         />
         <Rows
@@ -92,31 +76,15 @@ function PieceForm({
             </>
           )}
         </Rows>
-        <TextField
-          name="period_start"
-          label="Period from (year)"
-          type="number"
-          value={document.period_start}
-          optional
-        />
-        <TextField
-          name="period_end"
-          label="Period to (year)"
-          type="number"
-          value={document.period_end}
-          optional
-        />
         <CreditEditor
           credits={document.credits}
           persons={options.persons ?? []}
         />
-        <SourcedField
-          legend="Conservation status"
-          name="conservation.status"
-          value={document.conservation.status}
+        <SelectField
+          name="conservation_status"
+          label="Conservation status"
+          value={document.conservation_status}
           options={labelOptions(CONSERVATION_LABELS)}
-          sourceName="conservation.source_url"
-          sourceValue={document.conservation.source_url}
         />
         <CheckboxField
           name="is_stub"
@@ -139,24 +107,9 @@ function PieceForm({
         <LicensingFields
           status={document.licensing_status}
           notes={document.licensing_notes_md}
-        >
-          <SelectField
-            name="licence"
-            label="Licence"
-            value={document.licence}
-            options={labelOptions(LICENCE_LABELS)}
-            optional
-          />
-          <SelectField
-            name="licence_version"
-            label="Licence version"
-            value={document.licence_version}
-            options={VERSIONS}
-            optional
-          />
-        </LicensingFields>
+        />
       </FormSection>
-      <FormSection title="Versions and sources">
+      <FormSection title="Versions and categories">
         <TextField
           name="version_notes_md"
           label="Versions"
@@ -165,43 +118,7 @@ function PieceForm({
           multiline
           optional
         />
-        <TextField
-          name="historical_source_md"
-          label="Historical source"
-          help={MARKDOWN_HELP}
-          value={document.historical_source_md}
-          multiline
-          optional
-        />
-      </FormSection>
-      <FormSection title="Related pieces and categories">
-        <Rows
-          legend="Related pieces"
-          path="relations"
-          rows={document.relations}
-          rowLabel={index => `Related piece ${index + 1}`}
-          addLabel="Add a related piece"
-        >
-          {(relation, name) => (
-            <>
-              <SelectField
-                name={`${name}.type`}
-                label="Relation"
-                value={relation.type}
-                options={relationOptions(PIECE_RELATION_LABELS)}
-              />
-              <SelectField
-                name={`${name}.to_piece_slug`}
-                label="Piece"
-                value={
-                  relation.to_piece_slug === "" ? null : relation.to_piece_slug
-                }
-                options={options.pieces ?? []}
-              />
-            </>
-          )}
-        </Rows>
-        <TermPicker terms={document.terms} options={options.terms ?? []} />
+        <TermPicker terms={document.term_slugs} options={options.terms ?? []} />
       </FormSection>
     </>
   );

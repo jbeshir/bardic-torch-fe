@@ -18,13 +18,13 @@ import type { Event } from "~/schemas/catalogue";
 import { loadHistory } from "~/server/history.server";
 
 /**
- * `/events/:slug/history`: the event's or venue's approved revisions, newest
+ * `/events/:slug/history`: the event's approved revisions, newest
  * first, 50 a page (plan §4.11), under the head its layout shows. Its own
  * read is the history alone, and the layout ignores
  * the page changing.
  */
 
-const MISSING = "that event or venue";
+const MISSING = "that event";
 const LAYOUT = "routes/events.$slug";
 
 const historyPath = (slug: string) => `/events/${slug}/history` as const;

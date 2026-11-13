@@ -9,7 +9,7 @@ export const ENTITY_NOUNS: Readonly<
   person: "bard",
   term: "category",
   collection: "collection",
-  event: "event or venue",
+  event: "event",
 };
 
 /**

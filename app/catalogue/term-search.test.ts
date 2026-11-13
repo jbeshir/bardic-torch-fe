@@ -53,7 +53,7 @@ describe("searchTerms", () => {
 
   it("shows the first 12 matches and counts them all", () => {
     const many = Array.from({ length: 15 }, (_, i) =>
-      term(`ballad-${i}`, "form", `Ballad ${i}`)
+      term(`ballad-${i}`, "topic", `Ballad ${i}`)
     );
     const found = searchTerms(many, "ballad");
     expect([found.total, found.shown.length]).toEqual([15, 12]);

@@ -12,11 +12,9 @@ import { CatalogueError } from "~/components/catalogue/CatalogueError";
 import { ListPagination } from "~/components/catalogue/ListPagination";
 import { ResultsStatus } from "~/components/catalogue/ResultsStatus";
 import { SERVER_ERROR_META, ServerError } from "~/components/ErrorPages";
-import { ButtonLink } from "~/components/ui/Button";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { Link } from "~/components/ui/Link";
 import { ViewTabs } from "~/components/ui/Tabs";
-import { TagList } from "~/components/ui/TagList";
 import { formatCount } from "~/catalogue/format";
 import { catalogueHeaders } from "~/catalogue/headers";
 import { redirectPastTheEnd, showingText } from "~/catalogue/paging";
@@ -27,20 +25,19 @@ import {
 } from "~/catalogue/query-state";
 import { throwPageFailure, thrownPageFailure } from "~/catalogue/read-failure";
 import { pageMeta } from "~/catalogue/seo";
-import { EVENT_KIND_LABELS } from "~/constants/vocabulary";
 import { useErrorReference } from "~/hooks/useErrorReference";
 import { useResultsFocus } from "~/hooks/useResultsFocus";
 import type { EventList } from "~/schemas/catalogue";
 import { listEvents } from "~/server/catalogue.server";
 
 /**
- * `/events`: the events and venues pieces were performed at (plan §4.10),
- * by name, all of them or one kind. The API has no A–Z and no search for
- * them, so the page is the list, its kind switch and its pages. Any failed
+ * `/events`: the events pieces were performed at (plan §4.10), by name.
+ * The API has no A–Z and no search for them, so the page is the list and
+ * its pages. Any failed
  * read is the route's error: `listEvents` is no search.
  */
 
-const WHAT = "the events and venues";
+const WHAT = "the events";
 const ALL_EVENTS = "/events";
 
 export const headers = catalogueHeaders;
@@ -64,15 +61,9 @@ export async function loader({
   return { state, canonical, list: result.data };
 }
 
-/** "Events and venues", "Venues", "Events", with ", page 2". */
+/** "Events", with ", page 2". */
 function listTitle(state: EventQueryState): string {
-  const title =
-    state.kind === "venue"
-      ? "Venues"
-      : state.kind === "event"
-        ? "Events"
-        : "Events and venues";
-  return state.page > 1 ? `${title}, page ${state.page}` : title;
+  return state.page > 1 ? `Events, page ${state.page}` : "Events";
 }
 
 export const meta: MetaFunction = args => {
@@ -84,31 +75,15 @@ export const meta: MetaFunction = args => {
   return pageMeta(args, {
     title: listTitle(loaded.state),
     description:
-      "The events and venues where the pieces of the Bardic Torch catalogue were performed and recorded.",
+      "The events where the pieces of the Bardic Torch catalogue were performed and recorded.",
     path: `${ALL_EVENTS}${loaded.canonical}`,
   });
 };
 
-function NoEvents({ state }: { readonly state: EventQueryState }) {
-  if (state.kind === undefined) {
-    return (
-      <EmptyState title="No events or venues yet">
-        The catalogue has no events or venues in it yet.
-      </EmptyState>
-    );
-  }
+function NoEvents() {
   return (
-    <EmptyState
-      title={
-        state.kind === "venue"
-          ? "No venues recorded yet"
-          : "No events recorded yet"
-      }
-      action={
-        <ButtonLink to={ALL_EVENTS}>Show all events and venues</ButtonLink>
-      }
-    >
-      Try the other kind, or all of them.
+    <EmptyState title="No events yet">
+      The catalogue has no events in it yet.
     </EmptyState>
   );
 }
@@ -123,7 +98,7 @@ export default function EventsRoute() {
     navigation.location.pathname === ALL_EVENTS;
   return (
     <>
-      <h1 className="text-h1 text-fg">Events and venues</h1>
+      <h1 className="text-h1 text-fg">Events</h1>
       <p className="mt-2">
         <Link to="/events/new" appearance="standalone">
           Add an event
@@ -133,32 +108,10 @@ export default function EventsRoute() {
         <ViewTabs
           views={[{ label: "Read", to: ALL_EVENTS, icon: IconBook2 }]}
           current={ALL_EVENTS}
-          meta={formatCount(list.total, "event or venue", "events and venues")}
+          meta={formatCount(list.total, "event", "events")}
         />
       </div>
       <div className="mt-6 grid gap-6">
-        <nav aria-label="Kinds">
-          <TagList
-            size="sm"
-            tags={[
-              {
-                label: "All",
-                to: eventQuery.href(state, { kind: undefined }),
-                current: state.kind === undefined,
-              },
-              {
-                label: "Events",
-                to: eventQuery.href(state, { kind: "event" }),
-                current: state.kind === "event",
-              },
-              {
-                label: "Venues",
-                to: eventQuery.href(state, { kind: "venue" }),
-                current: state.kind === "venue",
-              },
-            ]}
-          />
-        </nav>
         <section aria-labelledby={headingId} aria-busy={busy || undefined}>
           <h2
             ref={resultsRef}
@@ -166,11 +119,7 @@ export default function EventsRoute() {
             tabIndex={-1}
             className="text-h3 text-fg focus-visible:outline-hidden"
           >
-            {state.kind === "venue"
-              ? "Venues"
-              : state.kind === "event"
-                ? "Events"
-                : "All events and venues"}
+            All events
           </h2>
           <ResultsStatus visible={list.total > 0}>
             {list.total > 0
@@ -178,8 +127,8 @@ export default function EventsRoute() {
                   state.page,
                   list.data.length,
                   list.total,
-                  "event or venue",
-                  "events and venues"
+                  "event",
+                  "events"
                 )
               : "No results"}
           </ResultsStatus>
@@ -188,21 +137,16 @@ export default function EventsRoute() {
               {list.data.map(event => (
                 <li
                   key={event.slug}
-                  className="flex flex-wrap items-baseline gap-x-3 border-b border-border py-3 last:border-b-0"
+                  className="border-b border-border py-3 text-body-lg last:border-b-0"
                 >
-                  <span className="text-body-lg">
-                    <Link to={`/events/${event.slug}`} compact>
-                      {event.name}
-                    </Link>
-                  </span>
-                  <span className="text-body-sm text-fg-muted">
-                    {EVENT_KIND_LABELS[event.kind]}
-                  </span>
+                  <Link to={`/events/${event.slug}`} compact>
+                    {event.name}
+                  </Link>
                 </li>
               ))}
             </ul>
           ) : (
-            <NoEvents state={state} />
+            <NoEvents />
           )}
           <div className="mt-6">
             <ListPagination

@@ -4,21 +4,17 @@ import { revisionHead } from "./revision-head";
 
 const EVENT: Revision = {
   entity_type: "event",
-  entity: { slug: "muster-field", name: "Muster Field", kind: "venue" },
+  entity: { slug: "muster-field", name: "Muster Field" },
   id: 1013,
   base_revision_id: 1012,
   source: "user",
-  summary: "Described it",
+  summary: "Renamed it",
   author: { display_name: "Morwen of the Marches" },
   contributors: [],
   created_at: "2026-03-12T12:00:00Z",
-  snapshot: {
-    name: "Muster Field",
-    kind: "venue",
-    description_md: "https://private.example/secret",
-  },
-  base_snapshot: null,
-  changed_fields: ["description_md"],
+  snapshot: { name: "Muster Field" },
+  base_snapshot: { name: "The private muster ground" },
+  changed_fields: ["name"],
 };
 
 describe("revisionHead", () => {
@@ -27,11 +23,11 @@ describe("revisionHead", () => {
       id: 1013,
       baseRevisionId: 1012,
       createdAt: "2026-03-12T12:00:00Z",
-      summary: "Described it",
+      summary: "Renamed it",
       credit: "Morwen of the Marches",
       entity: {
-        section: { label: "Events and venues", to: "/events" },
-        noun: "venue",
+        section: { label: "Events", to: "/events" },
+        noun: "event",
         title: "Muster Field",
         path: "/events/muster-field",
       },

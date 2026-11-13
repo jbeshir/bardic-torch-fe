@@ -53,8 +53,8 @@ function entityOf(revision: Revision): RevisionEntity {
       };
     case "event":
       return {
-        section: { label: "Events and venues", to: "/events" },
-        noun: revision.entity.kind === "venue" ? "venue" : "event",
+        section: { label: "Events", to: "/events" },
+        noun: "event",
         title: revision.entity.name,
         path: `/events/${revision.entity.slug}`,
       };

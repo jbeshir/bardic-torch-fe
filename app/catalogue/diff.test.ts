@@ -32,23 +32,15 @@ const LINK = {
 const PIECE: PieceSnapshot = {
   title: "The Copper Kettle",
   kind: "song",
-  secondary_kinds: [],
   conservation_status: "endangered",
-  conservation_source_url: null,
   is_stub: false,
   notes_md: "Old notes.",
   version_notes_md: null,
   licensing_status: "unknown",
   licensing_notes_md: null,
-  licence: null,
-  licence_version: null,
-  historical_source_md: null,
-  period_start: null,
-  period_end: null,
-  aliases: [{ text: "Old Copper", kind: "nickname" }],
+  aliases: [{ text: "A Tavern Favourite", kind: "subtitle" }],
   terms: [],
   credits: [],
-  relations: [],
   links: [LINK],
 };
 
@@ -63,7 +55,6 @@ const piece = (
     slug: "the-copper-kettle",
     title: "The Copper Kettle",
     kind: "song",
-    secondary_kinds: [],
     credit_names: [],
     conservation_status: status,
     is_stub: false,
@@ -76,14 +67,12 @@ const piece = (
 });
 
 const PROFILE: NonNullable<PersonSnapshot["profile"]> = {
-  pronouns: "she/her",
   notes_md: null,
   licensing_status: "unknown",
   licensing_notes_md: null,
   aliases: [],
   roles: ["singer"],
   affiliations: [],
-  relations: [],
   links: [],
 };
 
@@ -91,8 +80,6 @@ const PERSON: PersonSnapshot = {
   name: "Wren of the Vale",
   kind: "community_bard",
   status: "active",
-  status_date: null,
-  status_source_url: null,
   is_stub: false,
   profile: PROFILE,
 };
@@ -153,7 +140,7 @@ describe("revisionChanges", () => {
     ).toMatchObject([
       {
         added: ["The Kettle Song · Alternative title"],
-        removed: ["Old Copper · Nickname"],
+        removed: ["A Tavern Favourite · Subtitle"],
         changed: [],
       },
       {

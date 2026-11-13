@@ -5,6 +5,7 @@ type Column<Row> = {
   readonly header: string;
   /** Keep the cell on one line: dates, years and short actions. */
   readonly nowrap?: boolean;
+  /** Null when the row has nothing here: its card then leaves the term out. */
   readonly cell: (row: Row) => ReactNode;
 };
 
@@ -81,12 +82,15 @@ export function RowTable<Row>({
           >
             <div className="text-body text-fg">{first.cell(row)}</div>
             <dl className="mt-2 grid grid-cols-infobox gap-x-4 gap-y-1">
-              {rest.map(column => (
-                <div key={column.header} className="contents">
-                  <dt className="text-fg-muted">{column.header}</dt>
-                  <dd className="text-fg">{column.cell(row)}</dd>
-                </div>
-              ))}
+              {rest.map(column => {
+                const value = column.cell(row);
+                return value === null ? null : (
+                  <div key={column.header} className="contents">
+                    <dt className="text-fg-muted">{column.header}</dt>
+                    <dd className="text-fg">{value}</dd>
+                  </div>
+                );
+              })}
             </dl>
           </li>
         ))}

@@ -134,8 +134,8 @@ export interface paths {
     };
     /**
      * Get a piece
-     * @description Returns a public piece with everything its page shows: classification, credits, relations, links with
-     *     their recorded performances, and conservation history. References to entities that are not public are
+     * @description Returns a public piece with everything its page shows: classification, credits, and links with their
+     *     recorded performances. References to entities that are not public are
      *     left out: unapproved terms, collections and events, and credits to and performers who are unapproved. A
      *     person who prefers not to have a page is named without a link (`slug` null). Hidden links never appear.
      *     An unapproved piece is not found, exactly like an unknown one. Credentials are ignored.
@@ -182,10 +182,9 @@ export interface paths {
     };
     /**
      * Get a person
-     * @description Returns a public person. A person who prefers not to have a page is shown by identity only: name, kind,
-     *     status and its source, with `is_stub` true and `profile` null. Otherwise the profile has their
-     *     aliases, roles, affiliations, relations to other public persons, links,
-     *     works and performances. Works and performances are capped at 200 each, with totals. An unapproved person
+     * @description Returns a public person. A person who prefers not to have a page is shown by identity only: name, kind
+     *     and status, with `is_stub` true and `profile` null. Otherwise the profile has their aliases, roles,
+     *     affiliations, links, works and performances. Works and performances are capped at 200 each, with totals. An unapproved person
      *     is not found, exactly like an unknown one. Credentials are ignored.
      */
     get: operations["getPerson"];
@@ -230,7 +229,7 @@ export interface paths {
     };
     /**
      * Get a term
-     * @description Returns a public term with its aliases, ancestors, public children and related affiliation, and one page
+     * @description Returns a public term with its ancestors, public children and related affiliation, and one page
      *     of its members: the public pieces it or any public descendant classifies, or for an `affiliation` term,
      *     the public persons with a page affiliated with it or any public descendant. The other member list is
      *     empty. Members are ordered by sort title or sort name; `piece_count` and `person_count` are their totals.
@@ -277,7 +276,7 @@ export interface paths {
     };
     /**
      * Get a collection
-     * @description Returns a public collection with its public region, parent and children, and its citations: each
+     * @description Returns a public collection with its public region and its citations: each
      *     visible link in the collection, once for each public piece or public person it is attached to, with the
      *     roles it is attached with. Citations are ordered by the piece's sort title or the person's sort name and
      *     capped at 200, with a total. Hidden links never appear. An unapproved collection is not
@@ -301,8 +300,8 @@ export interface paths {
     };
     /**
      * List events
-     * @description Lists one page of the public events and venues, by name, with how many there are in all. Unapproved
-     *     events are not listed. Credentials are ignored.
+     * @description Lists one page of the public events, by name, with how many there are in all. Unapproved events are not
+     *     listed. Credentials are ignored.
      */
     get: operations["listEvents"];
     put?: never;
@@ -322,7 +321,7 @@ export interface paths {
     };
     /**
      * Get an event
-     * @description Returns a public event or venue with the performances recorded at it, newest year first (unknown years
+     * @description Returns a public event with the performances recorded at it, newest year first (unknown years
      *     last), capped at 200, with a total. Performances on hidden links, of unapproved pieces, or recorded only
      *     by links of unapproved entities are left out, as are unapproved performers. A performer who prefers not to
      *     have a page is named without a link (`slug` null). An unapproved event is not found, exactly like an unknown
@@ -466,9 +465,8 @@ export interface paths {
      *     names of the snapshot's top-level fields that differ from the base's, or that are not empty if there is
      *     no base. A view never shows the stored document as such: each reference to another entity is shown as
      *     that entity is now, and left out if it is not public now; links are shown as the snapshot wrote them,
-     *     and left out if their URL does not normalise or is a hidden link's now; credits to, performers and
-     *     relations of persons who are not public now are left out, and persons who prefer not to have a page now
-     *     are named without a link (`slug` null); of a person who prefers not to have a page, now or in the
+     *     and left out if their URL does not normalise or is a hidden link's now; credits to and performers who
+     *     are not public now are left out, and persons who prefer not to have a page now are named without a link (`slug` null); of a person who prefers not to have a page, now or in the
      *     snapshot, only the identity is shown. System fields are never shown. `entity_type` says which of
      *     the five shapes the revision has. A revision that is not approved, or whose entity is not public, is not
      *     found, exactly like an unknown one. Credentials are ignored.
@@ -728,7 +726,7 @@ export interface paths {
     };
     /**
      * Get an event's editable document
-     * @description As `GET /v1/pieces/{slug}/editable`, for a public event or venue.
+     * @description As `GET /v1/pieces/{slug}/editable`, for a public event.
      */
     get: operations["getEditableEvent"];
     put?: never;
@@ -1077,9 +1075,6 @@ export interface components {
      *           "slug": "the-copper-kettle",
      *           "title": "The Copper Kettle",
      *           "kind": "song",
-     *           "secondary_kinds": [
-     *             "dance_music"
-     *           ],
      *           "conservation_status": "endangered",
      *           "is_stub": false,
      *           "credit_names": []
@@ -1161,7 +1156,7 @@ export interface components {
        *     the tree.
        */
       terms: components["schemas"]["TermCount"][];
-      /** @description Kinds, in the enum's order, counting pieces of the kind as primary or secondary kind. */
+      /** @description Kinds, in the enum's order. */
       kinds: components["schemas"]["PieceKindCount"][];
       /** @description Conservation statuses, in the enum's order. */
       conservation_statuses: components["schemas"]["ConservationStatusCount"][];
@@ -1247,8 +1242,7 @@ export interface components {
      *           "id": 12,
      *           "name": "The Northmarch Songbook",
      *           "kind": "songbook_pdf",
-     *           "url": "https://example.org/songbook.pdf",
-     *           "is_bardic_resource": true
+     *           "url": "https://example.org/songbook.pdf"
      *         }
      *       ],
      *       "total": 1,
@@ -1277,9 +1271,6 @@ export interface components {
      *       "slug": "the-copper-kettle",
      *       "title": "The Copper Kettle",
      *       "kind": "song",
-     *       "secondary_kinds": [
-     *         "dance_music"
-     *       ],
      *       "conservation_status": "endangered",
      *       "is_stub": false,
      *       "credit_names": [
@@ -1296,8 +1287,6 @@ export interface components {
       /** @example The Copper Kettle */
       title: string;
       kind: components["schemas"]["PieceKind"];
-      /** @description Further kinds the piece also is, in the enum's order. */
-      secondary_kinds: components["schemas"]["PieceKind"][];
       conservation_status: components["schemas"]["ConservationStatus"];
       /**
        * @description Whether the piece's page is only a stub that needs filling in.
@@ -1375,11 +1364,10 @@ export interface components {
       name: string;
     };
     /**
-     * @description A public event or venue, as other entities refer to it.
+     * @description A public event, as other entities refer to it.
      * @example {
      *       "slug": "midwinter-revel",
-     *       "name": "Midwinter Revel",
-     *       "kind": "event"
+     *       "name": "Midwinter Revel"
      *     }
      */
     EventSummary: {
@@ -1390,17 +1378,14 @@ export interface components {
       slug: string;
       /** @example Midwinter Revel */
       name: string;
-      kind: components["schemas"]["EventKind"];
     };
     /**
      * @description A public piece's page.
      * @example {
      *       "slug": "the-copper-kettle",
      *       "updated_at": "2026-03-01T12:00:00Z",
-     *       "licence_version": null,
      *       "title": "The Copper Kettle",
      *       "kind": "song",
-     *       "secondary_kinds": [],
      *       "conservation_status": "endangered",
      *       "is_stub": false,
      *       "credit_names": [
@@ -1410,25 +1395,17 @@ export interface components {
      *       "version_notes_md": null,
      *       "licensing_status": "known",
      *       "licensing_notes_md": "Free to perform with credit.",
-     *       "licence": "cc_by_sa",
-     *       "historical_source_md": null,
-     *       "period_start": null,
-     *       "period_end": null,
      *       "aliases": [
      *         {
      *           "text": "Kettle Song",
-     *           "kind": "nickname"
+     *           "kind": "alt_title"
      *         }
      *       ],
      *       "terms": [
      *         {
-     *           "term": {
-     *             "slug": "drinking",
-     *             "facet": "topic",
-     *             "display_name": "Drinking"
-     *           },
-     *           "is_primary": true,
-     *           "part": null
+     *           "slug": "drinking",
+     *           "facet": "topic",
+     *           "display_name": "Drinking"
      *         }
      *       ],
      *       "credits": [
@@ -1436,8 +1413,6 @@ export interface components {
      *           "role": "lyrics",
      *           "attribution": "named",
      *           "certainty": "certain",
-     *           "part": null,
-     *           "note": null,
      *           "person": {
      *             "slug": "wren-of-the-vale",
      *             "name": "Wren of the Vale",
@@ -1449,12 +1424,9 @@ export interface components {
      *           "role": "tune",
      *           "attribution": "traditional",
      *           "certainty": "probable",
-     *           "part": null,
-     *           "note": "An old reel.",
      *           "person": null
      *         }
      *       ],
-     *       "relations": [],
      *       "links": [
      *         {
      *           "url": "https://video.example.org/watch/kettle",
@@ -1477,8 +1449,7 @@ export interface components {
      *               "description_verbatim": "Sung by Wren at Midwinter Revel 2025",
      *               "event": {
      *                 "slug": "midwinter-revel",
-     *                 "name": "Midwinter Revel",
-     *                 "kind": "event"
+     *                 "name": "Midwinter Revel"
      *               },
      *               "performers": [
      *                 {
@@ -1491,14 +1462,6 @@ export interface components {
      *             }
      *           ]
      *         }
-     *       ],
-     *       "conservation_history": [
-     *         {
-     *           "conservation_status": "endangered",
-     *           "reason": "Known to only a few singers.",
-     *           "source_url": null,
-     *           "at": "2026-01-01T00:00:00Z"
-     *         }
      *       ]
      *     }
      */
@@ -1506,7 +1469,6 @@ export interface components {
       slug: components["schemas"]["PieceSummary"]["slug"];
       title: components["schemas"]["PieceSummary"]["title"];
       kind: components["schemas"]["PieceKind"];
-      secondary_kinds: components["schemas"]["PieceSummary"]["secondary_kinds"];
       conservation_status: components["schemas"]["ConservationStatus"];
       is_stub: components["schemas"]["PieceSummary"]["is_stub"];
       credit_names: components["schemas"]["PieceSummary"]["credit_names"];
@@ -1526,51 +1488,29 @@ export interface components {
        * @example Free to perform with credit.
        */
       licensing_notes_md: string | null;
-      licence: components["schemas"]["Licence"] | null;
-      /**
-       * @description The historical source of the piece, in Markdown.
-       * @example A broadside of about 1590.
-       */
-      historical_source_md: string | null;
-      /**
-       * @description The first year of the period the piece dates from.
-       * @example 1580
-       */
-      period_start: number | null;
-      /**
-       * @description The last year of the period the piece dates from.
-       * @example 1600
-       */
-      period_end: number | null;
       /** @description Other titles of the piece. */
       aliases: components["schemas"]["PieceAlias"][];
       /** @description The public terms the piece is classified with, by facet in the enum's order, then position. */
-      terms: components["schemas"]["PieceTerm"][];
+      terms: components["schemas"]["TermSummary"][];
       /** @description The piece's credits, in order. A credit to a person who is not public is left out entirely. */
       credits: components["schemas"]["PieceCredit"][];
-      /** @description Relations to other public pieces: the outgoing ones, then the incoming ones, each by type and title. */
-      relations: components["schemas"]["PieceRelation"][];
       /**
        * @description The piece's visible links, each once with all its roles, in order. The list is not capped: links are
        *     curated per piece.
        */
       links: components["schemas"]["PieceLink"][];
-      /** @description The piece's conservation status changes, oldest first. */
-      conservation_history: components["schemas"]["ConservationChange"][];
       /**
        * Format: date-time
        * @description When the current revision was approved.
        * @example 2026-03-01T12:00:00Z
        */
       updated_at: string;
-      /** @description The version of the Creative Commons licence; null unless the licence is a cc_* one. */
-      licence_version: components["schemas"]["LicenceVersion"] | null;
     };
     /**
      * @description Another title of a piece.
      * @example {
      *       "text": "Kettle Song",
-     *       "kind": "nickname"
+     *       "kind": "alt_title"
      *     }
      */
     PieceAlias: {
@@ -1579,35 +1519,11 @@ export interface components {
       kind: components["schemas"]["PieceAliasKind"];
     };
     /**
-     * @description A term a piece is classified with.
-     * @example {
-     *       "term": {
-     *         "slug": "drinking",
-     *         "facet": "topic",
-     *         "display_name": "Drinking"
-     *       },
-     *       "is_primary": true,
-     *       "part": null
-     *     }
-     */
-    PieceTerm: {
-      term: components["schemas"]["TermSummary"];
-      /**
-       * @description Whether this is the piece's primary term in its facet.
-       * @example true
-       */
-      is_primary: boolean;
-      /** @description The part of the piece the term applies to, or null for the whole piece. */
-      part: components["schemas"]["PiecePart"] | null;
-    };
-    /**
      * @description A credit of a piece. `person` is set exactly when `attribution` is `named`.
      * @example {
      *       "role": "lyrics",
      *       "attribution": "named",
      *       "certainty": "certain",
-     *       "part": null,
-     *       "note": null,
      *       "person": {
      *         "slug": "wren-of-the-vale",
      *         "name": "Wren of the Vale",
@@ -1620,36 +1536,8 @@ export interface components {
       role: components["schemas"]["CreditRole"];
       attribution: components["schemas"]["Attribution"];
       certainty: components["schemas"]["Certainty"];
-      /** @description The part of the piece credited, or null for the whole of the role. */
-      part: components["schemas"]["PiecePart"] | null;
-      /**
-       * @description A note on the credit.
-       * @example Words adapted from an older ballad.
-       */
-      note: string | null;
       /** @description The person credited, for a named credit. */
       person: components["schemas"]["PersonSummary"] | null;
-    };
-    /**
-     * @description A relation between the piece shown and another public piece.
-     * @example {
-     *       "type": "variant_of",
-     *       "direction": "outgoing",
-     *       "piece": {
-     *         "slug": "the-brass-kettle",
-     *         "title": "The Brass Kettle",
-     *         "kind": "song",
-     *         "secondary_kinds": [],
-     *         "conservation_status": "low_risk",
-     *         "is_stub": false,
-     *         "credit_names": []
-     *       }
-     *     }
-     */
-    PieceRelation: {
-      type: components["schemas"]["PieceRelationType"];
-      direction: components["schemas"]["RelationDirection"];
-      piece: components["schemas"]["PieceSummary"];
     };
     /**
      * @description A visible link attached to a person, once with all its roles.
@@ -1777,34 +1665,6 @@ export interface components {
       performers: components["schemas"]["PersonSummary"][];
     };
     /**
-     * @description A change of a piece's conservation status.
-     * @example {
-     *       "conservation_status": "endangered",
-     *       "reason": "Known to only a few singers.",
-     *       "source_url": null,
-     *       "at": "2026-01-01T00:00:00Z"
-     *     }
-     */
-    ConservationChange: {
-      conservation_status: components["schemas"]["ConservationStatus"];
-      /**
-       * @description Why the status changed (the summary of the revision that changed it), which may be empty.
-       * @example Known to only a few singers.
-       */
-      reason: string;
-      /**
-       * @description The source of the assessment.
-       * @example https://example.org/assessments/kettle
-       */
-      source_url: string | null;
-      /**
-       * Format: date-time
-       * @description When the status changed.
-       * @example 2026-01-01T00:00:00Z
-       */
-      at: string;
-    };
-    /**
      * @description A public person. `profile` is null exactly when the person prefers not to have a page; `is_stub` is then
      *     true.
      * @example {
@@ -1814,8 +1674,6 @@ export interface components {
      *       "kind": "community_bard",
      *       "is_stub": true,
      *       "status": "prefers_no_page",
-     *       "status_date": "2026-03-01",
-     *       "status_source_url": "https://example.org/requests/12",
      *       "profile": null
      *     }
      */
@@ -1829,17 +1687,6 @@ export interface components {
       kind: components["schemas"]["PersonKind"];
       is_stub: components["schemas"]["PersonSummary"]["is_stub"];
       status: components["schemas"]["PersonStatus"];
-      /**
-       * Format: date
-       * @description When the status took effect.
-       * @example 2026-03-01
-       */
-      status_date: string | null;
-      /**
-       * @description The source of the status.
-       * @example https://example.org/requests/12
-       */
-      status_source_url: string | null;
       /** @description Everything the person's page shows beyond their identity. */
       profile: components["schemas"]["PersonProfile"] | null;
       updated_at: components["schemas"]["Piece"]["updated_at"];
@@ -1847,7 +1694,6 @@ export interface components {
     /**
      * @description Everything a person's page shows beyond their identity.
      * @example {
-     *       "pronouns": null,
      *       "notes_md": null,
      *       "licensing_status": "unknown",
      *       "licensing_notes_md": null,
@@ -1856,7 +1702,6 @@ export interface components {
      *         "singer"
      *       ],
      *       "affiliations": [],
-     *       "relations": [],
      *       "links": [],
      *       "works": [],
      *       "works_total": 0,
@@ -1865,8 +1710,6 @@ export interface components {
      *     }
      */
     PersonProfile: {
-      /** @example she/her */
-      pronouns: string | null;
       /**
        * @description Notes about the person, in Markdown.
        * @example A bard of the northern marches.
@@ -1884,11 +1727,6 @@ export interface components {
       roles: components["schemas"]["PersonRole"][];
       /** @description The public affiliation terms of the person, by position, then name. */
       affiliations: components["schemas"]["TermSummary"][];
-      /**
-       * @description Relations to other public persons: the outgoing ones, then the incoming
-       *     ones, each by type and name.
-       */
-      relations: components["schemas"]["PersonRelation"][];
       /** @description The person's visible links, each once with all its roles, in order. */
       links: components["schemas"]["PersonLink"][];
       /** @description The person's credits on public pieces, by piece title; at most 200. */
@@ -1915,7 +1753,7 @@ export interface components {
      * @description Another public name of a person.
      * @example {
      *       "name": "Wren",
-     *       "kind": "nickname"
+     *       "kind": "sca"
      *     }
      */
     PersonAlias: {
@@ -1924,45 +1762,24 @@ export interface components {
       kind: components["schemas"]["PersonAliasKind"];
     };
     /**
-     * @description A relation between the person shown and another public person.
-     * @example {
-     *       "type": "member_of",
-     *       "direction": "outgoing",
-     *       "person": {
-     *         "slug": "northmarch-bards",
-     *         "name": "Northmarch Bards",
-     *         "kind": "group",
-     *         "is_stub": false
-     *       }
-     *     }
-     */
-    PersonRelation: {
-      type: components["schemas"]["PersonRelationType"];
-      direction: components["schemas"]["RelationDirection"];
-      person: components["schemas"]["PersonSummary"];
-    };
-    /**
      * @description A person's credit on a public piece. Its attribution is always named.
      * @example {
      *       "piece": {
      *         "slug": "the-copper-kettle",
      *         "title": "The Copper Kettle",
      *         "kind": "song",
-     *         "secondary_kinds": [],
      *         "conservation_status": "endangered",
      *         "is_stub": false,
      *         "credit_names": []
      *       },
      *       "role": "lyrics",
-     *       "certainty": "certain",
-     *       "part": null
+     *       "certainty": "certain"
      *     }
      */
     PersonWork: {
       piece: components["schemas"]["PieceSummary"];
       role: components["schemas"]["CreditRole"];
       certainty: components["schemas"]["Certainty"];
-      part: components["schemas"]["PieceCredit"]["part"];
     };
     /**
      * @description A performance on a person's page.
@@ -2075,9 +1892,6 @@ export interface components {
      *       "name": "War",
      *       "display_name": "War",
      *       "description_md": null,
-     *       "aliases": [
-     *         "Battle"
-     *       ],
      *       "ancestors": [],
      *       "children": [
      *         {
@@ -2098,7 +1912,6 @@ export interface components {
      *           "slug": "the-copper-kettle",
      *           "title": "The Copper Kettle",
      *           "kind": "song",
-     *           "secondary_kinds": [],
      *           "conservation_status": "endangered",
      *           "is_stub": false,
      *           "credit_names": []
@@ -2117,8 +1930,6 @@ export interface components {
        * @example Songs about war and warriors.
        */
       description_md: string | null;
-      /** @description Other names of the term. */
-      aliases: string[];
       /** @description The term's ancestors, root first. */
       ancestors: components["schemas"]["TermSummary"][];
       /** @description The term's public children, by position, then display name. */
@@ -2162,8 +1973,7 @@ export interface components {
      *       "id": 12,
      *       "name": "The Northmarch Songbook",
      *       "kind": "songbook_pdf",
-     *       "url": "https://example.org/songbook.pdf",
-     *       "is_bardic_resource": true
+     *       "url": "https://example.org/songbook.pdf"
      *     }
      */
     CollectionSummary: {
@@ -2175,11 +1985,6 @@ export interface components {
        * @example https://example.org/songbook.pdf
        */
       url: string | null;
-      /**
-       * @description Whether the collection is a resource made for or by bards.
-       * @example true
-       */
-      is_bardic_resource: boolean;
     };
     /**
      * @description A public collection's page.
@@ -2189,19 +1994,14 @@ export interface components {
      *       "name": "The Northmarch Songbook",
      *       "kind": "songbook_pdf",
      *       "url": "https://example.org/songbook.pdf",
-     *       "is_bardic_resource": true,
      *       "description_md": null,
-     *       "enumerable": "pdf",
      *       "region": null,
-     *       "parent": null,
-     *       "children": [],
      *       "citations": [
      *         {
      *           "piece": {
      *             "slug": "the-copper-kettle",
      *             "title": "The Copper Kettle",
      *             "kind": "song",
-     *             "secondary_kinds": [],
      *             "conservation_status": "endangered",
      *             "is_stub": false,
      *             "credit_names": []
@@ -2223,19 +2023,13 @@ export interface components {
       name: components["schemas"]["CollectionRef"]["name"];
       kind: components["schemas"]["CollectionKind"];
       url: components["schemas"]["CollectionSummary"]["url"];
-      is_bardic_resource: components["schemas"]["CollectionSummary"]["is_bardic_resource"];
       /**
        * @description What the collection holds, in Markdown.
        * @example Songs of the northern marches.
        */
       description_md: string | null;
-      enumerable: components["schemas"]["CollectionEnumerable"];
       /** @description The public term for the region the collection is from, if any. */
       region: components["schemas"]["TermSummary"] | null;
-      /** @description The public collection this one is part of, if any. */
-      parent: components["schemas"]["CollectionSummary"] | null;
-      /** @description The public collections that are part of this one, by sort name. */
-      children: components["schemas"]["CollectionSummary"][];
       /**
        * @description The collection's visible links, once for each public piece or public person each is attached to, by
        *     the piece's sort title or the person's sort name. At most 200.
@@ -2279,13 +2073,12 @@ export interface components {
       roles: components["schemas"]["LinkRole"][];
     };
     /**
-     * @description One page of the public events and venues, by name.
+     * @description One page of the public events, by name.
      * @example {
      *       "data": [
      *         {
      *           "slug": "midwinter-revel",
-     *           "name": "Midwinter Revel",
-     *           "kind": "event"
+     *           "name": "Midwinter Revel"
      *         }
      *       ],
      *       "total": 1
@@ -2301,13 +2094,11 @@ export interface components {
       total: number;
     };
     /**
-     * @description A public event's or venue's page.
+     * @description A public event's page.
      * @example {
      *       "slug": "midwinter-revel",
      *       "updated_at": "2026-03-01T12:00:00Z",
      *       "name": "Midwinter Revel",
-     *       "kind": "event",
-     *       "description_md": null,
      *       "performances": [
      *         {
      *           "piece": null,
@@ -2327,12 +2118,6 @@ export interface components {
     Event: {
       slug: components["schemas"]["EventSummary"]["slug"];
       name: components["schemas"]["EventSummary"]["name"];
-      kind: components["schemas"]["EventKind"];
-      /**
-       * @description About the event or venue, in Markdown.
-       * @example A winter gathering of the northern marches.
-       */
-      description_md: string | null;
       /** @description The performances recorded at the event, newest year first, unknown years last. At most 200. */
       performances: components["schemas"]["EventPerformance"][];
       /**
@@ -2376,8 +2161,7 @@ export interface components {
      * @example song
      * @enum {string}
      */
-    PieceKind:
-      "song" | "poem" | "story" | "dance_music" | "instrumental" | "comedy";
+    PieceKind: "song" | "poem" | "story" | "dance_music" | "instrumental";
     /**
      * @description How at risk a piece is of being lost. `restricted` overrides every other status and means the piece
      *     should not be spread further.
@@ -2414,16 +2198,9 @@ export interface components {
       | "culture"
       | "language"
       | "legendaria"
-      | "form"
       | "origin"
       | "other"
       | "affiliation";
-    /**
-     * @description Whether an event is a venue or a one-off event.
-     * @example event
-     * @enum {string}
-     */
-    EventKind: "venue" | "event";
     /**
      * @description Whether the licensing is known.
      * @example known
@@ -2431,59 +2208,23 @@ export interface components {
      */
     LicensingStatus: "known" | "unknown";
     /**
-     * @description The licence a piece is published under: public domain, a Creative Commons licence, all rights reserved
-     *     or another licence.
-     * @example cc_by_sa
-     * @enum {string}
-     */
-    Licence:
-      | "pd"
-      | "cc_by"
-      | "cc_by_sa"
-      | "cc_by_nc"
-      | "cc_by_nc_sa"
-      | "cc_by_nd"
-      | "cc_by_nc_nd"
-      | "arr"
-      | "other";
-    /**
-     * @description The version of a Creative Commons licence. It is shown only beside a `cc_*` licence.
-     * @example 4.0
-     * @enum {string}
-     */
-    LicenceVersion: "1.0" | "2.0" | "2.5" | "3.0" | "4.0";
-    /**
      * @description What sort of alternative title an alias is.
      * @example alt_title
      * @enum {string}
      */
-    PieceAliasKind: "alt_title" | "nickname" | "subtitle" | "redirect";
+    PieceAliasKind: "alt_title" | "subtitle" | "redirect";
     /**
      * @description What sort of name an alias is.
-     * @example stage
+     * @example sca
      * @enum {string}
      */
-    PersonAliasKind:
-      "legal" | "sca" | "stage" | "nickname" | "former" | "redirect";
-    /**
-     * @description The part of a piece a term or credit applies to.
-     * @example tune
-     * @enum {string}
-     */
-    PiecePart: "words" | "tune" | "verses" | "chorus";
+    PersonAliasKind: "legal" | "sca";
     /**
      * @description What a credit credits.
      * @example lyrics
      * @enum {string}
      */
-    CreditRole:
-      | "lyrics"
-      | "tune"
-      | "author"
-      | "choreography"
-      | "music"
-      | "arrangement"
-      | "translation";
+    CreditRole: "lyrics" | "tune" | "author";
     /**
      * @description Who a credit is attributed to. Only a `named` credit has a person.
      * @example named
@@ -2496,26 +2237,6 @@ export interface components {
      * @enum {string}
      */
     Certainty: "certain" | "probable" | "possible" | "disputed";
-    /**
-     * @description How one piece relates to another, read from the relation's source to its target.
-     * @example variant_of
-     * @enum {string}
-     */
-    PieceRelationType:
-      "variant_of" | "contrafactum_of" | "setting_of" | "same_text_other_form";
-    /**
-     * @description How one person relates to another, read from the relation's source to its target.
-     * @example member_of
-     * @enum {string}
-     */
-    PersonRelationType: "heir_of" | "member_of" | "same_as";
-    /**
-     * @description Which way a relation points: `outgoing` reads "this entity <type> the other", `incoming` reads "the other
-     *     <type> this entity".
-     * @example outgoing
-     * @enum {string}
-     */
-    RelationDirection: "outgoing" | "incoming";
     /**
      * @description Something a person does.
      * @example singer
@@ -2540,12 +2261,7 @@ export interface components {
       | "streaming"
       | "author_site"
       | "community_archive"
-      | "physical_archive"
-      | "book"
-      | "vendor"
-      | "author_contact"
-      | "oral_tradition"
-      | "other";
+      | "book";
     /**
      * @description Whether a link worked when last checked: `unknown` if never checked, `blocked` if the site refused the
      *     checker.
@@ -2588,15 +2304,7 @@ export interface components {
       | "google_doc_songbook"
       | "blog"
       | "archived_songbook"
-      | "hosted_document"
-      | "other";
-    /**
-     * @description Whether, and how, a collection's contents can be listed: `yes`, from a `pdf`, with a `browser`, through
-     *     an `api`, `no`, or `unknown` if not yet assessed.
-     * @example pdf
-     * @enum {string}
-     */
-    CollectionEnumerable: "unknown" | "yes" | "pdf" | "browser" | "api" | "no";
+      | "hosted_document";
     /**
      * @description Where a revision came from: submitted by a `user` through the API, or an `import` from the old wiki.
      * @example import
@@ -2686,8 +2394,7 @@ export interface components {
      *       "id": 46,
      *       "entity": {
      *         "slug": "midwinter-revel",
-     *         "name": "Midwinter Revel",
-     *         "kind": "event"
+     *         "name": "Midwinter Revel"
      *       },
      *       "base_revision_id": null,
      *       "source": "import",
@@ -2696,13 +2403,10 @@ export interface components {
      *       "contributors": [],
      *       "created_at": "2026-01-01T00:00:00Z",
      *       "snapshot": {
-     *         "name": "Midwinter Revel",
-     *         "kind": "event",
-     *         "description_md": null
+     *         "name": "Midwinter Revel"
      *       },
      *       "base_snapshot": null,
      *       "changed_fields": [
-     *         "kind",
      *         "name"
      *       ]
      *     }
@@ -2722,7 +2426,6 @@ export interface components {
      *         "slug": "the-copper-kettle",
      *         "title": "The Copper Kettle",
      *         "kind": "song",
-     *         "secondary_kinds": [],
      *         "conservation_status": "endangered",
      *         "is_stub": false,
      *         "credit_names": []
@@ -2738,19 +2441,12 @@ export interface components {
      *       "snapshot": {
      *         "title": "The Copper Kettle",
      *         "kind": "song",
-     *         "secondary_kinds": [],
      *         "conservation_status": "endangered",
-     *         "conservation_source_url": null,
      *         "is_stub": false,
      *         "notes_md": "A drinking song from the northern marches.",
      *         "version_notes_md": null,
      *         "licensing_status": "unknown",
      *         "licensing_notes_md": null,
-     *         "licence": null,
-     *         "licence_version": null,
-     *         "historical_source_md": null,
-     *         "period_start": null,
-     *         "period_end": null,
      *         "aliases": [],
      *         "terms": [],
      *         "credits": [
@@ -2758,34 +2454,23 @@ export interface components {
      *             "role": "tune",
      *             "attribution": "traditional",
      *             "certainty": "probable",
-     *             "part": null,
-     *             "note": "An old reel.",
      *             "person": null
      *           }
      *         ],
-     *         "relations": [],
      *         "links": []
      *       },
      *       "base_snapshot": {
      *         "title": "The Copper Kettle",
      *         "kind": "song",
-     *         "secondary_kinds": [],
      *         "conservation_status": "endangered",
-     *         "conservation_source_url": null,
      *         "is_stub": false,
      *         "notes_md": "A drinking song from the northern marches.",
      *         "version_notes_md": null,
      *         "licensing_status": "unknown",
      *         "licensing_notes_md": null,
-     *         "licence": null,
-     *         "licence_version": null,
-     *         "historical_source_md": null,
-     *         "period_start": null,
-     *         "period_end": null,
      *         "aliases": [],
      *         "terms": [],
      *         "credits": [],
-     *         "relations": [],
      *         "links": []
      *       },
      *       "changed_fields": [
@@ -2822,22 +2507,14 @@ export interface components {
        */
       changed_fields: (
         | "aliases"
-        | "conservation_source_url"
         | "conservation_status"
         | "credits"
-        | "historical_source_md"
         | "is_stub"
         | "kind"
-        | "licence"
-        | "licence_version"
         | "licensing_notes_md"
         | "licensing_status"
         | "links"
         | "notes_md"
-        | "period_end"
-        | "period_start"
-        | "relations"
-        | "secondary_kinds"
         | "terms"
         | "title"
         | "version_notes_md"
@@ -2867,8 +2544,6 @@ export interface components {
      *         "name": "Hollis Fenn",
      *         "kind": "community_bard",
      *         "status": "prefers_no_page",
-     *         "status_date": "2026-03-01",
-     *         "status_source_url": "https://example.org/requests/12",
      *         "is_stub": true,
      *         "profile": null
      *       },
@@ -2877,9 +2552,7 @@ export interface components {
      *         "is_stub",
      *         "kind",
      *         "name",
-     *         "status",
-     *         "status_date",
-     *         "status_source_url"
+     *         "status"
      *       ]
      *     }
      */
@@ -2904,15 +2577,7 @@ export interface components {
        * @description The person snapshot's top-level fields that differ from the base snapshot's or, with no base, that are
        *     not empty (null, an empty list or string, false or 0), in alphabetical order.
        */
-      changed_fields: (
-        | "is_stub"
-        | "kind"
-        | "name"
-        | "profile"
-        | "status"
-        | "status_date"
-        | "status_source_url"
-      )[];
+      changed_fields: ("is_stub" | "kind" | "name" | "profile" | "status")[];
     };
     /**
      * @description A public revision of a term, with its snapshot views.
@@ -2943,8 +2608,7 @@ export interface components {
      *         },
      *         "related_affiliation": null,
      *         "description_md": null,
-     *         "position": 0,
-     *         "aliases": []
+     *         "position": 0
      *       },
      *       "base_snapshot": null,
      *       "changed_fields": [
@@ -2977,7 +2641,6 @@ export interface components {
        *     not empty (null, an empty list or string, false or 0), in alphabetical order.
        */
       changed_fields: (
-        | "aliases"
         | "description_md"
         | "display_name"
         | "facet"
@@ -3007,15 +2670,10 @@ export interface components {
      *         "url": "https://example.org/songbook.pdf",
      *         "kind": "songbook_pdf",
      *         "description_md": null,
-     *         "region": null,
-     *         "parent": null,
-     *         "is_bardic_resource": true,
-     *         "enumerable": "pdf"
+     *         "region": null
      *       },
      *       "base_snapshot": null,
      *       "changed_fields": [
-     *         "enumerable",
-     *         "is_bardic_resource",
      *         "kind",
      *         "name",
      *         "url"
@@ -3043,26 +2701,16 @@ export interface components {
        * @description The collection snapshot's top-level fields that differ from the base snapshot's or, with no base, that are
        *     not empty (null, an empty list or string, false or 0), in alphabetical order.
        */
-      changed_fields: (
-        | "description_md"
-        | "enumerable"
-        | "is_bardic_resource"
-        | "kind"
-        | "name"
-        | "parent"
-        | "region"
-        | "url"
-      )[];
+      changed_fields: ("description_md" | "kind" | "name" | "region" | "url")[];
     };
     /**
-     * @description A public revision of an event or venue, with its snapshot views.
+     * @description A public revision of an event, with its snapshot views.
      * @example {
      *       "entity_type": "event",
      *       "id": 46,
      *       "entity": {
      *         "slug": "midwinter-revel",
-     *         "name": "Midwinter Revel",
-     *         "kind": "event"
+     *         "name": "Midwinter Revel"
      *       },
      *       "base_revision_id": null,
      *       "source": "import",
@@ -3071,14 +2719,10 @@ export interface components {
      *       "contributors": [],
      *       "created_at": "2026-01-01T00:00:00Z",
      *       "snapshot": {
-     *         "name": "Midwinter Revel",
-     *         "kind": "event",
-     *         "description_md": "A winter gathering of the northern marches."
+     *         "name": "Midwinter Revel"
      *       },
      *       "base_snapshot": null,
      *       "changed_fields": [
-     *         "description_md",
-     *         "kind",
      *         "name"
      *       ]
      *     }
@@ -3104,82 +2748,42 @@ export interface components {
        * @description The event snapshot's top-level fields that differ from the base snapshot's or, with no base, that are
        *     not empty (null, an empty list or string, false or 0), in alphabetical order.
        */
-      changed_fields: ("description_md" | "kind" | "name")[];
+      changed_fields: "name"[];
     };
     /**
      * @description The view of a piece snapshot: the piece's editor-owned fields as the revision set them, with references
      *     to entities that are public now, and visible links.
      * @example {
      *       "title": "The Copper Kettle",
-     *       "licence_version": null,
      *       "kind": "song",
-     *       "secondary_kinds": [],
      *       "conservation_status": "endangered",
-     *       "conservation_source_url": null,
      *       "is_stub": false,
      *       "notes_md": null,
      *       "version_notes_md": null,
      *       "licensing_status": "unknown",
      *       "licensing_notes_md": null,
-     *       "licence": null,
-     *       "historical_source_md": null,
-     *       "period_start": null,
-     *       "period_end": null,
      *       "aliases": [],
      *       "terms": [],
      *       "credits": [],
-     *       "relations": [],
      *       "links": []
      *     }
      */
     PieceSnapshot: {
       title: components["schemas"]["PieceSummary"]["title"];
       kind: components["schemas"]["PieceKind"];
-      secondary_kinds: components["schemas"]["PieceSummary"]["secondary_kinds"];
       conservation_status: components["schemas"]["ConservationStatus"];
-      /**
-       * @description The source supporting the conservation status.
-       * @example https://example.org/assessments/kettle
-       */
-      conservation_source_url: string | null;
       is_stub: components["schemas"]["PieceSummary"]["is_stub"];
       notes_md: components["schemas"]["Piece"]["notes_md"];
       version_notes_md: components["schemas"]["Piece"]["version_notes_md"];
       licensing_status: components["schemas"]["LicensingStatus"];
       licensing_notes_md: components["schemas"]["Piece"]["licensing_notes_md"];
-      licence: components["schemas"]["Piece"]["licence"];
-      historical_source_md: components["schemas"]["Piece"]["historical_source_md"];
-      period_start: components["schemas"]["Piece"]["period_start"];
-      period_end: components["schemas"]["Piece"]["period_end"];
       aliases: components["schemas"]["Piece"]["aliases"];
       /** @description The public terms the piece was classified with, in the snapshot's order. */
-      terms: components["schemas"]["PieceTerm"][];
+      terms: components["schemas"]["TermSummary"][];
       /** @description The snapshot's credits, in order. A credit to a person who is not public now is left out entirely. */
       credits: components["schemas"]["PieceCredit"][];
-      /** @description The piece's relations to other pieces that are public now; a snapshot holds outgoing ones only. */
-      relations: components["schemas"]["SnapshotPieceRelation"][];
       /** @description The snapshot's links that are not hidden now, in order, with no system state such as liveness. */
       links: components["schemas"]["SnapshotPieceLink"][];
-      licence_version: components["schemas"]["Piece"]["licence_version"];
-    };
-    /**
-     * @description A relation of a piece snapshot's piece to another public piece.
-     * @example {
-     *       "type": "variant_of",
-     *       "piece": {
-     *         "slug": "the-brass-kettle",
-     *         "title": "The Brass Kettle",
-     *         "kind": "song",
-     *         "secondary_kinds": [],
-     *         "conservation_status": "low_risk",
-     *         "is_stub": false,
-     *         "credit_names": []
-     *       }
-     *     }
-     */
-    SnapshotPieceRelation: {
-      type: components["schemas"]["PieceRelationType"];
-      piece: components["schemas"]["PieceSummary"];
     };
     /**
      * @description A link of a piece snapshot, with the performances of the piece it records.
@@ -3264,8 +2868,6 @@ export interface components {
      *       "name": "Hollis Fenn",
      *       "kind": "community_bard",
      *       "status": "prefers_no_page",
-     *       "status_date": "2026-03-01",
-     *       "status_source_url": "https://example.org/requests/12",
      *       "is_stub": true,
      *       "profile": null
      *     }
@@ -3274,8 +2876,6 @@ export interface components {
       name: components["schemas"]["PersonSummary"]["name"];
       kind: components["schemas"]["PersonKind"];
       status: components["schemas"]["PersonStatus"];
-      status_date: components["schemas"]["Person"]["status_date"];
-      status_source_url: components["schemas"]["Person"]["status_source_url"];
       is_stub: components["schemas"]["PersonSummary"]["is_stub"];
       /** @description Everything the snapshot shows beyond the person's identity. */
       profile: components["schemas"]["PersonSnapshotProfile"] | null;
@@ -3283,7 +2883,6 @@ export interface components {
     /**
      * @description Everything a person snapshot shows beyond the person's identity.
      * @example {
-     *       "pronouns": null,
      *       "notes_md": null,
      *       "licensing_status": "unknown",
      *       "licensing_notes_md": null,
@@ -3292,12 +2891,10 @@ export interface components {
      *         "singer"
      *       ],
      *       "affiliations": [],
-     *       "relations": [],
      *       "links": []
      *     }
      */
     PersonSnapshotProfile: {
-      pronouns: components["schemas"]["PersonProfile"]["pronouns"];
       notes_md: components["schemas"]["PersonProfile"]["notes_md"];
       licensing_status: components["schemas"]["LicensingStatus"];
       licensing_notes_md: components["schemas"]["PersonProfile"]["licensing_notes_md"];
@@ -3307,26 +2904,8 @@ export interface components {
       roles: components["schemas"]["PersonRole"][];
       /** @description The person's affiliation terms that are public now, in the snapshot's order. */
       affiliations: components["schemas"]["TermSummary"][];
-      /** @description The person's relations to other persons who are public now; a snapshot holds outgoing ones only. */
-      relations: components["schemas"]["SnapshotPersonRelation"][];
       /** @description The snapshot's links that are not hidden now, in order. */
       links: components["schemas"]["SnapshotPersonLink"][];
-    };
-    /**
-     * @description A relation of a person snapshot's person to another public person.
-     * @example {
-     *       "type": "member_of",
-     *       "person": {
-     *         "slug": "the-northmarch-bards",
-     *         "name": "The Northmarch Bards",
-     *         "kind": "group",
-     *         "is_stub": false
-     *       }
-     *     }
-     */
-    SnapshotPersonRelation: {
-      type: components["schemas"]["PersonRelationType"];
-      person: components["schemas"]["PersonSummary"];
     };
     /**
      * @description The view of a term snapshot.
@@ -3337,8 +2916,7 @@ export interface components {
      *       "parent": null,
      *       "related_affiliation": null,
      *       "description_md": null,
-     *       "position": 0,
-     *       "aliases": []
+     *       "position": 0
      *     }
      */
     TermSnapshot: {
@@ -3356,7 +2934,6 @@ export interface components {
        * @example 0
        */
       position: number;
-      aliases: components["schemas"]["Term"]["aliases"];
     };
     /**
      * @description The view of a collection snapshot.
@@ -3365,10 +2942,7 @@ export interface components {
      *       "url": "https://example.org/songbook.pdf",
      *       "kind": "songbook_pdf",
      *       "description_md": null,
-     *       "region": null,
-     *       "parent": null,
-     *       "is_bardic_resource": true,
-     *       "enumerable": "pdf"
+     *       "region": null
      *     }
      */
     CollectionSnapshot: {
@@ -3378,23 +2952,15 @@ export interface components {
       description_md: components["schemas"]["Collection"]["description_md"];
       /** @description The term for the region the collection is from, if it is public now. */
       region: components["schemas"]["TermSummary"] | null;
-      /** @description The collection this one is part of, if it is public now. */
-      parent: components["schemas"]["CollectionSummary"] | null;
-      is_bardic_resource: components["schemas"]["CollectionSummary"]["is_bardic_resource"];
-      enumerable: components["schemas"]["CollectionEnumerable"];
     };
     /**
      * @description The view of an event snapshot.
      * @example {
-     *       "name": "Midwinter Revel",
-     *       "kind": "event",
-     *       "description_md": null
+     *       "name": "Midwinter Revel"
      *     }
      */
     EventSnapshot: {
       name: components["schemas"]["EventSummary"]["name"];
-      kind: components["schemas"]["EventKind"];
-      description_md: components["schemas"]["Event"]["description_md"];
     };
     /**
      * @description Why an entry needs work: it is a `stub`; its conservation status is `unassessed`; its licensing is
@@ -3725,7 +3291,6 @@ export interface components {
       | "control_character"
       | "duplicate"
       | "invalid"
-      | "out_of_range"
       | "cycle"
       | "too_deep"
       | "wrong_facet"
@@ -3891,36 +3456,22 @@ export interface components {
       performances: components["schemas"]["EditorPerformance"][];
     };
     /**
-     * @description A piece's document in the editor format: the stored document's fields, with references to pieces, persons,
-     *     terms and events by slug (collections by ID).
+     * @description A piece's document in the editor format: the stored document's fields, with references to persons, terms
+     *     and events by slug (collections by ID).
      * @example {
      *       "schema_version": 1,
      *       "title": "The Copper Kettle",
      *       "kind": "song",
-     *       "secondary_kinds": [],
-     *       "conservation": {
-     *         "status": "unassessed",
-     *         "source_url": null
-     *       },
+     *       "conservation_status": "unassessed",
      *       "is_stub": false,
      *       "notes_md": null,
      *       "version_notes_md": null,
      *       "licensing_status": "unknown",
      *       "licensing_notes_md": null,
-     *       "licence": null,
-     *       "licence_version": null,
-     *       "historical_source_md": null,
-     *       "period_start": null,
-     *       "period_end": null,
      *       "aliases": [],
-     *       "terms": [
-     *         {
-     *           "term_slug": "drinking-songs",
-     *           "is_primary": true,
-     *           "part": null
-     *         }
+     *       "term_slugs": [
+     *         "drinking-songs"
      *       ],
-     *       "relations": [],
      *       "credits": [],
      *       "links": []
      *     }
@@ -3930,53 +3481,24 @@ export interface components {
       /** @example The Copper Kettle */
       title: string;
       kind: components["schemas"]["PieceKind"];
-      secondary_kinds: components["schemas"]["PieceKind"][];
-      /**
-       * @description The piece's conservation status, with the source of an assessment.
-       * @example {
-       *       "status": "unassessed",
-       *       "source_url": null
-       *     }
-       */
-      conservation: {
-        status: components["schemas"]["ConservationStatus"];
-        /** @example https://example.org/survey */
-        source_url: string | null;
-      };
+      conservation_status: components["schemas"]["ConservationStatus"];
       is_stub: boolean;
       notes_md: components["schemas"]["EditorText"];
       version_notes_md: components["schemas"]["EditorText"];
       licensing_status: components["schemas"]["LicensingStatus"];
       licensing_notes_md: components["schemas"]["EditorText"];
-      licence: components["schemas"]["Licence"] | null;
-      licence_version: components["schemas"]["LicenceVersion"] | null;
-      historical_source_md: components["schemas"]["EditorText"];
-      /** @example 1300 */
-      period_start: number | null;
-      /** @example 1400 */
-      period_end: number | null;
       aliases: {
         /** @example Copper Kettle */
         text: string;
         kind: components["schemas"]["PieceAliasKind"];
       }[];
-      terms: {
-        term_slug: components["schemas"]["EditorSlug"];
-        is_primary: boolean;
-        part: components["schemas"]["PiecePart"] | null;
-      }[];
-      relations: {
-        to_piece_slug: components["schemas"]["EditorSlug"];
-        type: components["schemas"]["PieceRelationType"];
-      }[];
+      /** @description The terms classifying the piece, by slug. */
+      term_slugs: components["schemas"]["EditorSlug"][];
       credits: {
         person_slug: components["schemas"]["EditorSlug"] | null;
         role: components["schemas"]["CreditRole"];
         attribution: components["schemas"]["Attribution"];
         certainty: components["schemas"]["Certainty"];
-        part: components["schemas"]["PiecePart"] | null;
-        /** @example Words by Morwen, after a ballad. */
-        note: string | null;
       }[];
       links: components["schemas"]["EditorPieceLink"][];
     };
@@ -4021,9 +3543,6 @@ export interface components {
      *       "name": "Morwen",
      *       "kind": "community_bard",
      *       "status": "active",
-     *       "status_date": null,
-     *       "status_source_url": null,
-     *       "pronouns": null,
      *       "notes_md": null,
      *       "licensing_status": "unknown",
      *       "licensing_notes_md": null,
@@ -4031,7 +3550,6 @@ export interface components {
      *       "aliases": [],
      *       "roles": [],
      *       "affiliation_slugs": [],
-     *       "relations": [],
      *       "links": []
      *     }
      */
@@ -4041,15 +3559,6 @@ export interface components {
       name: string;
       kind: components["schemas"]["PersonKind"];
       status: components["schemas"]["PersonStatus"];
-      /**
-       * Format: date
-       * @example 2026-01-01
-       */
-      status_date: string | null;
-      /** @example https://example.org/notice */
-      status_source_url: string | null;
-      /** @example she/her */
-      pronouns: string | null;
       notes_md: components["schemas"]["EditorText"];
       licensing_status: components["schemas"]["LicensingStatus"];
       licensing_notes_md: components["schemas"]["EditorText"];
@@ -4062,10 +3571,6 @@ export interface components {
       roles: components["schemas"]["PersonRole"][];
       /** @description The person's affiliation terms, by slug. */
       affiliation_slugs: components["schemas"]["EditorSlug"][];
-      relations: {
-        to_person_slug: components["schemas"]["EditorSlug"];
-        type: components["schemas"]["PersonRelationType"];
-      }[];
       links: components["schemas"]["EditorPersonLink"][];
     };
     /**
@@ -4078,8 +3583,7 @@ export interface components {
      *       "parent_slug": null,
      *       "related_affiliation_slug": null,
      *       "description_md": null,
-     *       "position": 0,
-     *       "aliases": []
+     *       "position": 0
      *     }
      */
     EditorTermDocument: {
@@ -4094,20 +3598,16 @@ export interface components {
       description_md: components["schemas"]["EditorText"];
       /** @example 0 */
       position: number;
-      aliases: string[];
     };
     /**
-     * @description A collection's document in the editor format, with its region by slug and its parent by ID.
+     * @description A collection's document in the editor format, with its region by slug.
      * @example {
      *       "schema_version": 1,
      *       "name": "The Northmarch Songbook",
      *       "url": "https://example.org/songbook.pdf",
      *       "kind": "songbook_pdf",
      *       "description_md": null,
-     *       "region_term_slug": null,
-     *       "parent_id": null,
-     *       "is_bardic_resource": true,
-     *       "enumerable": "pdf"
+     *       "region_term_slug": null
      *     }
      */
     EditorCollectionDocument: {
@@ -4119,38 +3619,24 @@ export interface components {
       kind: components["schemas"]["CollectionKind"];
       description_md: components["schemas"]["EditorText"];
       region_term_slug: components["schemas"]["EditorSlug"] | null;
-      /**
-       * Format: int64
-       * @description The collection this one is part of, by its `id`.
-       * @example 3
-       */
-      parent_id: number | null;
-      is_bardic_resource: boolean;
-      enumerable: components["schemas"]["CollectionEnumerable"];
     };
     /**
-     * @description An event's or venue's document in the editor format.
+     * @description An event's document in the editor format.
      * @example {
      *       "schema_version": 1,
-     *       "name": "Midwinter Revel",
-     *       "kind": "event",
-     *       "description_md": null
+     *       "name": "Midwinter Revel"
      *     }
      */
     EditorEventDocument: {
       schema_version: components["schemas"]["SchemaVersion"];
       /** @example Midwinter Revel */
       name: string;
-      kind: components["schemas"]["EventKind"];
-      description_md: components["schemas"]["EditorText"];
     };
     /**
      * @description A document in the editor format, in the shape of the `entity_type` beside it.
      * @example {
      *       "schema_version": 1,
-     *       "name": "Midwinter Revel",
-     *       "kind": "event",
-     *       "description_md": null
+     *       "name": "Midwinter Revel"
      *     }
      */
     EditorDocument:
@@ -4168,9 +3654,7 @@ export interface components {
      *       "pending_revision_id": null,
      *       "document": {
      *         "schema_version": 1,
-     *         "name": "Midwinter Revel",
-     *         "kind": "event",
-     *         "description_md": null
+     *         "name": "Midwinter Revel"
      *       }
      *     }
      */
@@ -4196,12 +3680,10 @@ export interface components {
      * @example {
      *       "entity_type": "event",
      *       "base_revision_id": 46,
-     *       "summary": "Describe the revel.",
+     *       "summary": "Rename the revel.",
      *       "document": {
      *         "schema_version": 1,
-     *         "name": "Midwinter Revel",
-     *         "kind": "event",
-     *         "description_md": "Held every year at the turning of the year."
+     *         "name": "Midwinter Revel"
      *       },
      *       "acknowledge_duplicates": false,
      *       "acknowledge_stale": false
@@ -4216,8 +3698,8 @@ export interface components {
       base_revision_id: number | null;
       /**
        * @description What the edit changes, at most 500 characters; may be empty. When the edit changes a piece's
-       *     conservation status, the summary is the reason in its conservation history.
-       * @example Describe the revel.
+       *     conservation status, the summary is the reason, as the piece's revision history shows.
+       * @example Rename the revel.
        */
       summary: string;
       document: components["schemas"]["EditorDocument"];
@@ -4273,7 +3755,7 @@ export interface components {
      *         "name": "Midwinter Revel"
      *       },
      *       "status": "pending",
-     *       "summary": "Describe the revel.",
+     *       "summary": "Rename the revel.",
      *       "created_at": "2026-10-01T09:00:00Z",
      *       "review_note": null,
      *       "reviewed_at": null,
@@ -4321,9 +3803,7 @@ export interface components {
     /**
      * @description A snapshot view, in the shape of the `entity_type` beside it.
      * @example {
-     *       "name": "Midwinter Revel",
-     *       "kind": "event",
-     *       "description_md": null
+     *       "name": "Midwinter Revel"
      *     }
      */
     Snapshot:
@@ -4340,7 +3820,7 @@ export interface components {
      *       "entity_type": "event",
      *       "id": 51,
      *       "source": "user",
-     *       "summary": "Describe the revel.",
+     *       "summary": "Rename the revel.",
      *       "author": {
      *         "display_name": "Morwen"
      *       },
@@ -4351,22 +3831,17 @@ export interface components {
      *       "reviewed_at": "2026-10-02T09:00:00Z",
      *       "entity": {
      *         "slug": "midwinter-revel",
-     *         "name": "Midwinter Revel",
-     *         "kind": "event"
+     *         "name": "Midwinter Revel"
      *       },
      *       "base_revision_id": 46,
      *       "snapshot": {
-     *         "name": "Midwinter Revel",
-     *         "kind": "event",
-     *         "description_md": "Held at midwinter."
+     *         "name": "Midwinter Revel"
      *       },
      *       "base_snapshot": {
-     *         "name": "Midwinter Revel",
-     *         "kind": "event",
-     *         "description_md": null
+     *         "name": "Midwinter Feast"
      *       },
      *       "changed_fields": [
-     *         "description_md"
+     *         "name"
      *       ]
      *     }
      */
@@ -4404,7 +3879,7 @@ export interface components {
      *       "entity_type": "event",
      *       "id": 51,
      *       "source": "user",
-     *       "summary": "Describe the revel.",
+     *       "summary": "Rename the revel.",
      *       "author": {
      *         "display_name": "Morwen"
      *       },
@@ -4415,22 +3890,17 @@ export interface components {
      *       "reviewed_at": null,
      *       "entity": {
      *         "slug": "midwinter-revel",
-     *         "name": "Midwinter Revel",
-     *         "kind": "event"
+     *         "name": "Midwinter Revel"
      *       },
      *       "base_revision_id": 46,
      *       "snapshot": {
-     *         "name": "Midwinter Revel",
-     *         "kind": "event",
-     *         "description_md": "Held at midwinter."
+     *         "name": "Midwinter Revel"
      *       },
      *       "base_snapshot": {
-     *         "name": "Midwinter Revel",
-     *         "kind": "event",
-     *         "description_md": null
+     *         "name": "Midwinter Feast"
      *       },
      *       "changed_fields": [
-     *         "description_md"
+     *         "name"
      *       ],
      *       "author_user_id": "google-oauth2|456",
      *       "current_revision_id": null,
@@ -5032,7 +4502,7 @@ export interface operations {
          *     several. A slug given more than once counts once.
          */
         term?: string[];
-        /** @description Kinds to filter on, matching a piece's primary or secondary kinds; repeat for several. */
+        /** @description Piece kinds to filter on; repeat for several. */
         kind?: components["schemas"]["PieceKind"][];
         /** @description Conservation statuses to filter on; repeat for several. */
         conservation_status?: components["schemas"]["ConservationStatus"][];
@@ -5456,8 +4926,6 @@ export interface operations {
   listEvents: {
     parameters: {
       query?: {
-        /** @description Only list events of this kind. Omitted, both kinds are listed. */
-        kind?: components["schemas"]["EventKind"];
         /** @description The most items to return, from 1 to 100. */
         limit?: components["parameters"]["Limit"];
         /** @description How many items to skip, from 0 to 10000. Every list order ends with an internal ID, so pages of an unchanged catalogue concatenate without gaps or duplicates. */
@@ -5479,8 +4947,8 @@ export interface operations {
         };
       };
       /**
-       * @description The `kind` is not an event kind, `limit` or `offset` is out of range, a parameter is given more than
-       *     once, or the query string is not validly percent-encoded; the error code is `invalid_request`.
+       * @description The `limit` or `offset` is out of range, a parameter is given more than once, or the query string is
+       *     not validly percent-encoded; the error code is `invalid_request`.
        */
       400: {
         headers: {

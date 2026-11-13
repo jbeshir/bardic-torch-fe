@@ -27,7 +27,6 @@ function piece(n: number, overrides: Partial<PieceSummary> = {}): PieceSummary {
     slug: `drill-song-${n}`,
     title: `Drill Song ${n}`,
     kind: "song",
-    secondary_kinds: [],
     conservation_status: "unassessed",
     is_stub: false,
     credit_names: [],

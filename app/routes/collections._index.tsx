@@ -114,7 +114,7 @@ function filterChips(state: CollectionQueryState) {
   ];
 }
 
-/** One collection: its page, its kind, whether it's for bards, and where it is. */
+/** One collection: its page, its kind and where it is. */
 function CollectionListItem({
   collection,
 }: {
@@ -129,12 +129,6 @@ function CollectionListItem({
       </div>
       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-fg-muted">
         <span>{COLLECTION_KIND_LABELS[collection.kind]}</span>
-        {collection.is_bardic_resource ? (
-          <span className="inline-flex items-center gap-1 text-caption">
-            <IconBook2 size={16} stroke={1.75} aria-hidden="true" />
-            Made for bards
-          </span>
-        ) : null}
         {collection.url === null ? null : (
           <UserLink url={collection.url}>
             Visit<span className="sr-only"> {collection.name}</span>

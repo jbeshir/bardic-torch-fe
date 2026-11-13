@@ -1,6 +1,5 @@
 import { Fragment } from "react";
 import { personSubtitle } from "~/catalogue/person";
-import { isUserUrl } from "~/catalogue/user-url";
 import { LicenceLine } from "~/components/catalogue/LicenceLine";
 import {
   LICENSING_ID,
@@ -19,7 +18,6 @@ import type { Person } from "~/schemas/catalogue";
 import type { MarkdownTree } from "~/schemas/markdown";
 import { PersonInfobox } from "./PersonInfobox";
 import { PersonPerformances } from "./PersonPerformances";
-import { Relations } from "./Relations";
 import { Works } from "./Works";
 
 type Profile = NonNullable<Person["profile"]>;
@@ -77,15 +75,6 @@ function sectionsOf(
           ),
         ]
       : []),
-    ...(profile.relations.length > 0
-      ? [
-          pageSection(
-            "relations",
-            "Relations",
-            <Relations relations={profile.relations} />
-          ),
-        ]
-      : []),
     ...(profile.links.length > 0
       ? [
           pageSection(
@@ -119,12 +108,11 @@ export function PersonBody({ view }: { readonly view: PersonView }) {
 
 /**
  * A person's head, the same on their Read and History views: "Bards" in
- * the breadcrumbs, the name, their kind, pronouns and status as the meta
- * line, and the banner: the one that keeps a no-page person's request on
- * record (with their statement when there is one), or the stub's.
+ * the breadcrumbs, the name, their kind and status as the meta line, and
+ * the banner: the one that keeps a no-page person's request on record, or
+ * the stub's.
  */
 export function personHead(person: Person) {
-  const statement = person.status_source_url;
   return {
     path: `/bards/${person.slug}`,
     title: person.name,
@@ -134,11 +122,7 @@ export function personHead(person: Person) {
     },
     subtitle: personSubtitle(person),
     banners: !person.profile ? (
-      <PageBanner
-        kind="no-page"
-        name={person.name}
-        statementUrl={statement && isUserUrl(statement) ? statement : undefined}
-      />
+      <PageBanner kind="no-page" name={person.name} />
     ) : person.is_stub ? (
       <PageBanner kind="stub" subject="person" />
     ) : undefined,

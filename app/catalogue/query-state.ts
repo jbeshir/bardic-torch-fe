@@ -1,7 +1,6 @@
 import {
   COLLECTION_KINDS,
   CONSERVATION_STATUS_VALUES,
-  EVENT_KINDS,
   FACETS,
   LETTERS,
   PERSON_KINDS,
@@ -16,7 +15,6 @@ import type {
   ApiQuery,
   CollectionKind,
   ConservationStatus,
-  EventKind,
   Facet,
   Letter,
   PersonKind,
@@ -565,8 +563,6 @@ export const collectionQuery = {
 // /events
 
 export type EventQueryState = {
-  /** Venues or events only; undefined for both. */
-  readonly kind: EventKind | undefined;
   /** From 1. */
   readonly page: number;
 };
@@ -574,22 +570,16 @@ export type EventQueryState = {
 const EVENTS_PATH = "/events";
 
 function serialiseEvents(state: EventQueryState): string {
-  return serialise([
-    ["kind", state.kind],
-    ["page", state.page > 1 ? String(state.page) : undefined],
-  ]);
+  return serialise([["page", state.page > 1 ? String(state.page) : undefined]]);
 }
 
-/** `/events`: the events and venues by name (plan §4.10). */
+/** `/events`: the events by name (plan §4.10). */
 export const eventQuery = {
   parse(params: URLSearchParams): {
     readonly state: EventQueryState;
     readonly canonical: string;
   } {
     const state: EventQueryState = {
-      kind: scalar(params, "kind", value =>
-        oneOf(EVENT_KINDS)(value) ? value : undefined
-      ),
       page: scalar(params, "page", pageNumber) ?? 1,
     };
     return { state, canonical: serialiseEvents(state) };
@@ -597,7 +587,6 @@ export const eventQuery = {
 
   toApi(state: EventQueryState): ApiQuery<"listEvents"> {
     return {
-      ...(state.kind === undefined ? {} : { kind: state.kind }),
       limit: PAGE_SIZE,
       offset: offsetOf(state.page),
     };

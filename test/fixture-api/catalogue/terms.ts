@@ -14,7 +14,7 @@ type Schemas = components["schemas"];
 export type RawTerm = Readonly<
   Pick<
     Schemas["Term"],
-    "slug" | "facet" | "name" | "display_name" | "description_md" | "aliases"
+    "slug" | "facet" | "name" | "display_name" | "description_md"
   > & {
     /** The parent's slug, or null for a root. */
     parent: string | null;
@@ -30,7 +30,6 @@ interface TermOptions {
   /** The full name when it carries a disambiguation suffix. */
   readonly name?: string;
   readonly description?: string;
-  readonly aliases?: readonly string[];
   readonly relatedAffiliation?: string;
 }
 
@@ -46,7 +45,6 @@ function term(
     name: options.name ?? displayName,
     display_name: displayName,
     description_md: options.description ?? null,
-    aliases: [...(options.aliases ?? [])],
     parent: options.parent ?? null,
     related_affiliation: options.relatedAffiliation ?? null,
   };
@@ -55,7 +53,7 @@ function term(
 export const TERMS: readonly RawTerm[] = [
   // Mood.
   term("mood", "warlike", "Warlike"),
-  term("mood", "comedic", "Comedic", { aliases: ["Funny"] }),
+  term("mood", "comedic", "Comedic"),
   term("mood", "sentimental", "Sentimental"),
   term("mood", "joyful", "Joyful"),
   term("mood", "singalong", "Singalong"),
@@ -70,7 +68,6 @@ export const TERMS: readonly RawTerm[] = [
 
   // Topic: three deep trees, and a handful of roots.
   term("topic", "war", "War", {
-    aliases: ["Battle"],
     description: "Pieces about fighting, sieges and the people who fought.",
   }),
   term("topic", "battles", "Battles", { parent: "war" }),
@@ -103,17 +100,11 @@ export const TERMS: readonly RawTerm[] = [
   term("language", "middle-english", "Middle English"),
   term("language", "welsh-language", "Welsh", { name: "Welsh (Language)" }),
   term("language", "portuguese", "Portuguese"),
-  term("language", "asl", "ASL", { aliases: ["American Sign Language"] }),
+  term("language", "asl", "ASL"),
 
   // Legendaria.
   term("legendaria", "fenian-cycle", "Fenian Cycle"),
   term("legendaria", "arthuriana", "Arthuriana"),
-
-  // Form.
-  term("form", "ballad", "Ballad"),
-  term("form", "round", "Round"),
-  term("form", "filk", "Filk"),
-  term("form", "story-form", "Story", { name: "Story (Form)" }),
 
   // Origin.
   term("origin", "sca-pieces", "SCA pieces"),

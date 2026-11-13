@@ -10,13 +10,13 @@ import { ServerError } from "~/components/ErrorPages";
 import type { PieceView } from "~/components/piece/PiecePage";
 import { failureMeta, ignoreSearchChanges } from "~/catalogue/entity-route";
 import { catalogueHeaders } from "~/catalogue/headers";
-import { pieceSubtitle } from "~/catalogue/piece";
 import {
   NOT_FOUND,
   throwPageFailure,
   thrownPageFailure,
 } from "~/catalogue/read-failure";
 import { pageMeta } from "~/catalogue/seo";
+import { PIECE_KIND_LABELS } from "~/constants/vocabulary";
 import { useErrorReference } from "~/hooks/useErrorReference";
 import { isSlug } from "~/schemas/address";
 import { getPiece } from "~/server/catalogue.server";
@@ -55,7 +55,6 @@ export async function loader(args: LoaderFunctionArgs) {
     markdown: {
       notes: renderMarkdown(piece.notes_md),
       versions: renderMarkdown(piece.version_notes_md),
-      historicalSource: renderMarkdown(piece.historical_source_md),
       licensingNotes: renderMarkdown(piece.licensing_notes_md),
     },
     pending,
@@ -76,7 +75,7 @@ export const meta: MetaFunction = args => {
   const restricted = piece.conservation_status === "restricted";
   return pageMeta(args, {
     title: piece.title,
-    description: `${piece.title}: ${pieceSubtitle(piece).toLowerCase()} in the Bardic Torch catalogue, with its credits, origin, conservation status and where to find it.`,
+    description: `${piece.title}: ${PIECE_KIND_LABELS[piece.kind].toLowerCase()} in the Bardic Torch catalogue, with its credits, origin, conservation status and where to find it.`,
     path: `/pieces/${piece.slug}`,
     robots: restricted ? "noindex, nofollow" : undefined,
   });
