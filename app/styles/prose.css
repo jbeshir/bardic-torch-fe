@@ -3,6 +3,8 @@
   .prose-bt {
     @apply max-w-prose text-body-lg;
     text-wrap: pretty;
+    /* A long URL in a reader's notes breaks rather than scrolling the page sideways at 360px. */
+    overflow-wrap: break-word;
   }
 
   .prose-bt

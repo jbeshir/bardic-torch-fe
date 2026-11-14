@@ -92,7 +92,7 @@ const HAND_PIECES: readonly RawPiece[] = [
     {
       licensed: true,
       notes:
-        'Sung at *many* feasts; see [the tune index](https://collections.example/1).\n\n- The first verse is **short**\n- The chorus repeats\n\n<span class="raw">raw html must not render</span>',
+        'Sung at *many* feasts; see [the tune index](https://collections.example/1).\n\nAn old copy: https://songbooks.example/northmarch/collected-songs-of-the-northmarch-circle/the-copper-kettle-with-the-slow-chorus.html\n\n- The first verse is **short**\n- The chorus repeats\n\n<span class="raw">raw html must not render</span>',
       versionNotes: "This version has a slower chorus.",
       aliases: [
         { text: "The Kettle Song", kind: "alt_title" },
