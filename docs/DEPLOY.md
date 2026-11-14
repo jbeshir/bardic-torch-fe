@@ -24,7 +24,7 @@ Names used below:
 
 ## 1. Before the first deploy
 
-Do these once, in this order. Each step links to the section with the details.
+Do these once, in this order. Each step links to the section with the details. The API repository's `docs/LAUNCH.md` interleaves these steps with the API's, the real import and the click-through, from nothing to production.
 
 1. **Create the Auth0 application and API** (§4). Then **set the two Auth0 values in `wrangler.jsonc`**: replace `AUTH0_DOMAIN` and the placeholder `AUTH0_CLIENT_ID`, in both the top-level `vars` (production) and `env.preview.vars`, with the tenant domain and the application's client ID. Both are public values, so they belong in the repository. Open a pull request with them, and leave it open for step 2. Until the placeholder is replaced, a deploy serves only the "Site configuration error" page (§2), not a site whose sign-in fails at Auth0.
 2. **Protect `main`.** Wait until step 1's pull request has run its checks: GitHub only offers status checks that have reported recently, and before that first run there are none to pick. Then, in GitHub → Settings → Branches, add a branch protection rule (or ruleset) for `main`:
@@ -38,7 +38,7 @@ Do these once, in this order. Each step links to the section with the details.
 
 3. **Create the `preview` branch** from `main`, which now has step 1's Auth0 values: `git fetch origin && git push origin origin/main:refs/heads/preview`, once. Workers Builds' branch control can only pick a branch that exists. Add a branch protection rule for `preview` that restricts who can push to it: a push to `preview` deploys with the preview Worker's secrets (§2).
 4. **Add the zone to Cloudflare** (§3, "The zone"), and wait until it is **Active**. Every later step that touches a domain needs it.
-5. **Set the zone's TLS settings, and add the `www` record and redirect rule** (§3). They work before any Worker exists, so `www` redirects from the first production deploy on.
+5. **Set the zone's TLS settings, add the `www` record and redirect rule, and add the rate-limiting rule** (§3, including "Rate limiting"). They work before any Worker exists, so `www` redirects from the first production deploy on.
 6. **Give both Workers their secrets** (§2, "Bootstrap"), in the account on the Workers Paid plan (§2, "Plan"). This creates the two Workers.
 7. **Connect Workers Builds to the preview Worker first** (§2, "Workers Builds"), then push to `preview` (or retry its first build), read the first build log (§2, "The first build log"), check that its certificate is **Active** (§3, "TLS"), and run the smoke checks (§8) against `https://preview.bardictorch.org`.
 8. **Then connect the production Worker**, start its first build (merge a pull request to `main`, or retry the build), check its certificate, and run the smoke checks against `https://bardictorch.org`.
@@ -270,6 +270,34 @@ The API is a separate repository, deployed to the maintainer's dokku host. The f
 
 **No CORS set-up is needed.** The browser never calls the API. Loaders and the `/api/*` proxy routes call it from the Worker, server to server, with the user's bearer token.
 
+### Rate limiting
+
+The API has no rate limiter of its own (the backend's PLAN §3): abuse control is one Cloudflare rate-limiting rule on the zone, plus Turnstile on the contact form (§5). Add it once the zone is active, before the first production deploy: Cloudflare dashboard → the `bardictorch.org` zone → **Security** → **Security rules** → **Create rule** → **Rate limiting rules**. Fill in exactly:
+
+| setting                                        | value                                                                                                                                                     |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rule name                                      | `Costly paths per IP`                                                                                                                                     |
+| When incoming requests match (Edit expression) | `(http.request.uri.path in {"/search" "/search.data" "/contact" "/contact.data" "/auth/login" "/auth/callback" "/auth/logout" "/api/me" "/sitemap.xml"})` |
+| With the same characteristics                  | IP (fixed on the Free plan; Cloudflare also counts per data centre)                                                                                       |
+| When rate exceeds: Requests                    | `20`                                                                                                                                                      |
+| When rate exceeds: Period                      | 10 seconds                                                                                                                                                |
+| Then take action                               | **Block** (the default response, 429; a custom response needs Pro)                                                                                        |
+| Duration                                       | 10 seconds                                                                                                                                                |
+
+**Free-plan limits** (Cloudflare's rate-limiting availability table, https://developers.cloudflare.com/waf/rate-limiting-rules/, read 2026-11-14): **one** rule per zone; a 10-second counting period and a 10-second mitigation timeout only; IP as the only characteristic; only the URI **path** (`http.request.uri.path`) and Verified Bot in the expression (no method, query or host); no separate counting expression; cached assets are counted too. The rule above uses nothing else. If the expression editor ever refuses the `in {…}` set, write the same paths as `http.request.uri.path eq "/search" or http.request.uri.path eq "/search.data" or …`.
+
+**What it covers, and why only these paths.** With one rule, it goes on the paths where one request costs more than one catalogue read:
+
+- `/search` and its client-side data URL `/search.data`: each runs the API's full-text searches over pieces and bards;
+- `/contact` and `/contact.data`: a POST verifies a Turnstile token with Cloudflare and writes a contact request;
+- `/auth/login`, `/auth/callback`, `/auth/logout`: each talks to Auth0, whose own per-tenant limits would otherwise be spent by one client and lock real readers out of sign-in;
+- `/api/me` (the settings proxy) writes to the API;
+- `/sitemap.xml` reads every catalogue list from the API, about one call per 100 entries.
+
+The catalogue pages (`/pieces`, `/bards`, and the rest) are left out on purpose: readers at an event often share one IP (a campsite or hall Wi-Fi), every facet click on a list page is a request, and each read is a single API call that the API caps at 2 seconds. Static files (`/assets/*`) never match. 20 requests in 10 seconds is far above what a person does on these paths (a search is two requests: the page and its `.data`), so a block means a script; it lasts 10 seconds and then lifts on its own.
+
+**Check it** after adding it: from a shell, `for i in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code} ' "https://bardictorch.org/search?q=x"; done; echo` prints 200s, then 429s; a browser on the same IP gets a Cloudflare block page for `/search` for 10 seconds while other pages still load. Security → Events lists the blocks under the rule's name. If real readers are being blocked (an event's shared Wi-Fi), raise the request count; don't add catalogue paths unless Security → Analytics shows a scraper on them.
+
 ## 4. Auth0
 
 Create one **Regular Web Application** (Applications → Create Application → Regular Web Applications). The server keeps the client secret and does the code exchange. The production and preview Workers share the application, which is why only the `preview` branch gets a preview build (§2).
@@ -328,7 +356,7 @@ The identity providers send the reader back to **Auth0**, not to the site, so th
 **Facebook** (Meta for Developers, an app of type Consumer, with the Facebook Login product):
 
 1. Facebook Login → Settings: **Valid OAuth Redirect URIs** `https://<AUTH0_DOMAIN>/login/callback`.
-2. App settings → Basic: app domain, a **Privacy Policy URL** and a **User Data Deletion** URL (instructions URL). Until FE4 adds the privacy and contact/opt-out pages, point both at a help page that explains how to ask (e.g. `https://bardictorch.org/help/faq-for-bards`, which covers opting out and how to contact us).
+2. App settings → Basic: app domain, a **Privacy Policy URL** and a **User Data Deletion** URL (instructions URL). The site has no privacy page yet: point the Privacy Policy URL at `https://bardictorch.org/help/faq-for-bards` (it covers opting out and how to contact us) and the data-deletion instructions at the contact form's opt-out, `https://bardictorch.org/contact?kind=opt_out`, until the owners add a privacy page. Google's consent screen (above) uses the same privacy URL.
 3. Permissions: `email` and `public_profile`.
 4. Switch the app to **Live**. In Development mode, only the app's admins, developers and testers can sign in.
 5. In Auth0's Facebook connection, enter the App ID and App Secret, with the `email` permission.
@@ -341,11 +369,11 @@ The contact, takedown and opt-out form (`/contact`, which also reports links) is
 
 1. Go to Cloudflare dashboard → Turnstile → Add widget.
    - **Name:** "Bardic Torch contact form".
-   - **Hostnames:** `bardictorch.org`. The API accepts a token minted on one hostname only (its `TURNSTILE_HOSTNAME`), and the preview Worker uses the production API, so the contact form works on production alone: on preview it answers that the robot check failed.
+   - **Hostnames:** `bardictorch.org` and `preview.bardictorch.org`. The API accepts a token minted on one hostname only (its `TURNSTILE_HOSTNAME`), and the preview Worker uses the production API, so the contact form works on one of the two at a time: on the other it answers that the robot check failed. During staging, before the production switch, the API has `TURNSTILE_HOSTNAME=preview.bardictorch.org` so the click-through can send the form on preview; the production switch sets it to `bardictorch.org` (the backend's docs/LAUNCH.md).
    - **Widget mode:** Managed.
 2. **Site key.** It is public: replace the placeholder `TURNSTILE_SITE_KEY` in `wrangler.jsonc`, in both the top-level `vars` and `env.preview.vars`, with a commit. Until then every page is the "Site configuration error" page (§2).
-3. **Secret key.** It goes to the **API**, not the frontend: set it in the API's dokku config as `TURNSTILE_SECRET_KEY`, with `TURNSTILE_HOSTNAME=bardictorch.org` (the backend's DEPLOY.md). It is never a Worker variable.
-4. **Local development and e2e** use Cloudflare's published test site key `1x00000000000000000000AA` (always passes). e2e runs offline, so `e2e/support/test.ts` answers the widget's script with a local stand-in that gives the test token `XXXX.DUMMY.TOKEN.XXXX`, as the test key's widget does.
+3. **Secret key.** It goes to the **API**, not the frontend: set it in the API's dokku config as `TURNSTILE_SECRET_KEY`, with `TURNSTILE_HOSTNAME=preview.bardictorch.org` while staging and `bardictorch.org` from the production switch (the backend's DEPLOY.md and LAUNCH.md). It is never a Worker variable.
+4. **Local development and e2e** use Cloudflare's published test site key `1x00000000000000000000AA` (always passes). e2e runs offline, so `e2e/support/test.ts` answers the widget's script with a local stand-in that gives the test token `XXXX.DUMMY.TOKEN.XXXX`, as the test key's widget does. Against a real API, the test keys don't complete the form: siteverify answers Cloudflare's test secret with `hostname` `example.com` and no `action` (documented in Cloudflare's Turnstile testing page, and seen on 2026-11-14), and the API also requires its `TURNSTILE_HOSTNAME` and the action `contact`, so it answers `turnstile_failed`. Only the real widget and secret prove the whole form, on staging.
 
 ## 6. Sentry (optional)
 
