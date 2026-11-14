@@ -33,7 +33,6 @@ export type RawPerson = Readonly<
 
 function profile(overrides: Partial<RawProfile> = {}): RawProfile {
   return {
-    notes_md: null,
     licensing_status: "unknown",
     licensing_notes_md: null,
     aliases: [],
@@ -55,6 +54,7 @@ function person(
     kind,
     is_stub: false,
     status: "active",
+    notes_md: null,
     profile: profile(),
     ...overrides,
   };
@@ -62,9 +62,9 @@ function person(
 
 export const PERSONS: readonly RawPerson[] = [
   person("wren-of-the-vale", "Wren of the Vale", "community_bard", {
+    notes_md:
+      "Sings in taverns and at **court**, and writes verse for the Barony of Ashdown.\n\n- Teaches the Thursday round\n- Keeps a *small* songbook",
     profile: profile({
-      notes_md:
-        "Sings in taverns and at **court**, and writes verse for the Barony of Ashdown.\n\n- Teaches the Thursday round\n- Keeps a *small* songbook",
       licensing_status: "known",
       licensing_notes_md: "Happy for songs to be shared with credit.",
       aliases: [{ name: "Wren Vale-Singer", kind: "sca" }],
@@ -75,6 +75,8 @@ export const PERSONS: readonly RawPerson[] = [
   person("hollis-fenn", "Hollis Fenn", "community_bard", {
     is_stub: true,
     status: "prefers_no_page",
+    notes_md:
+      "Asked not to have a page, [in this post](https://example.org/hollis-fenn/no-page).",
     profile: null,
   }),
   person("corwin-ashgrove", "Corwin Ashgrove", "community_bard", {
@@ -83,8 +85,8 @@ export const PERSONS: readonly RawPerson[] = [
     profile: null,
   }),
   person("northmarch-bards", "Northmarch Bards", "group", {
+    notes_md: "A loose company of singers who meet at *Midwinter Revel*.",
     profile: profile({
-      notes_md: "A loose company of singers who meet at *Midwinter Revel*.",
       licensing_status: "known",
       roles: ["singer", "musician"],
       affiliations: ["northmarch"],
@@ -95,16 +97,16 @@ export const PERSONS: readonly RawPerson[] = [
     "Brannoc the Drillmaster",
     "community_bard",
     {
+      notes_md: "Writes practice pieces for new singers.",
       profile: profile({
-        notes_md: "Writes practice pieces for new singers.",
         roles: ["singer", "songwriter"],
         affiliations: ["northmarch"],
       }),
     }
   ),
   person("aldith-of-ashdown", "Aldith of Ashdown", "community_bard", {
+    notes_md: "A harper and poet.",
     profile: profile({
-      notes_md: "A harper and poet.",
       licensing_status: "known",
       aliases: [{ name: "Aldith Reedpipe", kind: "sca" }],
       roles: ["instrumentalist", "poet"],
@@ -112,8 +114,8 @@ export const PERSONS: readonly RawPerson[] = [
     }),
   }),
   person("dafydd-pennar", "Dafydd Pennar", "community_bard", {
+    notes_md: "Learned most of their repertoire from **Wren of the Vale**.",
     profile: profile({
-      notes_md: "Learned most of their repertoire from **Wren of the Vale**.",
       aliases: [{ name: "Dafydd of the Pennar", kind: "sca" }],
       roles: ["singer", "jester"],
       affiliations: ["caer-wyn"],
@@ -124,15 +126,15 @@ export const PERSONS: readonly RawPerson[] = [
     profile: profile({ roles: ["dancer"] }),
   }),
   person("wynne-of-caer-wyn", "Wynne of Caer Wyn", "community_bard", {
+    notes_md: "Sings in Welsh and English.",
     profile: profile({
-      notes_md: "Sings in Welsh and English.",
       roles: ["singer"],
       affiliations: ["caer-wyn"],
     }),
   }),
   person("jorund-skald", "Jorund Skald", "community_bard", {
+    notes_md: "Tells sagas.",
     profile: profile({
-      notes_md: "Tells sagas.",
       roles: ["storyteller", "poet"],
       affiliations: ["westerfell"],
     }),
@@ -148,8 +150,8 @@ export const PERSONS: readonly RawPerson[] = [
   ),
   person("eadric-of-thornwick", "Eadric of Thornwick", "historical", {
     status: "deceased",
+    notes_md: "An invented minstrel of the sixteenth century.",
     profile: profile({
-      notes_md: "An invented minstrel of the sixteenth century.",
       roles: ["singer", "poet"],
     }),
   }),
@@ -159,8 +161,8 @@ export const PERSONS: readonly RawPerson[] = [
   }),
   person("the-greywater-minstrels", "The Greywater Minstrels", "group", {
     status: "deceased",
+    notes_md: "Played at feasts in Westerfell until they disbanded.",
     profile: profile({
-      notes_md: "Played at feasts in Westerfell until they disbanded.",
       roles: ["musician"],
       affiliations: ["shire-of-greywater"],
     }),

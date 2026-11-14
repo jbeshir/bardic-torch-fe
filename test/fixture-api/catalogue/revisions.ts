@@ -106,7 +106,7 @@ function personSnapshot(
       profile === null
         ? null
         : {
-            notes_md: profile.notes_md,
+            notes_md: raw.notes_md,
             licensing_status: profile.licensing_status,
             licensing_notes_md: profile.licensing_notes_md,
             aliases: profile.aliases.map(({ name, kind }) => ({ name, kind })),

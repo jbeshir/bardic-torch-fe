@@ -25,7 +25,7 @@ type Profile = NonNullable<Person["profile"]>;
 /**
  * What the bard layout's loader gives its views (through the outlet): the
  * person, and their Markdown fields as the server's trees (null when
- * empty, and always for a person with no page).
+ * empty; a person with no page has only their notes).
  */
 export type PersonView = {
   readonly person: Person;
@@ -131,8 +131,9 @@ export function personHead(person: Person) {
 
 /**
  * A person's Read view (plan §4.6): their head (`personHead`). A person
- * who asked not to have a page is their identity only: no History tab
- * (plan R8; a direct `/bards/{slug}/history` still works) and no prose.
+ * who asked not to have a page is their identity and notes only (their
+ * statement, with a link): no History tab (plan R8; a direct
+ * `/bards/{slug}/history` still works) and nothing else.
  * Anyone else has the infobox, their sections and the licence line
  * pointing at the page history.
  */
@@ -148,7 +149,7 @@ export function PersonPage({ view }: { readonly view: PersonView }) {
         history={false}
         licence={<LicenceLine />}
       >
-        {null}
+        {markdown.notes ? <UserMarkdown tree={markdown.notes} /> : null}
       </EntityPage>
     );
   }

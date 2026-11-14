@@ -374,6 +374,7 @@ function servePerson(raw: RawPerson): Schemas["Person"] {
   const identity = {
     ...listedPerson(raw.slug),
     status: raw.status,
+    notes_md: raw.notes_md,
     updated_at: UPDATED_AT,
   };
   const { profile } = raw;
@@ -401,7 +402,6 @@ function servePerson(raw: RawPerson): Schemas["Person"] {
   return {
     ...identity,
     profile: {
-      notes_md: profile.notes_md,
       licensing_status: profile.licensing_status,
       licensing_notes_md: profile.licensing_notes_md,
       aliases: [...profile.aliases],

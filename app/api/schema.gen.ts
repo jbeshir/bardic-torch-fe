@@ -182,8 +182,8 @@ export interface paths {
     };
     /**
      * Get a person
-     * @description Returns a public person. A person who prefers not to have a page is shown by identity only: name, kind
-     *     and status, with `is_stub` true and `profile` null. Otherwise the profile has their aliases, roles,
+     * @description Returns a public person. A person who prefers not to have a page is shown by name, kind, status and
+     *     notes only, with `is_stub` true and `profile` null. Otherwise the profile has their aliases, roles,
      *     affiliations, links, works and performances. Works and performances are capped at 200 each, with totals. An unapproved person
      *     is not found, exactly like an unknown one. Credentials are ignored.
      */
@@ -1674,6 +1674,7 @@ export interface components {
      *       "kind": "community_bard",
      *       "is_stub": true,
      *       "status": "prefers_no_page",
+     *       "notes_md": "Asked not to have a page, [in this post](https://example.org/hollis).",
      *       "profile": null
      *     }
      */
@@ -1687,14 +1688,18 @@ export interface components {
       kind: components["schemas"]["PersonKind"];
       is_stub: components["schemas"]["PersonSummary"]["is_stub"];
       status: components["schemas"]["PersonStatus"];
-      /** @description Everything the person's page shows beyond their identity. */
+      /**
+       * @description Notes about the person, in Markdown.
+       * @example A bard of the northern marches.
+       */
+      notes_md: string | null;
+      /** @description Everything the person's page shows beyond their identity and notes. */
       profile: components["schemas"]["PersonProfile"] | null;
       updated_at: components["schemas"]["Piece"]["updated_at"];
     };
     /**
-     * @description Everything a person's page shows beyond their identity.
+     * @description Everything a person's page shows beyond their identity and notes.
      * @example {
-     *       "notes_md": null,
      *       "licensing_status": "unknown",
      *       "licensing_notes_md": null,
      *       "aliases": [],
@@ -1710,11 +1715,6 @@ export interface components {
      *     }
      */
     PersonProfile: {
-      /**
-       * @description Notes about the person, in Markdown.
-       * @example A bard of the northern marches.
-       */
-      notes_md: string | null;
       licensing_status: components["schemas"]["LicensingStatus"];
       /**
        * @description How the person's works are licensed, in Markdown.
@@ -2181,8 +2181,8 @@ export interface components {
      */
     PersonKind: "community_bard" | "historical" | "group";
     /**
-     * @description A person's status. A person who `prefers_no_page` has a page showing their identity only, and is
-     *     named without a link elsewhere.
+     * @description A person's status. A person who `prefers_no_page` has a page showing their identity and notes
+     *     only, and is named without a link elsewhere.
      * @example active
      * @enum {string}
      */
@@ -2895,7 +2895,7 @@ export interface components {
      *     }
      */
     PersonSnapshotProfile: {
-      notes_md: components["schemas"]["PersonProfile"]["notes_md"];
+      notes_md: components["schemas"]["Person"]["notes_md"];
       licensing_status: components["schemas"]["LicensingStatus"];
       licensing_notes_md: components["schemas"]["PersonProfile"]["licensing_notes_md"];
       /** @description The snapshot's aliases. */

@@ -64,7 +64,7 @@ export async function loader(args: LoaderFunctionArgs) {
   const view: PersonView = {
     person,
     markdown: {
-      notes: renderMarkdown(person.profile?.notes_md ?? null),
+      notes: renderMarkdown(person.notes_md),
       licensingNotes: renderMarkdown(
         person.profile?.licensing_notes_md ?? null
       ),

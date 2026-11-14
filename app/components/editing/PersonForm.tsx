@@ -57,6 +57,7 @@ function PersonForm({
         <SelectField
           name="status"
           label="Status"
+          help="For ‘Prefers not to have a page’, put the person’s statement, with a link to it, in the notes."
           value={document.status}
           options={labelOptions(PERSON_STATUS_LABELS)}
         />

@@ -153,6 +153,7 @@ const PAGES: readonly (readonly [string, number, Check])[] = [
   ["/bards?letter=W", 200, { h1: "Bards" }],
   ["/bards/wren-of-the-vale", 200, { h1: "Wren of the Vale" }],
   ["/bards/hollis-fenn", 200, { h1: "Hollis Fenn" }],
+  ["/bards/hollis-fenn", 200, { contains: ">Asked not to have a page, <" }],
   ["/categories", 200, { h1: "Categories" }],
   ["/categories/swords", 200, { h1: "Swords" }],
   ["/collections", 200, { h1: "Collections" }],

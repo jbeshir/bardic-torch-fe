@@ -83,6 +83,7 @@ function PieceForm({
         <SelectField
           name="conservation_status"
           label="Conservation status"
+          help="For Restricted, put the creator’s statement, with a link to it, in the notes."
           value={document.conservation_status}
           options={labelOptions(CONSERVATION_LABELS)}
         />

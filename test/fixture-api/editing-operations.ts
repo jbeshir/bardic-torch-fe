@@ -90,7 +90,7 @@ const DOCUMENTS: Readonly<
       name: raw.name,
       kind: raw.kind,
       status: raw.status,
-      notes_md: profile?.notes_md ?? null,
+      notes_md: raw.notes_md,
       licensing_status: profile?.licensing_status ?? "unknown",
       licensing_notes_md: profile?.licensing_notes_md ?? null,
       is_stub: raw.is_stub,
