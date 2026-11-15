@@ -45,7 +45,9 @@ import { listPieces, listTerms } from "~/server/catalogue.server";
  * `/categories`: every category by facet (plan §4.8), each facet's terms
  * as a tree linking to their pages, plus two sections the API keeps as
  * piece fields rather than terms: the kinds and the conservation statuses,
- * each linking to the pieces with it. `?facet=` shows one section alone
+ * each linking to the pieces with it. Like the home page, it counts real
+ * pages only, not stubs (the API's term counts leave them out too), so its
+ * counts match the lists it links to. `?facet=` shows one section alone
  * (the sidebar's facet links); its two piece-field values are never sent
  * to `listTerms`, which doesn't know them.
  *
@@ -105,7 +107,7 @@ export async function loader({
     showsTerms
       ? listTerms(context, isTermFacet(facet) ? { facet } : {})
       : undefined,
-    showsCounts ? listPieces(context, { limit: 1 }) : undefined,
+    showsCounts ? listPieces(context, { limit: 1, stub: false }) : undefined,
   ]);
   if (terms && !terms.ok) throwPageFailure(terms.failure);
   if (pieces && !pieces.ok && facet !== undefined) {
@@ -153,7 +155,7 @@ export const meta: MetaFunction = args => {
         : `${sectionLabel(facet)} · Categories`,
     description:
       facet === undefined
-        ? "Every category in the Bardic Torch catalogue: moods, topics, cultures, languages, legendaria, forms, origins and affiliations, with their pieces and bards."
+        ? "Every category in the Bardic Torch catalogue: moods, topics, cultures, languages, legendaria, origins and affiliations, with their pieces and bards."
         : `The ${sectionLabel(facet).toLowerCase()} categories of the Bardic Torch catalogue, with how many ${facet === "affiliation" ? "bards" : "pieces"} each has.`,
     path: `${ALL_CATEGORIES}${loaded.canonical}`,
   });
@@ -186,10 +188,7 @@ function KindSection({ counts }: { readonly counts: PieceCounts }) {
         <li key={kind} className="break-inside-avoid pb-1">
           <Counted count={count}>
             <Link
-              to={pieceQuery.href(NO_PIECE_FILTERS, {
-                kind: [kind],
-                stub: "all",
-              })}
+              to={pieceQuery.href(NO_PIECE_FILTERS, { kind: [kind] })}
               compact
             >
               {PIECE_KIND_LABELS[kind]}
@@ -217,10 +216,7 @@ function ConservationSection({ counts }: { readonly counts: PieceCounts }) {
           <ConservationBadge status={status} size="sm" named />
           <Counted count={byStatus.get(status) ?? 0}>
             <Link
-              to={pieceQuery.href(NO_PIECE_FILTERS, {
-                status: [status],
-                stub: "all",
-              })}
+              to={pieceQuery.href(NO_PIECE_FILTERS, { status: [status] })}
               compact
             >
               {BROWSE_STATUS_LABELS[status]}

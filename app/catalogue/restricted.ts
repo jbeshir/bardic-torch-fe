@@ -1,4 +1,4 @@
-import type { PieceSummary } from "~/schemas/catalogue";
+import type { Piece, PieceSummary } from "~/schemas/catalogue";
 
 /**
  * How far a piece's link may be shown (plan §4.0), the one policy for
@@ -6,8 +6,8 @@ import type { PieceSummary } from "~/schemas/catalogue";
  * any piece but a restricted one, and for a link beside no piece;
  * `internal-only` for a restricted piece, whose creator asked that it isn't
  * recorded or shared. Off the piece's own page, an internal-only link is
- * only named, with the caption {@link LINK_NOT_SHOWN}; on its own page, its
- * links are kept inside one closed disclosure, without archive copies.
+ * only named, with the caption {@link LINK_NOT_SHOWN}; its own page shows
+ * only its licensing sources ({@link withoutRestrictedPieceLinks}).
  */
 type LinkExposure = "full" | "internal-only";
 
@@ -15,6 +15,27 @@ export function linkExposure(
   piece: Pick<PieceSummary, "conservation_status"> | null
 ): LinkExposure {
   return piece?.conservation_status === "restricted" ? "internal-only" : "full";
+}
+
+/**
+ * `piece` as its page shows it: for a restricted piece, only its licensing
+ * sources (where the creator says it isn't to be shared), as nothing but
+ * sources and without archived copies, so a loader never sends its other
+ * links or recordings to the page; any other piece as it is.
+ */
+export function withoutRestrictedPieceLinks(piece: Piece): Piece {
+  if (linkExposure(piece) === "full") return piece;
+  return {
+    ...piece,
+    links: piece.links
+      .filter(link => link.roles.includes("licensing_source"))
+      .map(link => ({
+        ...link,
+        roles: ["licensing_source"],
+        archived_url: null,
+        performances: [],
+      })),
+  };
 }
 
 /** The caption shown in place of a restricted piece's link. */

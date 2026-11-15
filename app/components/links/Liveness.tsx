@@ -8,18 +8,10 @@ type CheckedLink = Pick<Piece["links"][number], "liveness" | "archived_url">;
 /**
  * What the link checker found, under a link (plan §4.5): for a dead link a
  * warning, "This link may be broken", with the archived copy when there is
- * one (and `archive` allows it: never for a restricted piece); for a site
- * that refused the checker, a caption saying so. A link that works, or
- * that was never checked, needs no note.
+ * one; for a site that refused the checker, a caption saying so. A link
+ * that works, or that was never checked, needs no note.
  */
-export function Liveness({
-  link,
-  archive,
-}: {
-  readonly link: CheckedLink;
-  /** Whether an archived copy may be offered. */
-  readonly archive: boolean;
-}) {
+export function Liveness({ link }: { readonly link: CheckedLink }) {
   switch (link.liveness) {
     case "dead":
       return (
@@ -33,7 +25,7 @@ export function Liveness({
             />
             This link may be broken
           </span>
-          {archive && link.archived_url && isUserUrl(link.archived_url) ? (
+          {link.archived_url && isUserUrl(link.archived_url) ? (
             <Link to={link.archived_url} userContent compact>
               Archived copy
             </Link>

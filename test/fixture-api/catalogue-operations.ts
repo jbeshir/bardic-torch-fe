@@ -176,9 +176,15 @@ const personAffiliated = (person: RawPerson, slug: string) =>
 const PIECES_BY_TITLE = sorted(PIECES, p => p.title);
 const PERSONS_BY_NAME = sorted(PERSONS, p => p.name);
 
+/** A term's members, as the API counts and lists them: stubs left out. */
+const pieceMember = (piece: RawPiece, slug: string) =>
+  !piece.is_stub && hasTerm(piece, slug);
+const personMember = (person: RawPerson, slug: string) =>
+  !person.is_stub && personAffiliated(person, slug);
+
 const counts = (slug: string) => ({
-  piece_count: PIECES.filter(p => hasTerm(p, slug)).length,
-  person_count: PERSONS.filter(p => personAffiliated(p, slug)).length,
+  piece_count: PIECES.filter(p => pieceMember(p, slug)).length,
+  person_count: PERSONS.filter(p => personMember(p, slug)).length,
 });
 
 // Pieces ----------------------------------------------------------------------
@@ -442,12 +448,12 @@ function serveTerm(term: RawTerm, query: URLSearchParams): Schemas["Term"] {
     pieces: affiliation
       ? []
       : slice(
-          PIECES_BY_TITLE.filter(p => hasTerm(p, term.slug)),
+          PIECES_BY_TITLE.filter(p => pieceMember(p, term.slug)),
           query
         ).map(p => pieceSummary(p.slug)),
     persons: affiliation
       ? slice(
-          PERSONS_BY_NAME.filter(p => personAffiliated(p, term.slug)),
+          PERSONS_BY_NAME.filter(p => personMember(p, term.slug)),
           query
         ).map(p => listedPerson(p.slug))
       : [],

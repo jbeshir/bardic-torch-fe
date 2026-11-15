@@ -41,8 +41,9 @@ import { getTerm } from "~/server/catalogue.server";
 /**
  * `/categories/:slug` (Read): a page of the category's members, 50 at a
  * time by `?page` (plan §4.8): its pieces, or for an affiliation its bards,
- * by sort title or name. The layout above has the head; this loader reads
- * only the members, so paging reloads it alone. The total is the term's
+ * by sort title or name, without stubs (as the lists leave them out). The
+ * layout above has the head; this loader reads only the members, so paging
+ * reloads it alone. The total is the term's
  * `piece_count` (or `person_count`), and paging past it is one 302.
  */
 
@@ -164,8 +165,8 @@ export default function CategoryMembersRoute() {
             <Link
               to={
                 affiliation
-                  ? `/bards?affiliation=${term.slug}&stub=all`
-                  : `/pieces?term=${term.slug}&stub=all`
+                  ? `/bards?affiliation=${term.slug}`
+                  : `/pieces?term=${term.slug}`
               }
               compact
             >

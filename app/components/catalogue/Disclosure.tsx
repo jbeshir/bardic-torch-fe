@@ -2,9 +2,8 @@ import { IconChevronDown } from "@tabler/icons-react";
 import { useEffect, useRef, type ReactNode } from "react";
 
 /**
- * A native disclosure for something a page lists but doesn't lead with: a
- * restricted piece's links, the bards' filters. It is
- * `<details>`, so it works without JS and is closed until the reader opens
+ * A native disclosure for something a page lists but doesn't lead with,
+ * such as the bards' filters. It is `<details>`, so it works without JS and is closed until the reader opens
  * it; the summary is a 24 px target in the link colour, with a chevron
  * that turns when open. With `openWhen` (a media query) and JS, it starts
  * open where the query matches (the bards' filters column at xl).

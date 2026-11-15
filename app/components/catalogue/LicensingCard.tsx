@@ -56,22 +56,18 @@ function Status({
 /**
  * The licensing card (plan §4.5, §4.6), the page's "Licensing" section:
  * whether the licensing is known; the notes; the sources (the links with the
- * `licensing_source` role; for a restricted piece they are inside its
- * links' disclosure, so the card says where).
+ * `licensing_source` role).
  */
 export function LicensingCard({
   subject,
   status,
   notes,
   sources,
-  sourcesHidden = false,
 }: {
   readonly subject: "piece" | "person";
   readonly status: LicensingStatus;
   readonly notes: MarkdownTree | null;
   readonly sources: readonly AnyLink[];
-  /** The sources are listed under the restricted piece's links instead. */
-  readonly sourcesHidden?: boolean;
 }) {
   return (
     <div className="not-prose my-8 flow-root">
@@ -83,9 +79,7 @@ export function LicensingCard({
               <UserMarkdown tree={notes} />
             </div>
           ) : null}
-          {sources.length > 0 ? (
-            <Sources sources={sources} hidden={sourcesHidden} />
-          ) : null}
+          {sources.length > 0 ? <Sources sources={sources} /> : null}
         </div>
       </Card>
     </div>
@@ -94,27 +88,19 @@ export function LicensingCard({
 
 function Sources({
   sources,
-  hidden,
 }: {
   readonly sources: readonly AnyLink[];
-  readonly hidden: boolean;
 }): ReactNode {
   return (
     <div>
       <h3 className="font-sans text-label-caps uppercase text-fg-subtle">
         Sources
       </h3>
-      {hidden ? (
-        <p className="mt-1 text-body-sm text-fg-muted">
-          Sources are listed under Where it has been recorded.
-        </p>
-      ) : (
-        <ul role="list">
-          {sources.map(source => (
-            <LinkRow key={source.url} link={source} />
-          ))}
-        </ul>
-      )}
+      <ul role="list">
+        {sources.map(source => (
+          <LinkRow key={source.url} link={source} />
+        ))}
+      </ul>
     </div>
   );
 }

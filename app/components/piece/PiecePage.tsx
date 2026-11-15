@@ -18,12 +18,13 @@ import type { Piece } from "~/schemas/catalogue";
 import type { MarkdownTree } from "~/schemas/markdown";
 import { Performances, performancesOf } from "./Performances";
 import { PieceInfobox } from "./PieceInfobox";
-import { RestrictedLinks, WhereToFind } from "./WhereToFind";
+import { WhereToFind } from "./WhereToFind";
 
 /**
  * What the piece layout's loader gives its views (through the outlet): the
- * piece, and its Markdown fields as the sanitised trees the server made of
- * them (null when empty).
+ * piece (a restricted one with only its licensing sources, as
+ * `withoutRestrictedPieceLinks` leaves it), and its Markdown fields as the
+ * sanitised trees the server made of them (null when empty).
  */
 export type PieceView = {
   readonly piece: Piece;
@@ -38,9 +39,9 @@ export type PieceView = {
 
 /**
  * The page's sections, in order (plan §4.5), each only when it has
- * something but the links' and the licensing card. A restricted piece's
- * links (its performances and licensing sources included) are one closed
- * disclosure under "Where it has been recorded" (§4.0).
+ * something but the links' and the licensing card. A restricted piece
+ * shows none of its links or performances, only a sentence saying why, and
+ * its licensing sources in the licensing card (§4.0).
  */
 function sectionsOf({ piece, markdown }: PieceView): PageSectionEntry[] {
   const prose = (id: string, label: string, tree: MarkdownTree | null) =>
@@ -50,9 +51,12 @@ function sectionsOf({ piece, markdown }: PieceView): PageSectionEntry[] {
     ...prose("notes", "Notes", markdown.notes),
     restricted
       ? pageSection(
-          "where-it-has-been-recorded",
-          "Where it has been recorded",
-          <RestrictedLinks piece={piece} />
+          "links",
+          "Links",
+          <p>
+            The creator does not allow this work to be shared, so its links are
+            not shown.
+          </p>
         )
       : pageSection(
           "where-to-find-it",
@@ -76,14 +80,12 @@ function sectionsOf({ piece, markdown }: PieceView): PageSectionEntry[] {
           subject="piece"
           status={piece.licensing_status}
           notes={markdown.licensingNotes}
-          // A source the notes already quote is listed under "Where to find
-          // it" only.
+          // A source the licensing notes already quote isn't listed again.
           sources={piece.links.filter(
             link =>
               link.roles.includes("licensing_source") &&
               !piece.licensing_notes_md?.includes(link.url)
           )}
-          sourcesHidden={restricted}
         />
       ),
     },

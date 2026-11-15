@@ -1,8 +1,7 @@
-import { Disclosure } from "~/components/catalogue/Disclosure";
 import { LinkGroups } from "~/components/links/LinkGroups";
 import { EmptyState } from "~/components/ui/EmptyState";
 import type { Piece } from "~/schemas/catalogue";
-import { Performances, performancesOf } from "./Performances";
+import { performancesOf } from "./Performances";
 
 /**
  * Where a piece can be found (plan §4.5): its links grouped by role, but for
@@ -32,29 +31,5 @@ export function WhereToFind({ piece }: { readonly piece: Piece }) {
     </EmptyState>
   ) : (
     <p>No links yet.</p>
-  );
-}
-
-/**
- * A restricted piece's links, its performances and its licensing sources
- * (plan §4.0), all inside one closed disclosure whose body first says why:
- * no archived copies, and no prompt to add or record anything.
- */
-export function RestrictedLinks({ piece }: { readonly piece: Piece }) {
-  if (piece.links.length === 0) return <p>No links yet.</p>;
-  return (
-    <Disclosure summary="Show links (the creator does not allow this work to be shared)">
-      <p>
-        The creator does not allow this work to be recorded, archived, or
-        shared. Its links are listed here without archived copies.
-      </p>
-      <LinkGroups links={piece.links} archive={false} />
-      {performancesOf(piece.links).length > 0 ? (
-        <>
-          <h3>Recorded performances</h3>
-          <Performances links={piece.links} />
-        </>
-      ) : null}
-    </Disclosure>
   );
 }

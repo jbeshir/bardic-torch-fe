@@ -165,7 +165,8 @@ const HAND_LINKS: readonly RawLink[] = [
     }
   ),
 
-  // The restricted piece: every link points at the restricted host.
+  // The restricted piece: every link points at the restricted host but its
+  // licensing source, the creator's statement.
   link(
     piece("the-dragons-hoard"),
     `https://${RESTRICTED_HOST}/hoard/recording`,
@@ -206,7 +207,11 @@ const HAND_LINKS: readonly RawLink[] = [
     place_type: "book",
     liveness: "ok",
     last_checked_at: CHECKED,
-    roles: ["text", "licensing_source"],
+    roles: ["text"],
+  }),
+  link(piece("the-dragons-hoard"), "https://wren-vale.example/sharing", {
+    title: "Wren of the Vale on sharing their work",
+    roles: ["licensing_source"],
   }),
   link(piece("the-silent-reel"), `https://${RESTRICTED_HOST}/reel/notation`, {
     title: "Notation",

@@ -122,10 +122,12 @@ Each documentable historical piece should also link its **source** (as a text so
 On Bardic Torch, a piece’s genre is its kind. Choose **one**:
 
 - **Song** should be used for all musical pieces that have lyrics that can be sung.
-- **Instrumental** should be used for all musical pieces that have sheet music available for instrumentalists. A song that can also be performed by instrumentalists is a Song whose notes say it is also played as an instrumental.
+- **Instrumental** should be used for all musical pieces that have sheet music available for instrumentalists. A musical piece can be tagged as both Song and Instrumental if it can be performed by both singers and instrumentalists: choose **Song**, and add the **Instrumental** tag under [Other](#other-categories).
 - **Story** should be used for all narrative spoken pieces, regardless of format or tradition or length.
 - **Poem** should be used for all poems that are **not** set to music. Please do not tag songs as poems, even if the lyrics rhyme.
 - **Dance & music** should be used for dance performances.
+
+Comedy (fooling and foolery, standup comedy, jester acts, clowning or similar work) is not a genre on Bardic Torch: comedic pieces use the **Comedic** [mood](#mood).
 
 Additional genres may be added later for work that truly cannot be categorised under the existing scheme, but please keep the number of tags limited.
 
@@ -188,6 +190,7 @@ Use **only** the categories from the list above as a piece’s main source categ
 
 Optional tags for special cases:
 
+- **Instrumental** – Use for pieces of another genre, such as songs, that also have sheet music available for instrumentalists (see [Genre](#genre)).
 - **True Events** – Use for pieces that describe events that really happened (or are claimed to have really happened) within bardic or associated communities (eg. the SCA, re-enactment groups, LARP groups). Do not use for historical events!
 - **Long Pieces** – Use for pieces that exceed the limit of what can normally be performed at a bardic circle – 5+ minutes for songs, 10+ minutes for stories or epic poetry.
 - **Short Pieces** – use for pieces that are unusually short (eg. one-minute stories, one-verse songs or one-stanza poems).

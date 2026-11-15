@@ -208,8 +208,8 @@ export interface paths {
      * @description Lists the public terms of one facet, or of every facet, in tree order: by facet in the order of the
      *     `Facet` enum, each parent before its children, and siblings by position, then display name. A term
      *     that is unapproved, or under an unapproved ancestor, is not listed, nor is its subtree. Each term's counts
-     *     are of the distinct public pieces, and public persons with a page, that it or any public descendant
-     *     classifies. Credentials are ignored.
+     *     are of the distinct public pieces, and public persons, that are not stubs that it or any public
+     *     descendant classifies. Credentials are ignored.
      */
     get: operations["listTerms"];
     put?: never;
@@ -230,9 +230,10 @@ export interface paths {
     /**
      * Get a term
      * @description Returns a public term with its ancestors, public children and related affiliation, and one page
-     *     of its members: the public pieces it or any public descendant classifies, or for an `affiliation` term,
-     *     the public persons with a page affiliated with it or any public descendant. The other member list is
-     *     empty. Members are ordered by sort title or sort name; `piece_count` and `person_count` are their totals.
+     *     of its members: the public pieces that are not stubs it or any public descendant classifies, or for an
+     *     `affiliation` term, the public persons that are not stubs affiliated with it or any public descendant.
+     *     The other member list is empty. Members are ordered by sort title or sort name; `piece_count` and
+     *     `person_count` are their totals.
      *     A term that is unapproved, or under an unapproved ancestor, is not found, exactly like an unknown one.
      *     Credentials are ignored.
      */
@@ -1881,13 +1882,14 @@ export interface components {
       parent_slug: string | null;
       /**
        * Format: int64
-       * @description How many distinct public pieces the term or any public descendant classifies.
+       * @description How many distinct public pieces that are not stubs the term or any public descendant classifies.
        * @example 4
        */
       piece_count: number;
       /**
        * Format: int64
-       * @description How many distinct public persons with a page are affiliated with the term or any public descendant.
+       * @description How many distinct public persons that are not stubs (persons who prefer not to have a page are stubs)
+       *     are affiliated with the term or any public descendant.
        * @example 0
        */
       person_count: number;
@@ -1948,13 +1950,13 @@ export interface components {
       piece_count: components["schemas"]["TermListItem"]["piece_count"];
       person_count: components["schemas"]["TermListItem"]["person_count"];
       /**
-       * @description One page of the public pieces the term or any public descendant classifies, by sort title. Empty for
-       *     an `affiliation` term.
+       * @description One page of the public pieces that are not stubs the term or any public descendant classifies, by sort
+       *     title. Empty for an `affiliation` term.
        */
       pieces: components["schemas"]["PieceSummary"][];
       /**
-       * @description One page of the public persons with a page affiliated with the term or any public descendant, by sort
-       *     name. Empty unless the term is an `affiliation` term.
+       * @description One page of the public persons that are not stubs affiliated with the term or any public descendant, by
+       *     sort name. Empty unless the term is an `affiliation` term.
        */
       persons: components["schemas"]["PersonSummary"][];
       updated_at: components["schemas"]["Piece"]["updated_at"];

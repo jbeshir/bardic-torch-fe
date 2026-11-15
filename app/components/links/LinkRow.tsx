@@ -23,15 +23,8 @@ export function linkName(link: Pick<AnyLink, "title" | "url">): string {
  * checked; the collection it is in, as an internal link with its locator;
  * the description; what the link checker found (`Liveness`); and a link
  * to report it through the contact form.
- * `archive: false` offers no archived copy (a restricted piece).
  */
-export function LinkRow({
-  link,
-  archive = true,
-}: {
-  readonly link: AnyLink;
-  readonly archive?: boolean;
-}) {
+export function LinkRow({ link }: { readonly link: AnyLink }) {
   const name = linkName(link);
   const caption = [
     link.platform,
@@ -64,7 +57,7 @@ export function LinkRow({
       {link.description ? (
         <p className="text-body-sm text-fg-muted">{link.description}</p>
       ) : null}
-      <Liveness link={link} archive={archive} />
+      <Liveness link={link} />
       <span className="text-caption">
         <Link to={reportLinkHref(link.url)} appearance="muted" compact>
           Report this link<span className="sr-only">: {name}</span>

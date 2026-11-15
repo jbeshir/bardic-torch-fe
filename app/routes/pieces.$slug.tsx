@@ -19,6 +19,7 @@ import { pageMeta } from "~/catalogue/seo";
 import { PIECE_KIND_LABELS } from "~/constants/vocabulary";
 import { useErrorReference } from "~/hooks/useErrorReference";
 import { isSlug } from "~/schemas/address";
+import { withoutRestrictedPieceLinks } from "~/catalogue/restricted";
 import { getPiece } from "~/server/catalogue.server";
 import { hasPendingRevision } from "~/server/editing.server";
 import { renderMarkdown } from "~/server/markdown.server";
@@ -48,7 +49,7 @@ export async function loader(args: LoaderFunctionArgs) {
     hasPendingRevision(args, "piece", slug),
   ]);
   if (!result.ok) throwPageFailure(result.failure);
-  const piece = result.data;
+  const piece = withoutRestrictedPieceLinks(result.data);
   // The Markdown is parsed here, on the server: the browser gets the trees.
   const view: PieceView = {
     piece,

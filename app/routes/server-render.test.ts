@@ -231,6 +231,12 @@ describe("server-rendered routes", () => {
     expect(/<h1[^>]*>(.*?)<\/h1>/s.exec(html)?.[1]).toBe(h1);
   });
 
+  it("sends a restricted piece's licensing source but none of its other links", async () => {
+    const html = await (await get("/pieces/the-dragons-hoard")).text();
+    expect(html).toContain("https://wren-vale.example/sharing");
+    expect(html).not.toContain("private-recordings.example");
+  });
+
   it("shows a rejected contribution's note to its author, and no actions", async () => {
     const cookie = await sessionCookie(
       sessionTokens({ accessToken: "fixture:contributor" })

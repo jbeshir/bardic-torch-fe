@@ -187,17 +187,18 @@ test("read a piece: infobox, links, a restricted piece, a stub", async ({
 
   await page.goto("/pieces/the-dragons-hoard");
   await waitForHydration(page);
-  const text = "Show links (the creator does not allow this work to be shared)";
-  const details = main.locator("details", { hasText: text });
   await expect(
-    main.locator('a[href*="private-recordings.example"]').first()
-  ).toBeHidden();
-  await details.getByText(text).click();
-  await expect(details).toHaveAttribute("open", "");
+    main.getByText(
+      "The creator does not allow this work to be shared, so its links are not shown."
+    )
+  ).toBeVisible();
   await expect(
-    details
-      .getByRole("link", { name: "The text of the poem (external link)" })
-      .first()
+    main.locator('a[href*="private-recordings.example"]')
+  ).toHaveCount(0);
+  await expect(
+    main.getByRole("link", {
+      name: "Wren of the Vale on sharing their work (external link)",
+    })
   ).toBeVisible();
 
   await page.goto("/pieces/the-unfinished-lay");

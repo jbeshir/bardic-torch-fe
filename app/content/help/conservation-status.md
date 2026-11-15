@@ -57,7 +57,7 @@ Do you know where information about these pieces can be found? Please add it to 
 
 A work is Restricted if the creator does not allow the work to be recorded, archived, or shared. These works should not be categorised as [Endangered](#endangered) or [Critically Endangered](#critically-endangered), because those categories exist to help flag works which need more effort to preserve or find them, and these works should not be preserved or found.
 
-On Bardic Torch, a Restricted piece’s page does not ask anyone to find or add copies of it, and does not offer archived copies of its links.
+On Bardic Torch, a Restricted piece’s page does not show its links or recordings, only the sources for its licensing, and does not ask anyone to find or add copies of it. Other pages name it without linking to it.
 
 ### Not yet assessed
 
