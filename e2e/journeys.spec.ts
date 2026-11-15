@@ -46,7 +46,7 @@ test("home and search: landmarks, skip link, header search, See all", async ({
   await box.press("Enter");
   await expect(page).toHaveURL(/\/search\?q=drill$/);
   await main.getByRole("link", { name: "See all 205 pieces" }).click();
-  await expect(page).toHaveURL(/\/pieces\?q=drill$/);
+  await expect(page).toHaveURL(/\/pieces\?q=drill&stub=all$/);
   await expect(
     main.getByRole("heading", { level: 2, name: "Results for ‘drill’" })
   ).toBeVisible();
