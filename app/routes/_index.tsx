@@ -177,9 +177,12 @@ export default function Index() {
           <Card title="Every version, everywhere">
             <p>
               We link to each version of the words and each performance,
-              wherever it lives online or in print. Some works exist in only one
-              or two places. When you find an endangered piece, add a link or
-              host a copy, and help pass the torch.
+              wherever it lives online or in print. Many bardic works have been
+              lost to history because the only version available was on a
+              website that went down, or in a physical book that has been lost.
+              We hope that when you find an Endangered or Critically Endangered
+              work, you will be encouraged to find it and add it to one of the
+              other collections!
             </p>
             <p className="mt-3">
               <Link to={helpHref("conservation-status")}>

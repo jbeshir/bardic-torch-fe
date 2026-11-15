@@ -29,8 +29,8 @@ export function RevisionDiff({
       ) : null}
       {changes.linksAsText ? (
         <p className="mt-1 text-body-sm text-fg-muted">
-          The creator asks that this piece isn’t shared further, so its links
-          are shown as text only. {LINK_NOT_SHOWN}.
+          The creator does not allow this work to be recorded, archived, or
+          shared, so its links are shown as text only. {LINK_NOT_SHOWN}.
         </p>
       ) : null}
       {changes.rows.length === 0 ? (

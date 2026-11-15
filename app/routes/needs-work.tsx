@@ -76,9 +76,9 @@ export default function NeedsWorkRoute() {
     <>
       <h1 className="text-h1 text-fg">Needs work</h1>
       <p className="mt-2 max-w-prose text-body text-fg">
-        Pages a contributor could improve: stubs to fill in, pieces whose
-        conservation status nobody has assessed, licensing nobody has found yet,
-        and links that no longer work. Pick one and edit it.{" "}
+        Pages a contributor could improve: stubs to fill in, pieces in no
+        conservation category yet, licensing nobody has found yet, and links
+        that no longer work. Pick one and edit it.{" "}
         <Link to={CONTRIBUTE_HREF} appearance="prose">
           How to contribute
         </Link>

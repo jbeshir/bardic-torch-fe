@@ -57,9 +57,7 @@ function Status({
  * The licensing card (plan §4.5, §4.6), the page's "Licensing" section:
  * whether the licensing is known; the notes; the sources (the links with the
  * `licensing_source` role; for a restricted piece they are inside its
- * links' disclosure, so the card says where); and a note on etiquette,
- * linking to the bard preference checklist. The full etiquette card is
- * FE4's.
+ * links' disclosure, so the card says where).
  */
 export function LicensingCard({
   subject,
@@ -88,14 +86,6 @@ export function LicensingCard({
           {sources.length > 0 ? (
             <Sources sources={sources} hidden={sourcesHidden} />
           ) : null}
-          <p className="text-caption text-fg-subtle">
-            Ask the creator before recording or adapting a piece unless its
-            licence says you may. See the{" "}
-            <Link to="/help/bard-preference-checklist" appearance="inherit">
-              bard preference checklist
-            </Link>
-            .
-          </p>
         </div>
       </Card>
     </div>

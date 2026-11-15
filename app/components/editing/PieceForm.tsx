@@ -83,7 +83,7 @@ function PieceForm({
         <SelectField
           name="conservation_status"
           label="Conservation status"
-          help="For Restricted, put the creator’s statement, with a link to it, in the notes."
+          help="Low Risk: in at least three places. Endangered: in less than three known places. For Restricted, put the creator’s statement, with a link to it, in the notes."
           value={document.conservation_status}
           options={labelOptions(CONSERVATION_LABELS)}
         />

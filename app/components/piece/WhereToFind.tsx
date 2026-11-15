@@ -43,10 +43,10 @@ export function WhereToFind({ piece }: { readonly piece: Piece }) {
 export function RestrictedLinks({ piece }: { readonly piece: Piece }) {
   if (piece.links.length === 0) return <p>No links yet.</p>;
   return (
-    <Disclosure summary="Show links (the creator asks that this isn’t shared further)">
+    <Disclosure summary="Show links (the creator does not allow this work to be shared)">
       <p>
-        The creator has asked that this work isn’t recorded or shared. These
-        links are listed for reference only; please don’t repost them.
+        The creator does not allow this work to be recorded, archived, or
+        shared. Its links are listed here without archived copies.
       </p>
       <LinkGroups links={piece.links} archive={false} />
       {performancesOf(piece.links).length > 0 ? (

@@ -72,19 +72,26 @@ export function PageBanner(props: PageBannerProps) {
           tone="info"
           banner
           icon={IconLock}
-          title="The creator has asked that this work isn’t recorded or shared."
-        >
-          Please respect their wishes.
-        </Alert>
+          title="The creator does not allow this work to be recorded, archived, or shared."
+          actions={
+            <Link
+              to="/help/conservation-status#restricted"
+              appearance="inherit"
+            >
+              What Restricted means
+            </Link>
+          }
+        />
       );
     case "no-page":
       return (
         <Alert
           tone="info"
           banner
-          title={`${props.name} has asked not to have a page here.`}
+          title={`${props.name} prefers not to have a page.`}
         >
-          This stub keeps their request on record so the page isn’t recreated.
+          Their statement is cited in the notes below, so that everyone knows
+          how to respect their wishes.
         </Alert>
       );
   }

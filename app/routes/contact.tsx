@@ -181,9 +181,9 @@ export default function ContactRoute() {
       <h1 className="text-h1 text-fg">Contact us</h1>
       <p className="text-body text-fg">
         Write to the moderators to ask for a link or a page about you to be
-        taken down, to opt out of the site, to send a correction, or to report a
-        link. You don’t need an account. We use your email address only to
-        reply. See the{" "}
+        taken down, to send us the link to your public statement that you prefer
+        not to have a page, to send a correction, or to report a link. You don’t
+        need an account. We use your email address only to reply. See the{" "}
         <Link to={helpHref("faq-for-bards")} appearance="prose">
           FAQ for bards
         </Link>{" "}

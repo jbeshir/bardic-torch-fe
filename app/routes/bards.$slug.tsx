@@ -88,7 +88,7 @@ export const meta: MetaFunction = args => {
   return pageMeta(args, {
     title: person.name,
     description: noPage
-      ? `${person.name} has asked not to have a page in the Bardic Torch catalogue.`
+      ? `${person.name} prefers not to have a page on Bardic Torch.`
       : `${person.name}: ${personSubtitle(person).toLowerCase()} in the Bardic Torch catalogue, with their works, performances and links.`,
     path: `/bards/${person.slug}`,
     type: "profile",
