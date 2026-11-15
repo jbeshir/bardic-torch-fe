@@ -230,9 +230,8 @@ describe("/bards page", () => {
     await waitFor(() => {
       expect(router.state.location.search).toBe("?kind=group&stub=all");
     });
-    expect(screen.getByRole("link", { name: "Hide stubs" })).toHaveAttribute(
-      "href",
-      "/bards?kind=group"
-    );
+    expect(
+      await screen.findByRole("link", { name: "Hide stubs" })
+    ).toHaveAttribute("href", "/bards?kind=group");
   });
 });

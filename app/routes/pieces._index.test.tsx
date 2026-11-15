@@ -509,9 +509,8 @@ describe("/pieces: stubs", () => {
     expect(
       await screen.findByRole("link", { name: /^The Unfinished Lay/ })
     ).toBeVisible();
-    expect(screen.getByRole("link", { name: "Hide stubs" })).toHaveAttribute(
-      "href",
-      "/pieces?q=unfinished"
-    );
+    expect(
+      await screen.findByRole("link", { name: "Hide stubs" })
+    ).toHaveAttribute("href", "/pieces?q=unfinished");
   });
 });
