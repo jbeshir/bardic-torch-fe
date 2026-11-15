@@ -24,7 +24,9 @@ describe.each(ALL)("help page %s", (slug, content) => {
   it("has front matter and one h1, titled by it", async () => {
     if (!content) throw new Error(`No help page "${slug}"`);
     const { title, sourcePages } = content.frontmatter;
-    expect(sourcePages.length === 0).toBe(slug === "index");
+    expect(sourcePages.length === 0).toBe(
+      slug === "index" || slug === "privacy"
+    );
     const main = await renderHelp(content, slug);
     expect(within(main).getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(within(main).getByRole("heading", { level: 1 })).toHaveTextContent(

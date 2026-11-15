@@ -60,6 +60,7 @@ export const HELP_PAGES = [
   { slug: "bard-preference-checklist", label: "Bard preference checklist" },
   { slug: "conservation-status", label: "Conservation status" },
   { slug: "licence", label: "Licence & attribution" },
+  { slug: "privacy", label: "Privacy" },
 ] as const;
 
 export type HelpSlug = (typeof HELP_PAGES)[number]["slug"];

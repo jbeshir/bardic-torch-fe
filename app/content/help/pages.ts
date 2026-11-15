@@ -7,6 +7,7 @@ import * as faq from "./faq-for-bards.md";
 import type { HelpFrontmatter } from "./frontmatter";
 import * as index from "./index.md";
 import * as licence from "./licence.md";
+import * as privacy from "./privacy.md";
 
 /** A compiled help page and what its front matter says about it. */
 export type HelpContent = {
@@ -41,6 +42,7 @@ const MODULES: Readonly<Record<HelpSlug, MarkdownModule>> = {
   "bard-preference-checklist": checklist,
   "conservation-status": conservation,
   licence,
+  privacy,
 };
 
 /** The help pages, at /help/{slug}. */

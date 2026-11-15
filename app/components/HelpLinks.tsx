@@ -8,7 +8,7 @@ import {
 
 /**
  * Where to get help, the same on every page (WCAG 3.2.6):
- * Contact · Help · Licence & attribution, then the original wiki. Always
+ * Contact · Help · Licence & attribution · Privacy, then the original wiki. Always
  * this order and these targets, in the footer of every template and on the
  * standalone error page. A `separated-list` (base.css): when it wraps, no
  * line starts with a "·".
@@ -17,6 +17,7 @@ const HELP_LINKS = [
   { label: "Contact", href: CONTACT_FORM_URL },
   { label: "Help", href: HELP_HREF },
   { label: "Licence & attribution", href: helpHref("licence") },
+  { label: "Privacy", href: helpHref("privacy") },
   { label: "Original wiki", href: WIKI_HOME_URL },
 ] as const;
 
