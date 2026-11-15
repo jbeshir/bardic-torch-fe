@@ -164,8 +164,8 @@ export default function CategoryMembersRoute() {
             <Link
               to={
                 affiliation
-                  ? `/bards?affiliation=${term.slug}`
-                  : `/pieces?term=${term.slug}`
+                  ? `/bards?affiliation=${term.slug}&stub=all`
+                  : `/pieces?term=${term.slug}&stub=all`
               }
               compact
             >

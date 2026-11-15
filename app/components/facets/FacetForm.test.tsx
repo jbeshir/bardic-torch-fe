@@ -118,10 +118,11 @@ describe("FacetForm", () => {
     expect(router.state.location.search).toBe("?term=eerie&term=warlike");
   });
 
-  it("clears the page state with All pages", async () => {
+  it("goes back to the default page state, stubs left out, with Hide stubs", async () => {
     const user = userEvent.setup();
-    const router = await renderOnPage("?stub=true", { autoSubmit: true });
-    await user.click(screen.getByRole("radio", { name: "All pages" }));
+    const router = await renderOnPage("?stub=all", { autoSubmit: true });
+    expect(screen.getByRole("radio", { name: "All pages" })).toBeChecked();
+    await user.click(screen.getByRole("radio", { name: "Hide stubs" }));
     expect(router.state.location.search).toBe("");
   });
 

@@ -161,7 +161,10 @@ export const meta: MetaFunction = args => {
     // Searches and filters make endless combinations: only the A–Z pages
     // are indexed, each naming itself as canonical.
     robots:
-      isFiltered(loaded.state) || loaded.state.sort || loaded.staleAffiliation
+      isFiltered(loaded.state) ||
+      loaded.state.stub !== false ||
+      loaded.state.sort ||
+      loaded.staleAffiliation
         ? "noindex, follow"
         : undefined,
   });
@@ -329,6 +332,18 @@ export default function BardsRoute() {
                   ? "No bards match these filters"
                   : "No results"}
             </ResultsStatus>
+            <p className="mt-1 text-body-sm">
+              <Link
+                to={personQuery.href(state, {
+                  stub: state.stub === false ? "all" : false,
+                })}
+                compact
+              >
+                {state.stub === false
+                  ? "Show all, including stubs"
+                  : "Hide stubs"}
+              </Link>
+            </p>
             {list.data.length > 0 ? (
               <ul role="list" className="mt-2">
                 {list.data.map(person => (

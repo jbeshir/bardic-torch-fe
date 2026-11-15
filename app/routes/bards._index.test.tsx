@@ -220,4 +220,19 @@ describe("/bards page", () => {
       ).toHaveFocus();
     });
   });
+
+  it("links from the list without stubs to every page, and back", async () => {
+    const user = userEvent.setup();
+    const router = await renderBards("?kind=group", byUrl(listOf(PEOPLE)));
+    await user.click(
+      screen.getByRole("link", { name: "Show all, including stubs" })
+    );
+    await waitFor(() => {
+      expect(router.state.location.search).toBe("?kind=group&stub=all");
+    });
+    expect(screen.getByRole("link", { name: "Hide stubs" })).toHaveAttribute(
+      "href",
+      "/bards?kind=group"
+    );
+  });
 });

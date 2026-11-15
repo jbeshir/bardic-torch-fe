@@ -5,7 +5,7 @@ import {
 } from "~/constants/vocabulary";
 import type { PieceDocument } from "~/editing/documents";
 import type { Option } from "~/editing/editor-data";
-import { labelOptions, Rows, SelectField } from "./fields";
+import { labelOptions, Rows, SelectField, TextField } from "./fields";
 
 const ATTRIBUTIONS = [
   { value: "named", label: "Named: the person above" },
@@ -41,6 +41,13 @@ export function CreditEditor({
             help="Leave it as None for a traditional, unknown or anonymous credit."
             value={credit.person_slug}
             options={persons}
+            optional
+          />
+          <TextField
+            name={`${name}.new_person_name`}
+            label="Name, if not in the list"
+            help="Leave the person as None. When a moderator approves the edit, the name is linked to the bard of that name, or added as a stub page."
+            value={credit.new_person_name}
             optional
           />
           <SelectField

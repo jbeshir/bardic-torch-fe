@@ -67,8 +67,30 @@ const pending = (
 const REVEL = canned(1013);
 
 /**
+ * A piece revision's snapshot with one more credit, to a person not yet on
+ * the site, as a pending edit that types their name has it.
+ */
+function creditingNewPerson(
+  revision: Schemas["Revision"]
+): Schemas["Revision"] {
+  if (revision.entity_type !== "piece") return revision;
+  const credit: Schemas["PieceCredit"] = {
+    role: "lyrics",
+    attribution: "named",
+    certainty: "certain",
+    person: null,
+    new_person_name: "Sorrel Wayfarer",
+  };
+  const { snapshot } = revision;
+  return {
+    ...revision,
+    snapshot: { ...snapshot, credits: [...snapshot.credits, credit] },
+  };
+}
+
+/**
  * Two pending edits by the apprentice: the kettle's, made on its first
- * revision (1003's change, so it is stale), and the revel's, on its
+ * revision (1003's change and a credit to a new person, so it is stale), and the revel's, on its
  * current revision. And the contributor's edit of Wren (1007's change),
  * rejected with a note.
  */
@@ -79,7 +101,7 @@ export const SEEDED_REVISIONS: readonly (readonly [string, RevisionView])[] = [
       1901,
       "Credited the tune and added links",
       "2026-10-20T09:00:00Z",
-      canned(1003)
+      creditingNewPerson(canned(1003))
     ),
   ],
   [

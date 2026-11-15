@@ -11,7 +11,7 @@ import { rawPerson } from "./persons";
 type Schemas = components["schemas"];
 
 type RawCredit = Readonly<
-  Omit<Schemas["PieceCredit"], "person"> & {
+  Omit<Schemas["PieceCredit"], "person" | "new_person_name"> & {
     /** A person slug, or null for traditional, unknown and so on. */
     person: string | null;
   }
@@ -397,7 +397,8 @@ const HAND_PIECES: readonly RawPiece[] = [
     "Lament for the Lost Shire",
     "song",
     "low_risk",
-    ["sca-pieces", "tragic", "sentimental"]
+    ["sca-pieces", "tragic", "sentimental"],
+    { credits: [credit("wren-of-the-vale", "lyrics_and_tune")] }
   ),
   piece(
     "maelgwns-harp",

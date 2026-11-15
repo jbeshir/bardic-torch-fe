@@ -4,6 +4,7 @@ import {
   ATTRIBUTION_LABELS,
   CERTAINTY_QUALIFIERS,
   CREDIT_ROLE_LABELS,
+  newPersonLabel,
 } from "~/constants/vocabulary";
 import type { Certainty, Piece } from "~/schemas/catalogue";
 
@@ -36,9 +37,15 @@ export function CertaintyQualifier({
   );
 }
 
-/** Who a credit is to: the person, or "Traditional" and the like. */
+/**
+ * Who a credit is to: the person, a new person's typed name (plain text:
+ * they have no page yet), or "Traditional" and the like.
+ */
 function Credited({ credit }: { readonly credit: Credit }) {
   if (credit.person) return <PersonName person={credit.person} />;
+  if (credit.new_person_name !== null) {
+    return newPersonLabel(credit.new_person_name);
+  }
   // A credit without a person is an unnamed attribution.
   return credit.attribution === "named"
     ? null
@@ -58,7 +65,10 @@ export function creditRows(credits: Piece["credits"]) {
     // Two credits differ in their role or who they are to.
     id: [
       credit.role,
-      credit.person?.slug ?? credit.person?.name ?? credit.attribution,
+      credit.person?.slug ??
+        credit.person?.name ??
+        credit.new_person_name ??
+        credit.attribution,
     ].join(":"),
     label: CREDIT_ROLE_LABELS[credit.role],
     value: (

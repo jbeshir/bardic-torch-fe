@@ -1418,13 +1418,15 @@ export interface components {
      *             "name": "Wren of the Vale",
      *             "kind": "community_bard",
      *             "is_stub": false
-     *           }
+     *           },
+     *           "new_person_name": null
      *         },
      *         {
      *           "role": "tune",
      *           "attribution": "traditional",
      *           "certainty": "probable",
-     *           "person": null
+     *           "person": null,
+     *           "new_person_name": null
      *         }
      *       ],
      *       "links": [
@@ -1519,7 +1521,8 @@ export interface components {
       kind: components["schemas"]["PieceAliasKind"];
     };
     /**
-     * @description A credit of a piece. `person` is set exactly when `attribution` is `named`.
+     * @description A credit of a piece. A named credit has `person`, except in a revision view of a pending or rejected
+     *     revision whose credit names a person not yet on the site, which has `new_person_name` instead.
      * @example {
      *       "role": "lyrics",
      *       "attribution": "named",
@@ -1529,7 +1532,8 @@ export interface components {
      *         "name": "Wren of the Vale",
      *         "kind": "community_bard",
      *         "is_stub": false
-     *       }
+     *       },
+     *       "new_person_name": null
      *     }
      */
     PieceCredit: {
@@ -1538,6 +1542,11 @@ export interface components {
       certainty: components["schemas"]["Certainty"];
       /** @description The person credited, for a named credit. */
       person: components["schemas"]["PersonSummary"] | null;
+      /**
+       * @description The name of a person not yet on the site, as the revision gives it, until the revision is approved.
+       *     Always null outside revision views.
+       */
+      new_person_name: string | null;
     };
     /**
      * @description A visible link attached to a person, once with all its roles.
@@ -2222,11 +2231,11 @@ export interface components {
      */
     PersonAliasKind: "legal" | "sca";
     /**
-     * @description What a credit credits.
+     * @description What a credit credits. `lyrics_and_tune` is one person's words and tune together, and counts as both.
      * @example lyrics
      * @enum {string}
      */
-    CreditRole: "lyrics" | "tune" | "author";
+    CreditRole: "lyrics" | "tune" | "lyrics_and_tune" | "author";
     /**
      * @description Who a credit is attributed to. Only a `named` credit has a person.
      * @example named
@@ -2456,7 +2465,8 @@ export interface components {
      *             "role": "tune",
      *             "attribution": "traditional",
      *             "certainty": "probable",
-     *             "person": null
+     *             "person": null,
+     *             "new_person_name": null
      *           }
      *         ],
      *         "links": []
@@ -3498,6 +3508,8 @@ export interface components {
       term_slugs: components["schemas"]["EditorSlug"][];
       credits: {
         person_slug: components["schemas"]["EditorSlug"] | null;
+        /** @description The name of a person not yet on the site, for a named credit without `person_slug`. */
+        new_person_name: string | null;
         role: components["schemas"]["CreditRole"];
         attribution: components["schemas"]["Attribution"];
         certainty: components["schemas"]["Certainty"];

@@ -77,6 +77,7 @@ const DOCUMENTS: Readonly<
       credits: raw.credits.map(({ person, ...credit }) => ({
         ...credit,
         person_slug: person,
+        new_person_name: null,
       })),
       links: linksOf("piece", slug).map(editorLink),
     };

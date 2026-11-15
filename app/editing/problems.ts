@@ -49,10 +49,30 @@ function fieldName(path: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+/** A credit's typed name, whose `invalid` is a person given both ways. */
+const NEW_PERSON_NAME = /^credits\[\d+\]\.new_person_name$/;
+
 export function fieldProblem({ path, code }: Schemas["Problem"]): FieldProblem {
   return {
     fieldId: fieldId(path),
     field: fieldName(path),
-    message: PROBLEM_MESSAGES[code] ?? PROBLEM_MESSAGES.invalid,
+    message:
+      code === "invalid" && NEW_PERSON_NAME.test(path)
+        ? "Choose a person from the list or type a name, not both."
+        : (PROBLEM_MESSAGES[code] ?? PROBLEM_MESSAGES.invalid),
   };
 }
+
+/**
+ * The problems the form finds itself before it submits, as the API would
+ * report them (so they show with the same copy): a credit to a person from
+ * the list that also types a new person's name.
+ */
+export const documentProblems = (
+  document: Schemas["EditorDocument"]
+): Schemas["Problem"][] =>
+  ("credits" in document ? document.credits : []).flatMap((credit, index) =>
+    credit.person_slug !== null && credit.new_person_name !== null
+      ? [{ path: `credits[${index}].new_person_name`, code: "invalid" }]
+      : []
+  );

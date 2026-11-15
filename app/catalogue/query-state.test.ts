@@ -59,6 +59,13 @@ const TABLE: readonly (readonly [
     `?q=%20Kettle${"a".repeat(300)}%0A`,
     `?q=Kettle${"a".repeat(300)}`,
   ],
+  [
+    "an old stub=false is the default, stubs left out",
+    "pieces",
+    "?stub=false",
+    "",
+  ],
+  ["every page", "pieces", "?stub=all", "?stub=all"],
   ["an order the search makes moot", "pieces", "?sort=title", ""],
   [
     "bards: filters, affiliation and order",
@@ -66,6 +73,8 @@ const TABLE: readonly (readonly [
     "?q=heron&kind=group&role=singer&affiliation=northmarch&sort=name&page=2",
     "?q=heron&kind=group&role=singer&affiliation=northmarch&sort=name&page=2",
   ],
+  ["bards: every page", "bards", "?stub=all", "?stub=all"],
+  ["bards: no stubs-only list", "bards", "?stub=true", ""],
   ["categories: one section", "categories", "?facet=kind", "?facet=kind"],
   [
     "collections: kinds and letter",
@@ -120,5 +129,17 @@ describe("query state", () => {
       limit: 50,
       offset: 100,
     });
+  });
+
+  it("asks the API for no stubs by default, and for every page with stub=all", () => {
+    const pieces = (search: string) =>
+      pieceQuery.toApi(pieceQuery.parse(new URLSearchParams(search)).state);
+    const bards = (search: string) =>
+      personQuery.toApi(personQuery.parse(new URLSearchParams(search)).state);
+    expect(pieces("")).toMatchObject({ stub: false });
+    expect(pieces("?stub=true")).toMatchObject({ stub: true });
+    expect(pieces("?stub=all")).not.toHaveProperty("stub");
+    expect(bards("")).toMatchObject({ stub: false });
+    expect(bards("?stub=all")).not.toHaveProperty("stub");
   });
 });

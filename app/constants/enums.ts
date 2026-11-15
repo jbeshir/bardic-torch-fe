@@ -78,7 +78,12 @@ export const FACETS = [
 export const PERSON_KINDS = ["community_bard", "historical", "group"] as const;
 
 /** A credit's role in a piece. */
-export const CREDIT_ROLES = ["lyrics", "tune", "author"] as const;
+export const CREDIT_ROLES = [
+  "lyrics",
+  "tune",
+  "lyrics_and_tune",
+  "author",
+] as const;
 
 /** A person's role. */
 export const PERSON_ROLES = [

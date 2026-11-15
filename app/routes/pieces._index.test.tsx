@@ -187,7 +187,7 @@ function wideScreen() {
 describe("/pieces facets", () => {
   it("has a chip for every selected value, in the URL's order, each without it", async () => {
     await renderLive(
-      "?q=kettle&term=sea&term=warlike&kind=song&status=endangered&stub=false&letter=K"
+      "?q=kettle&term=sea&term=warlike&kind=song&status=endangered&stub=all&letter=K"
     );
     const chips = screen.getByRole("region", { name: "Selected filters" });
     expect(
@@ -197,31 +197,31 @@ describe("/pieces facets", () => {
     ).toEqual([
       [
         "Remove Search: ‘kettle’",
-        "/pieces?term=sea&term=warlike&kind=song&status=endangered&stub=false&letter=K",
+        "/pieces?term=sea&term=warlike&kind=song&status=endangered&stub=all&letter=K",
       ],
       [
         "Remove Topic: The sea",
-        "/pieces?q=kettle&term=warlike&kind=song&status=endangered&stub=false&letter=K",
+        "/pieces?q=kettle&term=warlike&kind=song&status=endangered&stub=all&letter=K",
       ],
       [
         "Remove Mood: Warlike",
-        "/pieces?q=kettle&term=sea&kind=song&status=endangered&stub=false&letter=K",
+        "/pieces?q=kettle&term=sea&kind=song&status=endangered&stub=all&letter=K",
       ],
       [
         "Remove Kind: Song",
-        "/pieces?q=kettle&term=sea&term=warlike&status=endangered&stub=false&letter=K",
+        "/pieces?q=kettle&term=sea&term=warlike&status=endangered&stub=all&letter=K",
       ],
       [
         "Remove Conservation: Endangered",
-        "/pieces?q=kettle&term=sea&term=warlike&kind=song&stub=false&letter=K",
+        "/pieces?q=kettle&term=sea&term=warlike&kind=song&stub=all&letter=K",
       ],
       [
-        "Remove Hiding stubs",
+        "Remove All pages",
         "/pieces?q=kettle&term=sea&term=warlike&kind=song&status=endangered&letter=K",
       ],
       [
         "Remove Letter: K",
-        "/pieces?q=kettle&term=sea&term=warlike&kind=song&status=endangered&stub=false",
+        "/pieces?q=kettle&term=sea&term=warlike&kind=song&status=endangered&stub=all",
       ],
       ["Clear all", "/pieces"],
     ]);
@@ -478,7 +478,7 @@ describe("/pieces: the facet form's own GET", () => {
     ["a letter", "?letter=T"],
     ["a search", "?q=kettle"],
     ["a category and a kind", "?term=eerie&kind=poem"],
-    ["every filter", "?q=song&term=warlike&kind=song&stub=false&letter=S"],
+    ["every filter", "?q=song&term=warlike&kind=song&stub=all&letter=S"],
   ])("is answered 200, after at most one 301, for %s", async (_why, search) => {
     await renderWithLoader(search);
     await userEvent.click(screen.getByRole("button", { name: /^Filters/ }));
@@ -490,5 +490,28 @@ describe("/pieces: the facet form's own GET", () => {
       result = await loaderAnswer(target.slice("/pieces".length));
     }
     expect(result, `GET /pieces${sent}`).not.toBeInstanceOf(Response);
+  });
+});
+
+describe("/pieces: stubs", () => {
+  it("leaves stubs out by default, and its one link shows every page and back", async () => {
+    const user = userEvent.setup();
+    const router = await renderWithLoader("?q=unfinished");
+    expect(
+      await screen.findByText("Nothing matches ‘unfinished’")
+    ).toBeVisible();
+    await user.click(
+      screen.getByRole("link", { name: "Show all, including stubs" })
+    );
+    await waitFor(() => {
+      expect(router.state.location.search).toBe("?q=unfinished&stub=all");
+    });
+    expect(
+      await screen.findByRole("link", { name: /^The Unfinished Lay/ })
+    ).toBeVisible();
+    expect(screen.getByRole("link", { name: "Hide stubs" })).toHaveAttribute(
+      "href",
+      "/pieces?q=unfinished"
+    );
   });
 });

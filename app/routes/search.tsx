@@ -243,7 +243,8 @@ export default function SearchRoute() {
                   </ul>
                   <SeeAll
                     to={pieceQuery.href(
-                      pieceQuery.parse(new URLSearchParams({ q })).state
+                      pieceQuery.parse(new URLSearchParams({ q })).state,
+                      { stub: "all" }
                     )}
                     total={pieces.data.total}
                     noun="piece"
@@ -266,7 +267,7 @@ export default function SearchRoute() {
                     ))}
                   </ul>
                   <SeeAll
-                    to={`/bards?${new URLSearchParams({ q })}`}
+                    to={`/bards?${new URLSearchParams({ q, stub: "all" })}`}
                     total={persons.data.total}
                     noun="bard"
                   />

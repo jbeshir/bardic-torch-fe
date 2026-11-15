@@ -20,7 +20,7 @@ import {
 } from "~/editing/editor-data";
 import { decodeForm } from "~/editing/form-codec";
 import { fromSnapshot } from "~/editing/from-snapshot";
-import { fieldProblem } from "~/editing/problems";
+import { documentProblems, fieldProblem } from "~/editing/problems";
 import { isEntityId, isSlug } from "~/schemas/address";
 import { getEditable, listMyRevisions, submitRevision } from "./api.server";
 import { getServerAuthContext } from "./auth.server";
@@ -40,8 +40,9 @@ import { renderMarkdown } from "./markdown.server";
  * The loader and action every edit and new route shares (plan "No client
  * JS"). The form is a document POST to its own route's action, which
  * checks same-origin, decodes the form (form-codec.ts) and either adds or
- * removes a row, previews, or submits the revision and answers with its
- * outcome: a 303 on success, otherwise the form again with what went wrong.
+ * removes a row, previews, or submits the revision (unless the form finds
+ * a problem itself, `documentProblems`) and answers with its outcome: a
+ * 303 on success, otherwise the form again with what went wrong.
  */
 
 type Document<T extends EntityType> = z.output<(typeof DOCUMENT_SCHEMAS)[T]>;
@@ -307,6 +308,10 @@ export async function editorAction<T extends EntityType, P>(
     return answer({ preview: preview(form.document, options) });
   }
   if (form.intent.kind !== "submit") return answer({});
+  const own = documentProblems(form.document);
+  if (own.length > 0) {
+    return answer({ problems: own.map(fieldProblem) }, { status: 422 });
+  }
 
   const result = await submitRevision(request, context, {
     entity_type: type,

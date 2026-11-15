@@ -186,7 +186,10 @@ function KindSection({ counts }: { readonly counts: PieceCounts }) {
         <li key={kind} className="break-inside-avoid pb-1">
           <Counted count={count}>
             <Link
-              to={pieceQuery.href(NO_PIECE_FILTERS, { kind: [kind] })}
+              to={pieceQuery.href(NO_PIECE_FILTERS, {
+                kind: [kind],
+                stub: "all",
+              })}
               compact
             >
               {PIECE_KIND_LABELS[kind]}
@@ -214,7 +217,10 @@ function ConservationSection({ counts }: { readonly counts: PieceCounts }) {
           <ConservationBadge status={status} size="sm" named />
           <Counted count={byStatus.get(status) ?? 0}>
             <Link
-              to={pieceQuery.href(NO_PIECE_FILTERS, { status: [status] })}
+              to={pieceQuery.href(NO_PIECE_FILTERS, {
+                status: [status],
+                stub: "all",
+              })}
               compact
             >
               {BROWSE_STATUS_LABELS[status]}

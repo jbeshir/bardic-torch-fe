@@ -120,6 +120,7 @@ export const FACET_LABELS: Readonly<Record<Facet, string>> = {
 export const CREDIT_ROLE_LABELS: Readonly<Record<CreditRole, string>> = {
   lyrics: "Words",
   tune: "Tune",
+  lyrics_and_tune: "Words and tune",
   author: "Author",
 };
 
@@ -135,6 +136,12 @@ export const ATTRIBUTION_LABELS: Readonly<
   anonymous: "Anonymous",
   various: "Various",
 };
+
+/**
+ * A credit to a person not yet on the site, by the name the edit typed
+ * (until a moderator approves it): "Sorrel Wayfarer (new person)".
+ */
+export const newPersonLabel = (name: string) => `${name} (new person)`;
 
 /** The word after a credit that isn't certain: "probably". */
 export const CERTAINTY_QUALIFIERS: Readonly<
@@ -252,6 +259,7 @@ export const PERSON_ROLE_LABELS: Readonly<Record<PersonRole, string>> = {
 export const WORK_ROLE_HEADINGS: Readonly<Record<CreditRole, string>> = {
   lyrics: "Words",
   tune: "Tunes",
+  lyrics_and_tune: "Words and tunes",
   author: "Writings",
 };
 

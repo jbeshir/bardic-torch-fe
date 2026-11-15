@@ -174,6 +174,43 @@ describe("the piece editor", () => {
     expect(html).toContain('name="credits.1.role"');
     expect(html).not.toContain('name="credits.2.role"');
   });
+
+  it("submits a typed name as a new person, but not with a person from the list too", async () => {
+    const submitted: Promise<unknown>[] = [];
+    fixtures.server.events.on("request:start", ({ request }) => {
+      if (new URL(request.url).pathname === "/v1/revisions") {
+        submitted.push(request.clone().json());
+      }
+    });
+    const kettle = {
+      schema_version: "1",
+      base_revision_id: "1014",
+      title: "The Copper Kettle",
+      summary: "Credited the words",
+      "credits.0.new_person_name": "Sorrel Wayfarer",
+      intent: "submit",
+    };
+
+    const named = await post("/pieces/the-copper-kettle/edit", kettle);
+    expect(named.status).toBe(303);
+    expect(await Promise.all(submitted)).toMatchObject([
+      {
+        document: {
+          credits: [{ person_slug: null, new_person_name: "Sorrel Wayfarer" }],
+        },
+      },
+    ]);
+
+    const both = await post("/pieces/the-copper-kettle/edit", {
+      ...kettle,
+      "credits.0.person_slug": "wren-of-the-vale",
+    });
+    expect(both.status).toBe(422);
+    expect(await both.text()).toMatch(
+      /id="credits\.0\.new_person_name-error"[^>]*>.*Choose a person from the list or type a name, not both\./s
+    );
+    expect(submitted).toHaveLength(1);
+  });
 });
 
 describe("the editor loader", () => {

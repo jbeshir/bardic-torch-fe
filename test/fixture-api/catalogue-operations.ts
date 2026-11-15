@@ -362,6 +362,7 @@ function servePiece(raw: RawPiece): Schemas["Piece"] {
     credits: raw.credits.map(credit => ({
       ...credit,
       person: credit.person === null ? null : personSummary(credit.person),
+      new_person_name: null,
     })),
     links: linksOf("piece", raw.slug).map(link => ({
       ...personLink(link),

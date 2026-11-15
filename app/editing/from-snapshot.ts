@@ -10,9 +10,11 @@ import type {
 /**
  * A public revision's snapshot as the editor's document (the inverse of
  * the API's snapshot views): references that are summaries become slugs,
- * collections ids. Each function gives the fields the snapshot has; the
- * caller lays them over the entity's editable document, so a person
- * snapshot without a profile leaves the profile fields as they are.
+ * collections ids, and a credit to a person not yet on the site keeps
+ * its typed `new_person_name`. Each function gives the fields the
+ * snapshot has; the caller lays them over the entity's editable
+ * document, so a person snapshot without a profile leaves the profile
+ * fields as they are.
  * A person with a null slug (prefers no page) can't be referenced, so is skipped.
  */
 

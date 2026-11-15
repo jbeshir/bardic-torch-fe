@@ -14,6 +14,7 @@ import {
   PERSON_STATUS_LABELS,
   PIECE_ALIAS_KIND_LABELS,
   PIECE_KIND_LABELS,
+  newPersonLabel,
 } from "~/constants/vocabulary";
 import type { Revision } from "~/schemas/catalogue";
 import { isUserUrl } from "./user-url";
@@ -190,17 +191,22 @@ const PIECE_FIELDS: Fields<Snapshots["piece"]> = {
         c =>
           join(
             CREDIT_ROLE_LABELS[c.role],
-            // A credit names a person exactly when it is `named`.
+            // A `named` credit names a person, or a new one by the typed name.
             c.person
               ? c.person.name
-              : c.attribution !== "named" && ATTRIBUTION_LABELS[c.attribution],
+              : c.new_person_name !== null
+                ? newPersonLabel(c.new_person_name)
+                : c.attribution !== "named" &&
+                  ATTRIBUTION_LABELS[c.attribution],
             c.certainty !== "certain" &&
               standalone(CERTAINTY_QUALIFIERS[c.certainty])
           ),
         c =>
-          [c.role, c.attribution, c.person?.slug ?? c.person?.name ?? ""].join(
-            "\u0000"
-          )
+          [
+            c.role,
+            c.attribution,
+            c.person?.slug ?? c.person?.name ?? c.new_person_name ?? "",
+          ].join("\u0000")
       ),
   },
   links: {

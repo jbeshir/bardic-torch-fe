@@ -82,6 +82,7 @@ function pieceSnapshot(
     credits: raw.credits.map(c => ({
       ...c,
       person: c.person === null ? null : personSummary(c.person),
+      new_person_name: null,
     })),
     links: LINKS.filter(
       l => l.owner.kind === "piece" && l.owner.slug === slug

@@ -18,11 +18,11 @@ import { FacetGroup } from "./FacetGroup";
 
 const PIECES_ACTION = "/pieces";
 
-/** The "Page state" choices: `stub` unset, `true` or `false`. */
+/** The "Page state" choices: `stub` unset (stubs left out), `all` or `true`. */
 const STUB_CHOICES = [
-  { value: "", label: "All pages", stub: undefined },
+  { value: "", label: "Hide stubs", stub: false },
+  { value: "all", label: "All pages", stub: "all" },
   { value: "true", label: "Stubs only", stub: true },
-  { value: "false", label: "Hide stubs", stub: false },
 ] as const;
 
 /**

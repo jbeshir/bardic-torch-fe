@@ -111,6 +111,7 @@ const pieceDocument = z.object({
   credits: many(
     row({
       person_slug: optionalText,
+      new_person_name: optionalText,
       role: oneOf(CREDIT_ROLE_LABELS).default("lyrics"),
       attribution: oneOf({ named: 0, ...ATTRIBUTION_LABELS }).default("named"),
       certainty: oneOf({ certain: 0, ...CERTAINTY_QUALIFIERS }).default(

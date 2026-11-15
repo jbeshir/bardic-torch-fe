@@ -119,12 +119,27 @@ function pageNumber(value: string): number | undefined {
   return page >= 2 ? page : undefined;
 }
 
-/** `true` or `false`. */
-function flag(value: string): boolean | undefined {
+/**
+ * `stub`, which pages a list shows. Stubs are left out by default (false:
+ * no `stub` in the URL, `stub=false` to the API); `all` is every page (no
+ * `stub` to the API), and on /pieces `true` is stubs only.
+ */
+type Stubs = boolean | "all";
+
+function stubs(value: string): true | "all" | undefined {
   if (value === "true") return true;
-  if (value === "false") return false;
+  if (value === "all") return "all";
   return undefined;
 }
+
+/** `stub` as the API takes it. */
+const apiStub = (stub: Stubs) => (stub === "all" ? {} : { stub });
+
+/** `stub` in the canonical form: none for the default. */
+const stubEntry = (stub: Stubs): Entry => [
+  "stub",
+  stub === false ? undefined : String(stub),
+];
 
 /** A parameter of the canonical form: a name and its values, in order. */
 type Entry = readonly [
@@ -197,7 +212,8 @@ export type PieceQueryState = {
   readonly kind: readonly PieceKind[];
   /** The API's `conservation_status`; `status` in the URL. */
   readonly status: readonly ConservationStatus[];
-  readonly stub: boolean | undefined;
+  /** Stubs left out (false, the default), stubs only (true) or `all`. */
+  readonly stub: Stubs;
   readonly letter: Letter | undefined;
   /** Only a non-default order: `title` with `q` (relevance is the default). */
   readonly sort: PieceSort | undefined;
@@ -233,7 +249,7 @@ function parsePieces(params: URLSearchParams): PieceQueryState {
       valid: oneOf(CONSERVATION_STATUS_VALUES),
       order: CONSERVATION_STATUS_VALUES,
     }),
-    stub: scalar(params, "stub", flag),
+    stub: scalar(params, "stub", stubs) ?? false,
     letter: scalar(params, "letter", letter),
     sort: pieceSort(params, q),
     page: scalar(params, "page", pageNumber) ?? 1,
@@ -247,7 +263,7 @@ function serialisePieces(state: PieceQueryState): string {
     ["term", state.term],
     ["kind", state.kind],
     ["status", state.status],
-    ["stub", state.stub === undefined ? undefined : String(state.stub)],
+    stubEntry(state.stub),
     ["letter", state.letter],
     ["sort", state.sort],
     ["page", state.page > 1 ? String(state.page) : undefined],
@@ -269,7 +285,7 @@ export const pieceQuery = {
       ...(state.term.length > 0 ? { term: state.term } : {}),
       ...(state.kind.length > 0 ? { kind: state.kind } : {}),
       ...(state.status.length > 0 ? { conservation_status: state.status } : {}),
-      ...(state.stub === undefined ? {} : { stub: state.stub }),
+      ...apiStub(state.stub),
       ...(state.q === undefined ? {} : { q: state.q }),
       ...(state.letter === undefined ? {} : { letter: state.letter }),
       ...(state.sort === undefined ? {} : { sort: state.sort }),
@@ -328,6 +344,8 @@ export type PersonQueryState = {
   readonly role: readonly PersonRole[];
   /** One affiliation term's slug. */
   readonly affiliation: string | undefined;
+  /** Stubs left out (false, the default) or `all`. */
+  readonly stub: false | "all";
   readonly letter: Letter | undefined;
   /** Only a non-default order: `name` with `q` (relevance is the default). */
   readonly sort: PersonSort | undefined;
@@ -355,6 +373,7 @@ function parsePersons(params: URLSearchParams): PersonQueryState {
     affiliation: scalar(params, "affiliation", value =>
       isSlug(value) ? value : undefined
     ),
+    stub: scalar(params, "stub", stubs) === "all" ? "all" : false,
     letter: scalar(params, "letter", letter),
     // As for pieces: name is the default without q, relevance with it.
     sort: q !== undefined && sort === "name" ? "name" : undefined,
@@ -368,6 +387,7 @@ function serialisePersons(state: PersonQueryState): string {
     ["kind", state.kind],
     ["role", state.role],
     ["affiliation", state.affiliation],
+    stubEntry(state.stub),
     ["letter", state.letter],
     ["sort", state.sort],
     ["page", state.page > 1 ? String(state.page) : undefined],
@@ -391,6 +411,7 @@ export const personQuery = {
       ...(state.affiliation === undefined
         ? {}
         : { affiliation: state.affiliation }),
+      ...apiStub(state.stub),
       ...(state.q === undefined ? {} : { q: state.q }),
       ...(state.letter === undefined ? {} : { letter: state.letter }),
       ...(state.sort === undefined ? {} : { sort: state.sort }),

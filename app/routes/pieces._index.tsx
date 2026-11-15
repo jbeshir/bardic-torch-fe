@@ -140,7 +140,7 @@ function isFiltered(state: PieceQueryState): boolean {
     state.term.length > 0 ||
     state.kind.length > 0 ||
     state.status.length > 0 ||
-    state.stub !== undefined
+    state.stub === true
   );
 }
 
@@ -171,7 +171,10 @@ export const meta: MetaFunction = args => {
     // pages are indexed; each names itself as canonical (a link with
     // stale categories too: never a canonical elsewhere with noindex).
     robots:
-      isFiltered(loaded.state) || loaded.state.sort || loaded.stale.length > 0
+      isFiltered(loaded.state) ||
+      loaded.state.stub !== false ||
+      loaded.state.sort ||
+      loaded.stale.length > 0
         ? "noindex, follow"
         : undefined,
   });
@@ -209,12 +212,12 @@ function filterChips(
         status: state.status.filter(other => other !== status),
       }),
     })),
-    ...(state.stub === undefined
+    ...(state.stub === false
       ? []
       : [
           {
-            label: state.stub ? "Stubs only" : "Hiding stubs",
-            href: without({ stub: undefined }),
+            label: state.stub === true ? "Stubs only" : "All pages",
+            href: without({ stub: false }),
           },
         ]),
     ...(state.letter === undefined
@@ -234,7 +237,7 @@ function selectedCount(state: PieceQueryState): number {
     state.term.length +
     state.kind.length +
     state.status.length +
-    (state.stub === undefined ? 0 : 1)
+    (state.stub === false ? 0 : 1)
   );
 }
 
@@ -425,6 +428,20 @@ export default function PiecesRoute() {
                   ? "No pieces match these filters"
                   : "No results"}
             </ResultsStatus>
+            {state.stub === true ? null : (
+              <p className="mt-1 text-body-sm">
+                <Link
+                  to={pieceQuery.href(state, {
+                    stub: state.stub === false ? "all" : false,
+                  })}
+                  compact
+                >
+                  {state.stub === false
+                    ? "Show all, including stubs"
+                    : "Hide stubs"}
+                </Link>
+              </p>
+            )}
             {list.data.length > 0 ? (
               <ul role="list" className="mt-2">
                 {list.data.map(piece => (
@@ -470,7 +487,7 @@ export default function PiecesRoute() {
             term: [],
             kind: [],
             status: [],
-            stub: undefined,
+            stub: false,
           })}
         >
           <KeptFocus key={canonical} focusRef={focusRef}>
