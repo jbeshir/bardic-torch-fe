@@ -91,6 +91,8 @@ const HAND_PIECES: readonly RawPiece[] = [
     ["traditional-and-folk", "joyful", "singalong", "drinking", "english"],
     {
       licensed: true,
+      licensingNotes:
+        "Sung freely at feasts, as the author wrote: https://songbooks.example/northmarch/permissions/the-copper-kettle-sung-freely.html",
       notes:
         'Sung at *many* feasts; see [the tune index](https://collections.example/1).\n\nAn old copy: https://songbooks.example/northmarch/collected-songs-of-the-northmarch-circle/the-copper-kettle-with-the-slow-chorus.html\n\n- The first verse is **short**\n- The chorus repeats\n\n<span class="raw">raw html must not render</span>',
       versionNotes: "This version has a slower chorus.",

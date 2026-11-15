@@ -81,7 +81,7 @@ export function LicensingCard({
         <div className="grid gap-3 text-body text-fg">
           <Status status={status} subject={subject} />
           {notes ? (
-            <div className="prose-bt text-body">
+            <div className="prose-bt text-body wrap-anywhere">
               <UserMarkdown tree={notes} />
             </div>
           ) : null}
