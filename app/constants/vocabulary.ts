@@ -68,7 +68,7 @@ const CONSERVATION_ANCHORS: Readonly<Record<ConservationStatus, string>> = {
   endangered: "endangered",
   critically_endangered: "critically-endangered",
   restricted: "restricted",
-  unassessed: "unassessed",
+  unassessed: "not-yet-assessed",
 };
 
 /** Where a status is explained: its row on the conservation help page. */
@@ -296,7 +296,7 @@ export const CONTACT_KIND_LABELS: Readonly<
   Record<components["schemas"]["CreateContactRequest"]["kind"], string>
 > = {
   takedown: "Take something down",
-  opt_out: "Opt out: leave me off the site",
+  opt_out: "I prefer not to have a page",
   correction: "A correction",
   link_report: "Report a link",
   general: "Something else",

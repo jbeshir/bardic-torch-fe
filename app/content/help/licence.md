@@ -43,7 +43,7 @@ Bardic Torch is an index. We never host lyrics, the text of works, recordings, v
 Bardic Torch began as a wiki at [bardictorch.miraheze.org](https://bardictorch.miraheze.org), built by the bardic community. Its text was published under CC BY-SA 4.0, and we imported it under that licence when this site launched.
 
 - **Pieces and bards:** each imported page credits the original wiki’s contributors in its history and footer.
-- **Help pages:** these are adapted from the wiki’s own help and policy pages. They have been rewritten for this site, and some rules have changed, for example no lyrics are hosted at all. Each help page names its source page and links to it.
+- **Help pages:** these are adapted from the wiki’s own help and policy pages. They keep the wiki’s text, changed only where this site works differently: for example, no lyrics are hosted at all, and edits go live after a moderator has checked them. Each help page names its source page and links to it.
 - **The original wiki stays online** where it is, with its full page histories.
 
 ## Thank you
@@ -60,8 +60,8 @@ Never paste in lyrics, the text of a work, or someone else’s writing. Link to 
 
 ## Not an official site
 
-Bardic Torch is community-maintained and not affiliated with the Society for Creative Anachronism or any other organisation. That includes re-enactment, LARP, fan, SF&F and filk groups, conventions and musical groups.
+Bardic Torch is community-maintained. It is not officially associated with the SCA nor with any other re-enactment organisation, LARP organisation, fan convention, SF&F organisation, filk group, musical group, or other thing that might be described as “official”.
 
 ## Questions and takedowns
 
-If you think something on Bardic Torch infringes your rights, or you’d like a link removed, [contact us through our form](/contact). We can remove or hide a link, but the content will stay online wherever it is hosted. See the [FAQ for bards](/help/faq-for-bards) for more.
+If you think something on Bardic Torch infringes your rights, or you’d like a link removed, [contact us through our form](/contact). If you ask us to take a page down, we will of course do our best. We can remove or hide a link, but the content will stay online wherever it is hosted. See the [FAQ for bards](/help/faq-for-bards) for more.

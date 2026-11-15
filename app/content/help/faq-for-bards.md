@@ -1,85 +1,87 @@
 ---
 title: FAQ for bards
-description: Answers for bards about pages on Bardic Torch, opting out, copyright, takedowns and how to share your wishes about how your work is used.
-summary: If your work is listed on Bardic Torch, this page explains why, what we will and won’t do with it, and how to tell everyone your wishes.
+description: Answers for bards about pages on Bardic Torch, not having a page, copyright, and how to share your rules about how people use your work.
+summary: Why you might have a page at Bardic Torch, what to do if you don’t want one, your rights, and your works.
 sourcePages:
   - FAQ for Bards
   - Main Page
-lastReviewed: 2026-10-31
+lastReviewed: 2026-11-15
 ---
 
-Bardic Torch exists to help people find bardic works and to keep them from being lost. It only works if bards’ wishes are respected, and not just respected but made easy for everyone to find. These answers explain how we do that.
+You should feel free (but not obliged) to create and edit your own page! Anyone qualifies for a page if there is enough content – see [Bards](/bards).
 
-## Why do I have a page?
+It is extremely important that bards’ and authors’ preferences are not only respected by Bardic Torch, but actively broadcast by it. We aim to make it easier to find out information about licensing and etiquette – from who wrote a song, to whether a song is public domain or Creative Commons or you should ask the author for permission, to whether the author prefers to be contacted about performances of their songs, to how authors feel about lyric edits or sing-alongs or spinoff content.
 
-We aim to list every bard whose work is worth preserving. If someone loves your work, they probably made you a page. Anyone qualifies if there’s enough to say about their work.
+Please ensure all such information has a source link: do not edit Bardic Torch to say that you wrote a song, or that you give permission for its performance, or that you prefer to be informed about new performance uploads. Write that information on your own blog, website or album page – then link to it from here. You can really help us by creating a centralised page that lets bards know how they can interact with your work; see the [Bard preference checklist](/help/bard-preference-checklist) for help creating one!
 
-Your page holds links to where your work already lives (your website, albums, videos, songbooks), plus credits and categories. We never host your lyrics, recordings or files.
+## Your page
 
-## Can I edit my own page?
+### Why do I have a page at Bardic Torch?
 
-Yes. Log in and edit it like any other page; like everyone’s, your edits are checked by a moderator before they go live. Or send us the link to where your work lives through our [contact form](/contact), which needs no account. See the [contributing guide](/help/contributing).
+Bardic Torch aims to record information about as many bards & bardic works as possible, and ensure that the information is archived so that works aren’t lost/forgotten. We aim to create a page for _every_ bard whose work is worth preserving. If someone likes your work, they probably made you a page.
 
-## Why can’t I just tell you I’m the bard?
+### What if I don’t want to have a page at Bardic Torch?
 
-Because we can’t check who is behind an account. If anyone could write ‘I’m the author and anyone may sell this song’, someone could add a false permission by mistake or on purpose, and others might act on it.
+State somewhere public – on a personal website, blog, or other page that we can cite – that you don’t want people to archive your works / don’t want to have pages created about you / don’t want any information about you to be online / etc. Send us a link. If you do not have or want an account here, you can [contact us through our contact form](/contact).
 
-So every statement about licensing, permissions or etiquette needs a link to a public page where you said it. This applies to you too, even on your own page. Post your wishes on your own website, blog, album page or public social media, then link to that.
+We will edit your page (or you can edit it yourself) to be a short page that shows only your name and says, “This bard prefers not to have a page. Citation: (link)”. Pieces you wrote still credit you by name, but your name no longer links to a page, and nobody can create a new page for you under a matching name.
 
-Make sure the page is:
+Please make sure that the link is to a public page (so we can all access it), a permanent page (so the citation doesn’t disappear when the page goes away), and a page where you are identifiable (so we know that the actual bard requested this, and it isn’t some random other saboteur or mischief-maker).
 
-- **public**, so everyone can read it
-- **permanent**, so the source doesn’t vanish
-- **clearly yours**, so we know the request really came from you
+We do it this way because Bardic Torch is a public index that anyone can edit. If we simply deleted or took down your page, it would be possible for someone else to inadvertently put it back up in the future, not realising that you’d asked to take it down. Even if we prevented anyone else from making a new page, someone else might add you to other bardic indexes/archives/songbooks in the future. By having your page state that you do not wish to have a page, we can ensure everybody in the future knows how to respect your wishes.
 
-## I have rules about how people use my work. How can I share them?
+(If you contact us and ask us to take a page down, we will of course do our best!)
 
-Write them down somewhere public, then send us the link. We’ll show your wishes on your bard page and on the pages for your pieces. If one piece has different rules from the rest, say so; the piece’s own rules come first.
+For other things you might want to post publicly, see the [Bard preference checklist](/help/bard-preference-checklist).
 
-Not sure what to cover? The [Bard preference checklist](/help/bard-preference-checklist) lists everything you might want to say, from performance permission to sing-alongs to recording.
+### Can I edit my own page?
 
-## What if I don’t want a page?
+Absolutely – please do. We’d love to have contributions from bards; you know more about your work than anyone else! Log in and edit your page like any other; a moderator checks every edit before it goes live.
 
-That’s your choice, and we’ll respect it.
+See the [contributing guide](/help/contributing) for more.
 
-1. State it somewhere public that we can cite, such as your website or blog. For example: ‘I do not wish to have pages about me on Bardic Torch’ or ‘I do not want my works archived’.
-   As with any source, the page must be public, permanent and clearly yours (see [above](#why-cant-i-just-tell-you-im-the-bard)).
-2. Send us the link through our [contact form](/contact). You don’t need an account.
+## Your rights
 
-Your page then becomes a short stub that shows only your name and its notes, which quote your request with a link to where you made it. Your links are no longer shown. Pieces you wrote still credit you by name, but the name no longer links to a page. Nobody can create a new page for you under a matching name.
+### Is Bardic Torch violating my copyright?
 
-Why keep a stub instead of deleting the page? Because if the page simply vanished, someone could create it again without knowing you’d asked. The stub keeps your request on record for every future editor. It also tells readers not to share your work elsewhere.
+We really hope not! We have a strict policy against putting copyrighted information on Bardic Torch. In fact, we never host works directly on Bardic Torch at all. We only link to where you can find works elsewhere.
 
-You can also post other wishes publicly, such as ‘please don’t put recordings of my performances online’, and we’ll cite them in the same way.
+People are not allowed to upload audio or video to Bardic Torch. If you find that someone has added copyrighted content, please feel free to remove it (Bardic Torch can be edited by anyone) or let us know. If you don’t have or want an account here, you can do this [through our contact form](/contact).
 
-## Is Bardic Torch violating my copyright?
+People are not allowed to post lyrics to Bardic Torch, even if the author has agreed for their lyrics to be shared and re-published anywhere. We only link to where the lyrics are published.
 
-We hope not, and we work hard to make sure we don’t. We never host lyrics, text, audio or video, and nobody can upload files. Every piece only links to where the work already lives.
+It is possible that you find links on Bardic Torch to pages that are violating your copyright – eg. songbooks that host your lyrics under the wrong licence, YouTube channels uploading performances of your songs without permission, or other performers performing your work without crediting you. We are not responsible for content on other websites; you will need to contact the host of the songbook / complain to YouTube / ask the performer to stop. All we can do is remove the link; the content will still be online.
 
-Each piece’s licensing and etiquette notes must carry a source. Edits are reviewed before they go live, partly to catch copyright problems.
+### I have rules about how people use my work. How can I share these?
 
-## Someone links to a copy of my work that I didn’t allow
+State somewhere public – on a personal website, blog, or other page that we can cite – that you have rules about how people use your work, and explain what they are. Edit your page to include a link to your statement (or [send us the link](/contact), if you’re not sure how to edit your own page). We will try to include your rules both on your own bard page and on any relevant piece pages.
 
-We can remove or hide the link. Use the [contact form](/contact) and tell us which link and why.
+Please make sure that the link is to a public page (so we can all access it), a permanent page (so the citation doesn’t disappear when the page goes away), and a page where you are identifiable (so we know that the actual bard requested this, and it isn’t some random other saboteur or mischief-maker).
 
-Please note that removing our link doesn’t take the content down. The songbook, video or page will still be online where it’s hosted. To remove it, contact the site that hosts it, for example by asking the songbook’s owner, reporting it to YouTube, or asking the performer directly.
+We do it this way because Bardic Torch is a public index that anyone can edit. If you simply edit your page to say “I don’t like my songs to be written down without permission” or “I’m okay with others performing my work so long as it’s not-for-profit” then we have no source for that information – and no idea if it was really you who wrote it. We cannot risk hosting false information about copyright; if someone who _isn’t_ the author writes “everyone has permission to perform this song”, and the real author doesn’t want the song to be performed by anyone except themselves, that could lead to a lot of copyright violations. By linking to a source for the information, we can make sure that future editors know that the author of the work genuinely made those statements about licensing/sharing/etiquette/etc.
 
-## Can I upload my work to Bardic Torch?
+See the [Bard preference checklist](/help/bard-preference-checklist) for help figuring out what you might want to publish.
 
-No. We don’t host any works, including yours, even if you’ve released it for free sharing. Instead, put it somewhere you control and we’ll link to it:
+## Your works
 
-- your own website or blog
+### Can I edit my own song/story/poem pages?
+
+Yes! We love when bards help expand Bardic Torch; you know more about your work than anyone else. Please see the [contributing guide](/help/contributing).
+
+### Can I upload my work to Bardic Torch?
+
+**No.** Do not upload your work directly to Bardic Torch. We cannot host it.
+
+Bardic Torch is a public index that anyone can edit. We cannot risk hosting content directly; it would be very easy for someone to (inadvertently or deliberately) upload copyrighted content.
+
+You can upload your work to:
+
 - YouTube
-- Spotify, Bandcamp, SoundCloud or another music service
-- a community archive such as MidBards (see the [collections](/collections))
-- all of the above
+- Your own personal website or blog
+- Spotify, BandCamp, SoundCloud or other music-sharing services
+- Several SCA indexes, eg. MidBards; see the [collections](/collections)
+- All of the above simultaneously!
 
-The more places your work lives, the safer it is. See [Conservation status](/help/conservation-status).
+You can then link, from your pieces’ pages, to any and all of those sources.
 
-## Will my legal name be shown?
-
-We credit you by the name you publish under. Legal and mundane names brought over from the original wiki are ordinary public aliases, as the wiki showed them. If you want one removed, ask and a moderator will delete it. We never add private information, only what you’ve published yourself.
-
-## How do I contact you?
-
-Use the [Bardic Torch contact form](/contact). It works without an account.
+There is no exception, even if you have made it publicly clear that your work is okay for anyone to republish and share freely: we link to where you have shared it, and never host the lyrics on Bardic Torch.

@@ -6,7 +6,7 @@ import type { MdxjsEsmHast } from "mdast-util-mdxjs-esm";
  * Shapes a compiled help page for the WikiPage template:
  *
  * - every h2 and h3 gets an id from its text (the same slugs GitHub uses, so
- *   in-page links such as `#how-restricted-works` keep working), and the
+ *   in-page links such as `#restricted` keep working), and the
  *   module exports them as `contents` for the table of contents;
  * - every table body row gets an id from its first cell, slugged like a
  *   heading (`#low-risk`);

@@ -1,81 +1,80 @@
 ---
 title: Conservation status
-description: How Bardic Torch flags bardic works at risk of being lost, what each status means, how statuses are set, and how you can help keep works alive.
-summary: Some works survive in only one or two places. Conservation statuses flag the pieces that need help, so they can be found and kept for the next generation.
+description: Conservation statuses help flag works that may need more work to preserve or archive them. What Low Risk, Endangered, Critically Endangered and Restricted mean.
+summary: Conservation status categories exist to help flag works that may need more work to preserve or archive them.
 sourcePages:
   - Conservation Status
+  - Category:Low Risk
+  - Category:Endangered
+  - Category:Critically Endangered
+  - Category:Restricted
   - Main Page
-lastReviewed: 2026-10-31
+lastReviewed: 2026-11-15
 ---
 
-Many bardic works have been lost because the only copy was on a website that went down, or in a book that went missing. Conservation statuses show which pieces are safe and which need help. They’re there so that someone who spots an endangered piece can help it survive.
+Conservation status categories exist to help flag works that may need more work to preserve or archive them.
+
+Many bardic works have been lost to history because the only version available was on a website that went down, or in a physical book that has been lost. We hope that when you find an Endangered or Critically Endangered work on Bardic Torch, you will be encouraged to find it and add it to one of the other [collections](/collections)!
 
 :::infobox{title="At a glance"}
 
-- [Low risk](#low-risk): found in at least 4 places
-- [Endangered](#endangered): found in 3 places or fewer
-- [Critically endangered](#critically-endangered): can’t be found, or only in part
-- [Restricted](#how-restricted-works): the creator doesn’t want it recorded, archived or shared
-- [Unassessed](#unassessed): nobody has checked yet
+- [Low Risk](#low-risk): exists in at least three places
+- [Endangered](#endangered): exists in less than three known places
+- [Critically Endangered](#critically-endangered): contributors are unable to find the work, or only partially able to find it
+- [Restricted](#restricted): the creator does not allow the work to be recorded, archived, or shared
+- [Not yet assessed](#not-yet-assessed): in none of these categories yet
 
 :::
 
 ## The statuses
 
-| Status                    | What it means                                                                                                                                                                                                  |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Low risk**              | The work exists in **at least 4** known places.                                                                                                                                                                |
-| **Endangered**            | The work exists in **3 or fewer** known places, and isn’t Restricted.                                                                                                                                          |
-| **Critically endangered** | Nobody can find the work, or can find only part of it (for example, the lyrics but not the melody), and it isn’t Restricted. It may be mentioned in indexes or histories, but you can’t easily get hold of it. |
-| **Restricted**            | The creator doesn’t allow the work to be recorded, archived or shared. This overrides every other status.                                                                                                      |
-| **Unassessed**            | Nobody has worked out a status yet. Most pieces start here.                                                                                                                                                    |
+### Low Risk
 
-:::note
+A work is Low Risk if it exists in at least three places. Some examples of places a work might exist:
 
-**Exactly 3 places now counts as Endangered.** The original wiki defined Low risk as at least 4 places and Endangered as fewer than 3, which left exactly 3 undecided. On Bardic Torch, a piece needs 4 places to be Low risk.
+- Recordings on YouTube
+- Streaming on Spotify
+- Lyrics and sheet music available on the bard’s own website/blog
+- Lyrics and sheet music (or performance videos) archived on a community/SCA archive such as MidBards or CalonSong
+- Lyrics and sheet music exist in hard copy, stored in a known archive or library (with contact details available)
+- A story or poem exists in a book, archived in a known library or storage (with contact details available)
+- A story or poem exists in a book, available to purchase from a known vendor
+- Album or CD is available to purchase from a known vendor
+- The author can be contacted to ask for a copy, with known/public contact details
+- The work is securely established in the oral tradition, with a large number of bards keeping it memorised
 
-:::
+### Endangered
 
-## What counts as a place
+A work is Endangered if it exists in less than three known places, and it is not [Restricted](#restricted).
 
-A place is somewhere the work can actually be found, heard or got hold of. Examples:
+### Critically Endangered
 
-- a recording on YouTube
-- streaming on Spotify
-- lyrics and sheet music on the bard’s own website or blog
-- lyrics, sheet music or performance videos in a community or SCA archive, such as MidBards or CalonSong
-- a hard copy of the lyrics and sheet music in a known archive or library, with contact details available
-- a story or poem in a book held by a known library or store, with contact details available
-- a story or poem in a book you can buy from a known seller
-- an album or CD you can buy from a known seller
-- the author, if they can be contacted for a copy through known, public contact details
-- the oral tradition, if the work is securely established there and many bards know it by heart
+A work is Critically Endangered if contributors to Bardic Torch are unable to find the work, or only partially able to find the work (eg. the lyrics of a song are available, but the melody is not) and it is not [Restricted](#restricted). References to it may exist in indexes or history texts, but the work itself may not be easily available for download/purchase/request anywhere.
 
-## How a status is set
+Do you know where information about these pieces can be found? Please add it to the piece’s page – and if it is enough to move the piece, re-categorise the piece as [Endangered](#endangered).
 
-Statuses are set like this:
+### Restricted
 
-1. **Each link records what kind of place it is**, such as a streaming service, the author’s site or a community archive.
-2. **The site suggests a status** by counting the distinct places among a piece’s links that are still working. Links are checked regularly, so a dead link stops counting.
-3. **A moderator confirms it.** The suggestion is a starting point, not the final word.
-4. **Every change is recorded with a reason**, so anyone can see when and why a piece’s status changed.
+A work is Restricted if the creator does not allow the work to be recorded, archived, or shared. These works should not be categorised as [Endangered](#endangered) or [Critically Endangered](#critically-endangered), because those categories exist to help flag works which need more effort to preserve or find them, and these works should not be preserved or found.
 
-## How you can help
+On Bardic Torch, a Restricted piece’s page does not ask anyone to find or add copies of it, and does not offer archived copies of its links.
 
-- **Add links.** If you know of performances, lyrics, recordings, or places to buy or borrow an Endangered or Critically endangered work, add them to the piece.
-- **Suggest a new status.** When a piece gains enough places to move up (Endangered to Low risk, or Critically endangered to Endangered), suggest the change and give the reason. A moderator will confirm it.
-- **Spot losses.** If a Low risk piece has lost its places, suggest moving it down. That might be because the websites went down, the piece was removed, the seller stopped selling it, or the person holding the hard copy can no longer be contacted.
-- **Host a copy.** If you have a copy of an Endangered or Critically endangered piece, and the creator’s wishes allow it, consider putting it on your own site or in a community archive so we can link to it. See the [collections](/collections) for community archives and songbooks.
+### Not yet assessed
 
-Each piece’s status badge links to its entry on this page. To see pieces by status, browse [endangered pieces](/pieces?status=endangered), [critically endangered pieces](/pieces?status=critically_endangered) or [low-risk pieces](/pieces?status=low_risk), or see every status on the [categories](/categories?facet=conservation) page.
+A piece that is in none of the categories above is shown as Not yet assessed.
 
-## How Restricted works
+## Setting a status
 
-Some creators don’t want their work recorded, archived or shared. It might belong to an oral tradition, or be meant only for the people in the room. That wish comes first.
+To put a piece in one of these categories, edit the piece and choose its conservation status. As with every edit, a moderator checks the change before it goes live.
 
-- **Restricted overrides everything.** A Restricted piece is never marked Endangered or Critically endangered, however few places it exists in. Those statuses exist to help works be found and preserved, and these works shouldn’t be.
-- **No ‘help preserve’ prompts.** A Restricted piece’s page doesn’t ask anyone to find, add or host copies. Its notes give the creator’s statement instead.
-- **It needs a source.** Like any statement about a creator’s wishes, the piece’s notes must link to a public page where the creator said so. See the [FAQ for bards](/help/faq-for-bards) for how creators can do this.
-- **Please respect it.** Don’t add recordings or copies of a Restricted work, here or anywhere else.
+To see the pieces in each category, browse [Low Risk](/pieces?status=low_risk), [Endangered](/pieces?status=endangered), [Critically Endangered](/pieces?status=critically_endangered) or [Restricted](/pieces?status=restricted) pieces.
 
-If you’re a bard and want your work treated this way, the [bard preference checklist](/help/bard-preference-checklist) can help you word your wishes.
+## You can help the archive
+
+You can help the archive by:
+
+- If you know of performances, lyrics, recordings, or places to purchase or acquire works that are Endangered or Critically Endangered, please add links to the piece’s page
+- If you notice that a page in the Endangered category has acquired sufficient links to move into the Low Risk category, please move it there
+- If you notice that a page in the Critically Endangered category has acquired sufficient links to move into the Endangered category, please move it there
+- If you have a copy of a piece that is Endangered or Critically Endangered, please consider hosting it on your own site elsewhere so that we can link to it from Bardic Torch
+- If you notice that a work in the Low Risk category is now Endangered, because it is no longer archived (eg. the websites hosting the piece have gone down, the piece has been removed from the websites that hosted it, the person who archived the hard copy of the piece can no longer be contacted, the seller is no longer selling the piece), please move it to the Endangered or Critically Endangered category

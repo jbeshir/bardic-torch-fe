@@ -187,7 +187,7 @@ test("read a piece: infobox, links, a restricted piece, a stub", async ({
 
   await page.goto("/pieces/the-dragons-hoard");
   await waitForHydration(page);
-  const text = "Show links (the creator asks that this isn’t shared further)";
+  const text = "Show links (the creator does not allow this work to be shared)";
   const details = main.locator("details", { hasText: text });
   await expect(
     main.locator('a[href*="private-recordings.example"]').first()
@@ -250,7 +250,7 @@ test("bards: a letter, a bard, a work; a bard with no page", async ({
 
   await page.goto("/bards/hollis-fenn");
   await expect(
-    main.getByText("Hollis Fenn has asked not to have a page here.")
+    main.getByText("Hollis Fenn prefers not to have a page.")
   ).toBeVisible();
   await expect(main.getByRole("link", { name: "History" })).toHaveCount(0);
 });
@@ -301,9 +301,9 @@ test("help, not found and the theme", async ({ page }) => {
   await expect(page).toHaveURL(/\/help\/conservation-status$/);
   await main
     .getByRole("navigation", { name: "Contents" })
-    .getByRole("link", { name: /How Restricted works$/ })
+    .getByRole("link", { name: /^Restricted$/ })
     .click();
-  await expect(page).toHaveURL(/#how-restricted-works$/);
+  await expect(page).toHaveURL(/#restricted$/);
 
   const response = await page.goto("/wiki/Northmarch_Rising");
   expect(response?.status()).toBe(404);
