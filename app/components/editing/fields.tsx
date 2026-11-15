@@ -18,6 +18,12 @@ import { Textarea } from "~/components/ui/Textarea";
 export const MARKDOWN_HELP =
   "Markdown: **bold**, *italic*, [a link](https://example.org) and lists.";
 
+/**
+ * The help under a piece's or person's notes: the contributing guide's
+ * lyrics rule, then the Markdown help.
+ */
+export const NOTES_HELP = `Please don’t add lyrics directly to Bardic Torch. Instead, add links to where the lyrics can be found elsewhere. ${MARKDOWN_HELP}`;
+
 /** Each field's error by its id. */
 export const FieldErrorsContext = createContext<
   Readonly<Record<string, string>>

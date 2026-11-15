@@ -19,7 +19,7 @@ import {
   ChoicesField,
   FormSection,
   labelOptions,
-  MARKDOWN_HELP,
+  NOTES_HELP,
   Rows,
   SelectField,
   TextField,
@@ -114,7 +114,7 @@ function PersonForm({
         <TextField
           name="notes_md"
           label="About"
-          help={MARKDOWN_HELP}
+          help={NOTES_HELP}
           value={document.notes_md}
           multiline
           optional

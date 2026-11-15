@@ -19,6 +19,7 @@ import {
   FormSection,
   labelOptions,
   MARKDOWN_HELP,
+  NOTES_HELP,
   Rows,
   SelectField,
   TextField,
@@ -95,7 +96,7 @@ function PieceForm({
         <TextField
           name="notes_md"
           label="Notes"
-          help={MARKDOWN_HELP}
+          help={NOTES_HELP}
           value={document.notes_md}
           multiline
           optional

@@ -3,10 +3,12 @@ import { LICENCE_URL } from "~/constants/navigation";
 
 /**
  * The licence meta line at the foot of every entity's Read page (plan
- * §4.0): the site's own text licence (not a piece's licence) and the
- * credit for text adapted from the original wiki, whose contributors the
- * page history names. A page with no history to show (a person who asked
- * not to have a page) ends the sentence at the wiki.
+ * §4.0): the site's own text licence (not a piece's licence), what the
+ * import left out of the pages it adapted from the original wiki (true of
+ * every page, as the Read view does not say whether it was imported), and
+ * the credit to the contributors the page history names. A page with no
+ * history to show (a person who prefers not to have a page) ends the
+ * sentence at what the import left out.
  */
 export function LicenceLine({
   historyPath,
@@ -20,10 +22,11 @@ export function LicenceLine({
       <Link to={LICENCE_URL} appearance="inherit">
         Creative Commons Attribution-ShareAlike 4.0
       </Link>{" "}
-      licence. This page may be adapted from the original Bardic Torch wiki
+      licence. Pages imported from the original Bardic Torch wiki are adapted
+      from it, leaving out lyrics, wiki formatting and template text
       {historyPath ? (
         <>
-          ; its contributors are credited in the{" "}
+          ; this page’s contributors are credited in the{" "}
           <Link to={historyPath} appearance="inherit">
             page history
           </Link>
