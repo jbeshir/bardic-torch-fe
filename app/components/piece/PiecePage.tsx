@@ -76,8 +76,12 @@ function sectionsOf({ piece, markdown }: PieceView): PageSectionEntry[] {
           subject="piece"
           status={piece.licensing_status}
           notes={markdown.licensingNotes}
-          sources={piece.links.filter(link =>
-            link.roles.includes("licensing_source")
+          // A source the notes already quote is listed under "Where to find
+          // it" only.
+          sources={piece.links.filter(
+            link =>
+              link.roles.includes("licensing_source") &&
+              !piece.licensing_notes_md?.includes(link.url)
           )}
           sourcesHidden={restricted}
         />

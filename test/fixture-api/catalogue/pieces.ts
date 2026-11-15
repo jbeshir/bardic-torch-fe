@@ -166,7 +166,11 @@ const HAND_PIECES: readonly RawPiece[] = [
       "welsh",
       "middle-english",
     ],
-    { licensed: true }
+    {
+      licensed: true,
+      licensingNotes:
+        "Free to sing, as its keepers say: https://oral.example/tradition/road",
+    }
   ),
   piece(
     "1588-armada-ballad",
