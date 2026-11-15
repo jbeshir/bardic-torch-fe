@@ -57,9 +57,11 @@ First, check to see if a page for the piece already exists. Look in [Pieces](/pi
 
 Try searching for the elements in the title which are shared between multiple versions. (For example, if a piece is sometimes known as “The Daring Exploits of Knight McKnight”, sometimes as “Daring Exploits of Knight McKnight” and sometimes simply as “Knight McKnight”, try searching just for “Knight McKnight”. That way, it should show up even if the page isn’t named what you expect.) If you know a song by a different title, you don’t have to create a separate page for it; add your title to the existing page as another title, so that anyone who searches for “The Daring Exploits of Knight McKnight” finds the existing page for “Knight McKnight”.
 
-If the song doesn’t already have a page, congrats! You’ve found a piece that will be very useful to contribute!
+You can use the search bar at the top of the site to search for the song’s title.
 
-Choose **Add a piece**, choose what kind of piece it is, and fill out the form with all the information you have. It is absolutely fine to simply create the page, add the information you know, and leave it for somebody else to update later. Even if you do nothing else, that’s helpful! Other editors can come along later and see that information needs to be added to the piece’s page. Telling us that a piece exists by this name tells us where to search.
+If the song doesn’t already have a page, congrats! You’ve found a piece that will be very useful to contribute to Bardic Torch!
+
+Choose **Add a piece**, choose what kind of piece it is, and fill out the form with all the information you have. It is absolutely fine to simply create the page, add the information you know, and leave it for somebody else to update later. Even if you do nothing else, that’s helpful! Other editors can come along later and see that information needs to be added to the song’s page. Telling us that a song exists by this name tells us where to search.
 
 ### Authors
 
@@ -93,9 +95,9 @@ Please include as much information as you can about the performance/recording. W
 
 Extremely helpful activities include:
 
-- Finding more performances, and linking to those performances on both the piece’s page and the bard’s page. When you add a performance to a piece page, if you also credit the bard, that’s even more helpful.
+- Finding more performances, and linking to those performances on both the piece’s page and the bard’s page. When you add a performance to a piece page, if you also credit the bard as a performer, that’s even more helpful.
 - Completing stub pages (pages that should have more, but don’t yet). Look at other, similar pages to see how the page should be set up. See [pages that need work](/needs-work).
-- Adding categories to pages that ought to be properly categorised, but aren’t yet. Check whether categories have sub-categories or should be sorted into overarching sur-categories, and so on.
+- Adding links and categories to pages that ought to be properly interlinked and categorised, but aren’t yet. Check whether categories have sub-categories or should be sorted into overarching sur-categories, and so on.
 - Finding information about licensing, permissions, bards’ preferences, etc and linking it on both piece pages and bard pages.
 
 ## Categories & tagging guide
@@ -104,12 +106,16 @@ Bardic Torch uses categories to organise songs, singers, stories, storytellers, 
 
 ### Categories for pieces
 
+Categories are what allow users to search pieces on Bardic Torch for pieces that they want to perform. Try to add as many as you can, but don’t worry if you don’t know how to use all of them. It is totally okay to leave some fields blank. Another editor can add the information later. You only have to contribute what you know and are comfortable contributing.
+
 - **Words** should credit the lyricist, and **Tune** the composer; for a poem or story, **Author** should credit the author.
 - Choose one or more **Mood** categories
 - Choose one or more **Topic** categories
 - Choose one or more **Culture** categories
 - There should generally be only one **Source Category** (called **Origin** on Bardic Torch)
 - You may add additional categories under **Other**
+
+Each documentable historical piece should also link its **source** (as a text source) and give its **century** (a century category under Origin).
 
 ### Genre
 
@@ -120,6 +126,8 @@ On Bardic Torch, a piece’s genre is its kind. Choose **one**:
 - **Story** should be used for all narrative spoken pieces, regardless of format or tradition or length.
 - **Poem** should be used for all poems that are **not** set to music. Please do not tag songs as poems, even if the lyrics rhyme.
 - **Dance & music** should be used for dance performances.
+
+Additional genres may be added later for work that truly cannot be categorised under the existing scheme, but please keep the number of tags limited.
 
 ### Mood
 
@@ -188,7 +196,7 @@ Optional tags for special cases:
 
 ### Creating categories & subcategories
 
-If you don’t see an existing category that suits your needs, you can create a new category. Every new category needs a parent: if you make a new top-level topic, put it under Topics; if you make a new sub-topic, put it under its topic. For example, Heraldry is a subcategory of SCA (Topic). A moderator checks a new category before pieces can use it.
+If you don’t see an existing category that suits your needs, you can create a new category. This is very easy. Every new category needs a parent: if you make a new top-level topic, put it under Topics; if you make a new sub-topic, put it under its topic. For example, Heraldry is a subcategory of SCA (Topic). A moderator checks a new category before pieces can use it.
 
 It is important that categories are all named in the same style. Please name categories in the same style of natural English, capitalising content words. Avoid punctuation other than `()`, `'` and `&`. A new category for ‘Green Eggs and Ham’ should be named **Green Eggs & Ham**, not GreenEggs&Ham, GreenEggsAndHam, green eggs n ham, Green eggs And Ham, “Green Eggs and Ham”, Green Eggs/Ham, or any other variation.
 
@@ -196,6 +204,6 @@ It is important that categories are all named in the same style. Please name cat
 
 Bard pages are titled according to the name the bard presents themselves with online. Use the name they publish under – whether this be a legal name, SCA name, stage name, or nickname – and then add other names as the bard’s other names.
 
-List affiliations from broad to specific, eg. “SCA – Kingdom Name – Household Name”.
+List affiliations from broad to specific, eg. “SCA – Kingdom Name – Household Name”. Affiliations include SCA and Amtgard.
 
 Performer categories: Musicians (Singers, Instrumentalists, Songwriters), Storytellers, Jesters (use for comics, fools, jokers, etc), Poets and Dancers.

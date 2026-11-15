@@ -14,6 +14,10 @@ It is extremely important that bards’ and authors’ preferences are not only 
 
 Please ensure all such information has a source link: do not edit Bardic Torch to say that you wrote a song, or that you give permission for its performance, or that you prefer to be informed about new performance uploads. Write that information on your own blog, website or album page – then link to it from here. You can really help us by creating a centralised page that lets bards know how they can interact with your work; see the [Bard preference checklist](/help/bard-preference-checklist) for help creating one!
 
+Similarly, we’d love to make sure your preferences are respected if you want any information about you to be taken down or changed or hidden. If you contact us and ask us to take a page down, there’s a risk that somebody else might put the page back up in the future. Please write something on your own blog or website stating your preferences clearly (eg. “I do not wish pages to be created about me”, “I do not wish recordings of my performances to be placed online” or “I do not wish my song lyrics to be shared anywhere except my personal page”) so that we can cite that source on Bardic Torch. We can then add that note to your bardic page, with a citation, so that every future editor knows not to share or publish the information – and everyone who reads Bardic Torch will know not to upload that information either, elsewhere.
+
+(If you contact us and ask us to take a page down, we will of course do our best! And nobody should upload copyrighted information to Bardic Torch – only link to where it is hosted elsewhere. We will never host recordings of your songs here directly.)
+
 ## Your page
 
 ### Why do I have a page at Bardic Torch?
@@ -29,8 +33,6 @@ We will edit your page (or you can edit it yourself) to be a short page that sho
 Please make sure that the link is to a public page (so we can all access it), a permanent page (so the citation doesn’t disappear when the page goes away), and a page where you are identifiable (so we know that the actual bard requested this, and it isn’t some random other saboteur or mischief-maker).
 
 We do it this way because Bardic Torch is a public index that anyone can edit. If we simply deleted or took down your page, it would be possible for someone else to inadvertently put it back up in the future, not realising that you’d asked to take it down. Even if we prevented anyone else from making a new page, someone else might add you to other bardic indexes/archives/songbooks in the future. By having your page state that you do not wish to have a page, we can ensure everybody in the future knows how to respect your wishes.
-
-(If you contact us and ask us to take a page down, we will of course do our best!)
 
 For other things you might want to post publicly, see the [Bard preference checklist](/help/bard-preference-checklist).
 

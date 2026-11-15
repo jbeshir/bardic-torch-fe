@@ -300,8 +300,8 @@ test("help, not found and the theme", async ({ page }) => {
   await main.getByRole("link", { name: "Conservation status" }).first().click();
   await expect(page).toHaveURL(/\/help\/conservation-status$/);
   await main
-    .getByRole("navigation", { name: "Contents" })
-    .getByRole("link", { name: /^Restricted$/ })
+    .getByRole("link", { name: "Restricted", exact: true })
+    .first()
     .click();
   await expect(page).toHaveURL(/#restricted$/);
 

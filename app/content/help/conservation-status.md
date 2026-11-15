@@ -19,8 +19,8 @@ Many bardic works have been lost to history because the only version available w
 :::infobox{title="At a glance"}
 
 - [Low Risk](#low-risk): exists in at least three places
-- [Endangered](#endangered): exists in less than three known places
-- [Critically Endangered](#critically-endangered): contributors are unable to find the work, or only partially able to find it
+- [Endangered](#endangered): exists in less than three known places, and is not Restricted
+- [Critically Endangered](#critically-endangered): contributors are unable to find the work, or only partially able to find it, and it is not Restricted
 - [Restricted](#restricted): the creator does not allow the work to be recorded, archived, or shared
 - [Not yet assessed](#not-yet-assessed): in none of these categories yet
 
