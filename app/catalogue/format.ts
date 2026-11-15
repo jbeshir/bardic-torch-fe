@@ -53,7 +53,7 @@ export function formatCount(
 
 /**
  * The home page's size line: "142 pieces and 61 people and groups so far".
- * Persons include groups, historical figures and stubs, so not "bards".
+ * Persons include groups and historical figures, so not "bards".
  */
 export function formatCatalogueSize(pieces: number, people: number): string {
   const personOrGroup = formatCount(

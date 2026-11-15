@@ -669,11 +669,15 @@ export const CATALOGUE_READS = {
         };
       }
       const q = query.get("q")?.toLowerCase();
+      const stub = query.get("stub");
       const filters: Filters<RawPerson> = {
         ...anyOf<RawPerson>(query, "kind", (p, kind) => p.kind === kind),
         ...anyOf<RawPerson>(query, "role", (p, role) =>
           (p.profile?.roles ?? []).some(r => r === role)
         ),
+        ...(stub === null
+          ? {}
+          : { stub: p => p.is_stub === (stub === "true") }),
         ...(affiliation === null
           ? {}
           : { affiliation: p => personAffiliated(p, affiliation) }),

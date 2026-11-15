@@ -67,15 +67,15 @@ type HomeData = {
 /**
  * The home page reads three things (plan §4.1), each its own region: the
  * piece count and kinds, the person count, and the terms for the top moods
- * and topics. A failure never fails the page (it is the front door): the
+ * and topics. It counts real pages only, not stubs. A failure never fails the page (it is the front door): the
  * region says so, with "Try again".
  */
 export async function loader({
   context,
 }: LoaderFunctionArgs): Promise<HomeData> {
   const [pieces, persons, terms] = await Promise.all([
-    listPieces(context, { limit: 1 }),
-    listPersons(context, { limit: 1 }),
+    listPieces(context, { limit: 1, stub: false }),
+    listPersons(context, { limit: 1, stub: false }),
     listTerms(context, {}),
   ]);
   const top = (facet: "mood" | "topic") =>
