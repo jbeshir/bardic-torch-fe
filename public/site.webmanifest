@@ -1,0 +1,9 @@
+{
+  "name": "Bardic Torch",
+  "short_name": "Bardic Torch",
+  "start_url": "/",
+  "display": "browser",
+  "icons": [{ "src": "/favicon.svg", "type": "image/svg+xml", "sizes": "any" }],
+  "theme_color": "#F7F2E8",
+  "background_color": "#F7F2E8"
+}

@@ -1,0 +1,141 @@
+import { Fragment } from "react";
+import { personSubtitle } from "~/catalogue/person";
+import { LicenceLine } from "~/components/catalogue/LicenceLine";
+import {
+  LICENSING_ID,
+  LicensingCard,
+} from "~/components/catalogue/LicensingCard";
+import {
+  pageSection,
+  type PageSectionEntry,
+} from "~/components/catalogue/PageSection";
+import { EntityPage } from "~/components/EntityPage";
+import { LinkGroups } from "~/components/links/LinkGroups";
+import { PageBanner } from "~/components/PageBanner";
+
+import { UserMarkdown } from "~/components/UserMarkdown";
+import type { Person } from "~/schemas/catalogue";
+import type { MarkdownTree } from "~/schemas/markdown";
+import { PersonInfobox } from "./PersonInfobox";
+import { PersonPerformances } from "./PersonPerformances";
+import { Works } from "./Works";
+
+type Profile = NonNullable<Person["profile"]>;
+
+/**
+ * What the bard layout's loader gives its views (through the outlet): the
+ * person, and their Markdown fields as the server's trees (null when
+ * empty; a person with no page has only their notes).
+ */
+export type PersonView = {
+  readonly person: Person;
+  readonly markdown: {
+    readonly notes: MarkdownTree | null;
+    readonly licensingNotes: MarkdownTree | null;
+  };
+};
+
+/**
+ * A person's sections, in order (plan §4.6), each only when it has
+ * something but the licensing card.
+ */
+function sectionsOf(
+  profile: Profile,
+  markdown: PersonView["markdown"]
+): PageSectionEntry[] {
+  return [
+    ...(markdown.notes
+      ? [pageSection("about", "About", <UserMarkdown tree={markdown.notes} />)]
+      : []),
+    {
+      id: LICENSING_ID,
+      label: "Licensing",
+      element: (
+        <LicensingCard
+          subject="person"
+          status={profile.licensing_status}
+          notes={markdown.licensingNotes}
+          sources={profile.links.filter(link =>
+            link.roles.includes("licensing_source")
+          )}
+        />
+      ),
+    },
+    ...(profile.works.length > 0
+      ? [pageSection("works", "Works", <Works profile={profile} />)]
+      : []),
+    ...(profile.performances.length > 0
+      ? [
+          pageSection(
+            "performances",
+            "Performances",
+            <PersonPerformances profile={profile} />
+          ),
+        ]
+      : []),
+    ...(profile.links.length > 0
+      ? [
+          pageSection(
+            "links",
+            "Links",
+            <LinkGroups links={profile.links} first={["external_profile"]} />
+          ),
+        ]
+      : []),
+  ];
+}
+
+/**
+ * A person's head: "Bards" in
+ * the breadcrumbs, the name, their kind and status as the meta line, and
+ * the banner: the one that keeps a no-page person's request on record, or
+ * the stub's.
+ */
+function personHead(person: Person) {
+  return {
+    path: `/bards/${person.slug}`,
+    title: person.name,
+    breadcrumbs: {
+      trail: [{ label: "Bards", to: "/bards" }] as const,
+      current: person.name,
+    },
+    subtitle: personSubtitle(person),
+    banners: !person.profile ? (
+      <PageBanner kind="no-page" name={person.name} />
+    ) : person.is_stub ? (
+      <PageBanner kind="stub" subject="person" />
+    ) : undefined,
+  };
+}
+
+/**
+ * A person's Read view (plan §4.6): their head (`personHead`). A person
+ * who asked not to have a page is their identity and notes only (their
+ * statement, with a link) and nothing else.
+ * Anyone else has the infobox, their sections and the licence line.
+ */
+export function PersonPage({ view }: { readonly view: PersonView }) {
+  const { person, markdown } = view;
+  const head = personHead(person);
+  const { profile } = person;
+  if (!profile) {
+    return (
+      <EntityPage {...head} licence={<LicenceLine />}>
+        {markdown.notes ? <UserMarkdown tree={markdown.notes} /> : null}
+      </EntityPage>
+    );
+  }
+  const sections = sectionsOf(profile, markdown);
+  return (
+    <EntityPage
+      {...head}
+      infobox={<PersonInfobox person={person} />}
+      contents={sections.map(({ id, label }) => ({ id, label }))}
+      licence={<LicenceLine />}
+    >
+      {sections.map(({ id, element }) => (
+        <Fragment key={id}>{element}</Fragment>
+      ))}
+    </EntityPage>
+  );
+}
