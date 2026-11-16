@@ -5,12 +5,12 @@ import { thrownPageFailure } from "./read-failure";
 /**
  * What an entity's layout route shares (`pieces.$slug`, `bards.$slug`,
  * `categories.$slug`, `collections.$id`, `events.$slug`): it loads the
- * entity once for its Read views.
+ * entity once for its Read and History views.
  */
 
 /**
  * The layout's `shouldRevalidate` (plan §1): its loader reads the entity
- * by its path alone, so a search-only change (a members
+ * by its path alone, so a search-only change (a history or members
  * `?page=`) doesn't load it again, while its children reload; a new
  * address, Try again (the same URL) and anything else does as React Router
  * would.

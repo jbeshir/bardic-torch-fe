@@ -26,8 +26,8 @@ import { renderMarkdown } from "~/server/markdown.server";
 
 /**
  * `/bards/:slug`, a person or a group (plan §4.6): the layout of their
- * views, Read (`bards.$slug._index.tsx`), loading the
- * person once. A slug that can't be one is our own 404 without
+ * views, Read (`bards.$slug._index.tsx`) and History, loading the
+ * person once for both. A slug that can't be one is our own 404 without
  * asking the API; a failed read is thrown to the ErrorBoundary below.
  */
 
@@ -69,7 +69,7 @@ export async function loader(args: LoaderFunctionArgs) {
   return view;
 }
 
-/** Only a new address loads it again. */
+/** Only a new address loads it again, not a new history page. */
 export const shouldRevalidate = ignoreSearchChanges;
 
 export const meta: MetaFunction = args => {

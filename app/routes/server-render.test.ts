@@ -8,6 +8,7 @@ import * as notFound from "./$";
 import * as home from "./_index";
 import * as bardLayout from "./bards.$slug";
 import * as bardRead from "./bards.$slug._index";
+import * as bardHistory from "./bards.$slug.history";
 import * as bards from "./bards._index";
 import * as categoryLayout from "./categories.$slug";
 import * as categoryRead from "./categories.$slug._index";
@@ -20,7 +21,9 @@ import * as eventRead from "./events.$slug._index";
 import * as events from "./events._index";
 import * as pieceLayout from "./pieces.$slug";
 import * as pieceRead from "./pieces.$slug._index";
+import * as pieceHistory from "./pieces.$slug.history";
 import * as pieces from "./pieces._index";
+import * as revision from "./revisions.$id";
 import * as robots from "./robots[.]txt";
 import * as search from "./search";
 import * as settings from "./settings";
@@ -40,7 +43,7 @@ const route = (id: string, path: string, module: Module) => ({
   hasLoader: true,
   hasErrorBoundary: true,
 });
-/** The index route under `layout`'s route. */
+/** The index route, or the history route, under `layout`'s route. */
 const child = (layout: string, module: Module, path?: string) => ({
   id: `routes/${layout}${path ? `.${path}` : "._index"}`,
   parentId: `routes/${layout}`,
@@ -56,9 +59,11 @@ const get = serveApp([
   route("pieces._index", "pieces", pieces),
   route("pieces.$slug", "pieces/:slug", pieceLayout),
   child("pieces.$slug", pieceRead),
+  child("pieces.$slug", pieceHistory, "history"),
   route("bards._index", "bards", bards),
   route("bards.$slug", "bards/:slug", bardLayout),
   child("bards.$slug", bardRead),
+  child("bards.$slug", bardHistory, "history"),
   route("categories._index", "categories", categories),
   route("categories.$slug", "categories/:slug", categoryLayout),
   child("categories.$slug", categoryRead),
@@ -68,6 +73,7 @@ const get = serveApp([
   route("events._index", "events", events),
   route("events.$slug", "events/:slug", eventLayout),
   child("events.$slug", eventRead),
+  route("revisions.$id", "revisions/:id", revision),
   route("search", "search", search),
   route("settings", "settings", settings),
   route("robots[.]txt", "robots.txt", robots),
@@ -97,6 +103,8 @@ const PAGES: readonly (readonly [string, number, Check])[] = [
   ["/pieces/the-copper-kettle", 200, { h1: "The Copper Kettle" }],
   ["/pieces/the-dragons-hoard", 200, { h1: "The Dragon’s Hoard" }],
   ["/pieces/the-unfinished-lay", 200, { h1: "The Unfinished Lay" }],
+  ["/pieces/the-copper-kettle/history", 200, { h1: "The Copper Kettle" }],
+  ["/revisions/1003", 200, { h1: "Revision 1003 of The Copper Kettle" }],
   ["/search?q=northmarch", 200, { h1: "Search" }],
   ["/bards", 200, { h1: "Bards" }],
   ["/bards?letter=W", 200, { h1: "Bards" }],

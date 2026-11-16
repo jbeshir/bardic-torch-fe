@@ -25,7 +25,9 @@ import { renderMarkdown } from "~/server/markdown.server";
 
 /**
  * `/pieces/:slug`, a piece (plan §4.5): the layout of its views, Read
- * (`pieces.$slug._index.tsx`).
+ * (`pieces.$slug._index.tsx`) and History. It loads the piece once
+ * for both; moving between history pages (a search-only change) doesn't
+ * load it again.
  *
  * A slug that can't be one is our own 404, without asking the API. A
  * failed read is thrown to the ErrorBoundary below, inside the shell: not
@@ -56,7 +58,7 @@ export async function loader(args: LoaderFunctionArgs) {
   return view;
 }
 
-/** Only a new address loads it again. */
+/** Only a new address loads it again, not a new history page. */
 export const shouldRevalidate = ignoreSearchChanges;
 
 export const meta: MetaFunction = args => {

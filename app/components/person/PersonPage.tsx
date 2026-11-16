@@ -86,12 +86,12 @@ function sectionsOf(
 }
 
 /**
- * A person's head: "Bards" in
+ * A person's head, the same on their Read and History views: "Bards" in
  * the breadcrumbs, the name, their kind and status as the meta line, and
  * the banner: the one that keeps a no-page person's request on record, or
  * the stub's.
  */
-function personHead(person: Person) {
+export function personHead(person: Person) {
   return {
     path: `/bards/${person.slug}`,
     title: person.name,
@@ -111,8 +111,10 @@ function personHead(person: Person) {
 /**
  * A person's Read view (plan §4.6): their head (`personHead`). A person
  * who asked not to have a page is their identity and notes only (their
- * statement, with a link) and nothing else.
- * Anyone else has the infobox, their sections and the licence line.
+ * statement, with a link): no History tab (plan R8; a direct
+ * `/bards/{slug}/history` still works) and nothing else.
+ * Anyone else has the infobox, their sections and the licence line
+ * pointing at the page history.
  */
 export function PersonPage({ view }: { readonly view: PersonView }) {
   const { person, markdown } = view;
@@ -120,7 +122,7 @@ export function PersonPage({ view }: { readonly view: PersonView }) {
   const { profile } = person;
   if (!profile) {
     return (
-      <EntityPage {...head} licence={<LicenceLine />}>
+      <EntityPage {...head} history={false} licence={<LicenceLine />}>
         {markdown.notes ? <UserMarkdown tree={markdown.notes} /> : null}
       </EntityPage>
     );
@@ -131,7 +133,7 @@ export function PersonPage({ view }: { readonly view: PersonView }) {
       {...head}
       infobox={<PersonInfobox person={person} />}
       contents={sections.map(({ id, label }) => ({ id, label }))}
-      licence={<LicenceLine />}
+      licence={<LicenceLine historyPath={`${head.path}/history`} />}
     >
       {sections.map(({ id, element }) => (
         <Fragment key={id}>{element}</Fragment>

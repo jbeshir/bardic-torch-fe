@@ -22,7 +22,7 @@ import { getEvent } from "~/server/catalogue.server";
 
 /**
  * `/events/:slug`, the layout of an event's page (plan §1, §4.10): one
- * `getEvent` read for the head (breadcrumbs, the h1), and on Read the licence line and the body
+ * `getEvent` read for the head (breadcrumbs, the h1, the Read and History tabs), and on Read the licence line and the body
  * (`events.$slug._index.tsx`, from this route's data). A restricted
  * piece's recording is emptied here, so its address never reaches the
  * page (§4.0).
@@ -73,7 +73,9 @@ export default function EventLayout() {
         trail: [{ label: "Events", to: "/events" }],
         current: event.name,
       }}
-      {...(pathname === path ? { licence: <LicenceLine /> } : {})}
+      {...(pathname === path
+        ? { licence: <LicenceLine historyPath={`${path}/history`} /> }
+        : {})}
     >
       <Outlet />
     </EntityPage>

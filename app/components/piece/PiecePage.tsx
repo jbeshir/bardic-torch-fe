@@ -104,11 +104,11 @@ function banner(piece: Piece) {
 }
 
 /**
- * A piece's head: "Pieces" in the
+ * A piece's head, the same on its Read and History views: "Pieces" in the
  * breadcrumbs, the title, the kind as the meta line, and the
  * restricted or stub banner.
  */
-function pieceHead(piece: Piece) {
+export function pieceHead(piece: Piece) {
   return {
     path: `/pieces/${piece.slug}`,
     title: piece.title,
@@ -123,7 +123,8 @@ function pieceHead(piece: Piece) {
 
 /**
  * A piece's Read view (plan §4.5): its head (`pieceHead`), the infobox,
- * every term as a category chip ("Mood: Singalong") and the licence line.
+ * every term as a category chip ("Mood: Singalong") and the licence line
+ * pointing at the page history.
  */
 export function PiecePage({ view }: { readonly view: PieceView }) {
   const { piece } = view;
@@ -138,7 +139,7 @@ export function PiecePage({ view }: { readonly view: PieceView }) {
         prefix: `${FACET_LABELS[term.facet]}:`,
         to: `/categories/${term.slug}`,
       }))}
-      licence={<LicenceLine />}
+      licence={<LicenceLine historyPath={`${head.path}/history`} />}
       contents={sections.map(({ id, label }) => ({ id, label }))}
     >
       {sections.map(({ id, element }) => (

@@ -147,7 +147,7 @@ const BY_SLUG: ReadonlyMap<string, RawTerm> = new Map(
 );
 
 /** The term with this slug; throws for a slug that isn't in the catalogue. */
-function rawTerm(slug: string): RawTerm {
+export function rawTerm(slug: string): RawTerm {
   const found = BY_SLUG.get(slug);
   if (!found) throw new Error(`no such term: ${slug}`);
   return found;

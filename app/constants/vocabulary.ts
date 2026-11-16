@@ -6,11 +6,13 @@ import type {
   CreditRole,
   Facet,
   Letter,
+  LicensingStatus,
   LinkPlaceType,
   LinkRole,
   PersonAliasKind,
   PersonKind,
   PersonRole,
+  PersonStatus,
   PieceAliasKind,
   PieceKind,
 } from "~/schemas/catalogue";
@@ -133,7 +135,7 @@ export const CERTAINTY_QUALIFIERS: Readonly<
 
 /**
  * What kind of other name an alias is. A page never shows a `redirect`
- * alias (a search aid).
+ * alias (a search aid); only a revision's diff names one.
  */
 export const PIECE_ALIAS_KIND_LABELS: Readonly<Record<PieceAliasKind, string>> =
   {
@@ -164,7 +166,7 @@ export const LINK_ROLE_HEADINGS: Readonly<Record<LinkRole, string>> = {
 
 /**
  * Each link role as one role's name, in a list of a link's roles ("Lyrics,
- * Text source"): a citation's roles.
+ * Text source"): a citation's roles and a revision's links.
  */
 export const LINK_ROLE_LABELS: Readonly<Record<LinkRole, string>> = {
   official: "Official",
@@ -243,7 +245,7 @@ export const WORK_ROLE_HEADINGS: Readonly<Record<CreditRole, string>> = {
 };
 
 // ---------------------------------------------------------------------------
-// Collections, events
+// Collections, events and revisions
 // ---------------------------------------------------------------------------
 
 /** Each collection kind's label, in sentence case. */
@@ -262,3 +264,18 @@ export const COLLECTION_KIND_LABELS: Readonly<Record<CollectionKind, string>> =
     archived_songbook: "Archived songbook",
     hosted_document: "Hosted document",
   };
+
+/** Whether a piece's or a person's licensing is known, in a revision. */
+export const LICENSING_STATUS_LABELS: Readonly<
+  Record<LicensingStatus, string>
+> = {
+  known: "Known",
+  unknown: "Not yet known",
+};
+
+/** A person's status, in a revision. */
+export const PERSON_STATUS_LABELS: Readonly<Record<PersonStatus, string>> = {
+  active: "Active",
+  deceased: "Deceased",
+  prefers_no_page: "Prefers not to have a page",
+};

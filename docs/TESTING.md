@@ -40,7 +40,7 @@ If `AUTH_MODE=stub` reaches a build without the flag, it is ignored with a logge
 
 `npm run test:e2e` builds the e2e build (`npm run build:e2e`) and runs `playwright test --project e2e`. Playwright starts the fixture API on port 4010, then serves the build with `wrangler dev` on 8788 (`playwright.config.ts`; bindings arrive as `--var`, among them `AUTH_MODE=stub`). Specs use `http://localhost:8788`, because Playwright only sends Secure cookies to `localhost` over HTTP. It is separate from `validate` because it needs Chromium; CI runs it as the `e2e` job.
 
-- **`e2e/journeys.spec.ts`**: the read journeys (home and search, browse pieces with filters, a phone's filter drawer, no-JS forms, a piece, bards, categories/collections/events, 404, the theme) and the stubbed sign-in, the name in settings and log out.
+- **`e2e/journeys.spec.ts`**: the read journeys (home and search, browse pieces with filters, a phone's filter drawer, no-JS forms, a piece, history, bards, categories/collections/events, 404, the theme) and the stubbed sign-in, the name in settings and log out.
 - **`e2e/templates.spec.ts`**: one visit per page template: axe (WCAG 2.0–2.2 A/AA) at 1280 in the default theme with zero violations, and at 360 no sideways scroll.
 - **`e2e/screenshots.spec.ts`**: on demand only, `npm run screenshots`: each template, light and dark, at 360 and 1280, into `e2e/screenshots/` (gitignored). Compare screenshots only from the Playwright image.
 - A network guard (`e2e/support/test.ts`) fails a test on any request that leaves the machine; call `waitForHydration(page)` before a step that needs JS.

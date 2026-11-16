@@ -32,7 +32,7 @@ const BY_SLUG: ReadonlyMap<string, RawEvent> = new Map(
 );
 
 /** The event with this slug; throws for a slug that isn't in the catalogue. */
-function rawEvent(slug: string): RawEvent {
+export function rawEvent(slug: string): RawEvent {
   const found = BY_SLUG.get(slug);
   if (!found) throw new Error(`no such event: ${slug}`);
   return found;

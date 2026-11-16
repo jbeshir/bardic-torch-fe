@@ -34,8 +34,8 @@ function NavItem({
 
 /**
  * Whether the nav entry at `href` is the section being shown. An entry
- * marks its whole section: `/pieces` is current on `/pieces/the-copper-kettle`.
- * An entry with a query (`/categories?facet=mood`) is
+ * marks its whole section: `/pieces` is current on `/pieces/the-copper-kettle`
+ * and its history. An entry with a query (`/categories?facet=mood`) is
  * current only for that query, and `/categories` is not current while a
  * facet is picked, so one entry per page is. Only the page itself is
  * `aria-current="page"`; the section of a page inside it is `"true"`.

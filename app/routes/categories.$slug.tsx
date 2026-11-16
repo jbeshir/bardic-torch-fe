@@ -29,10 +29,11 @@ import { renderMarkdown } from "~/server/markdown.server";
 
 /**
  * `/categories/:slug`, the layout of a category's page (plan §1, §4.8):
- * the head (breadcrumbs, the h1, the meta line) and, on Read, the infobox, the description, the subcategories, the
+ * the head (breadcrumbs, the h1, the meta line, the Read and History
+ * tabs) and, on Read, the infobox, the description, the subcategories, the
  * chip row and the licence line, all from `getTerm` with one member. The
  * members are the Read child's own read (`categories.$slug._index.tsx`),
- * so paging them never reloads this one.
+ * so paging them, or the history, never reloads this one.
  *
  * The slug is checked before any call: one the API would refuse (`%2F`,
  * upper case, a trailing hyphen) is our own 404.
@@ -160,7 +161,7 @@ export default function CategoryLayout() {
                 current: true,
               },
             ],
-            licence: <LicenceLine />,
+            licence: <LicenceLine historyPath={`${path}/history`} />,
           }
         : {})}
     >

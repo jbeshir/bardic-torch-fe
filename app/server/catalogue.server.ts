@@ -16,6 +16,8 @@ import {
   type PersonList,
   type Piece,
   type PieceList,
+  type Revision,
+  type RevisionHistory,
   type Term,
   type TermList,
 } from "~/schemas/catalogue";
@@ -127,6 +129,37 @@ const ENDPOINTS = {
   getEvent: {
     method: "GET",
     path: "/v1/events/{slug}",
+    query: [],
+  },
+  // Histories and revisions.
+  listPieceRevisions: {
+    method: "GET",
+    path: "/v1/pieces/{slug}/history",
+    query: ["limit", "offset"],
+  },
+  listPersonRevisions: {
+    method: "GET",
+    path: "/v1/persons/{slug}/history",
+    query: ["limit", "offset"],
+  },
+  listTermRevisions: {
+    method: "GET",
+    path: "/v1/terms/{slug}/history",
+    query: ["limit", "offset"],
+  },
+  listCollectionRevisions: {
+    method: "GET",
+    path: "/v1/collections/{collection_id}/history",
+    query: ["limit", "offset"],
+  },
+  listEventRevisions: {
+    method: "GET",
+    path: "/v1/events/{slug}/history",
+    query: ["limit", "offset"],
+  },
+  getRevision: {
+    method: "GET",
+    path: "/v1/revisions/{revision_id}",
     query: [],
   },
 } as const satisfies {
@@ -276,7 +309,7 @@ export function getPerson(
 }
 
 // ---------------------------------------------------------------------------
-// Categories, collections, events
+// Categories, collections, events, histories and revisions
 
 /**
  * A term with one page of its members (`GET /v1/terms/{slug}`): `slug`
@@ -329,4 +362,53 @@ export function getEvent(
   slug: string
 ): Promise<ReadResult<Event>> {
   return callPublicApi(context, "getEvent", { path: { slug } });
+}
+
+/**
+ * Each entity with a history, by its history operation and the name of
+ * its address in the path.
+ */
+const HISTORIES = {
+  piece: { operationId: "listPieceRevisions", address: "slug" },
+  person: { operationId: "listPersonRevisions", address: "slug" },
+  term: { operationId: "listTermRevisions", address: "slug" },
+  collection: {
+    operationId: "listCollectionRevisions",
+    address: "collection_id",
+  },
+  event: { operationId: "listEventRevisions", address: "slug" },
+} as const satisfies Readonly<
+  Record<string, { readonly operationId: ReadId; readonly address: string }>
+>;
+
+export type HistoryEntity = keyof typeof HISTORIES;
+
+/**
+ * A page of an entity's approved revisions, newest first (`GET
+ * /v1/{pieces|persons|terms|collections|events}/{address}/history`):
+ * `address` already checked by the route (a slug, or a collection id as
+ * written).
+ */
+export function listRevisions(
+  context: Readonly<RouterContextProvider>,
+  entity: HistoryEntity,
+  address: string,
+  query: { readonly limit: number; readonly offset: number }
+): Promise<ReadResult<RevisionHistory>> {
+  const { operationId, address: name } = HISTORIES[entity];
+  return callPublicApi(context, operationId, {
+    query,
+    path: { [name]: address },
+  });
+}
+
+/**
+ * A revision with its snapshot and its base's (`GET /v1/revisions/{id}`):
+ * `id` already checked with `isEntityId`, and sent as written.
+ */
+export function getRevision(
+  context: Readonly<RouterContextProvider>,
+  id: string
+): Promise<ReadResult<Revision>> {
+  return callPublicApi(context, "getRevision", { path: { revision_id: id } });
 }

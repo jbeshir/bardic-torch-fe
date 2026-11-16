@@ -12,6 +12,8 @@ const TEMPLATES = [
   "/pieces",
   "/search?q=northmarch",
   "/pieces/the-copper-kettle",
+  "/pieces/the-copper-kettle/history",
+  "/revisions/1003",
   "/bards?letter=W",
   "/bards/wren-of-the-vale",
   "/categories",
