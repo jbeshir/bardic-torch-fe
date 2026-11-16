@@ -26,7 +26,7 @@ Names used below:
 
 Do these once, in this order. Each step links to the section with the details. The API repository's `docs/LAUNCH.md` interleaves these steps with the API's, the real import and the click-through, from nothing to production.
 
-1. **Create the Auth0 application and API** (§4). Then **set the two Auth0 values in `wrangler.jsonc`**: replace `AUTH0_DOMAIN` and the placeholder `AUTH0_CLIENT_ID`, in both the top-level `vars` (production) and `env.preview.vars`, with the tenant domain and the application's client ID. Both are public values, so they belong in the repository. Open a pull request with them, and leave it open for step 2. Until the placeholder is replaced, a deploy serves only the "Site configuration error" page (§2), not a site whose sign-in fails at Auth0.
+1. **Create the Auth0 application and API, and the API's post-login Action for the name claim** (§4; the Action's steps are in the API repository's `docs/DEPLOY.md`, "Name claim"). Then **set the two Auth0 values in `wrangler.jsonc`**: replace `AUTH0_DOMAIN` and the placeholder `AUTH0_CLIENT_ID`, in both the top-level `vars` (production) and `env.preview.vars`, with the tenant domain and the application's client ID. Both are public values, so they belong in the repository. Open a pull request with them, and leave it open for step 2. Until the placeholder is replaced, a deploy serves only the "Site configuration error" page (§2), not a site whose sign-in fails at Auth0.
 2. **Protect `main`.** Wait until step 1's pull request has run its checks: GitHub only offers status checks that have reported recently, and before that first run there are none to pick. Then, in GitHub → Settings → Branches, add a branch protection rule (or ruleset) for `main`:
    - require a pull request;
    - require the status checks **`validate`**, **`e2e`** and **`audit`** to pass. `validate` and `e2e` are the jobs of `.github/workflows/ci.yml`, and `audit` is the job of `.github/workflows/audit.yml`. Set each check's source to the **GitHub Actions** app, so a commit status of the same name from any other integration can't satisfy it;
@@ -160,10 +160,10 @@ A separate Auth0 application for previews would remove the shared client secret 
   - an `/assets/*` file that doesn't exist (a stale hashed URL) with a plain 404 (`no-store`, security headers), never a rendered page;
   - a cross-origin POST, PUT, PATCH or DELETE to a page or `.data` URL with 400 "Bad Request" (`no-store`). React Router refuses those itself, but would report them to Sentry.
 
-  The resource routes (`/api/*`, `/auth/*`, `/resources/theme`) keep their own same-origin check, a 403; `/robots.txt` and `/sitemap.xml` are read-only resource routes with no check to make. Everything else is set per request by the app: the security headers and the nonce CSP on every response the Worker makes (resource routes and redirects included), `Cache-Control: private, no-cache` on documents and `.data` answers while signed out, and `no-store` on every document and `.data` answer while signed in, on `/settings` and its data, on the auth routes and on the proxies.
+  The resource routes (`/auth/*`, `/resources/theme`) keep their own same-origin check, a 403; `/robots.txt` and `/sitemap.xml` are read-only resource routes with no check to make. Everything else is set per request by the app: the security headers and the nonce CSP on every response the Worker makes (resource routes and redirects included), `Cache-Control: private, no-cache` on documents and `.data` answers while signed out, and `no-store` on every document and `.data` answer while signed in, on `/settings` and its data, and on the auth routes.
 
 - **Catalogue reads are anonymous.** The catalogue's pages (every `GET /v1/...` the read UI makes, in loaders: pieces, persons, terms, collections, events, revisions) are sent to the API with no `Authorization` header, whether or not the reader is signed in, so the API must serve them to anyone and the Worker needs no credentials for them. Responses are not cached upstream in FE2 (every page request reads the API again; the Worker's own Cache API waits for the backend's caching, B11). The pages themselves are `private, no-cache` (`no-store` while signed in), with `Vary: Cookie`.
-- **Indexing.** Only the production build is indexable. `robots.txt` on production allows crawling and disallows only `/auth/`, `/api/`, `/resources/` and `/settings`; the pages that say `noindex` themselves (`/search`, histories, revisions, filtered lists) are deliberately not disallowed, so crawlers can read that. The preview Worker (and the e2e and development builds) answer `Disallow: /` **and** send `X-Robots-Tag: noindex` on every response the Worker makes, the sitemap included (static files such as `/assets/*` never reach the Worker; the `Disallow` covers them): the `Disallow` stops crawling, and the header covers a preview URL that is found elsewhere. Both are on purpose.
+- **Indexing.** Only the production build is indexable. `robots.txt` on production allows crawling and disallows only `/auth/`, `/resources/` and `/settings`; the pages that say `noindex` themselves (`/search`, histories, revisions, filtered lists) are deliberately not disallowed, so crawlers can read that. The preview Worker (and the e2e and development builds) answer `Disallow: /` **and** send `X-Robots-Tag: noindex` on every response the Worker makes, the sitemap included (static files such as `/assets/*` never reach the Worker; the `Disallow` covers them): the `Disallow` stops crawling, and the header covers a preview URL that is found elsewhere. Both are on purpose.
 - **Sitemap.** `/sitemap.xml` is one `urlset` of the pages and every public catalogue entry, `Cache-Control: public, max-age=3600`. The categories are one `listTerms` read; the pieces, bards, collections and events are read 100 at a time, one page after another, so the sitemap costs about one API call per 100 entries. Workers allow 50 subrequests per request on the free plan and 1,000 on the paid plan, so on the free plan a catalogue past about 5,000 entries needs the plan changed or the sitemap split. Restricted pieces and stub people are left out. Any failed read makes the whole sitemap a 503 with `Retry-After`; no partial sitemap is ever served.
 - **Source maps.** `upload_source_maps` uploads the Worker's source maps with each deploy, so stack traces in Workers Logs are readable. Sentry source-map upload isn't set up.
 
@@ -268,21 +268,21 @@ The API is a separate repository, deployed to the maintainer's dokku host. The f
    - `dokku letsencrypt:cron-job --add` (renewal)
 3. **Check it.** `curl https://api.bardictorch.org/healthz` returns 200 `{"status":"ok"}` (the process is up), and `curl https://api.bardictorch.org/readyz` returns the same once the database answers (503 `unavailable` if it doesn't).
 
-**No CORS set-up is needed.** The browser never calls the API. Loaders and the `/api/*` proxy routes call it from the Worker, server to server, with the user's bearer token.
+**No CORS set-up is needed.** The browser never calls the API. Loaders and actions call it from the Worker, server to server, with the user's bearer token.
 
 ### Rate limiting
 
 The API has no rate limiter of its own (the backend's PLAN §3): abuse control is one Cloudflare rate-limiting rule on the zone, plus Turnstile on the contact form (§5). Add it once the zone is active, before the first production deploy: Cloudflare dashboard → the `bardictorch.org` zone → **Security** → **Security rules** → **Create rule** → **Rate limiting rules**. Fill in exactly:
 
-| setting                                        | value                                                                                                                                                     |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Rule name                                      | `Costly paths per IP`                                                                                                                                     |
-| When incoming requests match (Edit expression) | `(http.request.uri.path in {"/search" "/search.data" "/contact" "/contact.data" "/auth/login" "/auth/callback" "/auth/logout" "/api/me" "/sitemap.xml"})` |
-| With the same characteristics                  | IP (fixed on the Free plan; Cloudflare also counts per data centre)                                                                                       |
-| When rate exceeds: Requests                    | `20`                                                                                                                                                      |
-| When rate exceeds: Period                      | 10 seconds                                                                                                                                                |
-| Then take action                               | **Block** (the default response, 429; a custom response needs Pro)                                                                                        |
-| Duration                                       | 10 seconds                                                                                                                                                |
+| setting                                        | value                                                                                                                                           |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rule name                                      | `Costly paths per IP`                                                                                                                           |
+| When incoming requests match (Edit expression) | `(http.request.uri.path in {"/search" "/search.data" "/contact" "/contact.data" "/auth/login" "/auth/callback" "/auth/logout" "/sitemap.xml"})` |
+| With the same characteristics                  | IP (fixed on the Free plan; Cloudflare also counts per data centre)                                                                             |
+| When rate exceeds: Requests                    | `20`                                                                                                                                            |
+| When rate exceeds: Period                      | 10 seconds                                                                                                                                      |
+| Then take action                               | **Block** (the default response, 429; a custom response needs Pro)                                                                              |
+| Duration                                       | 10 seconds                                                                                                                                      |
 
 **Free-plan limits** (Cloudflare's rate-limiting availability table, https://developers.cloudflare.com/waf/rate-limiting-rules/, read 2026-11-14): **one** rule per zone; a 10-second counting period and a 10-second mitigation timeout only; IP as the only characteristic; only the URI **path** (`http.request.uri.path`) and Verified Bot in the expression (no method, query or host); no separate counting expression; cached assets are counted too. The rule above uses nothing else. If the expression editor ever refuses the `in {…}` set, write the same paths as `http.request.uri.path eq "/search" or http.request.uri.path eq "/search.data" or …`.
 
@@ -291,7 +291,6 @@ The API has no rate limiter of its own (the backend's PLAN §3): abuse control i
 - `/search` and its client-side data URL `/search.data`: each runs the API's full-text searches over pieces and bards;
 - `/contact` and `/contact.data`: a POST verifies a Turnstile token with Cloudflare and writes a contact request;
 - `/auth/login`, `/auth/callback`, `/auth/logout`: each talks to Auth0, whose own per-tenant limits would otherwise be spent by one client and lock real readers out of sign-in;
-- `/api/me` (the settings proxy) writes to the API;
 - `/sitemap.xml` reads every catalogue list from the API, about one call per 100 entries.
 
 The catalogue pages (`/pieces`, `/bards`, and the rest) are left out on purpose: readers at an event often share one IP (a campsite or hall Wi-Fi), every facet click on a list page is a request, and each read is a single API call that the API caps at 2 seconds. Static files (`/assets/*`) never match. 20 requests in 10 seconds is far above what a person does on these paths (a search is two requests: the page and its `.data`), so a block means a script; it lasts 10 seconds and then lifts on its own.
@@ -326,6 +325,7 @@ How these are used:
 - **Identifier (audience):** `https://api.bardictorch.org`. This is `AUTH0_AUDIENCE`, and must be what the backend expects as its audience. Signing algorithm RS256.
 - **Allow Offline Access: on.** The app asks for `openid offline_access` (`app/server/auth.server.ts`); it reads no profile claims and stores only the tokens. Without offline access, Auth0 issues no refresh token: sign-in still works, but the reader is signed out when the access token expires instead of it being refreshed.
 - **Access token lifetime:** the app refreshes the token 5 minutes before it expires, so any lifetime well above that works (the default is 24 hours). The session cookie itself lasts 7 days.
+- **Name claim (post-login Action).** The API takes each user's display name from the access token's `https://bardictorch.org/name` claim, which an Auth0 post-login Action adds from the user's Google or Facebook name. Set it up exactly as the backend repository's docs/DEPLOY.md, Auth0 → "Name claim", says: build the Action, deploy it and add it to the Login flow. Until then the API answers 401 to every token, so every sign-in comes back signed out.
 
 **The ID token** is checked on every sign-in: its issuer must be `https://<AUTH0_DOMAIN>/`, its audience the client ID, its algorithm RS256, and its `iat`/`exp` within 30 seconds of the Worker's clock. Its signature isn't checked: it comes straight from Auth0's token endpoint over TLS (OpenID Connect Core §3.1.3.7).
 
@@ -438,7 +438,7 @@ curl -s -o /dev/null -w '%{http_code}\n' "https://bardic-torch-fe.<account-subdo
 
 # 10. robots.txt: crawlable on production, closed on preview.
 curl -s "$SITE/robots.txt"
-#    → production: User-agent: * / Disallow: /auth/ /api/ /resources/ /settings / Sitemap: https://bardictorch.org/sitemap.xml
+#    → production: User-agent: * / Disallow: /auth/ /resources/ /settings / Sitemap: https://bardictorch.org/sitemap.xml
 #      preview:    User-agent: * / Disallow: /
 curl -sI "$SITE/" | grep -i '^x-robots-tag'
 #    → production: nothing; preview: x-robots-tag: noindex (on every response, the sitemap included)
@@ -462,11 +462,11 @@ In the dashboard, each Worker's Settings → Domains & Routes shows `workers.dev
 
 Then, in a browser:
 
-1. **Sign in with Google**, then with Facebook. Each comes back to the page you started on, and the account menu shows your display name. If it says "We couldn't load your profile", the API or the audience is wrong. If sign-in comes back signed out, Workers Logs has an "Authentication callback error:" line with openid-client's reason:
+1. **Sign in with Google**, then with Facebook. Each comes back to the page you started on, and the account menu shows the name on that Google or Facebook account. If every sign-in comes back signed out with no "Authentication callback error:" line in Workers Logs, the API is refusing the token: check the API's name-claim Action (§4, "Name claim"). If it says "We couldn't load your profile", the API or the audience is wrong. If sign-in comes back signed out, Workers Logs has an "Authentication callback error:" line with openid-client's reason:
    - `invalid_client` (Auth0 answers 401 to the code exchange): the application's Authentication Method isn't **Client Secret (Basic)** (§4), or `AUTH0_CLIENT_SECRET` isn't the application's. The client credentials are form-encoded before Base64, as RFC 6749 requires; Auth0 accepts that, so check the setting and the secret first.
    - `OAUTH_JWT_CLAIM_COMPARISON_FAILED` for the claim `iss`: `AUTH0_DOMAIN` isn't the host Auth0 issues tokens from. If the tenant has a custom domain, use that; the issuer must be exactly `https://<AUTH0_DOMAIN>/`. For the claim `aud`, `AUTH0_CLIENT_ID` is wrong.
    - `OAUTH_JWT_TIMESTAMP_CHECK_FAILED` for `iat` or `exp`: the ID token's times are more than 30 seconds off the Worker's clock. That shouldn't happen on Cloudflare; retry, and report it if it persists.
-2. **`/settings`:** rename yourself (a toast confirms it).
+2. **`/settings`** shows the same name and says it comes from the Google or Facebook account.
 3. **Log out.** You pass through Auth0 and come back signed out. An Auth0 "invalid returnTo" error means §4's logout URLs are wrong.
 4. **Switch the theme** to dark, reload, and it stays dark, with no flash.
 5. **The console** shows no CSP violations.

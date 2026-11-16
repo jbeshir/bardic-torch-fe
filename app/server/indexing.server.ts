@@ -14,7 +14,6 @@ export function robotsTxt(origin: string): string {
     return [
       "User-agent: *",
       "Disallow: /auth/",
-      "Disallow: /api/",
       "Disallow: /resources/",
       "Disallow: /settings",
       "",

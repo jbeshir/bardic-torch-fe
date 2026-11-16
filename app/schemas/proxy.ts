@@ -1,8 +1,8 @@
 /**
- * The JSON body of every `/api/*` proxy response (`proxyResponse` in
- * api.server.ts), as the settings page's fetchers read it. `message` is
- * always the app's own copy, never the API's, in one voice ("We
- * couldn’t…").
+ * The JSON body a resource route answers a script's form post with
+ * (`sendForm`; the theme route), and the errors `api.server.ts` gives its
+ * callers. `message` is always the app's own copy, never the API's, in one
+ * voice ("We couldn’t…").
  */
 
 /**
@@ -35,16 +35,9 @@ export type ProxyErrorCode =
 export const TRY_AGAIN_MESSAGE =
   "We couldn’t do that just now. Try again shortly.";
 
-/** A problem with one field of the submitted form, shown next to it. */
-type ProxyFieldError = {
-  readonly field: string;
-  readonly message: string;
-};
-
 export type ProxyError = {
   readonly code: ProxyErrorCode;
   readonly message: string;
-  readonly fields?: readonly ProxyFieldError[];
 };
 
 export type ProxyBody<T> =

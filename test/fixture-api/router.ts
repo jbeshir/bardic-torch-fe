@@ -28,13 +28,13 @@ import { requestProblems, responseProblems } from "./spec";
 
 /**
  * Routes a request to the fixture API's canned answers: `getHealthz`, the
- * seeded users' `getMe` and `updateMe`, the catalogue reads
+ * seeded users' `getMe`, the catalogue reads
  * (catalogue-operations.ts), the editing operations
  * (editing-operations.ts) and the moderation and contact operations
  * (moderation-operations.ts). A request is signed in by the bearer the app
  * sends for a stub session, exactly `Bearer fixture:<userId>`;
  * anything else is 401, except on the contact form, which needs no
- * account. A renamed user, each user's revisions, the contact requests
+ * account. Each user's revisions, the contact requests
  * and the hidden links are remembered in the state; a JSON body that
  * breaks the spec is 400.
  *
@@ -122,11 +122,6 @@ function signedIn(
   const { body } = parsed;
   const query = new URLSearchParams(request.search);
   switch (operationId) {
-    case "updateMe": {
-      const { display_name } = body as { display_name: string };
-      state.users.set(id, { ...user, display_name });
-      return { status: 200, body: state.users.get(id) };
-    }
     case "submitRevision":
       return submitRevision(
         state.revisions,
@@ -192,7 +187,6 @@ function signedIn(
 const ROUTES = [
   { operationId: "getHealthz", method: "GET", path: "/healthz" },
   { operationId: "getMe", method: "GET", path: "/v1/me" },
-  { operationId: "updateMe", method: "PATCH", path: "/v1/me" },
   { operationId: "submitRevision", method: "POST", path: "/v1/revisions" },
   { operationId: "listMyRevisions", method: "GET", path: "/v1/me/revisions" },
   {

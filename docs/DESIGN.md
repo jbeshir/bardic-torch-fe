@@ -257,21 +257,20 @@ The evidence for the themes is the e2e axe pass in the default theme; screenshot
 - **Respect bards.** Credit names exactly as the bard uses them. Say "creator's wishes", never "restrictions", apart from the status name "Restricted". **Links only, never lyrics.** No exclamation marks except in a thank-you.
 - **Errors say what happened, then what to do.** Don't blame the reader, show codes or show the API's `message`; map the API's `code` to our own copy (`app/server/api.server.ts`).
 
-| Situation       | Write                                                                  | Not                   |
-| --------------- | ---------------------------------------------------------------------- | --------------------- |
-| Required field  | "Enter a display name."                                                | "Invalid input"       |
-| Too long        | "Display names can be up to 64 characters." (from the shared constant) | "Max length exceeded" |
-| Save failed     | "We couldn't save your changes. Check your connection and try again."  | "Error 500"           |
-| Session expired | "You've been signed out. Log in again and we'll bring you back here."  | "Unauthorised"        |
-| Offline         | "You seem to be offline. Your changes haven't been saved yet."         | "Network error"       |
+| Situation       | Write                                                                 | Not             |
+| --------------- | --------------------------------------------------------------------- | --------------- |
+| Required field  | "Enter an email address we can reply to, like name@example.org."      | "Invalid input" |
+| Save failed     | "We couldn't save your changes. Check your connection and try again." | "Error 500"     |
+| Session expired | "You've been signed out. Log in again and we'll bring you back here." | "Unauthorised"  |
+| Offline         | "You seem to be offline. Your changes haven't been saved yet."        | "Network error" |
 
-- **Fixed strings.** Non-affiliation: "Bardic Torch is community-maintained and not affiliated with the Society for Creative Anachronism or any other organisation." External links read "(external link)", and the original wiki's "(opens original wiki)". Settings without JavaScript: "Changing your settings needs JavaScript. Everything else on Bardic Torch works without it." Theme toggle: group "Theme", options "System", "Light", "Dark".
+- **Fixed strings.** Non-affiliation: "Bardic Torch is community-maintained and not affiliated with the Society for Creative Anachronism or any other organisation." External links read "(external link)", and the original wiki's "(opens original wiki)". Theme toggle: group "Theme", options "System", "Light", "Dark".
 
 ---
 
 ## 9. Accessibility (WCAG 2.2 AA)
 
-- **Semantic HTML first.** Every control is a real link or form, enhanced with JS second. Navigation, the theme toggle, the drawer and the account menu work without JavaScript (the drawer falls back to an anchor to `#site-nav`); Settings shows its notice.
+- **Semantic HTML first.** Every control is a real link or form, enhanced with JS second. Navigation, the theme toggle, the drawer and the account menu work without JavaScript (the drawer falls back to an anchor to `#site-nav`).
 - **Targets:** at least 24 px everywhere, 44 × 44 px for primary controls on mobile.
 - **Focus** is always visible and never hidden by the sticky header or the app bar (`scroll-padding` above). It is an outset blue ring (`--bt-focus`), distinct from amber selection; never inside an `accent` or `danger` fill. A dialog, drawer or sheet returns focus to its trigger when it closes, and Escape closes it.
 - **Not colour alone:** every state has an icon, a word or a shape (§2.5, §4.3).

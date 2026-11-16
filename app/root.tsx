@@ -39,13 +39,7 @@ import type { Theme } from "~/styles/tokens";
 import { useErrorReference } from "~/hooks/useErrorReference";
 import { ToastProvider } from "~/components/ui/Toast";
 import { AppShell } from "~/components/AppShell";
-import {
-  LOGOUT_ACTION,
-  SETTINGS_INTENT,
-  SETTINGS_PATH,
-  type Account,
-} from "~/constants/account";
-import type { ProxyBody } from "~/schemas/proxy";
+import { LOGOUT_ACTION, type Account } from "~/constants/account";
 import { appEnvContext } from "~/server/context.server";
 import type { Route } from "./+types/root";
 
@@ -183,31 +177,21 @@ export const headers: Route.HeadersFunction = ({ loaderHeaders }) => {
 
 /**
  * The root loader calls /v1/me, so it runs again only when the answer can
- * have changed (plan §0.7): after a display-name change was saved, after a
- * settings call found the session ended (so the header shows "Log in"), on
- * the way into or out of /auth (login, logout), and when asked to (Try
- * again revalidates the page it is on). Plain navigations and other
- * submissions keep the data; a theme change doesn't go through the router.
+ * have changed (plan §0.7): on the way into or out of /auth (login,
+ * logout), and when asked to (Try again revalidates the page it is on).
+ * Plain navigations and other submissions keep the data; a theme change
+ * doesn't go through the router.
  */
 export const shouldRevalidate: ShouldRevalidateFunction = ({
   currentUrl,
   nextUrl,
   formMethod,
   formAction,
-  formData,
-  actionResult,
   defaultShouldRevalidate,
 }) => {
   if (formMethod) {
     const action = formAction ? new URL(formAction, currentUrl).pathname : "";
-    if (action === LOGOUT_ACTION) return true;
-    if (action !== SETTINGS_PATH) return false;
-    const result = actionResult as ProxyBody<unknown> | undefined;
-    if (result?.ok === false) return result.error.code === "unauthenticated";
-    return (
-      result?.ok === true &&
-      formData?.get("intent") === SETTINGS_INTENT.updateProfile
-    );
+    return action === LOGOUT_ACTION;
   }
   const isAuth = (url: URL) => url.pathname.startsWith("/auth/");
   if (isAuth(currentUrl) || isAuth(nextUrl)) return true;

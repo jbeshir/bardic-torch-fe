@@ -328,23 +328,16 @@ test.describe("sign in", () => {
   // the config's resolver rules), so the guard allows that one hop.
   test.use({ offHostRedirects: ["auth0.invalid"] });
 
-  test("stubbed sign-in, rename in settings, log out", async ({ page }) => {
+  test("stubbed sign-in, name in settings, log out", async ({ page }) => {
     await page.goto("/auth/login?as=contributor&returnTo=/settings");
     await expect(page).toHaveURL(/\/settings$/);
     await waitForHydration(page);
     const banner = page.getByRole("banner");
     const account = banner.locator("summary").filter({ visible: true });
-    await expect(account).toHaveText(/Account: Morwen of the /);
-
-    const name = page
-      .getByRole("main")
-      .getByRole("textbox", { name: "Display name" });
-    await name.fill("  Morwen of the Long Road ");
-    await page.getByRole("button", { name: "Save changes" }).click();
-    await expect(
-      page.getByRole("region", { name: "Notifications" })
-    ).toContainText("Display name saved.");
-    await expect(account).toHaveText(/Account: Morwen of the Long Road$/);
+    await expect(account).toHaveText(/Account: Morwen of the Marches$/);
+    await expect(page.getByRole("main")).toContainText(
+      "Your display name is the name on the Google or Facebook account you log in with."
+    );
 
     await account.click();
     const request = page.waitForEvent(

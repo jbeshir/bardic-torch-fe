@@ -1,6 +1,5 @@
 import type { ActionFunctionArgs } from "react-router";
 import { describe, expect, it } from "vitest";
-import { action as updateMe } from "~/routes/api.me";
 import { action as logout } from "~/routes/auth.logout";
 import { action as editBard } from "~/routes/bards.$slug.edit";
 import { action as newBard } from "~/routes/bards.new";
@@ -46,7 +45,6 @@ const ROUTES: ReadonlyArray<{
     path: "/resources/theme",
     action: saveTheme,
   },
-  { name: "/api/me", method: "PATCH", path: "/api/me", action: updateMe },
   {
     name: "/contributions",
     method: "POST",
@@ -179,8 +177,8 @@ describe("assertSameOrigin on every state-changing route", () => {
 
 describe("assertSameOrigin", () => {
   it("compares against the request's own origin, port included", () => {
-    const local = new Request("http://127.0.0.1:8788/api/me", {
-      method: "PATCH",
+    const local = new Request("http://127.0.0.1:8788/resources/theme", {
+      method: "POST",
       headers: { Origin: "http://127.0.0.1:8788" },
     });
     expect(() => assertSameOrigin(local)).not.toThrow();

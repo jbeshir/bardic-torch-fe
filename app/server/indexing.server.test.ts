@@ -11,7 +11,6 @@ describe("robotsTxt", () => {
       [
         "User-agent: *",
         "Disallow: /auth/",
-        "Disallow: /api/",
         "Disallow: /resources/",
         "Disallow: /settings",
         "",

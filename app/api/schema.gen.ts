@@ -55,8 +55,10 @@ export interface paths {
     };
     /**
      * Get the caller
-     * @description Returns the caller's user. A user is created as a contributor with a default display name on their first
-     *     authenticated request, so this succeeds for any valid credential that is not blocked.
+     * @description Returns the caller's user. A user is created as a contributor on their first authenticated request, so
+     *     this succeeds for any valid credential that is not blocked. Their display name is the name in the access
+     *     token's `https://bardictorch.org/name` claim, normalised to Unicode NFC, trimmed and cut to 64 characters;
+     *     a stored name that differs is replaced. A token without a valid name gets 401.
      */
     get: operations["getMe"];
     put?: never;
@@ -64,11 +66,7 @@ export interface paths {
     delete?: never;
     options?: never;
     head?: never;
-    /**
-     * Update the caller
-     * @description Sets the caller's display name and returns the updated user.
-     */
-    patch: operations["updateMe"];
+    patch?: never;
     trace?: never;
   };
   "/v1/users/{user_id}/blocked": {
@@ -975,23 +973,6 @@ export interface components {
        * @enum {string}
        */
       role: "contributor" | "moderator";
-    };
-    /**
-     * @description The body of a request to update the caller.
-     * @example {
-     *       "display_name": "Morwen"
-     *     }
-     */
-    UpdateMeRequest: {
-      /**
-       * @description The new display name, at most 256 characters as sent. It is normalised to Unicode NFC and surrounding
-       *     whitespace is trimmed; the result must have 1 to 64 characters, each a letter, mark, number,
-       *     punctuation, symbol or space separator. So control and format characters (such as U+202E), line and
-       *     paragraph separators, and private-use and unassigned code points are rejected, as are more than 4
-       *     combining marks in a row.
-       * @example Morwen
-       */
-      display_name: string;
     };
     /**
      * @description The body of a request to block or unblock a user.
@@ -4392,55 +4373,6 @@ export interface operations {
       };
       401: components["responses"]["Unauthenticated"];
       403: components["responses"]["Forbidden"];
-      500: components["responses"]["Internal"];
-      503: components["responses"]["Unavailable"];
-    };
-  };
-  updateMe: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** @description The fields to update. */
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateMeRequest"];
-      };
-    };
-    responses: {
-      /** @description The caller's updated user. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["User"];
-        };
-      };
-      /**
-       * @description The request body is malformed, or the display name is invalid after normalisation; the error code is
-       *     `invalid_request`.
-       */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "code": "invalid_request",
-           *       "message": "invalid display name: must be at most 64 characters"
-           *     }
-           */
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      401: components["responses"]["Unauthenticated"];
-      403: components["responses"]["Forbidden"];
-      413: components["responses"]["RequestTooLarge"];
-      415: components["responses"]["UnsupportedMediaType"];
       500: components["responses"]["Internal"];
       503: components["responses"]["Unavailable"];
     };

@@ -9,7 +9,7 @@ This is milestone FE2, the read UI, on top of FE1's foundation. FE1 gave it:
 - the wiki-style layout, with a header, sidebar, mobile bottom app bar and footer;
 - the design system, in light and dark;
 - Auth0 sign-in with Google or Facebook;
-- the settings page, for your display name;
+- the settings page, which shows your display name;
 - the static help pages.
 
 FE2 adds the catalogue, read-only and anonymous:
@@ -33,9 +33,9 @@ FE4 adds moderation and contact. Anyone can write to the moderators through the 
 - **URLs are the state.** A list's search, filters, letter and page are query parameters, parsed and written canonically by `app/catalogue/query-state.ts`: a non-canonical address gets one 301, and the filter forms are plain GET forms, so they work without JavaScript.
 - **Restricted pieces.** A piece whose creator asks that it isn't shared further shows none of its links on its page but its licensing sources (the piece loader leaves the rest out), and is kept out of the sitemap (`app/server/sitemap.server.ts`) and search engines (`noindex, nofollow`, in the piece route's `meta`). The site's own lists and search still show it, with a Restricted badge and no links (`app/catalogue/restricted.ts`).
 - **Indexing.** Only the production build can be indexed: `__INDEXABLE__` is true in it alone, and the preview, e2e and development builds answer `Disallow: /` and send `X-Robots-Tag: noindex` on every response the Worker makes (static assets get the `Disallow` only). `/robots.txt`, and one `/sitemap.xml` are resource routes.
-- **The browser never calls the API.** Loaders and actions call it from the Worker through `app/server/api.server.ts`. Writes are form posts: the editors, Withdraw, the moderation pages and the contact form are document POSTs to their own route's action (they work without JavaScript, apart from the contact form's Turnstile check), and settings use the proxy route `PATCH /api/me`. Each checks same-origin.
+- **The browser never calls the API.** Loaders and actions call it from the Worker through `app/server/api.server.ts`. Writes are form posts: the editors, Withdraw, the moderation pages and the contact form are document POSTs to their own route's action (they work without JavaScript, apart from the contact form's Turnstile check), and the theme toggle posts to `/resources/theme`. Each checks same-origin.
   - The access token lives in the server-side session and is sent as `Authorization: Bearer <jwt>`.
-  - The proxies and the editors' actions accept form-encoded bodies, check same-origin (CSRF), validate the input, and map every API error code to the app's own wording.
+  - The route actions accept form-encoded bodies, check same-origin (CSRF), validate the input, and map every API error code to the app's own wording.
 - **Sessions.** Sign-in is an OpenID Connect authorization-code flow with PKCE (openid-client, configured statically for the Auth0 tenant). The app keeps only the Auth0 tokens in a signed cookie session, `__Host-bt_session` (HttpOnly, Secure, SameSite=Lax), and refreshes the access token before it expires, once per request.
   - Each sign-in's state and PKCE verifier wait for `/auth/callback` in their own signed cookie, `__Host-bt_auth0:<state>`, for 5 minutes. The callback checks the state's format and that it matches the cookie, then clears the cookie.
   - `/auth/login` remembers where to come back to in `__Host-bt_return_to`. `/auth/callback` validates it again with `safeReturnTo`.
@@ -51,7 +51,7 @@ FE4 adds moderation and contact. Anyone can write to the moderators through the 
 
   Each build command runs `node scripts/build.mjs <mode>`, whose Vite mode decides stub sign-in. Workers Builds runs `npm run build:ci`, which picks the mode from `WORKERS_CI_BRANCH`: `production` on `main`, and `preview` on the `preview` branch; any other branch fails the build, and an empty branch fails too (docs/DEPLOY.md §2). A `production` build deploys to the `bardic-torch-fe` Worker, a `preview` build to `bardic-torch-fe-preview` (both in `wrangler.jsonc`). `check:prod-build` proves that production and preview builds contain no stub code.
 
-- **Fixture API.** `test/fixture-api/` serves canned answers to the catalogue's reads, to `getMe`/`updateMe` for a few invented users, and to the editing, moderation and contact operations. The same router drives the msw handlers in unit tests, the HTTP server in e2e, and `npm run dev:fixtures`. Every fixture response is checked against the spec.
+- **Fixture API.** `test/fixture-api/` serves canned answers to the catalogue's reads, to `getMe` for a few invented users, and to the editing, moderation and contact operations. The same router drives the msw handlers in unit tests, the HTTP server in e2e, and `npm run dev:fixtures`. Every fixture response is checked against the spec.
 - **Design tokens.** All colour comes from `app/styles/tokens.ts`.
   - `app/styles/tokens.css` is hand-written; a test keeps its colours in step with `tokens.ts`.
   - Tailwind's palette is replaced by the tokens, so there are no `dark:` classes and no raw colours.
@@ -67,7 +67,6 @@ flowchart TD
     Browser["Browser"]
     Static["Static files: /assets/*, favicon, manifest"]
     Worker["Worker: React Router render"]
-    Proxy["Proxy routes /api/*"]
     Auth["Auth routes /auth/*"]
     Session["Session cookie"]
     Auth0["Auth0: Google, Facebook"]
@@ -76,12 +75,11 @@ flowchart TD
 
     Browser -- "served as static assets (no Worker)" --> Static
     Browser -- "pages and form posts" --> Worker
-    Worker --> Proxy
     Worker --> Auth
     Auth -- "sign in, refresh, log out" --> Auth0
     Auth -- "writes" --> Session
-    Proxy -- "bearer from" --> Session
-    Worker -- "loaders and proxies, server side" --> API
+    Worker -- "bearer from" --> Session
+    Worker -- "loaders and actions, server side" --> API
     Worker -- "public reads (no credentials)" --> API
     Browser -- "attribution and footer links" --> Wiki
 ```
@@ -95,7 +93,7 @@ npm ci
 npm run dev:fixtures   # fixture API + dev server (the Worker in workerd) with stub sign-in
 ```
 
-Then open http://localhost:5173/auth/login?as=contributor. You are signed in as a fixture user and can use `/settings` with no Auth0 or API at all.
+Then open http://localhost:5173/auth/login?as=contributor. You are signed in as a fixture user and `/settings` shows their display name, with no Auth0 or API at all.
 
 To run against a real Auth0 tenant and the API, copy `.dev.vars.example` to `.dev.vars`, fill it in, then run `npm run dev`. Use a separate Auth0 development application whose Allowed Callback URLs include `http://localhost:5173/auth/callback` and whose Allowed Logout URLs include `http://localhost:5173` (docs/DEPLOY.md §4, Local development); the production application doesn't list `localhost`.
 

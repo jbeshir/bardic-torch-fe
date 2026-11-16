@@ -1,27 +1,21 @@
 import type { RouterContextProvider } from "react-router";
-import { z } from "zod";
 import type { components, operations } from "~/api/schema.gen";
 import { type UpstreamErrorCode, type User } from "~/schemas/api";
-import { DISPLAY_NAME_RULE } from "~/schemas/rules";
 import {
   TRY_AGAIN_MESSAGE,
-  type ProxyBody,
   type ProxyError,
   type ProxyErrorCode,
 } from "~/schemas/proxy";
 import {
   createAuthenticatedFetch,
   getOrCreateSessionStorage,
-  getServerAuthContext,
 } from "./auth.server";
 import { appEnvContext } from "./context.server";
-import { jsonResponse } from "./json.server";
 import {
   aborted,
   type EndpointOf,
   isTimeout,
   parseJson,
-  type Method,
   UPSTREAM_TIMEOUT_MS,
   upstreamUrl,
 } from "./upstream.server";
@@ -67,7 +61,6 @@ type ApiResult<T> = (
  */
 const ENDPOINTS = {
   getMe: { method: "GET", path: "/v1/me" },
-  updateMe: { method: "PATCH", path: "/v1/me" },
   getEditablePiece: { method: "GET", path: "/v1/pieces/{slug}/editable" },
   getEditablePerson: { method: "GET", path: "/v1/persons/{slug}/editable" },
   getEditableTerm: { method: "GET", path: "/v1/terms/{slug}/editable" },
@@ -219,15 +212,9 @@ function upstreamError(
             : "Check the highlighted fields.",
       };
     case "invalid_request":
-      return operationId === "updateMe"
-        ? {
-            code,
-            message: "Check the display name.",
-            fields: [{ field: "display_name", message: DISPLAY_NAME_RULE }],
-          }
-        : operationId === "createContactRequest"
-          ? { code, message: "Check your message and try again." }
-          : undefined;
+      return operationId === "createContactRequest"
+        ? { code, message: "Check your message and try again." }
+        : undefined;
     default:
       return undefined;
   }
@@ -347,88 +334,6 @@ async function callApi<T>(
   return failure(503, TRY_AGAIN, headers);
 }
 
-/**
- * Read and validate a proxy route's form body; an unreadable body or invalid
- * fields are a 400.
- */
-async function readFormBody<S extends z.ZodType>(
-  request: Request,
-  schema: S
-): Promise<
-  { readonly ok: true; readonly data: z.output<S> } | ApiResult<never>
-> {
-  const form = await request.formData().catch(() => null);
-  if (!form) {
-    return failure(400, {
-      code: "invalid_request",
-      message: "The form didn’t arrive in full. Try again.",
-    });
-  }
-
-  const parsed = schema.safeParse(Object.fromEntries(form));
-  if (parsed.success) return { ok: true, data: parsed.data };
-  return failure(400, {
-    code: "invalid_request",
-    message: "Check the highlighted fields.",
-    fields: parsed.error.issues.map(issue => ({
-      field: issue.path.join("."),
-      message: issue.message,
-    })),
-  });
-}
-
-/**
- * A proxy route's answer to a form submission: signed out gets a 401
- * before the body is read; then the form is read and validated
- * (`readFormBody`) and `send` makes the API call with it. A refreshed
- * session cookie goes out on every answer, including the form's errors.
- */
-export async function proxyForm<S extends z.ZodType>(
-  request: Request,
-  context: Readonly<RouterContextProvider>,
-  schema: S,
-  send: (data: z.output<S>) => Promise<ApiResult<unknown>>
-): Promise<Response> {
-  const auth = await getServerAuthContext(request, context);
-  if (!auth.authContext.isAuthenticated) {
-    return proxyResponse(failure(401, SIGNED_OUT, new Headers(auth.headers)));
-  }
-  const body = await readFormBody(request, schema);
-  if (!body.ok) {
-    return proxyResponse({ ...body, headers: new Headers(auth.headers) });
-  }
-  return proxyResponse(await send(body.data));
-}
-
-/**
- * The JSON response of a proxy route: the result without its headers, never
- * cached. A 204 becomes a 200 so fetchers can read the body.
- */
-function proxyResponse(result: ApiResult<unknown>): Response {
-  const headers = new Headers(result.headers);
-  headers.set("Cache-Control", "no-store");
-  return jsonResponse<ProxyBody<unknown>>(
-    result.ok
-      ? { ok: true, data: result.data }
-      : { ok: false, error: result.error },
-    { status: result.status === 204 ? 200 : result.status, headers }
-  );
-}
-
-/** 405 for methods a proxy route does not implement. */
-export function methodNotAllowed(allowed: Method): Response {
-  return proxyResponse(
-    failure(
-      405,
-      {
-        code: "method_not_allowed",
-        message: `Only ${allowed} is supported here.`,
-      },
-      new Headers({ Allow: allowed })
-    )
-  );
-}
-
 type RequestBody<Id extends OperationId> = operations[Id] extends {
   requestBody: { content: { "application/json": infer Body } };
 }
@@ -441,17 +346,6 @@ export function getMe(
 ) {
   return callApi<User>(request, context, {
     operationId: "getMe",
-  });
-}
-
-export function updateMe(
-  request: Request,
-  context: Readonly<RouterContextProvider>,
-  body: RequestBody<"updateMe">
-) {
-  return callApi<User>(request, context, {
-    operationId: "updateMe",
-    body,
   });
 }
 

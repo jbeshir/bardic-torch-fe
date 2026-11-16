@@ -7,26 +7,12 @@ import {
   loadContext,
   sessionCookie,
 } from "~/test/context";
-import { getMe, updateMe } from "./api.server";
+import { getMe } from "./api.server";
 import { contractResponse, offContractResponse } from "~/test/contract";
 import { serveMocks } from "~/test/msw";
 
 const { server } = serveMocks();
 
-/** How to call each FE1 operation, for table-driven error mapping. */
-const OPERATIONS = {
-  getMe: {
-    method: "get",
-    path: "/v1/me",
-    call: (request: Request) => getMe(request, loadContext()),
-  },
-  updateMe: {
-    method: "patch",
-    path: "/v1/me",
-    call: (request: Request) =>
-      updateMe(request, loadContext(), { display_name: "Morwen" }),
-  },
-} as const;
 const me = {
   id: "google-oauth2|1",
   display_name: "Morwen of the Marches",
@@ -45,14 +31,10 @@ async function signedInRequest(headers: Record<string, string> = {}) {
   });
 }
 
-function captureUpstream(
-  method: "get" | "patch" | "post" | "delete",
-  path: string,
-  respond: () => Response
-) {
+function captureUpstream(respond: () => Response) {
   const seen: Array<{ url: string; headers: Headers; body: string }> = [];
   server.use(
-    http[method](`${API_BASE_URL}${path}`, async ({ request }) => {
+    http.get(`${API_BASE_URL}/v1/me`, async ({ request }) => {
       seen.push({
         url: request.url,
         headers: request.headers,
@@ -78,9 +60,7 @@ describe("authentication", () => {
   });
 
   it("sends the session's bearer token and nothing from the client", async () => {
-    const seen = captureUpstream("get", "/v1/me", () =>
-      contractResponse("getMe", 200, me)
-    );
+    const seen = captureUpstream(() => contractResponse("getMe", 200, me));
     await getMe(
       await signedInRequest({
         Authorization: "Bearer client-supplied",
@@ -96,7 +76,7 @@ describe("authentication", () => {
   });
 
   it("clears the session when the API answers 401", async () => {
-    captureUpstream("get", "/v1/me", () =>
+    captureUpstream(() =>
       contractResponse("getMe", 401, {
         code: "unauthenticated",
         message: "token expired",
@@ -141,7 +121,7 @@ describe("responses", () => {
         }),
     ],
   ])("maps %s to a 503 try again", async (_label, respond) => {
-    captureUpstream("get", "/v1/me", respond);
+    captureUpstream(respond);
     const result = await getMe(await signedInRequest(), loadContext());
     expect(result).toMatchObject({
       ok: false,
@@ -152,20 +132,18 @@ describe("responses", () => {
   });
 
   it.each([
-    ["400 invalid_request", "updateMe", 400, "invalid_request", "declared"],
-    ["403 user_blocked", "getMe", 403, "user_blocked", "declared"],
-    ["404 not_found", "getMe", 404, "not_found", "undeclared"],
+    ["403 user_blocked", 403, "user_blocked", "declared"],
+    ["404 not_found", 404, "not_found", "undeclared"],
   ] as const)(
     "an upstream %s gets the app's own copy and keeps its status",
-    async (_name, operationId, status, code, contract) => {
-      const route = OPERATIONS[operationId];
+    async (_name, status, code, contract) => {
       const body = { code, message: "upstream detail not meant for users" };
-      captureUpstream(route.method, route.path, () =>
+      captureUpstream(() =>
         contract === "declared"
-          ? contractResponse(operationId, status, body)
-          : offContractResponse(operationId, status, body, "undeclared status")
+          ? contractResponse("getMe", status, body)
+          : offContractResponse("getMe", status, body, "undeclared status")
       );
-      const result = await route.call(await signedInRequest());
+      const result = await getMe(await signedInRequest(), loadContext());
       expect(result).toMatchObject({ ok: false, status, error: { code } });
       expect(JSON.stringify(result)).not.toContain("upstream detail");
     }
@@ -177,14 +155,12 @@ describe("responses", () => {
       .spyOn(AbortSignal, "timeout")
       .mockImplementation(() => timeout(20));
     server.use(
-      http.patch(`${API_BASE_URL}/v1/me`, async () => {
+      http.get(`${API_BASE_URL}/v1/me`, async () => {
         await delay("infinite");
         return new HttpResponse("not JSON", { status: 200 });
       })
     );
-    const result = await updateMe(await signedInRequest(), loadContext(), {
-      display_name: "Morwen",
-    });
+    const result = await getMe(await signedInRequest(), loadContext());
     expect(asked).toHaveBeenCalledWith(10_000);
     expect(result).toMatchObject({
       ok: false,

@@ -40,7 +40,6 @@ const ACTION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
  * component in app/routes, so it can't drift.
  */
 const RESOURCE_ROUTE_PATHS: readonly string[] = [
-  "/api/me",
   "/auth/callback",
   "/auth/login",
   "/auth/logout",
@@ -98,8 +97,8 @@ function plainResponse(status: number, body: string): Response {
  *
  * entry.server puts the security headers on documents and single fetch
  * `.data` answers; everything else React Router answers (resource routes:
- * the auth redirects, the CSRF 403, the theme route's 303 and 405, the
- * proxies' JSON; and lazy route discovery's `/__manifest`) gets them here,
+ * the auth redirects, the CSRF 403, the theme route's 303, 405 and JSON;
+ * and lazy route discovery's `/__manifest`) gets them here,
  * so every response carries them.
  */
 export function createWorkerHandler(

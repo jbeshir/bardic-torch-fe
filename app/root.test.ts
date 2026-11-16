@@ -107,34 +107,8 @@ describe("root shouldRevalidate", () => {
     ...overrides,
   });
 
-  const settings = (intent: string, actionResult: unknown) => {
-    const formData = new FormData();
-    formData.set("intent", intent);
-    return args({
-      formMethod: "POST",
-      formAction: "/settings",
-      formData,
-      actionResult,
-      currentUrl: url("/settings"),
-      nextUrl: url("/settings"),
-    });
-  };
-  const saved = { ok: true, data: {} };
-  const failure = (code: string) => ({ ok: false, error: { code } });
-
   it.each([
     ["a plain navigation", args({}), false],
-    ["a saved display name", settings("update-profile", saved), true],
-    [
-      "a failed display name",
-      settings("update-profile", failure("invalid_request")),
-      false,
-    ],
-    [
-      "a settings call that found the session ended",
-      settings("update-profile", failure("unauthenticated")),
-      true,
-    ],
     [
       "logging out",
       args({ formMethod: "POST", formAction: "/auth/logout" }),

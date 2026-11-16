@@ -1,5 +1,5 @@
 /**
- * A JSON response for the resource routes (the proxies, the theme route, the
+ * A JSON response for the resource routes (the theme route, the
  * CSRF refusal): `body` serialised, with `application/json; charset=utf-8`
  * unless `init` names another Content-Type. React Router has no `json()`
  * helper, and `Response.json()` sends no charset.

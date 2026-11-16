@@ -52,7 +52,7 @@ export function ThemeChoiceProvider({
     const request = latestRef.current;
     setPending(choice);
     setFailure(null);
-    const result = await sendForm(THEME_ACTION, "POST", { theme: choice });
+    const result = await sendForm(THEME_ACTION, { theme: choice });
     // A later click has taken over; its own answer decides.
     if (request !== latestRef.current) return result;
     setPending(null);

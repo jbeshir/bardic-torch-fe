@@ -20,17 +20,15 @@ afterEach(() => {
 });
 
 describe("sendForm", () => {
-  it("sends the fields form-encoded to the app's own path", async () => {
+  it("posts the fields form-encoded to the app's own path", async () => {
     const fetch = answer(async () => Response.json({ ok: true, data: 1 }));
-    const signal = new AbortController().signal;
-    await sendForm("/api/me", "PATCH", { display_name: "Morwen" }, signal);
+    await sendForm("/resources/theme", { theme: "dark" });
 
     const [path, init] = fetch.mock.calls[0] ?? [];
-    expect(path).toBe("/api/me");
-    expect(init?.method).toBe("PATCH");
-    expect(String(init?.body)).toBe("display_name=Morwen");
+    expect(path).toBe("/resources/theme");
+    expect(init?.method).toBe("POST");
+    expect(String(init?.body)).toBe("theme=dark");
     expect(init?.body).toBeInstanceOf(URLSearchParams);
-    expect(init?.signal).toBe(signal);
   });
 
   it.each([
@@ -42,7 +40,7 @@ describe("sendForm", () => {
     ],
   ])("passes on %s as it is", async (_case, status, body) => {
     answer(async () => Response.json(body, { status }));
-    expect(await sendForm("/api/me", "PATCH", {})).toEqual(body);
+    expect(await sendForm("/resources/theme", {})).toEqual(body);
   });
 
   it.each([
@@ -64,12 +62,12 @@ describe("sendForm", () => {
     ],
   ])("reports %s as an unexpected response", async (_case, respond) => {
     answer(async () => respond());
-    expect(await sendForm("/api/me", "PATCH", {})).toEqual(UNEXPECTED);
+    expect(await sendForm("/resources/theme", {})).toEqual(UNEXPECTED);
   });
 
   it("reports a fetch that fails (no network) as offline, without rejecting", async () => {
     answer(() => Promise.reject(new TypeError("Failed to fetch")));
-    expect(await sendForm("/api/me", "PATCH", {})).toEqual({
+    expect(await sendForm("/resources/theme", {})).toEqual({
       ok: false,
       error: OFFLINE,
     });
@@ -90,6 +88,6 @@ describe("sendForm", () => {
           })
         )
     );
-    expect(await sendForm("/api/me", "PATCH", {})).toEqual(UNEXPECTED);
+    expect(await sendForm("/resources/theme", {})).toEqual(UNEXPECTED);
   });
 });

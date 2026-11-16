@@ -28,17 +28,5 @@ export const CONTRIBUTIONS_PATH = "/contributions";
 /** Where the account panel's "Log out" form posts. */
 export const LOGOUT_ACTION = "/auth/logout";
 
-/** The proxy route that changes the display name. */
-export const ME_ACTION = "/api/me";
-
-/**
- * The settings page, where "Log in" from a settings error comes back to.
- * Its forms submit here too: the route's `clientAction` sends each one on
- * to its proxy route, picked by the form's `intent`.
- */
+/** The settings page: the account menu links it, and its "Log in" comes back to it. */
 export const SETTINGS_PATH = "/settings";
-
-/** The `intent` field of each settings form. */
-export const SETTINGS_INTENT = {
-  updateProfile: "update-profile",
-} as const;

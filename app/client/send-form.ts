@@ -5,8 +5,7 @@ import {
 } from "~/schemas/proxy";
 
 /**
- * How the browser sends a mutation (the settings forms through the
- * settings route's `clientAction`, the theme toggle directly): a plain
+ * How the browser sends a mutation (the theme toggle's save): a plain
  * `fetch` whose every outcome is a proxy body, so it always ends in
  * feedback on the page. React Router's own fetcher submission would throw a
  * response it didn't make (a platform 503, a gateway's 502) or a failed
@@ -44,22 +43,19 @@ function isProxyBody(value: unknown): value is ProxyBody<unknown> {
 }
 
 /**
- * Send `fields` form-encoded to the app's own `path` and read the proxy
+ * POST `fields` form-encoded to the app's own `path` and read the proxy
  * body it answers. Never rejects.
  */
 export async function sendForm(
   path: string,
-  method: "PATCH" | "POST" | "DELETE",
-  fields: Readonly<Record<string, string>>,
-  signal?: AbortSignal
+  fields: Readonly<Record<string, string>>
 ): Promise<ProxyBody<unknown>> {
   let response: Response;
   try {
     response = await fetch(path, {
-      method,
+      method: "POST",
       body: new URLSearchParams(fields),
       headers: { Accept: "application/json" },
-      ...(signal ? { signal } : {}),
     });
   } catch {
     return { ok: false, error: OFFLINE };

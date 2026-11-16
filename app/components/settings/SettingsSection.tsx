@@ -1,17 +1,14 @@
-import { useId, type ReactNode, type RefObject } from "react";
+import { useId, type ReactNode } from "react";
 
 /**
  * One part of the settings page: a section named by its h2,
- * with a rule under the heading. `headingRef` makes the heading a focus
- * target (`tabindex="-1"`), for when the control that had focus goes away.
+ * with a rule under the heading.
  */
 export function SettingsSection({
   title,
-  headingRef,
   children,
 }: {
   readonly title: string;
-  readonly headingRef?: RefObject<HTMLHeadingElement | null>;
   readonly children: ReactNode;
 }) {
   const titleId = useId();
@@ -19,8 +16,6 @@ export function SettingsSection({
     <section aria-labelledby={titleId} className="mt-10">
       <h2
         id={titleId}
-        ref={headingRef}
-        tabIndex={headingRef ? -1 : undefined}
         className="mb-4 border-b border-border pb-2 text-h2 text-fg"
       >
         {title}
