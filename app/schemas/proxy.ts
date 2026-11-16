@@ -16,6 +16,8 @@ export type ProxyErrorCode =
   | "unauthenticated"
   | "user_blocked"
   | "conflict"
+  | "turnstile_failed"
+  | "invalid_request"
   | "try_again"
   | "invalid_theme"
   | "method_not_allowed"

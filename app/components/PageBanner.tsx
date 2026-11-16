@@ -1,5 +1,6 @@
 import { IconLock } from "@tabler/icons-react";
 import { Alert } from "~/components/ui/Alert";
+import { Link } from "~/components/ui/Link";
 
 type PageBannerProps =
   | {
@@ -21,12 +22,22 @@ type PageBannerProps =
  * A page-level state under the tab row: the
  * info Banner for a stub, a restricted work (with the lock icon; it
  * replaces every "help preserve" prompt) or a person who prefers no page.
+ * Editing is FE3, so the stub's action is the contributing guide.
  */
 export function PageBanner(props: PageBannerProps) {
   switch (props.kind) {
     case "stub":
       return (
-        <Alert tone="info" banner title="This page is a stub.">
+        <Alert
+          tone="info"
+          banner
+          title="This page is a stub."
+          actions={
+            <Link to="/help/contributing" appearance="inherit">
+              How to contribute
+            </Link>
+          }
+        >
           We know this {props.subject} exists but haven’t gathered much yet.
         </Alert>
       );
@@ -37,6 +48,14 @@ export function PageBanner(props: PageBannerProps) {
           banner
           icon={IconLock}
           title="The creator does not allow this work to be recorded, archived, or shared."
+          actions={
+            <Link
+              to="/help/conservation-status#restricted"
+              appearance="inherit"
+            >
+              What Restricted means
+            </Link>
+          }
         />
       );
     case "no-page":

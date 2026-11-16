@@ -1,3 +1,4 @@
+import type { components } from "~/api/schema.gen";
 import type {
   Attribution,
   Certainty,
@@ -23,7 +24,7 @@ import type {
  */
 
 /**
- * Every status.
+ * Every status, in the order the conservation help page lists them.
  * `satisfies` fails the type check if the API renames or drops a value;
  * a value it adds is a type error in `CONSERVATION_LABELS` and fails the
  * vocabulary test, so the list can't drift.
@@ -56,6 +57,24 @@ export const BROWSE_STATUS_LABELS: Readonly<
   restricted: "Browse restricted pieces",
   unassessed: "Browse pieces not yet assessed",
 };
+
+/**
+ * Each status's row id on the conservation help page: the row's first cell
+ * slugged like a heading, so hyphenated (the help page's anchors, which other pages and
+ * the e2e specs link to). The help-content test checks every one exists.
+ */
+const CONSERVATION_ANCHORS: Readonly<Record<ConservationStatus, string>> = {
+  low_risk: "low-risk",
+  endangered: "endangered",
+  critically_endangered: "critically-endangered",
+  restricted: "restricted",
+  unassessed: "not-yet-assessed",
+};
+
+/** Where a status is explained: its row on the conservation help page. */
+export function conservationHelpPath(status: ConservationStatus): string {
+  return `/help/conservation-status#${CONSERVATION_ANCHORS[status]}`;
+}
 
 /** Each piece kind's label, in sentence case: "Dance music". */
 export const PIECE_KIND_LABELS: Readonly<Record<PieceKind, string>> = {
@@ -278,4 +297,25 @@ export const PERSON_STATUS_LABELS: Readonly<Record<PersonStatus, string>> = {
   active: "Active",
   deceased: "Deceased",
   prefers_no_page: "Prefers not to have a page",
+};
+
+/** What a contact request is about, as the contact form offers it. */
+export const CONTACT_KIND_LABELS: Readonly<
+  Record<components["schemas"]["CreateContactRequest"]["kind"], string>
+> = {
+  takedown: "Take something down",
+  opt_out: "I prefer not to have a page",
+  correction: "A correction",
+  link_report: "Report a link",
+  general: "Something else",
+};
+
+/** Why a page needs work (the needs-work page's filters). */
+export const NEEDS_WORK_LABELS: Readonly<
+  Record<components["schemas"]["NeedsWorkReason"], string>
+> = {
+  stub: "Stub",
+  unassessed: "Conservation not assessed",
+  missing_licensing: "Licensing unknown",
+  dead_links: "Broken links",
 };

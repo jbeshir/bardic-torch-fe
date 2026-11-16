@@ -9,6 +9,8 @@ AUTH0_CLIENT_SECRET=replace-with-client-secret
 # and http://localhost:5173 (docs/DEPLOY.md §4, Local development).
 AUTH0_DEFAULT_REDIRECT_URI=http://localhost:5173
 AUTH0_AUDIENCE=replace-with-api-audience
+# Cloudflare Turnstile's test site key (always passes); the contact form's widget.
+TURNSTILE_SITE_KEY=1x00000000000000000000AA
 # Optional. Error reports go to Sentry only when this is set.
 # SENTRY_DSN=https://replace-with-key@replace-with-host.ingest.sentry.io/0
 # Optional, auth0 by default. stub is honoured only by development and e2e

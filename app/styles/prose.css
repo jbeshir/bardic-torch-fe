@@ -1,4 +1,4 @@
-/* Long-form content (DESIGN §3). */
+/* Long-form content: help pages (DESIGN §3). */
 @layer components {
   .prose-bt {
     @apply max-w-prose text-body-lg;
@@ -117,6 +117,11 @@
     padding: 0.5rem 0.75rem;
     border-bottom: 1px solid rgb(var(--bt-border));
     vertical-align: top;
+  }
+
+  /* A table row is a link target too (a help page's status table). */
+  .prose-bt :where(tr[id]):not(:where(.not-prose, .not-prose *)) {
+    scroll-margin-top: calc(var(--bt-header-h) + 0.5rem);
   }
 
   .prose-bt :where(dl):not(:where(.not-prose, .not-prose *)) {

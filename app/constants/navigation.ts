@@ -1,8 +1,8 @@
 /**
  * Every link out of the site, and the site navigation. The
  * catalogue is on this site: the navigation's entries are internal paths.
- * The original wiki is named only here, for the
- * footer's link and the 404 page's secondary link.
+ * The original wiki is named only here, for the help pages' attribution
+ * (CC BY-SA), the footer's link and the 404 page's secondary link.
  * Links are marked as external from their
  * address (`externalKind` in components/ui/Link.tsx).
  */
@@ -33,8 +33,42 @@ export const SEARCH = { action: "/search", param: "q" } as const;
 /** The original wiki's front page. */
 export const WIKI_HOME_URL = wikiPageUrl("Main Page");
 
+/** The contact, takedown and opt-out form, which also reports a link. */
+export const CONTACT_FORM_URL = "/contact";
+
+/** The form reporting a link: the contact form, of kind `link_report`. */
+export const reportLinkHref = (url: string) =>
+  `${CONTACT_FORM_URL}?${new URLSearchParams({ kind: "link_report", url })}`;
+
+/** The pages that need work (R-18). */
+export const NEEDS_WORK_PATH = "/needs-work";
+
 /** The licence of the site's text. */
 export const LICENCE_URL = "https://creativecommons.org/licenses/by-sa/4.0/";
+
+/** The help index. */
+export const HELP_HREF = "/help";
+
+/**
+ * The help pages, in the site navigation's order: each is at
+ * /help/{slug} (app/content/help/pages.ts holds its content) and listed in
+ * the sidebar under `label`.
+ */
+export const HELP_PAGES = [
+  { slug: "contributing", label: "Contributing" },
+  { slug: "faq-for-bards", label: "FAQ for bards" },
+  { slug: "bard-preference-checklist", label: "Bard preference checklist" },
+  { slug: "conservation-status", label: "Conservation status" },
+  { slug: "licence", label: "Licence & attribution" },
+  { slug: "privacy", label: "Privacy" },
+] as const;
+
+export type HelpSlug = (typeof HELP_PAGES)[number]["slug"];
+
+/** The address of a help page. */
+export function helpHref(slug: HelpSlug): string {
+  return `${HELP_HREF}/${slug}`;
+}
 
 type NavItem = {
   readonly label: string;
@@ -74,4 +108,11 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     ],
   },
   { heading: "Facets", items: FACETS },
+  {
+    heading: "Help",
+    items: HELP_PAGES.map(({ slug, label }) => page(label, helpHref(slug))),
+  },
 ];
+
+/** Where the ContributeCard's button goes. */
+export const CONTRIBUTE_HREF = helpHref("contributing");

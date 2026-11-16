@@ -9,12 +9,18 @@ import { NO_PIECE_FILTERS, pieceQuery } from "~/catalogue/query-state";
 import { pageMeta } from "~/catalogue/seo";
 import { LogoMark } from "~/components/LogoMark";
 import { SearchBox } from "~/components/SearchBox";
+import { Alert } from "~/components/ui/Alert";
 import { ButtonLink } from "~/components/ui/Button";
 import { Card, CardList } from "~/components/ui/Card";
 import { ConservationBadge } from "~/components/ui/ConservationBadge";
 import { SectionError } from "~/components/ui/ErrorState";
 import { Link } from "~/components/ui/Link";
 import { TagList } from "~/components/ui/TagList";
+import {
+  CONTRIBUTE_HREF,
+  helpHref,
+  NEEDS_WORK_PATH,
+} from "~/constants/navigation";
 import {
   BROWSE_STATUS_LABELS,
   PIECE_KIND_LABELS,
@@ -122,8 +128,8 @@ function Section({
 /**
  * The home page, its copy adapted from the original wiki's
  * Main Page: what Bardic Torch is (an index, not an archive; links only;
- * keeping works alive), the ways into the
- * catalogue.
+ * keeping works alive; anyone can contribute), the ways into the
+ * catalogue and how to contribute.
  */
 export default function Index() {
   const { totals, kinds, topTerms } = useLoaderData<typeof loader>();
@@ -144,6 +150,9 @@ export default function Index() {
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <ButtonLink to="/pieces" variant="primary" size="lg">
             Browse pieces
+          </ButtonLink>
+          <ButtonLink to={CONTRIBUTE_HREF} variant="secondary" size="lg">
+            How to contribute
           </ButtonLink>
         </div>
         <div className="mt-6 max-w-form">
@@ -175,6 +184,11 @@ export default function Index() {
               work, you will be encouraged to find it and add it to one of the
               other collections!
             </p>
+            <p className="mt-3">
+              <Link to={helpHref("conservation-status")}>
+                How conservation statuses work
+              </Link>
+            </p>
             <ul role="list" className="mt-3 grid gap-2">
               {CARD_STATUSES.map(status => (
                 <li key={status} className="flex flex-col items-start gap-1">
@@ -187,6 +201,22 @@ export default function Index() {
                   </Link>
                 </li>
               ))}
+            </ul>
+          </Card>
+          <Card title="Anyone can contribute">
+            <p>
+              You don’t have to be a bard, and no contribution is too small.
+              Edit any page or add a new one, and a moderator reviews it before
+              it goes live. That way the index can keep growing beyond what any
+              one person could maintain.
+            </p>
+            <ul role="list" className="mt-3 stack-y-1">
+              <li>
+                <Link to={CONTRIBUTE_HREF}>How to contribute</Link>
+              </li>
+              <li>
+                <Link to={NEEDS_WORK_PATH}>Pages that need work</Link>
+              </li>
             </ul>
           </Card>
         </CardList>
@@ -226,6 +256,34 @@ export default function Index() {
             <Link to="/events">Events</Link>
           </li>
         </ul>
+      </Section>
+
+      <Section title="For bards">
+        <p className="max-w-prose text-body text-fg">
+          Your wishes matter here. We want to show people who wrote a piece, how
+          it’s licensed, whether to ask before performing it, and how you feel
+          about sing-alongs, recordings and adaptations. Publish your
+          preferences on your own site and we’ll link to them, so everyone can
+          find them. You’re welcome to help with your own page, or to ask not to
+          have one.
+        </p>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <ButtonLink to={helpHref("faq-for-bards")} variant="secondary">
+            FAQ for bards
+          </ButtonLink>
+          <ButtonLink
+            to={helpHref("bard-preference-checklist")}
+            variant="secondary"
+          >
+            Bard preference checklist
+          </ButtonLink>
+        </div>
+        <div className="mt-8">
+          <Alert tone="info">
+            Bardic Torch is community-maintained and not affiliated with the
+            Society for Creative Anachronism or any other organisation.
+          </Alert>
+        </div>
       </Section>
 
       <p className="mt-10 text-caption text-fg-subtle">

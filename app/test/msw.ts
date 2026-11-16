@@ -65,6 +65,7 @@ function fixtureHandlers(state: () => FixtureState, baseUrl = API_BASE_URL) {
         pathname,
         search,
         authorization: request.headers.get("Authorization"),
+        body: await request.text(),
       });
       if (result.body === undefined) {
         return new HttpResponse(null, { status: result.status });

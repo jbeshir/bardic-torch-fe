@@ -56,6 +56,7 @@ type ApiResult<T> = (
  */
 const ENDPOINTS = {
   getMe: { method: "GET", path: "/v1/me" },
+  createContactRequest: { method: "POST", path: "/v1/contact" },
 } as const satisfies {
   readonly [Id in keyof operations]?: EndpointOf<operations[Id]>;
 };
@@ -84,7 +85,10 @@ const SIGNED_OUT: ApiError = {
  * What the user is told for an upstream error code a page treats
  * differently; undefined for any other, which is a try again.
  */
-function upstreamError(code: UpstreamErrorCode): ApiError | undefined {
+function upstreamError(
+  operationId: OperationId,
+  code: UpstreamErrorCode
+): ApiError | undefined {
   switch (code) {
     case "user_blocked":
       return {
@@ -92,6 +96,21 @@ function upstreamError(code: UpstreamErrorCode): ApiError | undefined {
         message:
           "Your account is blocked, so you can’t make changes. Contact the Bardic Torch team if you think this is a mistake.",
       };
+    case "turnstile_failed":
+      return {
+        code,
+        message:
+          "We couldn’t check that you’re not a robot. Reload the page and try again.",
+      };
+    case "request_too_large":
+      return {
+        code: "invalid_request",
+        message: "The form is too large to send.",
+      };
+    case "invalid_request":
+      return operationId === "createContactRequest"
+        ? { code, message: "Check your message and try again." }
+        : undefined;
     default:
       return undefined;
   }
@@ -114,7 +133,9 @@ async function callApi<T>(
   const auth = await createAuthenticatedFetch(request, context);
   const headers = new Headers(auth.headers);
 
-  if (!auth.isAuthenticated) {
+  // The contact form needs no account (the API ignores credentials on it).
+  const needsAccount = apiRequest.operationId !== "createContactRequest";
+  if (needsAccount && !auth.isAuthenticated) {
     return failure(401, SIGNED_OUT, headers);
   }
 
@@ -169,7 +190,8 @@ async function callApi<T>(
     typeof payload === "object" && payload !== null && !Array.isArray(payload)
       ? (payload as Record<string, unknown>)
       : undefined;
-  if (response.status === 204) {
+  // No content, and the contact form's 202: neither has a body.
+  if (response.status === 204 || response.status === 202) {
     return { ok: true, status: response.status, data: undefined as T, headers };
   }
   if (response.ok) {
@@ -181,7 +203,10 @@ async function callApi<T>(
       typeof body?.code === "string"
         ? (body.code as UpstreamErrorCode)
         : undefined;
-    const error = code === undefined ? undefined : upstreamError(code);
+    const error =
+      code === undefined
+        ? undefined
+        : upstreamError(apiRequest.operationId, code);
     if (error) {
       return failure(response.status, error, headers);
     }
@@ -193,11 +218,29 @@ async function callApi<T>(
   return failure(503, TRY_AGAIN, headers);
 }
 
+type RequestBody<Id extends OperationId> = operations[Id] extends {
+  requestBody: { content: { "application/json": infer Body } };
+}
+  ? Body
+  : never;
+
 export function getMe(
   request: Request,
   context: Readonly<RouterContextProvider>
 ) {
   return callApi<User>(request, context, {
     operationId: "getMe",
+  });
+}
+
+/** Sends the contact form to the moderators; it needs no account. */
+export function createContactRequest(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  body: RequestBody<"createContactRequest">
+) {
+  return callApi<undefined>(request, context, {
+    operationId: "createContactRequest",
+    body,
   });
 }

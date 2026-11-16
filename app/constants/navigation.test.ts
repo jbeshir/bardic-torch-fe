@@ -1,6 +1,9 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  CONTACT_FORM_URL,
+  HELP_PAGES,
+  helpHref,
   isWikiUrl,
   NAV_GROUPS,
   WIKI_HOME_URL,
@@ -35,6 +38,7 @@ describe("wiki URLs", () => {
     ["https://bardictorch.miraheze.org", true],
     [wikiPageUrl("Collections"), true],
     ["https://bardictorch.miraheze.org.example.com/wiki", false],
+    [CONTACT_FORM_URL, false],
     ["/help/licence", false],
   ])("isWikiUrl(%j) is %s", (url, expected) => {
     expect(isWikiUrl(url)).toBe(expected);
@@ -47,9 +51,12 @@ describe("wiki URLs", () => {
 });
 
 describe("navigation", () => {
-  it("links only internal paths", () => {
+  it("links only internal paths, and the help pages in HELP_PAGES order", () => {
     for (const { href } of NAV_GROUPS.flatMap(group => group.items)) {
       expect(href.startsWith("/"), href).toBe(true);
     }
+    expect(NAV_GROUPS[2]?.items.map(({ href }) => href)).toEqual(
+      HELP_PAGES.map(({ slug }) => helpHref(slug))
+    );
   });
 });

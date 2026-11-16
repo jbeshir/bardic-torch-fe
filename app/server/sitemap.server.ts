@@ -1,4 +1,5 @@
 import type { RouterContextProvider } from "react-router";
+import { HELP_HREF, HELP_PAGES, helpHref } from "~/constants/navigation";
 import { categoryPath } from "~/catalogue/term-page";
 import {
   listCollections,
@@ -23,9 +24,11 @@ const PAGE_SIZE = 100;
 /** How long a client waits before asking again after a failed read. */
 const RETRY_AFTER_SECONDS = 60;
 
-/** The pages that aren't a catalogue entry: the home page and directories. */
+/** The pages that aren't a catalogue entry: the home page, help and directories. */
 const PAGE_PATHS: readonly string[] = [
   "/",
+  HELP_HREF,
+  ...HELP_PAGES.map(({ slug }) => helpHref(slug)),
   "/pieces",
   "/bards",
   "/categories",

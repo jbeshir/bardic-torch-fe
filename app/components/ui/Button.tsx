@@ -223,7 +223,7 @@ type ButtonLinkProps = Look &
 
 /**
  * A link that looks like a Button, for actions that navigate:
- * "Go to the home page". It has no disabled or busy
+ * "Go to the home page", "Start contributing". It has no disabled or busy
  * state; a link that can't be followed is plain text instead.
  */
 export function ButtonLink({

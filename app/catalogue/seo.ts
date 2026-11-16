@@ -13,7 +13,7 @@ type PageMeta = {
   /** What the page is, for search results: cut to 160 characters. */
   readonly description: string;
   /**
-   * The canonical path, with a list page's canonical
+   * The canonical path, e.g. `/help/licence`, with a list page's canonical
    * query (`/pieces?letter=T`); never a fragment.
    */
   readonly path: `/${string}`;

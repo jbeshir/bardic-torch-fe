@@ -5,7 +5,7 @@ This runbook covers:
 - the two Cloudflare Workers behind https://bardictorch.org and https://preview.bardictorch.org, built from GitHub by Workers Builds;
 - the zone, the custom domains, TLS and the `www` redirect;
 - the API's DNS at https://api.bardictorch.org;
-- the Auth0 and Sentry set-up the frontend relies on;
+- the Auth0, Turnstile and Sentry set-up the frontend relies on;
 - the first deploy, the smoke checks and rollback.
 
 The dashboard steps are done by a maintainer with access to the Cloudflare account, the GitHub repository and the Auth0 tenant. Nothing here needs a secret committed to the repository.
@@ -199,6 +199,7 @@ Both Workers have the same `observability` block:
 | `AUTH0_CLIENT_ID`            | plain, `wrangler.jsonc` | the application's client ID     | the same                          |
 | `AUTH0_DEFAULT_REDIRECT_URI` | plain, `wrangler.jsonc` | `https://bardictorch.org`       | `https://preview.bardictorch.org` |
 | `AUTH0_AUDIENCE`             | plain, `wrangler.jsonc` | `https://api.bardictorch.org`   | the same                          |
+| `TURNSTILE_SITE_KEY`         | plain, `wrangler.jsonc` | the Turnstile widget's site key | the same                          |
 | `AUTH_SESSION_SECRET`        | **secret**, required    | random, at least 32 characters  | a **different** random value      |
 | `AUTH0_CLIENT_SECRET`        | **secret**, required    | the application's client secret | the same                          |
 | `SENTRY_DSN`                 | **secret**, optional    | the Sentry DSN, or unset        | the same, or unset                |
@@ -210,9 +211,10 @@ Notes on the variables:
 - **`AUTH0_DOMAIN`** is the host Auth0 issues tokens from: the tenant domain, or the custom domain if the tenant has one. The ID token's issuer must be exactly `https://<AUTH0_DOMAIN>/` (§8).
 - **`AUTH_SESSION_SECRET`** signs the `__Host-bt_session` and `__Host-bt_return_to` cookies. Generate it with `openssl rand -base64 48`. Using a different value in preview means a preview session can never be replayed on production. Changing it signs everyone out.
 - **`SENTRY_DSN`** is not sensitive (the browser receives it too), but it is kept out of the repository as a secret. Without it, nothing is sent to Sentry. It can't be listed in `secrets.required`, because it is optional.
+- **`TURNSTILE_SITE_KEY`** is the contact form's Turnstile widget (§5). It is public. Development (`.dev.vars.example`, `npm run dev:fixtures`) and e2e use Cloudflare's test key `1x00000000000000000000AA`, whose widget always passes.
 - **`AUTH_MODE`** must never be set. Production and preview builds don't contain stub sign-in, and they ignore `AUTH_MODE=stub` with a logged error.
 
-Every request validates these variables (`app/server/env.server.ts`). If one is missing or malformed, or is still a placeholder starting `replace-with`, every page is a plain **"Site configuration error"** page with status 500. The variable's name, never its value, is logged ("Invalid environment: …"), and shows in Workers Logs.
+Every request validates these variables (`app/server/env.server.ts`). If one is missing or malformed, or is still a placeholder starting `replace-with` (as `AUTH0_CLIENT_ID` and `TURNSTILE_SITE_KEY` are in `wrangler.jsonc` until steps 1 of §1 and §5 are done), every page is a plain **"Site configuration error"** page with status 500. The variable's name, never its value, is logged ("Invalid environment: …"), and shows in Workers Logs.
 
 A plain-text variable changes with the next deploy of the commit that changes it. A secret set with `wrangler secret put` deploys a new version of the Worker straight away.
 
@@ -270,23 +272,24 @@ The API is a separate repository, deployed to the maintainer's dokku host. The f
 
 ### Rate limiting
 
-The API has no rate limiter of its own (the backend's PLAN §3): abuse control is one Cloudflare rate-limiting rule on the zone. Add it once the zone is active, before the first production deploy: Cloudflare dashboard → the `bardictorch.org` zone → **Security** → **Security rules** → **Create rule** → **Rate limiting rules**. Fill in exactly:
+The API has no rate limiter of its own (the backend's PLAN §3): abuse control is one Cloudflare rate-limiting rule on the zone, plus Turnstile on the contact form (§5). Add it once the zone is active, before the first production deploy: Cloudflare dashboard → the `bardictorch.org` zone → **Security** → **Security rules** → **Create rule** → **Rate limiting rules**. Fill in exactly:
 
-| setting                                        | value                                                                                                                |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Rule name                                      | `Costly paths per IP`                                                                                                |
-| When incoming requests match (Edit expression) | `(http.request.uri.path in {"/search" "/search.data" "/auth/login" "/auth/callback" "/auth/logout" "/sitemap.xml"})` |
-| With the same characteristics                  | IP (fixed on the Free plan; Cloudflare also counts per data centre)                                                  |
-| When rate exceeds: Requests                    | `20`                                                                                                                 |
-| When rate exceeds: Period                      | 10 seconds                                                                                                           |
-| Then take action                               | **Block** (the default response, 429; a custom response needs Pro)                                                   |
-| Duration                                       | 10 seconds                                                                                                           |
+| setting                                        | value                                                                                                                                           |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rule name                                      | `Costly paths per IP`                                                                                                                           |
+| When incoming requests match (Edit expression) | `(http.request.uri.path in {"/search" "/search.data" "/contact" "/contact.data" "/auth/login" "/auth/callback" "/auth/logout" "/sitemap.xml"})` |
+| With the same characteristics                  | IP (fixed on the Free plan; Cloudflare also counts per data centre)                                                                             |
+| When rate exceeds: Requests                    | `20`                                                                                                                                            |
+| When rate exceeds: Period                      | 10 seconds                                                                                                                                      |
+| Then take action                               | **Block** (the default response, 429; a custom response needs Pro)                                                                              |
+| Duration                                       | 10 seconds                                                                                                                                      |
 
 **Free-plan limits** (Cloudflare's rate-limiting availability table, https://developers.cloudflare.com/waf/rate-limiting-rules/, read 2026-11-14): **one** rule per zone; a 10-second counting period and a 10-second mitigation timeout only; IP as the only characteristic; only the URI **path** (`http.request.uri.path`) and Verified Bot in the expression (no method, query or host); no separate counting expression; cached assets are counted too. The rule above uses nothing else. If the expression editor ever refuses the `in {…}` set, write the same paths as `http.request.uri.path eq "/search" or http.request.uri.path eq "/search.data" or …`.
 
 **What it covers, and why only these paths.** With one rule, it goes on the paths where one request costs more than one catalogue read:
 
 - `/search` and its client-side data URL `/search.data`: each runs the API's full-text searches over pieces and bards;
+- `/contact` and `/contact.data`: a POST verifies a Turnstile token with Cloudflare and writes a contact request;
 - `/auth/login`, `/auth/callback`, `/auth/logout`: each talks to Auth0, whose own per-tenant limits would otherwise be spent by one client and lock real readers out of sign-in;
 - `/sitemap.xml` reads every catalogue list from the API, about one call per 100 entries.
 
@@ -353,12 +356,24 @@ The identity providers send the reader back to **Auth0**, not to the site, so th
 **Facebook** (Meta for Developers, an app of type Consumer, with the Facebook Login product):
 
 1. Facebook Login → Settings: **Valid OAuth Redirect URIs** `https://<AUTH0_DOMAIN>/login/callback`.
-2. App settings → Basic: app domain, a **Privacy Policy URL** and a **User Data Deletion** URL (instructions URL).
+2. App settings → Basic: app domain, a **Privacy Policy URL** and a **User Data Deletion** URL (instructions URL). Point the Privacy Policy URL at the privacy page, `https://bardictorch.org/help/privacy`, and the data-deletion instructions at the contact form's opt-out, `https://bardictorch.org/contact?kind=opt_out`. Google's consent screen (above) uses the same privacy URL.
 3. Permissions: `email` and `public_profile`.
 4. Switch the app to **Live**. In Development mode, only the app's admins, developers and testers can sign in.
 5. In Auth0's Facebook connection, enter the App ID and App Secret, with the `email` permission.
 
 If §8's browser check 1 fails at the provider, the usual causes are a redirect URI that isn't exactly `https://<AUTH0_DOMAIN>/login/callback` (Google: `redirect_uri_mismatch`), a consent screen still in Testing, or a Facebook app still in Development mode.
+
+## 5. Turnstile
+
+The contact, takedown and opt-out form (`/contact`, which also reports links) is protected by Cloudflare Turnstile. The browser loads the widget from `https://challenges.cloudflare.com` (allowed in the CSP's `script-src` and `frame-src`), and the API verifies the token (`POST /v1/contact`, action `contact`). Create the widget before the first deploy:
+
+1. Go to Cloudflare dashboard → Turnstile → Add widget.
+   - **Name:** "Bardic Torch contact form".
+   - **Hostnames:** `bardictorch.org` and `preview.bardictorch.org`. The API accepts a token minted on one hostname only (its `TURNSTILE_HOSTNAME`), and the preview Worker uses the production API, so the contact form works on one of the two at a time: on the other it answers that the robot check failed. During staging, before the production switch, the API has `TURNSTILE_HOSTNAME=preview.bardictorch.org` so the click-through can send the form on preview; the production switch sets it to `bardictorch.org` (the backend's docs/LAUNCH.md).
+   - **Widget mode:** Managed.
+2. **Site key.** It is public: replace the placeholder `TURNSTILE_SITE_KEY` in `wrangler.jsonc`, in both the top-level `vars` and `env.preview.vars`, with a commit. Until then every page is the "Site configuration error" page (§2).
+3. **Secret key.** It goes to the **API**, not the frontend: set it in the API's dokku config as `TURNSTILE_SECRET_KEY`, with `TURNSTILE_HOSTNAME=preview.bardictorch.org` while staging and `bardictorch.org` from the production switch (the backend's DEPLOY.md and LAUNCH.md). It is never a Worker variable.
+4. **Local development and e2e** use Cloudflare's published test site key `1x00000000000000000000AA` (always passes). e2e runs offline, so `e2e/support/test.ts` answers the widget's script with a local stand-in that gives the test token `XXXX.DUMMY.TOKEN.XXXX`, as the test key's widget does. Against a real API, the test keys don't complete the form: siteverify answers Cloudflare's test secret with `hostname` `example.com` and no `action` (documented in Cloudflare's Turnstile testing page, and seen on 2026-11-14), and the API also requires its `TURNSTILE_HOSTNAME` and the action `contact`, so it answers `turnstile_failed`. Only the real widget and secret prove the whole form, on staging.
 
 ## 6. Sentry (optional)
 
@@ -408,8 +423,9 @@ curl -sI "$SITE/auth/login?as=contributor" | grep -i '^location'
 # 6. A cross-origin form post is refused.
 curl -s -o /dev/null -w '%{http_code}\n' -X POST -H "Origin: https://evil.example" "$SITE/settings"   # 400
 
-# 7. Unknown pages are the app's 404.
+# 7. Unknown pages are the app's 404; help pages render.
 curl -s -o /dev/null -w '%{http_code}\n' "$SITE/no-such-page"    # 404
+curl -s -o /dev/null -w '%{http_code}\n' "$SITE/help/licence"    # 200
 
 # 8. www redirects to the apex, keeping path and query (production only).
 curl -sI "https://www.bardictorch.org/x?y=1" | grep -iE '^(HTTP|location)'
@@ -440,7 +456,7 @@ curl -s https://api.bardictorch.org/healthz                      # {"status":"ok
 curl -s https://api.bardictorch.org/readyz                       # {"status":"ok"}
 ```
 
-With the API stopped (or `BARDIC_TORCH_API_BASE_URL` pointing at nothing, on preview only), the catalogue's pages are the "Bardic Torch is resting" page: 503 with `Retry-After: 30`, still inside the site shell, and `/sitemap.xml` is a 503 with `Retry-After` and no partial list.
+With the API stopped (or `BARDIC_TORCH_API_BASE_URL` pointing at nothing, on preview only), the catalogue's pages are the "Bardic Torch is resting" page: 503 with `Retry-After: 30`, still inside the site shell, and `/sitemap.xml` is a 503 with `Retry-After` and no partial list. Help pages, the home page (with its counts and categories regions showing their errors) and sign-in keep working.
 
 In the dashboard, each Worker's Settings → Domains & Routes shows `workers.dev` and Preview URLs **disabled**, and only its custom domains, **Active**.
 

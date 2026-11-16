@@ -294,8 +294,17 @@ test("categories, collections and events lead on to their pages", async ({
   await expect(page).toHaveURL(/\/pieces\/the-dragons-hoard$/);
 });
 
-test("not found and the theme", async ({ page }) => {
+test("help, not found and the theme", async ({ page }) => {
+  await page.goto("/help");
+  await waitForHydration(page);
   const main = page.getByRole("main");
+  await main.getByRole("link", { name: "Conservation status" }).first().click();
+  await expect(page).toHaveURL(/\/help\/conservation-status$/);
+  await main
+    .getByRole("link", { name: "Restricted", exact: true })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/#restricted$/);
 
   const response = await page.goto("/wiki/Northmarch_Rising");
   expect(response?.status()).toBe(404);

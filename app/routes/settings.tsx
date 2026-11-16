@@ -7,7 +7,9 @@ import { SettingsSection } from "~/components/settings/SettingsSection";
 import { Alert } from "~/components/ui/Alert";
 import { ButtonLink } from "~/components/ui/Button";
 import { SectionError } from "~/components/ui/ErrorState";
+import { Link } from "~/components/ui/Link";
 import { loginHref, SETTINGS_PATH } from "~/constants/account";
+import { CONTACT_FORM_URL } from "~/constants/navigation";
 import { useErrorReference } from "~/hooks/useErrorReference";
 import type { loader as rootLoader } from "~/root";
 
@@ -74,7 +76,11 @@ export default function Settings() {
       <Page>
         <div className="mt-6">
           <Alert tone="danger" title="Your account is blocked" headingLevel={2}>
-            You can’t suggest edits.
+            You can’t suggest edits. If you think this is a mistake,{" "}
+            <Link to={CONTACT_FORM_URL} appearance="inherit">
+              contact the Bardic Torch team
+            </Link>
+            .
           </Alert>
         </div>
       </Page>

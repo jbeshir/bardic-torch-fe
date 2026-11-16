@@ -6,7 +6,11 @@ import {
   IconShieldCheck,
   type Icon,
 } from "@tabler/icons-react";
-import { CONSERVATION_LABELS } from "~/constants/vocabulary";
+import { Link as RouterLink } from "react-router";
+import {
+  CONSERVATION_LABELS,
+  conservationHelpPath,
+} from "~/constants/vocabulary";
 import type { ConservationStatus } from "~/schemas/catalogue";
 
 /**
@@ -58,18 +62,23 @@ const PILL =
 
 /**
  * A piece's conservation status: a pill with the status's
- * icon and label, never colour alone. A static badge has the hidden
+ * icon and label, never colour alone. Static by default; as a `link` it
+ * goes to the status's entry on the conservation help page, named
+ * "Conservation status: Endangered". A static badge has the same hidden
  * prefix unless its context already says what it is (`named`: the
  * infobox's "Conservation" row).
  */
 export function ConservationBadge({
   status,
   size = "md",
+  link = false,
   named = false,
 }: {
   readonly status: ConservationStatus;
   /** `sm` (24 px) in lists and cards, `md` (28 px) in page heads. */
   readonly size?: keyof typeof SIZES;
+  /** Link to the status's entry, `/help/conservation-status#{anchor}`, e.g. `#critically-endangered`. */
+  readonly link?: boolean;
   /** The context already names it, so the hidden prefix is left out. */
   readonly named?: boolean;
 }) {
@@ -84,11 +93,28 @@ export function ConservationBadge({
         aria-hidden="true"
         className={`shrink-0 ${iconColour}`}
       />
-      <span>
-        {!named ? <span className="sr-only">Conservation status: </span> : null}
+      <span
+        className={
+          link ? "underline-offset-prose group-hover:underline" : undefined
+        }
+      >
+        {link || !named ? (
+          <span className="sr-only">Conservation status: </span>
+        ) : null}
         {CONSERVATION_LABELS[status]}
       </span>
     </>
   );
+  if (link) {
+    return (
+      <RouterLink
+        to={conservationHelpPath(status)}
+        prefetch="intent"
+        className={`group ${className}`}
+      >
+        {content}
+      </RouterLink>
+    );
+  }
   return <span className={className}>{content}</span>;
 }

@@ -9,6 +9,7 @@ const valid = {
   AUTH0_CLIENT_SECRET: "client-secret",
   AUTH0_DEFAULT_REDIRECT_URI: "https://bardictorch.org",
   AUTH0_AUDIENCE: "https://api.bardictorch.org",
+  TURNSTILE_SITE_KEY: "1x00000000000000000000AA",
 };
 
 function problemsFor(raw: Record<string, unknown>) {

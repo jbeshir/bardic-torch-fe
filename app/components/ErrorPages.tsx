@@ -95,7 +95,8 @@ export function NotFound({
 
 /**
  * The page body for anything unexpected. `reference` is the
- * Sentry event id, when Sentry is set up.
+ * Sentry event id, when Sentry is set up; without one the request to
+ * quote it is left out. "Let us know" is the Contact link in HelpLinks.
  * A route's own boundary may say what failed in `title`.
  */
 export function ServerError({
@@ -116,7 +117,12 @@ export function ServerError({
         </>
       }
     >
-      <p>That’s on us, not you. Try again in a moment.</p>
+      <p>
+        That’s on us, not you. Try again in a moment.
+        {reference
+          ? " If it keeps happening, let us know and include the reference below."
+          : null}
+      </p>
     </ErrorState>
   );
 }

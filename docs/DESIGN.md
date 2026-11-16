@@ -100,9 +100,9 @@ Danger is crimson, not red-orange, so a danger fill never looks like the amber p
 
 ### 2.5 Conservation-status tokens
 
-Used by `ConservationBadge`: `--cons-{s}-bg`, `--cons-{s}-fg` and `--cons-{s}-border` (the border token also colours the icon, ≥3:1 on the badge and on `surface`). Status is never shown by colour alone: there is an icon, the label, and a different border style or weight at the extremes.
+Used by `ConservationBadge` and the conservation key on the help page: `--cons-{s}-bg`, `--cons-{s}-fg` and `--cons-{s}-border` (the border token also colours the icon, ≥3:1 on the badge and on `surface`). Status is never shown by colour alone: there is an icon, the label, and a different border style or weight at the extremes.
 
-Used only by `ConservationBadge`. Each status has `--cons-{s}-bg`, `--cons-{s}-fg` and `--cons-{s}-border`. The border token also colours the badge icon, so it meets ≥3:1 on both the badge background and `surface`.
+Used only by `ConservationBadge` and the conservation key on the help page. Each status has `--cons-{s}-bg`, `--cons-{s}-fg` and `--cons-{s}-border`. The border token also colours the badge icon, so it meets ≥3:1 on both the badge background and `surface`.
 
 | Status (enum)           | Label                 | Icon (Tabler)       | bg (L / D)            | fg (L / D)            | border+icon (L / D)   | Border style |
 | ----------------------- | --------------------- | ------------------- | --------------------- | --------------------- | --------------------- | ------------ |

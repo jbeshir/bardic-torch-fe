@@ -23,8 +23,12 @@ const TEMPLATES = [
   "/collections/12",
   "/events",
   "/events/midwinter-revel",
+  "/help",
+  "/help/conservation-status",
   "/wiki/Northmarch_Rising",
   "/auth/login?as=contributor&returnTo=/settings",
+  "/needs-work",
+  "/contact",
 ];
 
 for (const path of TEMPLATES) {
