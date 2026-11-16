@@ -131,7 +131,10 @@ describe("responses", () => {
     expect(JSON.stringify(result)).not.toContain("upstream detail");
   });
 
-  it.each([["403 user_blocked", 403, "user_blocked", "declared"]] as const)(
+  it.each([
+    ["403 user_blocked", 403, "user_blocked", "declared"],
+    ["404 not_found", 404, "not_found", "undeclared"],
+  ] as const)(
     "an upstream %s gets the app's own copy and keeps its status",
     async (_name, status, code, contract) => {
       const body = { code, message: "upstream detail not meant for users" };

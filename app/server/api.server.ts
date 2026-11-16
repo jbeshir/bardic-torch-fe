@@ -1,5 +1,5 @@
 import type { RouterContextProvider } from "react-router";
-import type { operations } from "~/api/schema.gen";
+import type { components, operations } from "~/api/schema.gen";
 import { type UpstreamErrorCode, type User } from "~/schemas/api";
 import {
   TRY_AGAIN_MESSAGE,
@@ -34,11 +34,16 @@ import {
 /** The codes this module answers with: not the CSRF check's or the browser's. */
 type ErrorCode = Exclude<ProxyErrorCode, "forbidden" | "offline">;
 
+type Schemas = components["schemas"];
+
 /**
- * An error the app reports, with its own copy (see `upstreamError`).
+ * An error the app reports, with its own copy (see `upstreamError`). A 422
+ * carries the API's `problems`, and a 409 `possible_duplicate` its matches.
  */
 type ApiError = ProxyError & {
   readonly code: ErrorCode;
+  readonly problems?: readonly Schemas["Problem"][];
+  readonly duplicates?: readonly Schemas["DuplicateMatch"][];
 };
 
 type ApiResult<T> = (
@@ -56,6 +61,20 @@ type ApiResult<T> = (
  */
 const ENDPOINTS = {
   getMe: { method: "GET", path: "/v1/me" },
+  getEditablePiece: { method: "GET", path: "/v1/pieces/{slug}/editable" },
+  getEditablePerson: { method: "GET", path: "/v1/persons/{slug}/editable" },
+  getEditableTerm: { method: "GET", path: "/v1/terms/{slug}/editable" },
+  getEditableEvent: { method: "GET", path: "/v1/events/{slug}/editable" },
+  getEditableCollection: {
+    method: "GET",
+    path: "/v1/collections/{collection_id}/editable",
+  },
+  submitRevision: { method: "POST", path: "/v1/revisions" },
+  listMyRevisions: { method: "GET", path: "/v1/me/revisions" },
+  withdrawRevision: {
+    method: "POST",
+    path: "/v1/revisions/{revision_id}/withdraw",
+  },
   createContactRequest: { method: "POST", path: "/v1/contact" },
 } as const satisfies {
   readonly [Id in keyof operations]?: EndpointOf<operations[Id]>;
@@ -96,16 +115,51 @@ function upstreamError(
         message:
           "Your account is blocked, so you can’t make changes. Contact the Bardic Torch team if you think this is a mistake.",
       };
+    case "not_found":
+      return {
+        code,
+        message:
+          "We couldn’t find what you asked for. Reload the page and try again.",
+      };
+    case "possible_duplicate":
+      return {
+        code,
+        message:
+          "This may already be in the catalogue. Check the pages below, and submit again if yours is a different one.",
+      };
+    case "stale_revision":
+      return {
+        code,
+        message:
+          "This page has changed since you started editing. Check the current version, then save again to replace those changes.",
+      };
+    case "revision_not_pending":
+      return {
+        code,
+        message:
+          "That edit is no longer waiting for review, so it can’t be withdrawn. Reload the page to see where it stands.",
+      };
     case "turnstile_failed":
       return {
         code,
         message:
           "We couldn’t check that you’re not a robot. Reload the page and try again.",
       };
+    case "pending_limit_reached":
+      return {
+        code,
+        message:
+          "You already have 30 edits waiting for review. Withdraw one, or wait for a moderator to review them, then try again.",
+      };
     case "request_too_large":
       return {
         code: "invalid_request",
         message: "The form is too large to send.",
+      };
+    case "validation_failed":
+      return {
+        code,
+        message: "Check the highlighted fields.",
       };
     case "invalid_request":
       return operationId === "createContactRequest"
@@ -208,7 +262,19 @@ async function callApi<T>(
         ? undefined
         : upstreamError(apiRequest.operationId, code);
     if (error) {
-      return failure(response.status, error, headers);
+      const { problems, possible_duplicates } = body as {
+        readonly problems?: Schemas["Problem"][];
+        readonly possible_duplicates?: Schemas["DuplicateMatch"][];
+      };
+      return failure(
+        response.status,
+        code === "validation_failed" && problems
+          ? { ...error, problems }
+          : code === "possible_duplicate" && possible_duplicates
+            ? { ...error, duplicates: possible_duplicates }
+            : error,
+        headers
+      );
     }
   }
 
@@ -230,6 +296,65 @@ export function getMe(
 ) {
   return callApi<User>(request, context, {
     operationId: "getMe",
+  });
+}
+
+const EDITABLE_OPERATIONS = {
+  piece: "getEditablePiece",
+  person: "getEditablePerson",
+  term: "getEditableTerm",
+  event: "getEditableEvent",
+  collection: "getEditableCollection",
+} as const satisfies Record<Schemas["EntityType"], OperationId>;
+
+/**
+ * An entity's editable document (`GET /v1/{type}/{key}/editable`): `key`
+ * is the slug, or a collection's id, already checked by the route.
+ */
+export function getEditable(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  type: Schemas["EntityType"],
+  key: string
+) {
+  return callApi<Schemas["Editable"]>(request, context, {
+    operationId: EDITABLE_OPERATIONS[type],
+    params: type === "collection" ? { collection_id: key } : { slug: key },
+  });
+}
+
+export function submitRevision(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  body: RequestBody<"submitRevision">
+) {
+  return callApi<Schemas["RevisionView"]>(request, context, {
+    operationId: "submitRevision",
+    body,
+  });
+}
+
+/** The caller's own revisions (`GET /v1/me/revisions`), newest first. */
+export function listMyRevisions(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  query: URLSearchParams
+) {
+  return callApi<Schemas["RevisionList"]>(request, context, {
+    operationId: "listMyRevisions",
+    query,
+  });
+}
+
+/** Withdraws one of the caller's pending revisions; `id` is already checked. */
+export function withdrawRevision(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  id: string
+) {
+  return callApi<undefined>(request, context, {
+    operationId: "withdrawRevision",
+    params: { revision_id: id },
   });
 }
 
