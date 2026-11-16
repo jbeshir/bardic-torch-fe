@@ -178,7 +178,7 @@ function baseOf(type: EntityType, key: string): number {
 }
 
 /** An entity's current revision: the newest approved here, or its base. */
-function currentBase(
+export function currentBase(
   current: CurrentRevisions,
   type: EntityType,
   key: string
@@ -187,7 +187,7 @@ function currentBase(
 }
 
 /** The key of a revision's entity, or null for a new one. */
-function keyOf(revision: Schemas["RevisionView"]): string | null {
+export function keyOf(revision: Schemas["RevisionView"]): string | null {
   const { entity } = revision;
   if (entity === null) return null;
   return "slug" in entity ? entity.slug : String(entity.id);

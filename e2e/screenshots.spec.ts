@@ -36,6 +36,11 @@ const TEMPLATES = [
   "/auth/login?as=contributor&returnTo=/contributions",
   "/needs-work",
   "/contact",
+  "/auth/login?as=moderator&returnTo=/moderation",
+  "/auth/login?as=moderator&returnTo=/moderation/revisions/1901",
+  "/auth/login?as=moderator&returnTo=/moderation/contact",
+  "/auth/login?as=moderator&returnTo=/moderation/users",
+  "/auth/login?as=moderator&returnTo=/moderation/links?url=https%3A%2F%2Fvideo.example%2Fwatch%2Fkettle-hearth",
 ];
 
 for (const path of TEMPLATES) {

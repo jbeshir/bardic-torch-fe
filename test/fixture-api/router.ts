@@ -9,9 +9,19 @@ import {
   withdrawRevision,
 } from "./editing-operations";
 import {
+  approveRevision,
+  closeContactRequest,
   createContactRequest,
+  getModerationLink,
+  getModerationRevision,
+  listContactRequests,
+  listModerationQueue,
   type ModerationState,
+  rejectRevision,
+  SEEDED_CONTACTS,
   SEEDED_REVISIONS,
+  setLinkHidden,
+  setUserBlocked,
 } from "./moderation-operations";
 import { errorBody, type FixtureResponse } from "./responses";
 import { requestProblems, responseProblems } from "./spec";
@@ -20,11 +30,12 @@ import { requestProblems, responseProblems } from "./spec";
  * Routes a request to the fixture API's canned answers: `getHealthz`, the
  * seeded users' `getMe`, the catalogue reads
  * (catalogue-operations.ts), the editing operations
- * (editing-operations.ts) and the contact operations
+ * (editing-operations.ts) and the moderation and contact operations
  * (moderation-operations.ts). A request is signed in by the bearer the app
  * sends for a stub session, exactly `Bearer fixture:<userId>`;
  * anything else is 401, except on the contact form, which needs no
- * account. Each user's revisions are remembered in the state; a JSON body that
+ * account. Each user's revisions, the contact requests
+ * and the hidden links are remembered in the state; a JSON body that
  * breaks the spec is 400.
  *
  * Every answer is validated against the spec; a fixture that breaks the
@@ -55,7 +66,8 @@ export function createFixtureState(): FixtureState {
       new Map()
     ),
     current: new Map(),
-    contacts: new Map(),
+    contacts: new Map(SEEDED_CONTACTS.map(request => [request.id, request])),
+    hiddenLinks: new Set(),
   };
 }
 
@@ -123,6 +135,44 @@ function signedIn(
       return withdrawRevision(state.revisions, user, params.revision_id ?? "");
     case "getMe":
       return { status: 200, body: user };
+    case "listModerationQueue":
+      return listModerationQueue(state, user, query);
+    case "getModerationRevision":
+      return getModerationRevision(state, user, params.revision_id ?? "");
+    case "approveRevision":
+      return approveRevision(
+        state,
+        user,
+        params.revision_id ?? "",
+        body as Schemas["ApproveRevisionRequest"]
+      );
+    case "rejectRevision":
+      return rejectRevision(
+        state,
+        user,
+        params.revision_id ?? "",
+        body as Schemas["RejectRevisionRequest"]
+      );
+    case "listContactRequests":
+      return listContactRequests(state, user, query);
+    case "closeContactRequest":
+      return closeContactRequest(
+        state,
+        user,
+        params.request_id ?? "",
+        body as Schemas["CloseContactRequestRequest"]
+      );
+    case "getModerationLink":
+      return getModerationLink(state, user, query);
+    case "setLinkHidden":
+      return setLinkHidden(
+        state,
+        user,
+        params.link_id ?? "",
+        body as Schemas["SetLinkHiddenRequest"]
+      );
+    case "setUserBlocked":
+      return setUserBlocked(state, user, params.user_id ?? "");
     default: {
       const { type } = EDITABLE[operationId as keyof typeof EDITABLE];
       return getEditable(
@@ -143,6 +193,51 @@ const ROUTES = [
     operationId: "withdrawRevision",
     method: "POST",
     path: "/v1/revisions/{revision_id}/withdraw",
+  },
+  {
+    operationId: "listModerationQueue",
+    method: "GET",
+    path: "/v1/moderation/queue",
+  },
+  {
+    operationId: "getModerationRevision",
+    method: "GET",
+    path: "/v1/moderation/revisions/{revision_id}",
+  },
+  {
+    operationId: "approveRevision",
+    method: "POST",
+    path: "/v1/revisions/{revision_id}/approve",
+  },
+  {
+    operationId: "rejectRevision",
+    method: "POST",
+    path: "/v1/revisions/{revision_id}/reject",
+  },
+  {
+    operationId: "listContactRequests",
+    method: "GET",
+    path: "/v1/moderation/contact-requests",
+  },
+  {
+    operationId: "closeContactRequest",
+    method: "POST",
+    path: "/v1/moderation/contact-requests/{request_id}",
+  },
+  {
+    operationId: "getModerationLink",
+    method: "GET",
+    path: "/v1/moderation/links",
+  },
+  {
+    operationId: "setLinkHidden",
+    method: "PUT",
+    path: "/v1/links/{link_id}/hidden",
+  },
+  {
+    operationId: "setUserBlocked",
+    method: "PUT",
+    path: "/v1/users/{user_id}/blocked",
   },
   { operationId: "createContactRequest", method: "POST", path: "/v1/contact" },
   ...Object.entries(EDITABLE).map(([operationId, { path }]) => ({

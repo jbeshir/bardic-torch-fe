@@ -5,6 +5,7 @@ import {
   IconLogin,
   IconLogout,
   IconSettings,
+  IconShieldCheck,
   IconUserOff,
   IconUserQuestion,
 } from "@tabler/icons-react";
@@ -20,6 +21,7 @@ import {
   SETTINGS_PATH,
   type Account,
 } from "~/constants/account";
+import { MODERATION_PATH } from "~/constants/moderation";
 import { useDismiss } from "~/hooks/useDismiss";
 
 type Placement = "header" | "bar";
@@ -106,6 +108,18 @@ function AccountPanel({
             />
             My contributions
           </RouterLink>
+          {account.state === "signed-in" &&
+          account.user.role === "moderator" ? (
+            <RouterLink to={MODERATION_PATH} prefetch="intent" className={ROW}>
+              <IconShieldCheck
+                size={18}
+                stroke={1.75}
+                aria-hidden="true"
+                className="text-fg-muted"
+              />
+              Moderation
+            </RouterLink>
+          ) : null}
           <RouterLink to={SETTINGS_PATH} prefetch="intent" className={ROW}>
             <IconSettings
               size={18}

@@ -2,14 +2,15 @@ import type { RevisionListItem } from "~/schemas/api";
 import { readPath } from "./editor-data";
 
 /** Each entity type as the lists of revisions name it. */
-const ENTITY_NOUNS: Readonly<Record<RevisionListItem["entity_type"], string>> =
-  {
-    piece: "piece",
-    person: "bard",
-    term: "category",
-    collection: "collection",
-    event: "event",
-  };
+export const ENTITY_NOUNS: Readonly<
+  Record<RevisionListItem["entity_type"], string>
+> = {
+  piece: "piece",
+  person: "bard",
+  term: "category",
+  collection: "collection",
+  event: "event",
+};
 
 /**
  * What a listed revision is of: its page's name and address, or "New
