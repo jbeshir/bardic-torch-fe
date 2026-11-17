@@ -27,6 +27,7 @@ describe("the sitemap", () => {
     expect(new Set(paths).size).toBe(paths.length);
     for (const path of [
       "/",
+      "/help/contributing",
       "/pieces/the-copper-kettle",
       "/categories/warlike",
       "/collections/12",

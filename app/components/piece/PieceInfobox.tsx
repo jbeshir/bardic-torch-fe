@@ -73,6 +73,7 @@ export function PieceInfobox({ piece }: { readonly piece: Piece }) {
                 <ConservationBadge
                   status={piece.conservation_status}
                   size="sm"
+                  link
                 />
               ),
             },

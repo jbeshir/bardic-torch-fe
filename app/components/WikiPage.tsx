@@ -1,4 +1,5 @@
 import { useLocation } from "react-router";
+import { IconBook2 } from "@tabler/icons-react";
 import { useId, type ComponentProps, type ReactNode } from "react";
 import { Breadcrumbs } from "~/components/ui/Breadcrumbs";
 import { ViewTabs } from "~/components/ui/Tabs";
@@ -8,8 +9,8 @@ import { TableOfContents, type TocEntry } from "./TableOfContents";
 /**
  * The wiki page template, inside the shell's main
  * sheet: breadcrumbs, the h1, the subtitle, the title rule with the page's
- * views
- * and its meta, the page's banners, then the infobox (first, so it
+ * views (by default the non-interactive "Read" label: a help page has one
+ * view) and its meta, the page's banners, then the infobox (first, so it
  * floats right from md and stacks above the prose below), the intro, the
  * contents, the prose, the category chips and the licence line. Catalogue
  * pages use it through EntityPage.
@@ -33,7 +34,7 @@ export function WikiPage({
   /** The meta line under the h1: "Song · Dance music · 1580–1600". */
   readonly subtitle?: ReactNode;
   /** The page's views on the title rule; the current one is the path. */
-  readonly views: ComponentProps<typeof ViewTabs>["views"];
+  readonly views?: ComponentProps<typeof ViewTabs>["views"];
   /** Page-level states under the title rule (PageBanner). */
   readonly banners?: ReactNode;
   /** At the right end of the title rule: e.g. the source link. */
@@ -63,7 +64,11 @@ export function WikiPage({
         <p className="mt-1 text-body-sm text-fg-muted">{subtitle}</p>
       ) : null}
       <div className="mt-4">
-        <ViewTabs views={views} current={pathname} meta={meta} />
+        <ViewTabs
+          views={views ?? [{ label: "Read", to: pathname, icon: IconBook2 }]}
+          current={pathname}
+          meta={meta}
+        />
       </div>
       {banners ? <div className="mt-6 grid gap-3">{banners}</div> : null}
       <div className="mt-6 flow-root">

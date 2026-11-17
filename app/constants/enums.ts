@@ -17,7 +17,8 @@ export const PIECE_KINDS = [
 ] as const;
 
 /**
- * A piece's conservation status, in the spec's order.
+ * A piece's conservation status, in the spec's order (the help page's
+ * order is `CONSERVATION_STATUSES`, in `vocabulary.ts`).
  */
 export const CONSERVATION_STATUS_VALUES = [
   "unassessed",

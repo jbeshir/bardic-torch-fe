@@ -16,6 +16,8 @@ function sendJson(response: ServerResponse, status: number, body: unknown) {
 export function createFixtureServer(): Server {
   const state = createFixtureState();
   const server = createServer(async (request, response) => {
+    const chunks: Buffer[] = [];
+    for await (const chunk of request) chunks.push(chunk as Buffer);
     const { pathname, search } = new URL(
       request.url ?? "/",
       "http://fixture.invalid"
@@ -27,6 +29,7 @@ export function createFixtureServer(): Server {
         pathname,
         search,
         authorization: request.headers.authorization ?? null,
+        body: Buffer.concat(chunks).toString("utf8"),
       });
     } catch (error) {
       console.error(error);

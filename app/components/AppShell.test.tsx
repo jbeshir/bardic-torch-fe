@@ -58,6 +58,36 @@ describe("AppShell", () => {
     expect(main).toHaveAttribute("tabindex", "-1");
   });
 
+  it("brings the current page into view in a sidebar taller than the window, scrolling only the sidebar", async () => {
+    const scrollTo = vi.spyOn(window, "scrollTo");
+    vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(
+      1100
+    );
+    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(736);
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(32);
+    const original = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
+      if (this.getAttribute("aria-current") === "page") {
+        return { top: 64 + 900 } as DOMRect;
+      }
+      if (this.id === "site-nav") return { top: 64 } as DOMRect;
+      return original.call(this);
+    };
+    try {
+      await renderShell("/help/licence");
+      const nav = screen.getByRole("navigation", { name: "Site" });
+      // 900 + 32 - 736 + 24 + 16: the item's foot clear of the 24 px fade,
+      // with a margin.
+      expect(nav.scrollTop).toBe(236);
+      expect(scrollTo).not.toHaveBeenCalled();
+      // More below the fold: the fade shows (from lg).
+      expect(screen.getByTestId("sidebar-more")).toHaveClass("lg:block");
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = original;
+      vi.restoreAllMocks();
+    }
+  });
+
   it("after a client navigation, focuses the main content and announces the new title", async () => {
     vi.stubGlobal("requestAnimationFrame", (callback: () => void) => {
       callback();
@@ -186,6 +216,11 @@ describe("AppShell", () => {
     await user.click(barMenu as HTMLElement);
     const dialog = screen.getByRole("dialog", { name: "Site menu" });
     expect(within(dialog).getByRole("search")).toBeInTheDocument();
+    expect(
+      within(dialog)
+        .getByRole("navigation", { name: "Site" })
+        .querySelector('[aria-current="page"]')
+    ).toHaveTextContent("Licence & attribution");
     // Its toggle is for below md only: from md the header has one, and a
     // page never shows two.
     expect(

@@ -9,7 +9,8 @@ This is milestone FE2, the read UI, on top of FE1's foundation. FE1 gave it:
 - the wiki-style layout, with a header, sidebar, mobile bottom app bar and footer;
 - the design system, in light and dark;
 - Auth0 sign-in with Google or Facebook;
-- the settings page, which shows your display name.
+- the settings page, which shows your display name;
+- the static help pages.
 
 FE2 adds the catalogue, read-only and anonymous:
 
@@ -19,7 +20,7 @@ FE2 adds the catalogue, read-only and anonymous:
 - the directories (`/bards`, `/categories`, `/collections`, `/events`);
 - `robots.txt` and one `sitemap.xml`, and page metadata for search engines (indexed in the production build only).
 
-The original wiki is linked only for the footer and the 404 page.
+FE4 adds contact. Anyone can write to the moderators through the contact form (`/contact`, with Cloudflare Turnstile; reporting a link is the same form), and see the pages that need work (`/needs-work`). The original wiki is linked only for the help pages' attribution, the footer and the 404 page.
 
 ## Key concepts
 
@@ -48,7 +49,7 @@ The original wiki is linked only for the footer and the 404 page.
 
   Each build command runs `node scripts/build.mjs <mode>`, whose Vite mode decides stub sign-in. Workers Builds runs `npm run build:ci`, which picks the mode from `WORKERS_CI_BRANCH`: `production` on `main`, and `preview` on the `preview` branch; any other branch fails the build, and an empty branch fails too (docs/DEPLOY.md §2). A `production` build deploys to the `bardic-torch-fe` Worker, a `preview` build to `bardic-torch-fe-preview` (both in `wrangler.jsonc`). `check:prod-build` proves that production and preview builds contain no stub code.
 
-- **Fixture API.** `test/fixture-api/` serves canned answers to the catalogue's reads, to `getMe` for a few invented users. The same router drives the msw handlers in unit tests, the HTTP server in e2e, and `npm run dev:fixtures`. Every fixture response is checked against the spec.
+- **Fixture API.** `test/fixture-api/` serves canned answers to the catalogue's reads, to `getMe` for a few invented users, and to the contact operations. The same router drives the msw handlers in unit tests, the HTTP server in e2e, and `npm run dev:fixtures`. Every fixture response is checked against the spec.
 - **Design tokens.** All colour comes from `app/styles/tokens.ts`.
   - `app/styles/tokens.css` is hand-written; a test keeps its colours in step with `tokens.ts`.
   - Tailwind's palette is replaced by the tokens, so there are no `dark:` classes and no raw colours.
@@ -68,7 +69,7 @@ flowchart TD
     Session["Session cookie"]
     Auth0["Auth0: Google, Facebook"]
     API["Bardic Torch API"]
-    Wiki["Original wiki"]
+    Wiki["Original wiki (help attribution)"]
 
     Browser -- "served as static assets (no Worker)" --> Static
     Browser -- "pages and form posts" --> Worker
@@ -78,7 +79,7 @@ flowchart TD
     Worker -- "bearer from" --> Session
     Worker -- "loaders and actions, server side" --> API
     Worker -- "public reads (no credentials)" --> API
-    Browser -- "footer links" --> Wiki
+    Browser -- "attribution and footer links" --> Wiki
 ```
 
 ## Getting started
@@ -118,4 +119,4 @@ CI runs the first two as the `validate` and `e2e` jobs (`.github/workflows/ci.ym
 
 ## Licence
 
-The code is MIT ([LICENSE](LICENSE)).
+The code is MIT ([LICENSE](LICENSE)). The help pages are adapted from the original wiki and are CC BY-SA 4.0, credited to its contributors; see `/help/licence`.

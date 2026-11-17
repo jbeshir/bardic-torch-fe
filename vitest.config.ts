@@ -1,9 +1,12 @@
+import mdx from "@mdx-js/rollup";
 import { defineConfig } from "vitest/config";
+import { MARKDOWN_OPTIONS } from "./app/content/markdown/options.ts";
 
 // Vitest has its own config, so it never loads the React Router or
 // Cloudflare plugins from vite.config.ts (no dev server, no workerd): only
-// Vite core and the `~/` path alias.
+// Vite core, the Markdown compiler (help pages) and the `~/` path alias.
 export default defineConfig({
+  plugins: [{ enforce: "pre", ...mdx(MARKDOWN_OPTIONS) }],
   resolve: {
     tsconfigPaths: true,
     alias: [

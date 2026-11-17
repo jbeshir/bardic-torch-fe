@@ -15,8 +15,9 @@ Read [README.md](README.md) first for the concepts. The visual rules are in [doc
 9. **WCAG 2.2 AA.** Use semantic HTML and correct ARIA. Everything must be keyboard operable, focus must be visible and never hidden, targets must be at least 24 px (44 px for the primary controls on mobile), and pages must reflow at 320 px.
 10. **Copy.** British spelling, sentence-case labels. **Links only, never lyrics.**
 11. **Privacy.** The repository is public. Never commit anyone's legal name or raw data from the old wiki's dump. Fixture users have invented stage names only.
-12. **Tests are proportionate** (docs/TESTING.md): component tests for components with behaviour; loaders and actions against msw with the canned, spec-checked fixture API; the server-render smoke table (one row per page); and the short e2e suite (journeys, axe once per template in the default theme, one 360 px reflow check). Screenshots are on demand: `npm run screenshots`.
-13. **The config files stay loadable by Node.** `vite.config.ts`, `vitest.config.ts` and everything they import use `.ts` import specifiers and relative paths (no `~/` alias), and only erasable TypeScript (no enums or parameter properties), so Vite's native config loader raises no warning .
+12. **Licence.** Help content adapted from the old wiki is CC BY-SA 4.0, and must stay attributed to its contributors (see `/help/licence`).
+13. **Tests are proportionate** (docs/TESTING.md): component tests for components with behaviour; loaders and actions against msw with the canned, spec-checked fixture API; the server-render smoke table (one row per page); and the short e2e suite (journeys, axe once per template in the default theme, one 360 px reflow check). Screenshots are on demand: `npm run screenshots`.
+14. **The config files stay loadable by Node.** `vite.config.ts`, `vitest.config.ts` and everything they import use `.ts` import specifiers and relative paths (no `~/` alias), and only erasable TypeScript (no enums or parameter properties), so Vite's native config loader raises no warning .
 
 ## Validation
 

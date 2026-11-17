@@ -19,6 +19,8 @@ import * as collections from "./collections._index";
 import * as eventLayout from "./events.$slug";
 import * as eventRead from "./events.$slug._index";
 import * as events from "./events._index";
+import * as helpPage from "./help.$slug";
+import * as help from "./help._index";
 import * as pieceLayout from "./pieces.$slug";
 import * as pieceRead from "./pieces.$slug._index";
 import * as pieceHistory from "./pieces.$slug.history";
@@ -26,6 +28,8 @@ import * as pieces from "./pieces._index";
 import * as revision from "./revisions.$id";
 import * as robots from "./robots[.]txt";
 import * as search from "./search";
+import * as contact from "./contact";
+import * as needsWork from "./needs-work";
 import * as settings from "./settings";
 import * as sitemap from "./sitemap[.]xml";
 
@@ -75,7 +79,11 @@ const get = serveApp([
   child("events.$slug", eventRead),
   route("revisions.$id", "revisions/:id", revision),
   route("search", "search", search),
+  route("needs-work", "needs-work", needsWork),
+  route("contact", "contact", contact),
   route("settings", "settings", settings),
+  { ...route("help._index", "help", help), hasLoader: false },
+  route("help.$slug", "help/:slug", helpPage),
   route("robots[.]txt", "robots.txt", robots),
   route("sitemap[.]xml", "sitemap.xml", sitemap),
 ]);
@@ -117,6 +125,10 @@ const PAGES: readonly (readonly [string, number, Check])[] = [
   ["/collections/12", 200, { h1: "The Northmarch Songbook" }],
   ["/events", 200, { h1: "Events" }],
   ["/events/midwinter-revel", 200, { h1: "Midwinter Revel" }],
+  ["/needs-work", 200, { h1: "Needs work" }],
+  ["/contact", 200, { h1: "Contact us" }],
+  ["/help", 200, { h1: "Help" }],
+  ["/help/conservation-status", 200, { h1: "Conservation status" }],
   ["/settings", 200, { contains: "<title>Settings" }],
   ["/wiki/Northmarch_Rising", 404, { contains: "/search?q=Northmarch+Rising" }],
   ["/pieces/no-such-piece", 404, { h1: "We couldn’t find that piece" }],

@@ -1,7 +1,9 @@
 import { cloudflare } from "@cloudflare/vite-plugin";
+import mdx from "@mdx-js/rollup";
 import { reactRouter } from "@react-router/dev/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
+import { MARKDOWN_OPTIONS } from "./app/content/markdown/options.ts";
 import { ENV_NAMES } from "./app/server/env.server.ts";
 
 // Under `react-router dev`, variables set in the process environment
@@ -38,6 +40,9 @@ export default defineConfig(({ command, mode }) => ({
   // (Vite's is an optional peer) because of this option.
   build: { cssMinify: "esbuild" },
   plugins: [
+    // Help pages are Markdown, compiled before React Router sees the route
+    // modules.
+    { enforce: "pre", ...mdx(MARKDOWN_OPTIONS) },
     cloudflare({
       viteEnvironment: { name: "ssr" },
       // wrangler.jsonc's `secrets.required` makes the dev server load only

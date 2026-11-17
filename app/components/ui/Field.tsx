@@ -1,5 +1,5 @@
 import { IconAlertCircle } from "@tabler/icons-react";
-import { createContext, use, type ReactNode } from "react";
+import { createContext, use, useId, type ReactNode } from "react";
 
 type FieldControl = {
   readonly id: string;
@@ -12,7 +12,7 @@ const FieldContext = createContext<FieldControl | null>(null);
 FieldContext.displayName = "FieldContext";
 
 /**
- * The attributes a text control (Input, Select) takes from the
+ * The attributes a text control (Input, Textarea, Select) takes from the
  * Field around it: its id (the label's `for`), the help and error ids, the
  * invalid flag and `required`. Outside a Field there are none, and the
  * control needs its own `aria-label`.
@@ -84,5 +84,53 @@ export function FieldError({
         {children}
       </span>
     </p>
+  );
+}
+
+/**
+ * Label, help, control and error, wired together. The control
+ * is one Input, Textarea or Select inside; it picks up the ids from here.
+ * Fields are required unless marked `optional`.
+ */
+export function Field({
+  label,
+  help,
+  error,
+  optional = false,
+  id: givenId,
+  children,
+}: {
+  readonly label: string;
+  readonly help?: ReactNode;
+  /** The message for an invalid value; also sets `aria-invalid`. */
+  readonly error?: ReactNode;
+  readonly optional?: boolean;
+  /**
+   * The control's id, when something else on the page links to it (an
+   * error summary). It must come from the parent's `useId()`.
+   */
+  readonly id?: string;
+  readonly children: ReactNode;
+}) {
+  const ownId = useId();
+  const id = givenId ?? ownId;
+  const control: FieldControl = {
+    id,
+    describedBy: describedBy(id, { help, error }),
+    invalid: Boolean(error),
+    required: !optional,
+  };
+  return (
+    <div>
+      <label htmlFor={id} className="block text-body-sm font-semibold text-fg">
+        {label}
+        {optional ? <OptionalMark /> : null}
+      </label>
+      {help ? <FieldHelp id={`${id}-help`}>{help}</FieldHelp> : null}
+      <div className="mt-2">
+        <FieldContext value={control}>{children}</FieldContext>
+      </div>
+      {error ? <FieldError id={`${id}-error`}>{error}</FieldError> : null}
+    </div>
   );
 }

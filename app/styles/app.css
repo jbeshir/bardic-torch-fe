@@ -5,8 +5,8 @@
 @import "./base.css";
 @import "./prose.css";
 
-/* Classes come from the app's modules only. */
-@source "../**/*.{ts,tsx}";
+/* Classes come from the app's modules and help pages only. */
+@source "../**/*.{ts,tsx,md}";
 
 /*
  * Hover styles only where the primary pointer can hover precisely; Tailwind

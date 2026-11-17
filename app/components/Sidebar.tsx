@@ -1,7 +1,11 @@
 import { Link as RouterLink, useLocation } from "react-router";
-import { NAV_GROUPS } from "~/constants/navigation";
+import { ButtonLink } from "~/components/ui/Button";
+import { CONTRIBUTE_HREF, NAV_GROUPS } from "~/constants/navigation";
+import { LogoMark } from "./LogoMark";
 
-// 44 px rows below lg; 28 px at lg (pointer screens, WCAG 2.5.8).
+// 44 px rows below lg; 28 px at lg (pointer screens, WCAG 2.5.8), so the
+// whole Help group fits above the fold of an 800 px window, clear of the
+// "more below" fade, with room for labels to wrap in a wider sans.
 // The rows, headings and gaps don't depend on the font;
 // only a label that wraps adds a line to its row.
 const ITEM =
@@ -58,7 +62,8 @@ function isCurrent(
 
 /**
  * The site navigation's contents, from
- * app/constants/navigation.ts: Browse, the facets. The caller wraps it in the "Site"
+ * app/constants/navigation.ts: Browse, the facets, Help, then the
+ * ContributeCard. The caller wraps it in the "Site"
  * nav: the persistent sidebar from lg, or the drawer below.
  */
 export function Sidebar() {
@@ -84,6 +89,18 @@ export function Sidebar() {
           </ul>
         </div>
       ))}
+      <div className="mt-8 rounded-lg border border-border bg-surface p-4">
+        <LogoMark className="h-5 w-5" />
+        <h3 className="mt-2 font-sans text-h4 text-fg">Keep the torch lit</h3>
+        <p className="mt-1 text-body-sm text-fg-muted">
+          Anyone can add a piece, a link or a performance.
+        </p>
+        <div className="mt-3">
+          <ButtonLink to={CONTRIBUTE_HREF} size="sm" fullWidth>
+            Start contributing
+          </ButtonLink>
+        </div>
+      </div>
     </div>
   );
 }

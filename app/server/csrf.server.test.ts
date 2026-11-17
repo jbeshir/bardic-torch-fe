@@ -1,6 +1,7 @@
 import type { ActionFunctionArgs } from "react-router";
 import { describe, expect, it } from "vitest";
 import { action as logout } from "~/routes/auth.logout";
+import { action as contact } from "~/routes/contact";
 import { action as saveTheme } from "~/routes/resources.theme";
 import { APP_ORIGIN } from "~/test/context";
 import { runAction } from "~/test/proxy";
@@ -29,6 +30,13 @@ const ROUTES: ReadonlyArray<{
     path: "/resources/theme",
     action: saveTheme,
   },
+  ...([["/contact", contact, {}]] as const).map(([name, action, params]) => ({
+    name,
+    method: "POST",
+    path: name,
+    action,
+    params,
+  })),
 ];
 
 type RouteModule = Readonly<Record<string, unknown>>;

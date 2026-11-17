@@ -54,6 +54,8 @@ const envSchema = z.object({
   AUTH0_CLIENT_SECRET: required,
   AUTH0_DEFAULT_REDIRECT_URI: httpUrl,
   AUTH0_AUDIENCE: required,
+  /** The contact form's Cloudflare Turnstile widget (plan §5.4). */
+  TURNSTILE_SITE_KEY: required,
   SENTRY_DSN: z.preprocess(emptyAsMissing, z.url().optional()),
   AUTH_MODE: z.preprocess(
     emptyAsMissing,

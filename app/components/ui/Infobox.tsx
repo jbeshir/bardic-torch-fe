@@ -21,22 +21,31 @@ const ROW =
   "border-b border-border py-2 last:border-b-0 sm:grid sm:grid-cols-infobox sm:gap-x-3 md:block xl:grid";
 
 /**
- * The parts of a list of facts: the list, a row, and the row's
+ * The parts of a list of facts, for facts written as content (a help page's
+ * `:::infobox`, whose labels may be links): the list, a row, and the row's
  * label and value. `sections` uses the same parts.
  */
-function InfoboxFacts({ children }: { readonly children: ReactNode }) {
+export function InfoboxFacts({ children }: { readonly children: ReactNode }) {
   return <dl className="mt-1 text-body-sm">{children}</dl>;
 }
 
-function InfoboxFact({ children }: { readonly children: ReactNode }) {
+export function InfoboxFact({ children }: { readonly children: ReactNode }) {
   return <div className={ROW}>{children}</div>;
 }
 
-function InfoboxFactLabel({ children }: { readonly children: ReactNode }) {
+export function InfoboxFactLabel({
+  children,
+}: {
+  readonly children: ReactNode;
+}) {
   return <dt className="text-fg-muted">{children}</dt>;
 }
 
-function InfoboxFactValue({ children }: { readonly children: ReactNode }) {
+export function InfoboxFactValue({
+  children,
+}: {
+  readonly children: ReactNode;
+}) {
   return <dd className="min-w-0 wrap-anywhere text-fg">{children}</dd>;
 }
 
@@ -85,12 +94,15 @@ function LoadingRows() {
  * width above the prose below md (§5.5); put it first in the content.
  *
  * `loading` shows skeleton rows (client transitions only); `error` replaces
- * the rows with a danger line and the retry control you pass.
+ * the rows with a danger line and the retry control you pass. Facts with
+ * no section heading (a help page's "At a glance") are `children`, built
+ * from InfoboxFacts.
  */
 export function Infobox({
   title,
   subtitle,
   sections = [],
+  children,
   footer,
   loading = false,
   error,
@@ -98,6 +110,8 @@ export function Infobox({
   readonly title: string;
   readonly subtitle?: ReactNode;
   readonly sections?: readonly InfoboxSection[];
+  /** Facts outside any section: an InfoboxFacts list. */
+  readonly children?: ReactNode;
   /** An action under the facts, e.g. "Help complete this page". */
   readonly footer?: ReactNode;
   readonly loading?: boolean;
@@ -140,6 +154,7 @@ export function Infobox({
             </section>
           ))
         : null}
+      {!loading && !error ? children : null}
       {footer ? (
         <div className="mt-4 border-t border-border pt-3 text-body-sm">
           {footer}
