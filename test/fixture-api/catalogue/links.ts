@@ -1,7 +1,12 @@
 import type { components } from "../../../app/api/schema.gen";
 import { NORTHMARCH_SONGBOOK_ID } from "./collections";
-import { MIDWINTER_REVEL_SLUG, MUSTER_FIELD_SLUG } from "./events";
+import {
+  eventSummary,
+  MIDWINTER_REVEL_SLUG,
+  MUSTER_FIELD_SLUG,
+} from "./events";
 import { DRILL_LINKS } from "./generated";
+import { personSummary } from "./persons";
 
 /**
  * The raw link records of the fixture catalogue, for pieces and for persons,
@@ -302,6 +307,19 @@ const HAND_LINKS: readonly RawLink[] = [
     roles: ["external_profile"],
   }),
 ];
+
+/** A performance as a piece's link serves it (before redaction). */
+export function performanceSummary(
+  raw: RawPerformance
+): Schemas["PiecePerformance"] {
+  return {
+    year: raw.year,
+    uploader: raw.uploader,
+    description_verbatim: raw.description_verbatim,
+    event: raw.event === null ? null : eventSummary(raw.event),
+    performers: raw.performers.map(personSummary),
+  };
+}
 
 /** Every link: the hand-written ones, then the generated ones. */
 export const LINKS: readonly RawLink[] = [...HAND_LINKS, ...DRILL_LINKS];

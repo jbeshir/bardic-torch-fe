@@ -205,6 +205,33 @@ test("read a piece: infobox, links, a restricted piece, a stub", async ({
   await expect(main.getByText("This page is a stub.")).toBeVisible();
 });
 
+test("history: tab, newest revision, then back to the first version", async ({
+  page,
+}) => {
+  await page.goto("/pieces/the-copper-kettle");
+  await waitForHydration(page);
+  const main = page.getByRole("main");
+  await main
+    .getByRole("navigation", { name: "Page views" })
+    .getByRole("link", { name: "History" })
+    .click();
+  await expect(page).toHaveURL(/\/pieces\/the-copper-kettle\/history$/);
+  await main
+    .getByRole("table", { name: "Revisions" })
+    .getByRole("link", { name: /^View changes/ })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/revisions\/1014$/);
+  await expect(
+    main.getByRole("heading", { level: 2, name: "Changes" })
+  ).toBeVisible();
+  await main.getByRole("link", { name: "Previous revision" }).click();
+  await expect(page).toHaveURL(/\/revisions\/1004$/);
+  await expect(
+    main.getByRole("heading", { level: 3, name: "Versions" })
+  ).toBeVisible();
+});
+
 test("bards: a letter, a bard, a work; a bard with no page", async ({
   page,
 }) => {
@@ -226,6 +253,7 @@ test("bards: a letter, a bard, a work; a bard with no page", async ({
   await expect(
     main.getByText("Hollis Fenn prefers not to have a page.")
   ).toBeVisible();
+  await expect(main.getByRole("link", { name: "History" })).toHaveCount(0);
 });
 
 test("categories, collections and events lead on to their pages", async ({

@@ -19,11 +19,12 @@ import {
   rawPiece,
   type RawPiece,
 } from "./catalogue/pieces";
+import { REVISIONS } from "./catalogue/revisions";
 import { TERMS, termSummary, type RawTerm } from "./catalogue/terms";
 import { errorBody, type FixtureResponse } from "./responses";
 
 /**
- * The catalogue reads the read pages call, each answering what the
+ * The 17 catalogue reads the read pages call, each answering what the
  * backend would for this data: the data holds only what a public read
  * shows, so there is nothing to hide, redact or validate here. The router
  * checks every body against the spec.
@@ -513,6 +514,42 @@ function serveEvent(slug: string): Schemas["Event"] | undefined {
   };
 }
 
+// Revisions -------------------------------------------------------------------
+
+type EntityType = Schemas["Revision"]["entity_type"];
+
+/** One page of an entity's revisions, newest first, or 404. */
+function history(
+  entity: EntityType,
+  key: string,
+  query: URLSearchParams
+): FixtureResponse {
+  const exists = {
+    piece: () => PIECES.some(p => p.slug === key),
+    person: () => PERSONS.some(p => p.slug === key),
+    term: () => termOf(key) !== undefined,
+    collection: () => COLLECTIONS.some(c => String(c.id) === key),
+    event: () => EVENTS.some(e => e.slug === key),
+  };
+  if (!exists[entity]()) return notFound(entity);
+  const revisions = REVISIONS.filter(
+    r =>
+      r.entity_type === entity &&
+      (r.entity_type === "collection" ? String(r.entity.id) : r.entity.slug) ===
+        key
+  )
+    .sort((a, b) => b.created_at.localeCompare(a.created_at) || b.id - a.id)
+    .map(r => ({
+      id: r.id,
+      source: r.source,
+      summary: r.summary,
+      author: r.author,
+      contributors: [...r.contributors],
+      created_at: r.created_at,
+    }));
+  return ok({ data: slice(revisions, query), total: revisions.length });
+}
+
 // The table ---------------------------------------------------------------------
 
 type Read = (
@@ -532,6 +569,11 @@ const detail =
     const found = find(params[param] ?? "");
     return found === undefined ? notFound(entity) : ok(serve(found, query));
   };
+
+const historyOf =
+  (entity: EntityType, param = "slug"): Read =>
+  (params, query) =>
+    history(entity, params[param] ?? "", query);
 
 /** The reads, by the spec's operationId: its path template and its answer. */
 export const CATALOGUE_READS = {
@@ -658,5 +700,34 @@ export const CATALOGUE_READS = {
   getEvent: {
     path: "/v1/events/{slug}",
     read: detail("event", serveEvent, event => event),
+  },
+  listPieceRevisions: {
+    path: "/v1/pieces/{slug}/history",
+    read: historyOf("piece"),
+  },
+  listPersonRevisions: {
+    path: "/v1/persons/{slug}/history",
+    read: historyOf("person"),
+  },
+  listTermRevisions: {
+    path: "/v1/terms/{slug}/history",
+    read: historyOf("term"),
+  },
+  listCollectionRevisions: {
+    path: "/v1/collections/{collection_id}/history",
+    read: historyOf("collection", "collection_id"),
+  },
+  listEventRevisions: {
+    path: "/v1/events/{slug}/history",
+    read: historyOf("event"),
+  },
+  getRevision: {
+    path: "/v1/revisions/{revision_id}",
+    read: detail(
+      "revision",
+      id => REVISIONS.find(r => String(r.id) === id),
+      revision => revision,
+      "revision_id"
+    ),
   },
 } satisfies Record<string, { path: string; read: Read }>;

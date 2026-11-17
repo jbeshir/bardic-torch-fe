@@ -3,6 +3,7 @@ import {
   categoryIndexQuery,
   collectionQuery,
   eventQuery,
+  historyQuery,
   personQuery,
   pieceQuery,
   redirectIfNotCanonical,
@@ -18,6 +19,7 @@ const parsers = {
   collections: collectionQuery,
   events: eventQuery,
   search: searchQuery,
+  history: historyQuery,
 } as const;
 
 /**

@@ -83,7 +83,7 @@ const BY_ID: ReadonlyMap<number, RawCollection> = new Map(
 );
 
 /** The collection with this id; throws for an id that isn't in the catalogue. */
-function rawCollection(id: number): RawCollection {
+export function rawCollection(id: number): RawCollection {
   const found = BY_ID.get(id);
   if (!found) throw new Error(`no such collection: ${id}`);
   return found;

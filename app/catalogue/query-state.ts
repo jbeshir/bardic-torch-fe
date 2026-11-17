@@ -477,7 +477,7 @@ export const categoryIndexQuery = {
 };
 
 // ---------------------------------------------------------------------------
-// Pages with only `page`: a category’s members
+// Pages with only `page`: a category’s members, the histories
 
 export type PageQueryState = {
   /** From 1. */
@@ -518,6 +518,9 @@ function serialisePage(state: PageQueryState): string {
 
 /** `/categories/:slug`: the term's members, a page at a time (plan §4.8). */
 export const termMembersQuery = pageOnlyQuery();
+
+/** `…/history`: an entity's revisions, a page at a time (plan §4.11). */
+export const historyQuery = pageOnlyQuery();
 
 // ---------------------------------------------------------------------------
 // /collections

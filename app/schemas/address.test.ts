@@ -47,7 +47,7 @@ describe("isSlug", () => {
   });
 });
 
-describe("isEntityId (collections)", () => {
+describe("isEntityId (collections and revisions)", () => {
   it.each([
     ["1", true],
     ["9223372036854775807", true],

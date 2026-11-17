@@ -74,7 +74,7 @@ UnderHeadContext.displayName = "UnderHeadContext";
 
 /**
  * Wraps the error a child route shows under its layout's head (a category's
- * members): its heading is an h2, so the page keeps its one h1.
+ * members, a history): its heading is an h2, so the page keeps its one h1.
  * An error that replaces the whole page keeps the h1.
  */
 export function UnderPageHead({ children }: { readonly children: ReactNode }) {

@@ -6,7 +6,7 @@
  * response (security-headers.server.ts).
  *
  * Production disallows only the routes that are not pages. The pages that
- * carry `noindex` (`/search`, filtered lists) are not
+ * carry `noindex` (`/search`, histories, revisions, filtered lists) are not
  * disallowed, so a crawler can read their `noindex`.
  */
 export function robotsTxt(origin: string): string {

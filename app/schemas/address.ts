@@ -26,7 +26,7 @@ const ENTITY_ID_PATTERN = /^[1-9][0-9]{0,18}$/;
 const ENTITY_ID_MAX = 9_223_372_036_854_775_807n;
 
 /**
- * Whether `value` is a valid collection id: a positive int64
+ * Whether `value` is a valid collection or revision id: a positive int64
  * written in plain decimal (no sign, no leading zero), as the API reads it.
  */
 export function isEntityId(value: string): boolean {

@@ -29,9 +29,9 @@ import { renderMarkdown } from "~/server/markdown.server";
 
 /**
  * `/collections/:id`, the layout of a collection's page (plan §1, §4.9):
- * one `getCollection` read for the head (breadcrumbs, the h1, the kind and region) and, on Read, the
+ * one `getCollection` read for the head (breadcrumbs, the h1, the kind and region, the Read and History tabs) and, on Read, the
  * infobox, the licence line and the body (`collections.$id._index.tsx`,
- * from this route's data).
+ * from this route's data). History pages never reload it.
  *
  * An id that can't be one (`0`, `01`, `abc`, past int64) is our own 404,
  * without asking the API.
@@ -143,7 +143,7 @@ export default function CollectionLayout() {
       {...(reading
         ? {
             infobox: <CollectionInfobox collection={collection} />,
-            licence: <LicenceLine />,
+            licence: <LicenceLine historyPath={`${path}/history`} />,
           }
         : {})}
     >

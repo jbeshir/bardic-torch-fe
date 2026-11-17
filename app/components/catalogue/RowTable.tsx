@@ -12,7 +12,7 @@ type Column<Row> = {
 const NOWRAP = "whitespace-nowrap tabular-nums";
 
 /**
- * Rows of facts about things (citations, performances), as a
+ * Rows of facts about things (citations, performances, revisions), as a
  * table from md and a list of cards below it, like the token list (DESIGN
  * §10.3). Only one of the two is displayed at a time, so assistive tech
  * meets each row once. The first column names the row: its row header in
