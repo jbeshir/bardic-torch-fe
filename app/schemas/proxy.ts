@@ -15,6 +15,12 @@
 export type ProxyErrorCode =
   | "unauthenticated"
   | "user_blocked"
+  | "not_found"
+  | "validation_failed"
+  | "possible_duplicate"
+  | "stale_revision"
+  | "revision_not_pending"
+  | "pending_limit_reached"
   | "conflict"
   | "turnstile_failed"
   | "invalid_request"

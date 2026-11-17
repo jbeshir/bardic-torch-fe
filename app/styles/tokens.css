@@ -44,6 +44,10 @@
   --bt-danger-border: 227 163 178; /* #E3A3B2 */
   --bt-danger-fg: 122 18 48; /* #7A1230 */
   --bt-danger-icon: 176 32 74; /* #B0204A */
+  --bt-pending-bg: 242 236 248; /* #F2ECF8 */
+  --bt-pending-border: 191 169 216; /* #BFA9D8 */
+  --bt-pending-fg: 74 46 107; /* #4A2E6B */
+  --bt-pending-icon: 107 76 150; /* #6B4C96 */
   --bt-cons-low-bg: 227 240 224; /* #E3F0E0 */
   --bt-cons-low-fg: 31 77 33; /* #1F4D21 */
   --bt-cons-low-border: 62 125 60; /* #3E7D3C */
@@ -114,6 +118,10 @@
   --bt-danger-border: 126 58 74; /* #7E3A4A */
   --bt-danger-fg: 246 198 209; /* #F6C6D1 */
   --bt-danger-icon: 242 139 160; /* #F28BA0 */
+  --bt-pending-bg: 36 28 45; /* #241C2D */
+  --bt-pending-border: 93 74 123; /* #5D4A7B */
+  --bt-pending-fg: 222 205 242; /* #DECDF2 */
+  --bt-pending-icon: 185 158 226; /* #B99EE2 */
   --bt-cons-low-bg: 26 42 28; /* #1A2A1C */
   --bt-cons-low-fg: 191 227 186; /* #BFE3BA */
   --bt-cons-low-border: 111 174 105; /* #6FAE69 */
@@ -184,6 +192,10 @@
     --bt-danger-border: 126 58 74; /* #7E3A4A */
     --bt-danger-fg: 246 198 209; /* #F6C6D1 */
     --bt-danger-icon: 242 139 160; /* #F28BA0 */
+    --bt-pending-bg: 36 28 45; /* #241C2D */
+    --bt-pending-border: 93 74 123; /* #5D4A7B */
+    --bt-pending-fg: 222 205 242; /* #DECDF2 */
+    --bt-pending-icon: 185 158 226; /* #B99EE2 */
     --bt-cons-low-bg: 26 42 28; /* #1A2A1C */
     --bt-cons-low-fg: 191 227 186; /* #BFE3BA */
     --bt-cons-low-border: 111 174 105; /* #6FAE69 */
@@ -490,6 +502,10 @@
   --color-danger-border: rgb(var(--bt-danger-border));
   --color-danger-fg: rgb(var(--bt-danger-fg));
   --color-danger-icon: rgb(var(--bt-danger-icon));
+  --color-pending-bg: rgb(var(--bt-pending-bg));
+  --color-pending-border: rgb(var(--bt-pending-border));
+  --color-pending-fg: rgb(var(--bt-pending-fg));
+  --color-pending-icon: rgb(var(--bt-pending-icon));
   --color-cons-low-bg: rgb(var(--bt-cons-low-bg));
   --color-cons-low-fg: rgb(var(--bt-cons-low-fg));
   --color-cons-low-border: rgb(var(--bt-cons-low-border));

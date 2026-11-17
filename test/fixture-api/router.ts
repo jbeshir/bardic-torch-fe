@@ -2,8 +2,16 @@ import type { components, operations } from "../../app/api/schema.gen";
 import { CATALOGUE_READS } from "./catalogue-operations";
 import { SEED_USERS, type SeedUserId } from "./data";
 import {
+  getEditable,
+  listMyRevisions,
+  type RevisionStore,
+  submitRevision,
+  withdrawRevision,
+} from "./editing-operations";
+import {
   createContactRequest,
   type ModerationState,
+  SEEDED_REVISIONS,
 } from "./moderation-operations";
 import { errorBody, type FixtureResponse } from "./responses";
 import { requestProblems, responseProblems } from "./spec";
@@ -11,11 +19,13 @@ import { requestProblems, responseProblems } from "./spec";
 /**
  * Routes a request to the fixture API's canned answers: `getHealthz`, the
  * seeded users' `getMe`, the catalogue reads
- * (catalogue-operations.ts) and the contact operations
+ * (catalogue-operations.ts), the editing operations
+ * (editing-operations.ts) and the contact operations
  * (moderation-operations.ts). A request is signed in by the bearer the app
  * sends for a stub session, exactly `Bearer fixture:<userId>`;
  * anything else is 401, except on the contact form, which needs no
- * account.
+ * account. Each user's revisions are remembered in the state; a JSON body that
+ * breaks the spec is 400.
  *
  * Every answer is validated against the spec; a fixture that breaks the
  * contract throws instead of answering. It follows no backend rule beyond
@@ -39,6 +49,12 @@ export function createFixtureState(): FixtureState {
     users: new Map(
       (Object.keys(SEED_USERS) as SeedUserId[]).map(id => [id, SEED_USERS[id]])
     ),
+    revisions: SEEDED_REVISIONS.reduce<RevisionStore>(
+      (store, [userId, revision]) =>
+        store.set(userId, [...(store.get(userId) ?? []), revision]),
+      new Map()
+    ),
+    current: new Map(),
     contacts: new Map(),
   };
 }
@@ -51,6 +67,17 @@ const UNAUTHENTICATED: FixtureResponse = {
   status: 401,
   body: errorBody("unauthenticated", "invalid credentials"),
 };
+
+const EDITABLE = {
+  getEditablePiece: { type: "piece", path: "/v1/pieces/{slug}/editable" },
+  getEditablePerson: { type: "person", path: "/v1/persons/{slug}/editable" },
+  getEditableTerm: { type: "term", path: "/v1/terms/{slug}/editable" },
+  getEditableEvent: { type: "event", path: "/v1/events/{slug}/editable" },
+  getEditableCollection: {
+    type: "collection",
+    path: "/v1/collections/{collection_id}/editable",
+  },
+} as const;
 
 /** A JSON body as the spec allows it, or the 400 it gets. */
 function bodyOf(
@@ -71,18 +98,58 @@ function bodyOf(
 /** The signed-in user's operations: theirs, or a 401. */
 function signedIn(
   state: FixtureState,
-  request: FixtureRequest
+  operationId: string,
+  request: FixtureRequest,
+  params: Record<string, string>
 ): FixtureResponse {
   const id = BEARER.exec(request.authorization ?? "")?.[1] ?? "";
   const user = state.users.get(id);
   if (!user) return UNAUTHENTICATED;
-  return { status: 200, body: user };
+  const parsed = bodyOf(operationId, request);
+  if ("status" in parsed) return parsed;
+  const { body } = parsed;
+  const query = new URLSearchParams(request.search);
+  switch (operationId) {
+    case "submitRevision":
+      return submitRevision(
+        state.revisions,
+        state.current,
+        user,
+        body as components["schemas"]["SubmitRevisionRequest"]
+      );
+    case "listMyRevisions":
+      return listMyRevisions(state.revisions, user, query);
+    case "withdrawRevision":
+      return withdrawRevision(state.revisions, user, params.revision_id ?? "");
+    case "getMe":
+      return { status: 200, body: user };
+    default: {
+      const { type } = EDITABLE[operationId as keyof typeof EDITABLE];
+      return getEditable(
+        state.current,
+        type,
+        params.slug ?? params.collection_id ?? ""
+      );
+    }
+  }
 }
 
 const ROUTES = [
   { operationId: "getHealthz", method: "GET", path: "/healthz" },
   { operationId: "getMe", method: "GET", path: "/v1/me" },
+  { operationId: "submitRevision", method: "POST", path: "/v1/revisions" },
+  { operationId: "listMyRevisions", method: "GET", path: "/v1/me/revisions" },
+  {
+    operationId: "withdrawRevision",
+    method: "POST",
+    path: "/v1/revisions/{revision_id}/withdraw",
+  },
   { operationId: "createContactRequest", method: "POST", path: "/v1/contact" },
+  ...Object.entries(EDITABLE).map(([operationId, { path }]) => ({
+    operationId,
+    method: "GET",
+    path,
+  })),
   ...Object.entries(CATALOGUE_READS).map(([operationId, { path }]) => ({
     operationId,
     method: "GET",
@@ -114,7 +181,7 @@ function answer(
       new URLSearchParams(request.search)
     );
   }
-  return signedIn(state, request);
+  return signedIn(state, operationId, request, params);
 }
 
 export function handleFixtureRequest(

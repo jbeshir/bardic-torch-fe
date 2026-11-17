@@ -4,6 +4,11 @@ import { Link } from "~/components/ui/Link";
 
 type PageBannerProps =
   | {
+      /** The reader has an edit of the page at `path` waiting for review. */
+      readonly kind: "pending";
+      readonly path: string;
+    }
+  | {
       /** We know the piece or person exists but have little on it. */
       readonly kind: "stub";
       readonly subject: "piece" | "person";
@@ -26,6 +31,26 @@ type PageBannerProps =
  */
 export function PageBanner(props: PageBannerProps) {
   switch (props.kind) {
+    case "pending":
+      return (
+        <Alert
+          tone="pending"
+          banner
+          title="You have an edit of this page waiting for review."
+          actions={
+            <>
+              <Link to={`${props.path}/edit`} appearance="inherit">
+                Continue editing
+              </Link>
+              <Link to="/contributions" appearance="inherit">
+                My contributions
+              </Link>
+            </>
+          }
+        >
+          It will show here once a moderator has approved it.
+        </Alert>
+      );
     case "stub":
       return (
         <Alert

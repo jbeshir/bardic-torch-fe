@@ -22,6 +22,9 @@ export function loginHref(returnTo: string): string {
   return `/auth/login?${new URLSearchParams({ returnTo })}`;
 }
 
+/** The reader's own revisions: the account menu links it, the editors end there. */
+export const CONTRIBUTIONS_PATH = "/contributions";
+
 /** Where the account panel's "Log out" form posts. */
 export const LOGOUT_ACTION = "/auth/logout";
 

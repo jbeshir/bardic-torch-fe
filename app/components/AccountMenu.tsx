@@ -1,6 +1,7 @@
 import { Form, Link as RouterLink, useLocation } from "react-router";
 import {
   IconChevronDown,
+  IconGitPullRequest,
   IconLogin,
   IconLogout,
   IconSettings,
@@ -14,6 +15,7 @@ import { TryAgain } from "~/components/ui/ErrorState";
 import {
   LOGOUT_ACTION,
   ROLE_LABELS,
+  CONTRIBUTIONS_PATH,
   loginHref,
   SETTINGS_PATH,
   type Account,
@@ -95,6 +97,15 @@ function AccountPanel({
       ) : null}
       {account.state === "blocked" ? null : (
         <>
+          <RouterLink to={CONTRIBUTIONS_PATH} prefetch="intent" className={ROW}>
+            <IconGitPullRequest
+              size={18}
+              stroke={1.75}
+              aria-hidden="true"
+              className="text-fg-muted"
+            />
+            My contributions
+          </RouterLink>
           <RouterLink to={SETTINGS_PATH} prefetch="intent" className={ROW}>
             <IconSettings
               size={18}

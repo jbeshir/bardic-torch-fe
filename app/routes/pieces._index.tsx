@@ -331,6 +331,11 @@ export default function PiecesRoute() {
   return (
     <>
       <h1 className="text-h1 text-fg">Pieces</h1>
+      <p className="mt-2">
+        <Link to="/pieces/new" appearance="standalone">
+          Add a piece
+        </Link>
+      </p>
       {/* Right after the heading, because a hidden link sits where it would
           have been in the flow, and here nothing is within a target's reach
           (WCAG 2.5.8). */}

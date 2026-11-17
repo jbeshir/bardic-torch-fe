@@ -25,6 +25,7 @@ import { useErrorReference } from "~/hooks/useErrorReference";
 import { isSlug } from "~/schemas/address";
 import type { Term, TermSummary } from "~/schemas/catalogue";
 import { getTerm } from "~/server/catalogue.server";
+import { hasPendingRevision } from "~/server/editing.server";
 import { renderMarkdown } from "~/server/markdown.server";
 
 /**
@@ -50,13 +51,17 @@ export async function loader(args: LoaderFunctionArgs) {
   const { params, context } = args;
   const slug = params.slug ?? "";
   if (!isSlug(slug)) throwPageFailure({ kind: "not_found" });
-  const result = await getTerm(context, slug, { limit: 1 });
+  const [result, pending] = await Promise.all([
+    getTerm(context, slug, { limit: 1 }),
+    hasPendingRevision(args, "term", slug),
+  ]);
   if (!result.ok) throwPageFailure(result.failure);
   const term = result.data;
   // The Markdown is parsed here, on the server: the browser gets the tree.
   return {
     term,
     description: renderMarkdown(term.description_md),
+    pending,
   };
 }
 
@@ -124,7 +129,7 @@ function Subcategories({ term }: { readonly term: Term }) {
 }
 
 export default function CategoryLayout() {
-  const { term, description } = useLoaderData<typeof loader>();
+  const { term, description, pending } = useLoaderData<typeof loader>();
   const { pathname } = useLocation();
   const path = categoryPath(term.slug);
   const reading = pathname === path;
@@ -132,6 +137,7 @@ export default function CategoryLayout() {
   return (
     <EntityPage
       path={path}
+      pending={pending}
       title={term.display_name}
       subtitle={categoryMeta(term)}
       breadcrumbs={{

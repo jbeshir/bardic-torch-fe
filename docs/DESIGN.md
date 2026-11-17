@@ -81,12 +81,15 @@ Each family has four tokens, `--{s}-bg`, `--{s}-border`, `--{s}-fg` and `--{s}-i
 - `icon` meets ≥3:1 on both `{s}-bg` and `surface`.
 - `fg` meets ≥4.5:1 on both `{s}-bg` and `surface`, so the same token can be used for inline field messages.
 
-| Family  | Token                   | Light                                         | Dark                                          |
-| ------- | ----------------------- | --------------------------------------------- | --------------------------------------------- |
-| info    | bg / border / fg / icon | `#E9F0FA` / `#A9C0E2` / `#1D3D6B` / `#2A5A9C` | `#172230` / `#36527A` / `#C2D7F3` / `#8DB4EA` |
-| success | bg / border / fg / icon | `#E8F2E5` / `#9CC596` / `#1E4A1F` / `#2F6E2E` | `#16241A` / `#37603E` / `#C1E2BD` / `#88C383` |
-| warning | bg / border / fg / icon | `#FBF0D8` / `#DDBA70` / `#5A3C06` / `#8A5800` | `#2A2112` / `#6E5524` / `#F3DAA4` / `#E5B24E` |
-| danger  | bg / border / fg / icon | `#FBE8EC` / `#E3A3B2` / `#7A1230` / `#B0204A` | `#2E161B` / `#7E3A4A` / `#F6C6D1` / `#F28BA0` |
+| Family             | Token                   | Light                                         | Dark                                          |
+| ------------------ | ----------------------- | --------------------------------------------- | --------------------------------------------- |
+| info               | bg / border / fg / icon | `#E9F0FA` / `#A9C0E2` / `#1D3D6B` / `#2A5A9C` | `#172230` / `#36527A` / `#C2D7F3` / `#8DB4EA` |
+| success            | bg / border / fg / icon | `#E8F2E5` / `#9CC596` / `#1E4A1F` / `#2F6E2E` | `#16241A` / `#37603E` / `#C1E2BD` / `#88C383` |
+| warning            | bg / border / fg / icon | `#FBF0D8` / `#DDBA70` / `#5A3C06` / `#8A5800` | `#2A2112` / `#6E5524` / `#F3DAA4` / `#E5B24E` |
+| danger             | bg / border / fg / icon | `#FBE8EC` / `#E3A3B2` / `#7A1230` / `#B0204A` | `#2E161B` / `#7E3A4A` / `#F6C6D1` / `#F28BA0` |
+| pending (approval) | bg / border / fg / icon | `#F2ECF8` / `#BFA9D8` / `#4A2E6B` / `#6B4C96` | `#241C2D` / `#5D4A7B` / `#DECDF2` / `#B99EE2` |
+
+Pending approval uses a wax-seal purple on purpose. It is not a warning: nothing is wrong, the edit is simply waiting for a moderator.
 
 **Destructive fills** (danger button):
 

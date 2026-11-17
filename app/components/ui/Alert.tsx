@@ -2,12 +2,13 @@ import {
   IconAlertCircle,
   IconAlertTriangle,
   IconCircleCheck,
+  IconHourglass,
   IconInfoCircle,
   type Icon,
 } from "@tabler/icons-react";
 import type { ReactNode } from "react";
 
-export type AlertTone = "info" | "success" | "warning" | "danger";
+export type AlertTone = "info" | "success" | "warning" | "danger" | "pending";
 
 /** Each tone's icon shape, shared with Toast. */
 export const TONE_GLYPHS: Record<AlertTone, Icon> = {
@@ -15,6 +16,7 @@ export const TONE_GLYPHS: Record<AlertTone, Icon> = {
   success: IconCircleCheck,
   warning: IconAlertTriangle,
   danger: IconAlertCircle,
+  pending: IconHourglass,
 };
 
 /** Each tone's hidden name, read before the words. */
@@ -23,6 +25,7 @@ export const TONE_NAMES: Record<AlertTone, string> = {
   success: "Success",
   warning: "Warning",
   danger: "Error",
+  pending: "Pending approval",
 };
 
 /** Full class strings per tone, so Tailwind can see every one of them. */
@@ -43,6 +46,10 @@ const TONES: Record<AlertTone, { box: string; icon: string }> = {
     box: "border-danger-border bg-danger-bg text-danger-fg",
     icon: "text-danger-icon",
   },
+  pending: {
+    box: "border-pending-border bg-pending-bg text-pending-fg",
+    icon: "text-pending-icon",
+  },
 };
 
 /**
@@ -50,7 +57,8 @@ const TONES: Record<AlertTone, { box: string; icon: string }> = {
  * tone's tinted background. Every tone has its own icon shape and a hidden
  * "Warning: " (etc.) before the words, so state never rests on colour.
  *
- * A `banner`
+ * Rendered with the page, an alert is not a live region. To announce one
+ * that appears after an action, render it inside an AlertRegion. A `banner`
  * is the page-level form under the tab row: full-bleed below md.
  */
 export function Alert({
@@ -108,5 +116,25 @@ export function Alert({
         ) : null}
       </div>
     </div>
+  );
+}
+
+/**
+ * A live region for alerts that appear after an action. It is
+ * always mounted (empty at first), so adding an Alert inside is announced:
+ * politely by default (info, success, pending), at once when `urgent`
+ * (errors, and warnings that block).
+ */
+export function AlertRegion({
+  urgent = false,
+  children,
+}: {
+  readonly urgent?: boolean;
+  readonly children?: ReactNode;
+}) {
+  return urgent ? (
+    <div role="alert">{children}</div>
+  ) : (
+    <div role="status">{children}</div>
   );
 }
