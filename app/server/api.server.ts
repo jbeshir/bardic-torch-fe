@@ -75,6 +75,30 @@ const ENDPOINTS = {
     method: "POST",
     path: "/v1/revisions/{revision_id}/withdraw",
   },
+  listModerationQueue: { method: "GET", path: "/v1/moderation/queue" },
+  getModerationRevision: {
+    method: "GET",
+    path: "/v1/moderation/revisions/{revision_id}",
+  },
+  approveRevision: {
+    method: "POST",
+    path: "/v1/revisions/{revision_id}/approve",
+  },
+  rejectRevision: {
+    method: "POST",
+    path: "/v1/revisions/{revision_id}/reject",
+  },
+  listContactRequests: {
+    method: "GET",
+    path: "/v1/moderation/contact-requests",
+  },
+  closeContactRequest: {
+    method: "POST",
+    path: "/v1/moderation/contact-requests/{request_id}",
+  },
+  getModerationLink: { method: "GET", path: "/v1/moderation/links" },
+  setLinkHidden: { method: "PUT", path: "/v1/links/{link_id}/hidden" },
+  setUserBlocked: { method: "PUT", path: "/v1/users/{user_id}/blocked" },
   createContactRequest: { method: "POST", path: "/v1/contact" },
 } as const satisfies {
   readonly [Id in keyof operations]?: EndpointOf<operations[Id]>;
@@ -92,6 +116,13 @@ type ApiRequest = {
 const TRY_AGAIN: ApiError = {
   code: "try_again",
   message: TRY_AGAIN_MESSAGE,
+};
+
+/** For a moderator's page or action, to anyone else. */
+export const MODERATORS_ONLY: ApiError = {
+  code: "moderator_required",
+  message:
+    "This page is for moderators. If you are one, log in with your moderator account.",
 };
 
 const SIGNED_OUT: ApiError = {
@@ -119,7 +150,9 @@ function upstreamError(
       return {
         code,
         message:
-          "We couldn’t find what you asked for. Reload the page and try again.",
+          operationId === "getModerationLink"
+            ? "No link on the site has that address."
+            : "We couldn’t find what you asked for. Reload the page and try again.",
       };
     case "possible_duplicate":
       return {
@@ -131,13 +164,27 @@ function upstreamError(
       return {
         code,
         message:
-          "This page has changed since you started editing. Check the current version, then save again to replace those changes.",
+          operationId === "approveRevision"
+            ? "This page has changed since the edit was made. Approve it anyway to replace those changes, or reject it and ask for it to be redone on the current version."
+            : "This page has changed since you started editing. Check the current version, then save again to replace those changes.",
       };
     case "revision_not_pending":
       return {
         code,
         message:
-          "That edit is no longer waiting for review, so it can’t be withdrawn. Reload the page to see where it stands.",
+          operationId === "withdrawRevision"
+            ? "That edit is no longer waiting for review, so it can’t be withdrawn. Reload the page to see where it stands."
+            : "That edit is no longer waiting for review. Reload the page to see where it stands.",
+      };
+    case "moderator_required":
+      return MODERATORS_ONLY;
+    case "conflict":
+      return {
+        code,
+        message:
+          operationId === "setUserBlocked"
+            ? "Moderators can’t be blocked or unblocked."
+            : "That request is already closed. Reload the page to see it.",
       };
     case "turnstile_failed":
       return {
@@ -159,7 +206,10 @@ function upstreamError(
     case "validation_failed":
       return {
         code,
-        message: "Check the highlighted fields.",
+        message:
+          operationId === "approveRevision"
+            ? "This edit no longer passes the catalogue’s checks, so it can’t be approved. Reject it with a note on what to fix."
+            : "Check the highlighted fields.",
       };
     case "invalid_request":
       return operationId === "createContactRequest"
@@ -355,6 +405,122 @@ export function withdrawRevision(
   return callApi<undefined>(request, context, {
     operationId: "withdrawRevision",
     params: { revision_id: id },
+  });
+}
+
+/** The pending revisions, oldest first (`GET /v1/moderation/queue`). */
+export function listModerationQueue(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  query: URLSearchParams
+) {
+  return callApi<Schemas["RevisionList"]>(request, context, {
+    operationId: "listModerationQueue",
+    query,
+  });
+}
+
+/** A revision as a moderator reviews it; `id` is already checked. */
+export function getModerationRevision(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  id: string
+) {
+  return callApi<Schemas["ModerationRevisionView"]>(request, context, {
+    operationId: "getModerationRevision",
+    params: { revision_id: id },
+  });
+}
+
+export function approveRevision(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  id: string,
+  body: RequestBody<"approveRevision">
+) {
+  return callApi<undefined>(request, context, {
+    operationId: "approveRevision",
+    params: { revision_id: id },
+    body,
+  });
+}
+
+export function rejectRevision(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  id: string,
+  body: RequestBody<"rejectRevision">
+) {
+  return callApi<undefined>(request, context, {
+    operationId: "rejectRevision",
+    params: { revision_id: id },
+    body,
+  });
+}
+
+/** A page of contact requests with one status, oldest first. */
+export function listContactRequests(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  query: URLSearchParams
+) {
+  return callApi<Schemas["ContactRequestList"]>(request, context, {
+    operationId: "listContactRequests",
+    query,
+  });
+}
+
+/** Resolves or dismisses an open contact request; `id` is already checked. */
+export function closeContactRequest(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  id: string,
+  body: RequestBody<"closeContactRequest">
+) {
+  return callApi<undefined>(request, context, {
+    operationId: "closeContactRequest",
+    params: { request_id: id },
+    body,
+  });
+}
+
+/** The link with this URL, hidden or not, and where it is attached. */
+export function getModerationLink(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  url: string
+) {
+  return callApi<Schemas["ModerationLink"]>(request, context, {
+    operationId: "getModerationLink",
+    query: new URLSearchParams({ url }),
+  });
+}
+
+/** Hides a link everywhere, or restores it; `id` is already checked. */
+export function setLinkHidden(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  id: string,
+  body: RequestBody<"setLinkHidden">
+) {
+  return callApi<undefined>(request, context, {
+    operationId: "setLinkHidden",
+    params: { link_id: id },
+    body,
+  });
+}
+
+/** Blocks or unblocks a contributor by their user ID. */
+export function setUserBlocked(
+  request: Request,
+  context: Readonly<RouterContextProvider>,
+  userId: string,
+  body: RequestBody<"setUserBlocked">
+) {
+  return callApi<User>(request, context, {
+    operationId: "setUserBlocked",
+    params: { user_id: userId },
+    body,
   });
 }
 
