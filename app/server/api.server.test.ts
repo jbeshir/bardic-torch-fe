@@ -1,0 +1,168 @@
+import { http, HttpResponse } from "msw/http";
+import { delay } from "msw/utils/delay";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  API_BASE_URL,
+  APP_ORIGIN,
+  loadContext,
+  sessionCookie,
+} from "~/test/context";
+import { getMe } from "./api.server";
+import { contractResponse, offContractResponse } from "~/test/contract";
+import { serveMocks } from "~/test/msw";
+
+const { server } = serveMocks();
+
+const me = {
+  id: "google-oauth2|1",
+  display_name: "Morwen of the Marches",
+  role: "contributor",
+};
+beforeEach(() => {
+  vi.spyOn(console, "error").mockReturnValue();
+});
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+async function signedInRequest(headers: Record<string, string> = {}) {
+  return new Request(`${APP_ORIGIN}/settings`, {
+    headers: { Cookie: await sessionCookie(), ...headers },
+  });
+}
+
+function captureUpstream(respond: () => Response) {
+  const seen: Array<{ url: string; headers: Headers; body: string }> = [];
+  server.use(
+    http.get(`${API_BASE_URL}/v1/me`, async ({ request }) => {
+      seen.push({
+        url: request.url,
+        headers: request.headers,
+        body: await request.text(),
+      });
+      return respond();
+    })
+  );
+  return seen;
+}
+
+describe("authentication", () => {
+  it("returns 401 without calling the API when signed out", async () => {
+    const result = await getMe(
+      new Request(`${APP_ORIGIN}/settings`),
+      loadContext()
+    );
+    expect(result).toMatchObject({
+      ok: false,
+      status: 401,
+      error: { code: "unauthenticated" },
+    });
+  });
+
+  it("sends the session's bearer token and nothing from the client", async () => {
+    const seen = captureUpstream(() => contractResponse("getMe", 200, me));
+    await getMe(
+      await signedInRequest({
+        Authorization: "Bearer client-supplied",
+        "X-Forwarded-For": "203.0.113.9",
+      }),
+      loadContext()
+    );
+    const upstream = seen[0];
+    expect(upstream?.headers.get("Authorization")).toBe("Bearer access-token");
+    expect(upstream?.headers.get("Cookie")).toBeNull();
+    expect(upstream?.headers.get("X-Forwarded-For")).toBeNull();
+    expect(upstream?.headers.get("Accept")).toBe("application/json");
+  });
+
+  it("clears the session when the API answers 401", async () => {
+    captureUpstream(() =>
+      contractResponse("getMe", 401, {
+        code: "unauthenticated",
+        message: "token expired",
+      })
+    );
+    const result = await getMe(await signedInRequest(), loadContext());
+    expect(result).toMatchObject({
+      ok: false,
+      status: 401,
+      error: {
+        code: "unauthenticated",
+        message:
+          "You’ve been signed out. Log in again and we’ll bring you back here.",
+      },
+    });
+    expect(result.headers.get("Set-Cookie")).toMatch(
+      /^__Host-bt_session=;.*Expires=Thu, 01 Jan 1970/
+    );
+  });
+});
+
+describe("responses", () => {
+  it.each([
+    ["non-JSON success", () => new HttpResponse("<html>", { status: 200 })],
+    ["an empty success", () => new HttpResponse(null, { status: 200 })],
+    ["a non-Error 500", () => new HttpResponse("Bad gateway", { status: 500 })],
+    ["a platform 503", () => new HttpResponse("Unavailable", { status: 503 })],
+    [
+      "a redirect",
+      () =>
+        new HttpResponse(null, {
+          status: 302,
+          headers: { Location: "https://evil.example/" },
+        }),
+    ],
+    [
+      "an Error code no page treats differently",
+      () =>
+        contractResponse("getMe", 500, {
+          code: "internal",
+          message: "upstream detail not meant for users",
+        }),
+    ],
+  ])("maps %s to a 503 try again", async (_label, respond) => {
+    captureUpstream(respond);
+    const result = await getMe(await signedInRequest(), loadContext());
+    expect(result).toMatchObject({
+      ok: false,
+      status: 503,
+      error: { code: "try_again" },
+    });
+    expect(JSON.stringify(result)).not.toContain("upstream detail");
+  });
+
+  it.each([["403 user_blocked", 403, "user_blocked", "declared"]] as const)(
+    "an upstream %s gets the app's own copy and keeps its status",
+    async (_name, status, code, contract) => {
+      const body = { code, message: "upstream detail not meant for users" };
+      captureUpstream(() =>
+        contract === "declared"
+          ? contractResponse("getMe", status, body)
+          : offContractResponse("getMe", status, body, "undeclared status")
+      );
+      const result = await getMe(await signedInRequest(), loadContext());
+      expect(result).toMatchObject({ ok: false, status, error: { code } });
+      expect(JSON.stringify(result)).not.toContain("upstream detail");
+    }
+  );
+
+  it("gives up on a hung API with a 503 try again", async () => {
+    const timeout = AbortSignal.timeout.bind(AbortSignal);
+    const asked = vi
+      .spyOn(AbortSignal, "timeout")
+      .mockImplementation(() => timeout(20));
+    server.use(
+      http.get(`${API_BASE_URL}/v1/me`, async () => {
+        await delay("infinite");
+        return new HttpResponse("not JSON", { status: 200 });
+      })
+    );
+    const result = await getMe(await signedInRequest(), loadContext());
+    expect(asked).toHaveBeenCalledWith(10_000);
+    expect(result).toMatchObject({
+      ok: false,
+      status: 503,
+      error: { code: "try_again" },
+    });
+  });
+});

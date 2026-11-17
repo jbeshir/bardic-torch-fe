@@ -1,0 +1,6 @@
+# Static asset caching only. These rules reach static files alone (never the
+# Worker), so security and document cache headers are set per request in
+# app/entry.server.tsx and app/server/worker.server.ts. Vite fingerprints
+# everything in /assets.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

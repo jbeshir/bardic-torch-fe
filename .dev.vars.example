@@ -1,0 +1,16 @@
+# Copy to .dev.vars (gitignored) for `npm run dev`; every value below is a
+# placeholder. app/server/env.server.ts validates them on every request.
+BARDIC_TORCH_API_BASE_URL=https://api.bardictorch.org
+AUTH_SESSION_SECRET=replace-with-a-random-string-of-at-least-32-characters
+AUTH0_DOMAIN=your-tenant.us.auth0.com
+AUTH0_CLIENT_ID=replace-with-client-id
+AUTH0_CLIENT_SECRET=replace-with-client-secret
+# The Auth0 development application must list http://localhost:5173/auth/callback
+# and http://localhost:5173 (docs/DEPLOY.md §4, Local development).
+AUTH0_DEFAULT_REDIRECT_URI=http://localhost:5173
+AUTH0_AUDIENCE=replace-with-api-audience
+# Optional. Error reports go to Sentry only when this is set.
+# SENTRY_DSN=https://replace-with-key@replace-with-host.ingest.sentry.io/0
+# Optional, auth0 by default. stub is honoured only by development and e2e
+# builds, on localhost (app/server/stub-auth.server.ts).
+# AUTH_MODE=stub

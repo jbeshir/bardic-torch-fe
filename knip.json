@@ -1,0 +1,43 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  // Production entries the plugins don't infer. The `!` marks them as production.
+  "entry": [
+    // The two manual tools, run by hand as their headers say (the Worker, the
+    // route config and the scripts package.json runs are found by the plugins).
+    "scripts/font-fallback-metrics.mjs!",
+    "scripts/wiki-categories.mjs!",
+    // The build: it serves dev, so what it
+    // imports (ENV_NAMES, the tokens) is production.
+    "vite.config.ts!",
+    // What vitest.config.ts resolves virtual:react-router/server-build to.
+    "test/support/server-build-stub.ts"
+  ],
+  // Test support code is not production: knip's default run still checks it.
+  // Stylesheets are followed through their @imports, so an orphan .css is an
+  // unused file too.
+  "project": [
+    "**/*.{ts,tsx,mjs,js,css}!",
+    "!app/test/**!",
+    "!test/**!",
+    "!e2e/**!"
+  ],
+  // Vite's plugin would treat vite.config.ts as a development-only config
+  // file, and drop the production entry above. React Router's plugin finds
+  // the routes from its own config only (its default includes Vite's).
+  "vite": false,
+  "react-router": { "config": ["react-router.config.ts"] },
+  "rules": {
+    "files": "error",
+    "exports": "error",
+    "types": "error",
+    "nsExports": "error",
+    "nsTypes": "error",
+    "duplicates": "error",
+    "enumMembers": "error",
+    "dependencies": "error",
+    "devDependencies": "error",
+    "unlisted": "error",
+    "binaries": "error",
+    "unresolved": "error"
+  }
+}

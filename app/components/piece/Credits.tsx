@@ -1,0 +1,81 @@
+import { IconAlertTriangle } from "@tabler/icons-react";
+import { PersonName } from "~/components/person/PersonName";
+import {
+  ATTRIBUTION_LABELS,
+  CERTAINTY_QUALIFIERS,
+  CREDIT_ROLE_LABELS,
+  newPersonLabel,
+} from "~/constants/vocabulary";
+import type { Certainty, Piece } from "~/schemas/catalogue";
+
+type Credit = Piece["credits"][number];
+
+/**
+ * How sure the credit is, after the name: "probably", "possibly", or
+ * "disputed" with the warning triangle (the word says it, never the icon
+ * alone). A certain credit has none.
+ */
+export function CertaintyQualifier({
+  certainty,
+}: {
+  readonly certainty: Certainty;
+}) {
+  if (certainty === "certain") return null;
+  return (
+    <span className="text-fg-muted">
+      {" "}
+      {certainty === "disputed" ? (
+        <IconAlertTriangle
+          size={14}
+          stroke={1.75}
+          aria-hidden="true"
+          className="mr-0.5 inline-block align-baseline"
+        />
+      ) : null}
+      ({CERTAINTY_QUALIFIERS[certainty]})
+    </span>
+  );
+}
+
+/**
+ * Who a credit is to: the person, a new person's typed name (plain text:
+ * they have no page yet), or "Traditional" and the like.
+ */
+function Credited({ credit }: { readonly credit: Credit }) {
+  if (credit.person) return <PersonName person={credit.person} />;
+  if (credit.new_person_name !== null) {
+    return newPersonLabel(credit.new_person_name);
+  }
+  // A credit without a person is an unnamed attribution.
+  return credit.attribution === "named"
+    ? null
+    : ATTRIBUTION_LABELS[credit.attribution];
+}
+
+/**
+ * A piece's credits as infobox rows (plan §4.5), in the API's order: the
+ * role as the label; the person (a link to their page, if they have one) or
+ * the attribution and the certainty qualifier as the value. The
+ * rows are what there is, never padded: with none, one "Credits" row shows
+ * the empty value (never "unknown author").
+ */
+export function creditRows(credits: Piece["credits"]) {
+  if (credits.length === 0) return [{ label: "Credits", value: null }];
+  return credits.map(credit => ({
+    // Two credits differ in their role or who they are to.
+    id: [
+      credit.role,
+      credit.person?.slug ??
+        credit.person?.name ??
+        credit.new_person_name ??
+        credit.attribution,
+    ].join(":"),
+    label: CREDIT_ROLE_LABELS[credit.role],
+    value: (
+      <>
+        <Credited credit={credit} />
+        <CertaintyQualifier certainty={credit.certainty} />
+      </>
+    ),
+  }));
+}

@@ -1,0 +1,72 @@
+import { http, HttpResponse } from "msw";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { API_BASE_URL, loadContext } from "~/test/context";
+import { serveFixtureApi } from "~/test/msw";
+import { sitemap } from "./sitemap.server";
+
+const fixtures = serveFixtureApi();
+const ORIGIN = "https://bardictorch.example";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+/** The `<loc>` addresses of a sitemap. */
+function locations(xml: string): string[] {
+  return [...xml.matchAll(/<loc>([^<]*)<\/loc>/g)].map(match => match[1] ?? "");
+}
+
+describe("the sitemap", () => {
+  it("is one urlset of the pages and the public catalogue, leaving out restricted pieces and stub persons", async () => {
+    const response = await sitemap(loadContext(), ORIGIN);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe(
+      "application/xml; charset=utf-8"
+    );
+    const paths = locations(await response.text());
+    expect(new Set(paths).size).toBe(paths.length);
+    for (const path of [
+      "/",
+      "/pieces/the-copper-kettle",
+      "/categories/warlike",
+      "/collections/12",
+      "/events/muster-field",
+    ]) {
+      expect(paths).toContain(`${ORIGIN}${path}`);
+    }
+
+    const get = async <T>(path: string) =>
+      (await fetch(`${API_BASE_URL}${path}`).then(reply => reply.json())) as {
+        total: number;
+        data: T[];
+      };
+    const restricted = await get<{ slug: string }>(
+      "/v1/pieces?conservation_status=restricted&limit=100"
+    );
+    const stubs = (
+      await get<{ slug: string; is_stub: boolean }>("/v1/persons?limit=100")
+    ).data.filter(person => person.is_stub);
+    expect(restricted.total).toBeGreaterThan(0);
+    expect(stubs.length).toBeGreaterThan(0);
+    for (const { slug } of restricted.data) {
+      expect(paths).not.toContain(`${ORIGIN}/pieces/${slug}`);
+    }
+    for (const { slug } of stubs) {
+      expect(paths).not.toContain(`${ORIGIN}/bards/${slug}`);
+    }
+  });
+
+  it.each(["pieces", "persons", "terms"])(
+    "is a 503 with Retry-After and no urlset when the %s read fails",
+    async list => {
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      fixtures.server.use(
+        http.get(`${API_BASE_URL}/v1/${list}`, () => HttpResponse.error())
+      );
+      const response = await sitemap(loadContext(), ORIGIN);
+      expect(response.status).toBe(503);
+      expect(response.headers.get("Retry-After")).not.toBeNull();
+      expect(await response.text()).not.toContain("<urlset");
+    }
+  );
+});
