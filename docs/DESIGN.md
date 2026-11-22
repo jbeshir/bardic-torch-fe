@@ -264,7 +264,7 @@ The evidence for the themes is the e2e axe pass in the default theme; screenshot
 | Session expired | "You've been signed out. Log in again and we'll bring you back here." | "Unauthorised"  |
 | Offline         | "You seem to be offline. Your changes haven't been saved yet."        | "Network error" |
 
-- **Fixed strings.** Non-affiliation: "Bardic Torch is community-maintained and not affiliated with the Society for Creative Anachronism or any other organisation." External links read "(external link)", and the original wiki's "(opens original wiki)". Theme toggle: group "Theme", options "System", "Light", "Dark".
+- **Fixed strings.** Non-affiliation, in the original wiki's words (`NOT_OFFICIAL`): "Bardic Torch is community-maintained. It is not officially associated with the SCA nor with any other re-enactment organisation, LARP organisation, fan convention, SF&F organisation, filk group, musical group, or other thing that might be described as “official”." External links read "(external link)", and the original wiki's "(opens original wiki)". Theme toggle: group "Theme", options "System", "Light", "Dark".
 
 ---
 

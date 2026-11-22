@@ -6,7 +6,7 @@ import type { PieceSummary } from "~/schemas/catalogue";
 /**
  * The recording of a performance in an event's or a bard's list. A
  * restricted piece's recording is never linked off its own page (plan
- * §4.0): it says where to look instead, with no anchor and no address.
+ * §4.0): it says why it isn't shown, with no anchor and no address.
  * Otherwise it is the reader's link, named by its title or its host.
  */
 export function RecordingCell({

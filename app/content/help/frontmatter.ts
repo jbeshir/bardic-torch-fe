@@ -4,7 +4,8 @@ import { z } from "zod";
  * A help page's front matter (plan §0.10). `description` is the meta
  * description, so it fits a search result; `summary` is the social preview
  * line; `sourcePages` are the original wiki pages the text is adapted from
- * (by title), which the page credits and links to; `lastReviewed` is the
+ * (by title), which the page credits and links to, `partlyAdapted` when
+ * the page is mostly our own words; `lastReviewed` is the
  * day the text was last checked against the site's rules.
  */
 export const helpFrontmatterSchema = z.strictObject({
@@ -12,6 +13,7 @@ export const helpFrontmatterSchema = z.strictObject({
   description: z.string().trim().min(1).max(160),
   summary: z.string().trim().min(1),
   sourcePages: z.array(z.string().trim().min(1)).readonly(),
+  partlyAdapted: z.boolean().default(false),
   lastReviewed: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "a date, YYYY-MM-DD")

@@ -3,7 +3,7 @@ title: Privacy
 description: What Bardic Torch stores about you, which services see what, the cookies we use, and how to ask us to remove your data.
 summary: Bardic Torch keeps very little about you, shows your edits publicly, and uses no analytics or advertising cookies.
 sourcePages: []
-lastReviewed: 2026-11-16
+lastReviewed: 2026-11-22
 ---
 
 Bardic Torch keeps as little about you as it can. You can read the whole site without an account, and we never show you adverts.
@@ -31,8 +31,8 @@ There are no analytics or advertising cookies. We use only:
 - the **sign-in cookies**: your session while you are logged in, and two short-lived ones that last only while you log in;
 - the **theme cookie**, which remembers if you chose light or dark.
 
-## Removing your data or opting out
+## Removing your data, or not having a page
 
 To ask us to remove your account or anything else about you, [write to us through the contact form](/contact?kind=opt_out). You don’t need an account. Your past edits stay part of the pages they changed. They show your name as it is on Google or Facebook, so changing your name there changes the name your past edits show, from the next time you log in.
 
-If there is a page about you and you would rather not have one, you can ask for that too. See [What if I don’t want to have a page at Bardic Torch?](/help/faq-for-bards#what-if-i-dont-want-to-have-a-page-at-bardic-torch) in the FAQ for bards.
+If there is a page about you and you would rather not have one, publish a public statement that you prefer not to have a page, and [send us the link](/contact?kind=opt_out). See [What if I don’t want to have a page at Bardic Torch?](/help/faq-for-bards#what-if-i-dont-want-to-have-a-page-at-bardic-torch) in the FAQ for bards.

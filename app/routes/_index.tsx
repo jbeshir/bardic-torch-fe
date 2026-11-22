@@ -16,11 +16,14 @@ import { ConservationBadge } from "~/components/ui/ConservationBadge";
 import { SectionError } from "~/components/ui/ErrorState";
 import { Link } from "~/components/ui/Link";
 import { TagList } from "~/components/ui/TagList";
+import { WikiCredit } from "~/components/WikiCredit";
 import {
   CONTRIBUTE_HREF,
   helpHref,
   NEEDS_WORK_PATH,
+  OPT_OUT_HREF,
 } from "~/constants/navigation";
+import { NOT_OFFICIAL } from "~/constants/site";
 import {
   BROWSE_STATUS_LABELS,
   PIECE_KIND_LABELS,
@@ -34,6 +37,9 @@ export const meta: MetaFunction = args =>
       "A community index of SCA bardic songs, stories and poems and the bards who made them, so they can be found, sung and passed on.",
     path: "/",
   });
+
+/** The original wiki's page whose sentences the home page reuses. */
+const HOME_SOURCES = ["Main Page"] as const;
 
 /** The statuses the "Every version" card shows, with a link to each. */
 const CARD_STATUSES = [
@@ -264,8 +270,9 @@ export default function Index() {
           it’s licensed, whether to ask before performing it, and how you feel
           about sing-alongs, recordings and adaptations. Publish your
           preferences on your own site and we’ll link to them, so everyone can
-          find them. You’re welcome to help with your own page, or to ask not to
-          have one.
+          find them. You’re welcome to help with your own page. If you’d rather
+          not have one, publish a public statement that you prefer not to have a
+          page, and <Link to={OPT_OUT_HREF}>send us the link</Link>.
         </p>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <ButtonLink to={helpHref("faq-for-bards")} variant="secondary">
@@ -279,16 +286,16 @@ export default function Index() {
           </ButtonLink>
         </div>
         <div className="mt-8">
-          <Alert tone="info">
-            Bardic Torch is community-maintained and not affiliated with the
-            Society for Creative Anachronism or any other organisation.
-          </Alert>
+          <Alert tone="info">{NOT_OFFICIAL}</Alert>
         </div>
       </Section>
 
       <p className="mt-10 text-caption text-fg-subtle">
         The name has two meanings: a torch to search by, and passing the torch
         so works are kept for the next generation.
+      </p>
+      <p className="mt-3 text-caption text-fg-subtle">
+        <WikiCredit sourcePages={HOME_SOURCES} partly />
       </p>
     </>
   );

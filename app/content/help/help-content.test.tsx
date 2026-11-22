@@ -58,5 +58,32 @@ describe.each(ALL)("help page %s", (slug, content) => {
         within(licence).getByRole("link", { name: new RegExp(`‘${source}’`) })
       ).toHaveAttribute("href", wikiPageUrl(source));
     }
+    if (content.frontmatter.sourcePages.length > 0) {
+      expect(licence).toHaveTextContent(
+        /adapted from .* by its contributors, with changes; see Licence & attribution\./i
+      );
+      expect(
+        within(licence).getByRole("link", { name: "Licence & attribution" })
+      ).toHaveAttribute("href", "/help/licence");
+    }
+  });
+
+  it("says how much of it is adapted, under the title", async () => {
+    if (!content) throw new Error(`No help page "${slug}"`);
+    const [source] = content.frontmatter.sourcePages;
+    const main = await renderHelp(content, slug);
+    const credit = within(main).queryByRole("link", {
+      name: /^(partly )?adapted from the original wiki/i,
+    });
+    if (!source) {
+      expect(credit).toBeNull();
+      return;
+    }
+    expect(credit).toHaveAttribute("href", wikiPageUrl(source));
+    expect(credit).toHaveTextContent(
+      content.frontmatter.partlyAdapted
+        ? "Partly adapted from the original wiki"
+        : /^Adapted from the original wiki/
+    );
   });
 });

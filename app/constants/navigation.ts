@@ -36,6 +36,13 @@ export const WIKI_HOME_URL = wikiPageUrl("Main Page");
 /** The contact, takedown and opt-out form, which also reports a link. */
 export const CONTACT_FORM_URL = "/contact";
 
+/**
+ * The contact form, of kind `opt_out`: for removing your data, or for the
+ * link to your statement that you prefer not to have a page. Facebook's
+ * data-deletion setting points here (docs/DEPLOY.md).
+ */
+export const OPT_OUT_HREF = `${CONTACT_FORM_URL}?kind=opt_out`;
+
 /** The form reporting a link: the contact form, of kind `link_report`. */
 export const reportLinkHref = (url: string) =>
   `${CONTACT_FORM_URL}?${new URLSearchParams({ kind: "link_report", url })}`;

@@ -39,7 +39,8 @@ export function withoutRestrictedPieceLinks(piece: Piece): Piece {
 }
 
 /** The caption shown in place of a restricted piece's link. */
-export const LINK_NOT_SHOWN = "Link not shown: see the piece page";
+export const LINK_NOT_SHOWN =
+  "Link not shown: the creator does not allow this work to be shared.";
 
 /**
  * `row` with its link's address and title emptied when its piece is

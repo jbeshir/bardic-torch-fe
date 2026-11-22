@@ -95,7 +95,7 @@ export const meta: MetaFunction = args =>
   pageMeta(args, {
     title: "Contact us",
     description:
-      "Write to the Bardic Torch moderators: ask for a link or a page to be taken down, opt out, send a correction or report a link.",
+      "Write to the moderators: take down a link or page, send a correction, report a link, or send us the link to your statement that you prefer not to have a page.",
     path: CONTACT_FORM_URL,
   });
 

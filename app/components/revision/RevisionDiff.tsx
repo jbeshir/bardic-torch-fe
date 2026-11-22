@@ -1,5 +1,4 @@
 import { useId } from "react";
-import { LINK_NOT_SHOWN } from "~/catalogue/restricted";
 import type { RevisionChanges } from "~/catalogue/diff";
 import { DiffRow } from "./DiffRow";
 
@@ -30,7 +29,7 @@ export function RevisionDiff({
       {changes.linksAsText ? (
         <p className="mt-1 text-body-sm text-fg-muted">
           The creator does not allow this work to be recorded, archived, or
-          shared, so its links are shown as text only. {LINK_NOT_SHOWN}.
+          shared, so its links are shown as text only.
         </p>
       ) : null}
       {changes.rows.length === 0 ? (
