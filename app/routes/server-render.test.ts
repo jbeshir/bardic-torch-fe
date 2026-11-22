@@ -139,7 +139,7 @@ const PAGES: readonly (readonly [string, number, Check])[] = [
     200,
     { h1: "Find the songs, stories and poems of the bardic community." },
   ],
-  ["/", 200, { contains: "248 pieces and 14 people and groups so far" }],
+  ["/", 200, { contains: "248 pieces and 10 people and groups so far" }],
   ["/pieces", 200, { h1: "Pieces" }],
   ["/pieces?kind=poem&term=eerie", 200, { contains: "Showing 3 pieces" }],
   ["/pieces?letter=T", 200, { contains: "Pieces under T" }],

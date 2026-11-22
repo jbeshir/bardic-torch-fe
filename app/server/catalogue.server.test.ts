@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { API_BASE_URL, loadContext } from "~/test/context";
 import { contractResponse } from "~/test/contract";
 import { serveFixtureApi } from "~/test/msw";
-import { getPiece, listPieces } from "./catalogue.server";
+import { getPiece, listPersons, listPieces } from "./catalogue.server";
 
 // The anonymous read client against the fixture API through msw: what it
 // sends, and how each upstream answer maps to a ReadFailure.
@@ -38,26 +38,51 @@ describe("what it sends", () => {
     expect(seen[0]?.get("Cookie")).toBeNull();
   });
 
-  it("sends the query in the spec's order, whatever the object's", async () => {
-    const seen: string[] = [];
-    fixtures.server.events.on("request:start", ({ request }) => {
-      seen.push(new URL(request.url).search);
-    });
-    await listPieces(loadContext(), {
-      offset: 100,
-      limit: 50,
-      sort: "title",
-      letter: "W",
-      q: "a b",
-      stub: false,
-      conservation_status: ["low_risk"],
-      kind: ["poem"],
-      term: ["war"],
-    });
-    expect(seen).toEqual([
+  // Every parameter of each list, in reverse order: none is dropped.
+  it.each([
+    [
+      "listPieces",
+      () =>
+        listPieces(loadContext(), {
+          offset: 100,
+          limit: 50,
+          sort: "title",
+          letter: "W",
+          q: "a b",
+          stub: false,
+          conservation_status: ["low_risk"],
+          kind: ["poem"],
+          term: ["war"],
+        }),
       "?term=war&kind=poem&conservation_status=low_risk&stub=false&q=a+b&letter=W&sort=title&limit=50&offset=100",
-    ]);
-  });
+    ],
+    [
+      "listPersons",
+      () =>
+        listPersons(loadContext(), {
+          offset: 50,
+          limit: 50,
+          sort: "name",
+          letter: "W",
+          q: "wren",
+          affiliation: "northmarch",
+          stub: false,
+          role: ["singer"],
+          kind: ["community_bard"],
+        }),
+      "?kind=community_bard&role=singer&stub=false&affiliation=northmarch&q=wren&letter=W&sort=name&limit=50&offset=50",
+    ],
+  ])(
+    "%s sends the query in the spec's order, whatever the object's",
+    async (_operation, read, expected) => {
+      const seen: string[] = [];
+      fixtures.server.events.on("request:start", ({ request }) => {
+        seen.push(new URL(request.url).search);
+      });
+      await read();
+      expect(seen).toEqual([expected]);
+    }
+  );
 });
 
 describe("how an upstream answer reads", () => {

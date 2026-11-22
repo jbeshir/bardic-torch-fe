@@ -53,126 +53,132 @@ export type ReadResult<T> =
   | { readonly ok: true; readonly data: T }
   | { readonly ok: false; readonly failure: ReadFailure };
 
+/** An operation's query parameter names. */
+type QueryName<Id extends keyof operations> = keyof NonNullable<
+  operations[Id]["parameters"]["query"]
+>;
+
 /**
  * Where each catalogue read lives and its query parameters in the order
  * they are sent (the spec's). The compiler checks each path against the
- * spec and each name against the operation's query.
+ * spec, each name against the operation's query, and that `query` names
+ * every one of them: a parameter left out would be dropped from the query
+ * string without a word.
  */
 const ENDPOINTS = {
   listPieces: {
     method: "GET",
     path: "/v1/pieces",
-    query: [
-      "term",
-      "kind",
-      "conservation_status",
-      "stub",
-      "q",
-      "letter",
-      "sort",
-      "limit",
-      "offset",
-    ],
+    query: {
+      term: true,
+      kind: true,
+      conservation_status: true,
+      stub: true,
+      q: true,
+      letter: true,
+      sort: true,
+      limit: true,
+      offset: true,
+    },
   },
   // The facet column, search, the bards directory and
   // the categories.
   listTerms: {
     method: "GET",
     path: "/v1/terms",
-    query: ["facet"],
+    query: { facet: true },
   },
   listPersons: {
     method: "GET",
     path: "/v1/persons",
-    query: [
-      "kind",
-      "role",
-      "affiliation",
-      "q",
-      "letter",
-      "sort",
-      "limit",
-      "offset",
-    ],
+    query: {
+      kind: true,
+      role: true,
+      stub: true,
+      affiliation: true,
+      q: true,
+      letter: true,
+      sort: true,
+      limit: true,
+      offset: true,
+    },
   },
   // The piece page and the bard page.
   getPiece: {
     method: "GET",
     path: "/v1/pieces/{slug}",
-    query: [],
+    query: {},
   },
   getPerson: {
     method: "GET",
     path: "/v1/persons/{slug}",
-    query: [],
+    query: {},
   },
   // A category, collections and events.
   getTerm: {
     method: "GET",
     path: "/v1/terms/{slug}",
-    query: ["limit", "offset"],
+    query: { limit: true, offset: true },
   },
   listCollections: {
     method: "GET",
     path: "/v1/collections",
-    query: ["kind", "letter", "limit", "offset"],
+    query: { kind: true, letter: true, limit: true, offset: true },
   },
   getCollection: {
     method: "GET",
     path: "/v1/collections/{collection_id}",
-    query: [],
+    query: {},
   },
   listEvents: {
     method: "GET",
     path: "/v1/events",
-    query: ["limit", "offset"],
+    query: { limit: true, offset: true },
   },
   getEvent: {
     method: "GET",
     path: "/v1/events/{slug}",
-    query: [],
+    query: {},
   },
   // Histories and revisions.
   listPieceRevisions: {
     method: "GET",
     path: "/v1/pieces/{slug}/history",
-    query: ["limit", "offset"],
+    query: { limit: true, offset: true },
   },
   listPersonRevisions: {
     method: "GET",
     path: "/v1/persons/{slug}/history",
-    query: ["limit", "offset"],
+    query: { limit: true, offset: true },
   },
   listTermRevisions: {
     method: "GET",
     path: "/v1/terms/{slug}/history",
-    query: ["limit", "offset"],
+    query: { limit: true, offset: true },
   },
   listCollectionRevisions: {
     method: "GET",
     path: "/v1/collections/{collection_id}/history",
-    query: ["limit", "offset"],
+    query: { limit: true, offset: true },
   },
   listEventRevisions: {
     method: "GET",
     path: "/v1/events/{slug}/history",
-    query: ["limit", "offset"],
+    query: { limit: true, offset: true },
   },
   getRevision: {
     method: "GET",
     path: "/v1/revisions/{revision_id}",
-    query: [],
+    query: {},
   },
   listNeedsWork: {
     method: "GET",
     path: "/v1/needs-work",
-    query: ["reason", "limit", "offset"],
+    query: { reason: true, limit: true, offset: true },
   },
 } as const satisfies {
   readonly [Id in keyof operations]?: EndpointOf<operations[Id]> & {
-    readonly query: readonly (keyof NonNullable<
-      operations[Id]["parameters"]["query"]
-    >)[];
+    readonly query: Readonly<Record<QueryName<Id>, true>>;
   };
 };
 
@@ -192,7 +198,7 @@ function queryString<Id extends ReadId>(
 ): string {
   const params = new URLSearchParams();
   const values: Readonly<Record<string, QueryValue>> = query ?? {};
-  const names: readonly string[] = ENDPOINTS[operationId].query;
+  const names = Object.keys(ENDPOINTS[operationId].query);
   for (const name of names) {
     const value = values[name];
     if (value === undefined) continue;
