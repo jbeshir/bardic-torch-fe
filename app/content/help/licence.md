@@ -4,7 +4,9 @@ description: Bardic Torch text is shared under CC BY-SA 4.0. How to reuse it, wh
 summary: The words on Bardic Torch are free to share and adapt under CC BY-SA 4.0. The works we link to belong to their creators.
 sourcePages:
   - Main Page
-lastReviewed: 2026-10-31
+  - Bard Preference Checklist
+partlyAdapted: true
+lastReviewed: 2026-11-22
 ---
 
 Bardic Torch is a community project, and its text belongs to the community too. This page explains what you may do with it, where it came from, and what it doesn’t cover.

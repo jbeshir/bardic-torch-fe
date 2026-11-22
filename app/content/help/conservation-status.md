@@ -9,7 +9,7 @@ sourcePages:
   - Category:Critically Endangered
   - Category:Restricted
   - Main Page
-lastReviewed: 2026-11-15
+lastReviewed: 2026-11-22
 ---
 
 Conservation status categories exist to help flag works that may need more work to preserve or archive them.
@@ -18,10 +18,10 @@ Many bardic works have been lost to history because the only version available w
 
 :::infobox{title="At a glance"}
 
-- [Low Risk](#low-risk): exists in at least three places
-- [Endangered](#endangered): exists in less than three known places, and is not Restricted
-- [Critically Endangered](#critically-endangered): contributors are unable to find the work, or only partially able to find it, and it is not Restricted
-- [Restricted](#restricted): the creator does not allow the work to be recorded, archived, or shared
+- [Low Risk](#low-risk): if it exists in at least three places
+- [Endangered](#endangered): if it exists in less than three known places, and it is not Restricted
+- [Critically Endangered](#critically-endangered): if contributors to Bardic Torch are unable to find the work, or only partially able to find the work (eg. the lyrics of a song are available, but the melody is not) and it is not Restricted
+- [Restricted](#restricted): if the creator does not allow the work to be recorded, archived, or shared
 - [Not yet assessed](#not-yet-assessed): in none of these categories yet
 
 :::

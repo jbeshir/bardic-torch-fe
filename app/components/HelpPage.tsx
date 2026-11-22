@@ -1,35 +1,23 @@
-import { Fragment } from "react";
 import { formatDate } from "~/catalogue/format";
 import { Link } from "~/components/ui/Link";
 import { HELP_HREF, LICENCE_URL, wikiPageUrl } from "~/constants/navigation";
 import { MarkdownPart } from "~/content/markdown/components";
 import type { HelpContent } from "~/content/help/pages";
 import type { HelpFrontmatter } from "~/content/help/frontmatter";
+import { WikiCredit } from "./WikiCredit";
 import { WikiPage } from "./WikiPage";
-
-/** "‘A’", "‘A’ and ‘B’", "‘A’, ‘B’ and ‘C’", each a link to the wiki page. */
-function SourceList({ titles }: { readonly titles: readonly string[] }) {
-  return titles.map((title, index) => (
-    <Fragment key={title}>
-      {index === 0 ? "" : index === titles.length - 1 ? " and " : ", "}
-      <Link to={wikiPageUrl(title)} appearance="inherit">
-        {`‘${title}’`}
-      </Link>
-    </Fragment>
-  ));
-}
 
 /**
  * The licence and credit line at the foot of a help page:
  * CC BY-SA 4.0, and, for text adapted from the original wiki, which pages
- * it came from and that its contributors wrote them.
+ * it came from, that its contributors wrote them and that it was changed.
  */
 function LicenceLine({
   frontmatter,
 }: {
   readonly frontmatter: HelpFrontmatter;
 }) {
-  const { sourcePages, lastReviewed } = frontmatter;
+  const { sourcePages, partlyAdapted, lastReviewed } = frontmatter;
   return (
     <>
       This page is available under{" "}
@@ -40,8 +28,7 @@ function LicenceLine({
       {sourcePages.length > 0 ? (
         <>
           {" "}
-          Adapted from <SourceList titles={sourcePages} /> on the original
-          Bardic Torch wiki by its contributors.
+          <WikiCredit sourcePages={sourcePages} partly={partlyAdapted} />
         </>
       ) : null}{" "}
       Last reviewed{" "}
@@ -79,7 +66,7 @@ export function HelpPage({ content }: { readonly content: HelpContent }) {
         ? {
             meta: (
               <Link to={wikiPageUrl(source)} appearance="muted">
-                Adapted from the original wiki
+                {`${frontmatter.partlyAdapted ? "Partly adapted" : "Adapted"} from the original wiki`}
               </Link>
             ),
           }

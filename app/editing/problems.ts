@@ -23,7 +23,7 @@ const PROBLEM_MESSAGES: Readonly<Record<Schemas["ProblemCode"], string>> = {
     "We couldn’t find this in the catalogue. Choose another, or leave it out.",
   source_required: "This needs a source. Add a link to it.",
   prefers_no_page:
-    "This person asked not to have a page, so only a moderator can add them.",
+    "This person prefers not to have a page, so a page can’t be created for them.",
 };
 
 /** A problem as the form shows it: at its control, with our words. */

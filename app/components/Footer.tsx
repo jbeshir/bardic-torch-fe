@@ -1,5 +1,6 @@
 import { Link } from "~/components/ui/Link";
 import { LICENCE_URL } from "~/constants/navigation";
+import { NOT_OFFICIAL } from "~/constants/site";
 import { HelpLinks } from "./HelpLinks";
 import { LogoMark } from "./LogoMark";
 
@@ -22,10 +23,7 @@ export function Footer() {
           </Link>{" "}
           licence.
         </p>
-        <p>
-          Bardic Torch is community-maintained and not affiliated with the
-          Society for Creative Anachronism or any other organisation.
-        </p>
+        <p>{NOT_OFFICIAL}</p>
         <div className="pt-2">
           <HelpLinks />
         </div>
