@@ -3173,7 +3173,13 @@ export interface components {
        * @example takedown
        * @enum {string}
        */
-      kind: "takedown" | "opt_out" | "correction" | "link_report" | "general";
+      kind:
+        | "takedown"
+        | "opt_out"
+        | "correction"
+        | "link_report"
+        | "general"
+        | "data_removal";
       /** @example Wren */
       name?: string | null;
       /** @example wren@example.org */
@@ -3216,7 +3222,13 @@ export interface components {
        * @example takedown
        * @enum {string}
        */
-      kind: "takedown" | "opt_out" | "correction" | "link_report" | "general";
+      kind:
+        | "takedown"
+        | "opt_out"
+        | "correction"
+        | "link_report"
+        | "general"
+        | "data_removal";
       /** @example Wren */
       name: string | null;
       /** @example wren@example.org */

@@ -33,6 +33,6 @@ There are no analytics or advertising cookies. We use only:
 
 ## Removing your data, or not having a page
 
-To ask us to remove your account or anything else about you, [write to us through the contact form](/contact?kind=opt_out). You don’t need an account. Your past edits stay part of the pages they changed. They show your name as it is on Google or Facebook, so changing your name there changes the name your past edits show, from the next time you log in.
+To ask us to remove your account or anything else about you, [write to us through the contact form](/contact?kind=data_removal). You don’t need an account. Your past edits stay part of the pages they changed. They show your name as it is on Google or Facebook, so changing your name there changes the name your past edits show, from the next time you log in.
 
 If there is a page about you and you would rather not have one, publish a public statement that you prefer not to have a page, and [send us the link](/contact?kind=opt_out). See [What if I don’t want to have a page at Bardic Torch?](/help/faq-for-bards#what-if-i-dont-want-to-have-a-page-at-bardic-torch) in the FAQ for bards.
