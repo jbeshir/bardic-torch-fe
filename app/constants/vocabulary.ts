@@ -304,8 +304,8 @@ export const CONTACT_KIND_LABELS: Readonly<
   Record<components["schemas"]["CreateContactRequest"]["kind"], string>
 > = {
   takedown: "Take something down",
-  opt_out: "I prefer not to have a page",
   data_removal: "Remove my data",
+  opt_out: "I prefer not to have a page",
   correction: "A correction",
   link_report: "Report a link",
   general: "Something else",
