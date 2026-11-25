@@ -305,6 +305,7 @@ export const CONTACT_KIND_LABELS: Readonly<
 > = {
   takedown: "Take something down",
   opt_out: "I prefer not to have a page",
+  data_removal: "Remove my data",
   correction: "A correction",
   link_report: "Report a link",
   general: "Something else",

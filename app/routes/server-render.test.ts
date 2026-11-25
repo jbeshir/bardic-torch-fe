@@ -167,6 +167,7 @@ const PAGES: readonly (readonly [string, number, Check])[] = [
   ["/moderation", 302, { location: "/auth/login?returnTo=%2Fmoderation" }],
   ["/help", 200, { h1: "Help" }],
   ["/help/conservation-status", 200, { h1: "Conservation status" }],
+  ["/help/privacy", 200, { contains: 'href="/contact?kind=data_removal"' }],
   ["/settings", 200, { contains: "<title>Settings" }],
   ["/wiki/Northmarch_Rising", 404, { contains: "/search?q=Northmarch+Rising" }],
   ["/pieces/no-such-piece", 404, { h1: "We couldn’t find that piece" }],

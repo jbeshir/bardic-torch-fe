@@ -37,9 +37,8 @@ export const WIKI_HOME_URL = wikiPageUrl("Main Page");
 export const CONTACT_FORM_URL = "/contact";
 
 /**
- * The contact form, of kind `opt_out`: for removing your data, or for the
- * link to your statement that you prefer not to have a page. Facebook's
- * data-deletion setting points here (docs/DEPLOY.md).
+ * The contact form, of kind `opt_out`: for the link to your statement that
+ * you prefer not to have a page.
  */
 export const OPT_OUT_HREF = `${CONTACT_FORM_URL}?kind=opt_out`;
 

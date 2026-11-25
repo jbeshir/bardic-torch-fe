@@ -172,6 +172,12 @@ export const SEEDED_CONTACTS: readonly Schemas["ContactRequest"][] = [
       note: "Fixed the date.",
     },
   }),
+  contact(4, {
+    kind: "data_removal",
+    email: "linnet@example.org",
+    message: "Please remove my account and everything you hold about me.",
+    created_at: "2026-10-27T09:05:00Z",
+  }),
 ];
 
 const forbidden = (user: User): FixtureResponse | null =>

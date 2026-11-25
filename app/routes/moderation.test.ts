@@ -190,6 +190,13 @@ describe("the contact form", () => {
     expect(html).toContain(`value="${MESSAGE.url}"`);
   });
 
+  it("opens as a data removal from the privacy page's link", async () => {
+    const html = await (await get("/contact?kind=data_removal")).text();
+    expect(html).toContain(
+      '<option value="data_removal" selected="">Remove my data</option>'
+    );
+  });
+
   it("asks for a reply address and for the robot check, in our words", async () => {
     const noEmail = await post("/contact", { ...MESSAGE, email: "nope" });
     expect(noEmail.status).toBe(400);

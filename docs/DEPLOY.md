@@ -356,7 +356,7 @@ The identity providers send the reader back to **Auth0**, not to the site, so th
 **Facebook** (Meta for Developers, an app of type Consumer, with the Facebook Login product):
 
 1. Facebook Login → Settings: **Valid OAuth Redirect URIs** `https://<AUTH0_DOMAIN>/login/callback`.
-2. App settings → Basic: app domain, a **Privacy Policy URL** and a **User Data Deletion** URL (instructions URL). Point the Privacy Policy URL at the privacy page, `https://bardictorch.org/help/privacy`, and the data-deletion instructions at the contact form's opt-out, `https://bardictorch.org/contact?kind=opt_out`. Google's consent screen (above) uses the same privacy URL.
+2. App settings → Basic: app domain, a **Privacy Policy URL** and a **User Data Deletion** URL (instructions URL). Point the Privacy Policy URL at the privacy page, `https://bardictorch.org/help/privacy`, and the data-deletion instructions at the contact form's data removal, `https://bardictorch.org/contact?kind=data_removal`. Google's consent screen (above) uses the same privacy URL.
 3. Permissions: `email` and `public_profile`.
 4. Switch the app to **Live**. In Development mode, only the app's admins, developers and testers can sign in.
 5. In Auth0's Facebook connection, enter the App ID and App Secret, with the `email` permission.
